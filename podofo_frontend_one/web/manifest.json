@@ -1,6 +1,6 @@
 {
-    "name": "podofo_frontend_one",
-    "short_name": "podofo_frontend_one",
+    "name": "podofo_one",
+    "short_name": "podofo_one",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

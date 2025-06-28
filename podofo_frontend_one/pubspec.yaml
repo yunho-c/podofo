@@ -1,5 +1,5 @@
-name: podofo_frontend_one
-description: "A new Flutter project."
+name: podofo_one
+description: ""
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -42,6 +42,9 @@ dependencies:
   path_provider: ^2.1.5
   shared_preferences: ^2.5.3
   hive: ^2.2.3
+  window_manager: ^0.5.0
+  file_picker: ^10.2.0
+  hotkey_manager: ^0.2.3
 
 dev_dependencies:
   flutter_test:
