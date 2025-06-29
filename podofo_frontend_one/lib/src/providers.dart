@@ -1,10 +1,13 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart';
 
-enum SidePane { explorer, search, sourceControl, debug, extensions }
+enum LeftPane { explorer, search, sourceControl, debug, extensions }
 
-enum RightSidePane { outline, timeline }
+enum RightPane { outline, timeline }
 
-final sidePaneProvider = StateProvider<SidePane?>((ref) => SidePane.explorer);
-final rightSidePaneProvider = StateProvider<RightSidePane?>((ref) => null);
+final leftPaneProvider = StateProvider<LeftPane?>((ref) => LeftPane.explorer);
+final rightPaneProvider = StateProvider<RightPane?>((ref) => null);
 
 final commandPromptProvider = StateProvider<bool>((ref) => false);
+
+final themeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.dark);
