@@ -45,7 +45,9 @@ dependencies:
   window_manager: ^0.5.0
   file_picker: ^10.2.0
   hotkey_manager: ^0.2.3
-  pdfrx: ^1.2.9
+  # pdfrx: ^1.2.9
+  pdfrx:
+    path: ../../pdfrx
   url_launcher: ^6.3.1
 
 dev_dependencies:

@@ -6,7 +6,7 @@ import 'package:podofo_one/src/widgets/command_prompt.dart';
 import 'package:podofo_one/src/widgets/main_content.dart';
 import 'package:podofo_one/src/widgets/panes/activity_bar.dart';
 import 'package:podofo_one/src/widgets/panes/pane_content.dart';
-import 'package:podofo_one/src/widgets/tab_widget.dart';
+import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
 import 'package:window_manager/window_manager.dart';
 
 class HomePage extends ConsumerWidget {
@@ -64,9 +64,11 @@ class HomePage extends ConsumerWidget {
                           return TabWidget(
                             tab: tab,
                             isSelected: isSelected,
-                            onTap: () => ref
-                                .read(currentTabIndexProvider.notifier)
-                                .state = index,
+                            onTap: () =>
+                                ref
+                                        .read(currentTabIndexProvider.notifier)
+                                        .state =
+                                    index,
                             onClose: () {
                               ref.read(tabsProvider.notifier).state = [
                                 for (int i = 0; i < tabs.length; i++)
@@ -74,8 +76,9 @@ class HomePage extends ConsumerWidget {
                               ];
                               if (currentTabIndex >= tabs.length - 1) {
                                 ref
-                                    .read(currentTabIndexProvider.notifier)
-                                    .state = tabs.length - 2;
+                                        .read(currentTabIndexProvider.notifier)
+                                        .state =
+                                    tabs.length - 2;
                               }
                             },
                           );
@@ -86,11 +89,17 @@ class HomePage extends ConsumerWidget {
                       icon: const Icon(Icons.brightness_6),
                       onPressed: () {
                         final currentTheme = ref.read(themeProvider);
-                        ref.read(themeProvider.notifier).state =
-                            currentTheme == ThemeMode.dark
-                                ? ThemeMode.light
-                                : ThemeMode.dark;
+                        ref
+                            .read(themeProvider.notifier)
+                            .state = currentTheme == ThemeMode.dark
+                            ? ThemeMode.light
+                            : ThemeMode.dark;
                       },
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.folder_open),
+                      onPressed: () =>
+                          ref.read(filePathProvider.notifier).pickFile(),
                     ),
                   ],
                 ),
