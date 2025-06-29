@@ -1,46 +1,58 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:podofo_one/src/providers.dart';
 
-class MainContent extends ConsumerStatefulWidget {
+class MainContent extends ConsumerWidget {
   const MainContent({super.key});
 
   @override
-  ConsumerState<MainContent> createState() => _MainContentState();
-}
+  Widget build(BuildContext context, WidgetRef ref) {
+    final filePath = ref.watch(filePathProvider);
+    final pdfViewerController = ref.watch(pdfViewerControllerProvider);
 
-class _MainContentState extends ConsumerState<MainContent> {
-  String? _filePath;
+    void pickFile() async {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+      );
 
-  void _pickFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-    );
-
-    if (result != null && result.files.single.path != null) {
-      setState(() {
-        _filePath = result.files.single.path;
-      });
+      if (result != null && result.files.single.path != null) {
+        ref.read(filePathProvider.notifier).state = result.files.single.path;
+      }
     }
-  }
 
-  @override
-  Widget build(BuildContext context) {
     return Expanded(
       child: Scaffold(
         appBar: AppBar(
           actions: [
             IconButton(
               icon: const Icon(Icons.folder_open),
-              onPressed: _pickFile,
+              onPressed: pickFile,
             ),
           ],
         ),
-        body: _filePath != null
+        body: filePath != null
             ? PdfViewer.file(
-                _filePath!,
+                filePath,
+                controller: pdfViewerController,
+                params: PdfViewerParams(
+                  enableTextSelection: true,
+                  linkHandlerParams: PdfLinkHandlerParams(
+                    onLinkTap: (link) {
+                      if (link.url != null) {
+                        // external web URL
+                        launchUrl(link.url!);
+                      } else if (link.dest != null) {
+                        // internal link
+                        pdfViewerController.goToDest(link.dest!);
+                      }
+                    },
+                    linkColor: Color.fromRGBO(100, 100, 255, 0.01)
+                  ),
+                ),
               )
             : const Center(
                 child: Text('Press the folder icon to pick a PDF file.'),

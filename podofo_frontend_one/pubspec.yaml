@@ -46,6 +46,7 @@ dependencies:
   file_picker: ^10.2.0
   hotkey_manager: ^0.2.3
   pdfrx: ^1.2.9
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
