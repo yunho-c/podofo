@@ -44,7 +44,7 @@ class MainContent extends ConsumerStatefulWidget {
 
 class _MainContentState extends ConsumerState<MainContent> {
   // FragmentShader? _shader;
-  FragmentProgram? _shader;
+  FragmentShader? _shader;
 
   @override
   void initState() {
@@ -54,11 +54,10 @@ class _MainContentState extends ConsumerState<MainContent> {
 
   Future<void> _loadShader() async {
     try {
-      // final program = await FragmentProgram.fromAsset('shaders/invert.frag');
-      final program = await FragmentProgram.fromAsset('shaders/default.frag');
+      final program = await FragmentProgram.fromAsset('shaders/invert.frag');
+      // final program = await FragmentProgram.fromAsset('shaders/default.frag');
       setState(() {
-        // _shader = program.fragmentShader();
-        _shader = program;
+        _shader = program.fragmentShader();
       });
     } catch (e) {
       // Handle shader loading error if necessary
@@ -124,22 +123,10 @@ class _MainContentState extends ConsumerState<MainContent> {
       );
     } else {
       if (darkMode) {
-        if (_shader != null) {
-          body = ShaderMask(
-            // blendMode: BlendMode.srcOver,
-            blendMode: BlendMode.src,
-            shaderCallback: (bounds) => _shader!.fragmentShader()
-              ..setFloat(0, bounds.width)
-              ..setFloat(1, bounds.height),
-            // shaderCallback: (bounds) => _shader!,
-            child: buildPdfViewer(),
-          );
-        } else {
-          body = ColorFiltered(
-            colorFilter: _differenceDarkModeColorFilter,
-            child: buildPdfViewer(),
-          );
-        }
+        body = ImageFiltered(
+          imageFilter: ImageFilter.shader(_shader!),
+          child: buildPdfViewer(),
+        );
       } else {
         body = buildPdfViewer();
       }

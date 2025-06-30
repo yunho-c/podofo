@@ -81,7 +81,7 @@ vec3 hsl_to_rgb(vec3 hsl) {
 }
 
 // Main shader function
-out vec4 frag_color;
+out vec4 fragColor;
 
 void main() {
     vec2 uv = FlutterFragCoord().xy / uSize;
@@ -99,5 +99,5 @@ void main() {
     vec3 inverted_rgb = hsl_to_rgb(hsl_color);
 
     // Output the final color, preserving the original transparency
-    frag_color = vec4(inverted_rgb, original_color.a);
+    fragColor = vec4(inverted_rgb, original_color.a);
 }
