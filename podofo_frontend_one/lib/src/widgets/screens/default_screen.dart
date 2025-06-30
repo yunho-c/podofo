@@ -99,8 +99,9 @@ class DefaultScreen extends ConsumerWidget {
                     ),
                     IconButton(
                       icon: const Icon(Icons.folder_open),
-                      onPressed: () =>
-                          ref.read(filePathProvider.notifier).pickFile(),
+                      onPressed: () => {
+                        ref.read(filePathProvider.notifier).pickFile(),
+                      },
                     ),
                   ],
                 ),

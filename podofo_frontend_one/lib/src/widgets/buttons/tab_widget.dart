@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' hide Tab;
 import 'package:podofo_one/src/providers/tab_provider.dart' as custom_tabs;
+import 'package:podofo_one/src/utils/responsive_icon.dart';
 
 class TabWidget extends StatefulWidget {
   const TabWidget({
@@ -32,14 +33,23 @@ class _TabWidgetState extends State<TabWidget> {
         onTap: widget.onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
-          color: widget.isSelected ? Theme.of(context).colorScheme.background : Colors.transparent,
+          color: widget.isSelected
+              ? Theme.of(context).colorScheme.background
+              : Colors.transparent,
           child: Row(
             children: [
               Text(widget.tab.title),
               const SizedBox(width: 8),
               if (_isHovering)
                 IconButton(
-                  icon: const Icon(Icons.close, size: 16),
+                  icon: const ResponsiveIcon(
+                    lightThemeIcon: Icon(Icons.close, size: 16),
+                    darkThemeIcon: Icon(
+                      Icons.close,
+                      size: 16,
+                      color: Colors.white,
+                    ),
+                  ),
                   onPressed: widget.onClose,
                 ),
             ],

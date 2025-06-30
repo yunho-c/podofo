@@ -3,7 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
-// import 'package:podofo_one/src/widgets/panes/'
+import 'package:podofo_one/src/workers/thumbnail_worker.dart';
 
 final leftPaneProvider = StateProvider<dynamic>((ref) => null);
 final rightPaneProvider = StateProvider<dynamic>((ref) => null);
@@ -28,6 +28,7 @@ class FilePathNotifier extends Notifier<String?> {
 
     if (result != null && result.files.single.path != null) {
       state = result.files.single.path;
+      ref.read(thumbnailsProvider.notifier).generateThumbnails(state!);
     }
   }
 }
@@ -40,3 +41,8 @@ final shaderProvider = FutureProvider<FragmentShader>((ref) async {
   final program = await FragmentProgram.fromAsset('shaders/invert.frag');
   return program.fragmentShader();
 });
+
+final thumbnailsProvider =
+    StateNotifierProvider<ThumbnailsNotifier, ThumbnailsState>((ref) {
+      return ThumbnailsNotifier();
+    });

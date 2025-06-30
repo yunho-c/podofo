@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class SideBarItem {
-  final IconData icon;
+  final Widget icon;
   final dynamic pane;
 
   SideBarItem({required this.icon, required this.pane});
@@ -31,13 +31,21 @@ class SideBar extends ConsumerWidget {
 
   Widget _buildIcon(
     WidgetRef ref,
-    IconData icon,
+    Widget icon,
     dynamic pane,
     dynamic activePane,
   ) {
     final bool isSelected = pane == activePane;
     return IconButton(
-      icon: Icon(icon, color: isSelected ? Colors.white : Colors.grey),
+      icon: isSelected
+          ? icon
+          : ColorFiltered(
+              colorFilter: const ColorFilter.mode(
+                Colors.grey,
+                BlendMode.srcIn,
+              ),
+              child: icon,
+            ),
       onPressed: () {
         if (isSelected) {
           ref.read(provider.notifier).state = null;
