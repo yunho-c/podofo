@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/material.dart' hide Tab;
-import 'package:podofo_one/src/tabs.dart' as custom_tabs;
+import 'package:podofo_one/src/widgets/header/tabs.dart' as custom_tabs;
 
 class TabWidget extends StatefulWidget {
   const TabWidget({

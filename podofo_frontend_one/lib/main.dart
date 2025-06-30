@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:podofo_one/src/home_page.dart';
-import 'package:podofo_one/src/providers.dart';
+import 'package:podofo_one/src/widgets/screens/default_screen.dart';
+import 'package:podofo_one/src/providers/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -56,7 +56,7 @@ class MyApp extends ConsumerWidget {
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: themeMode,
-      home: const HomePage(),
+      home: const DefaultScreen(),
     );
   }
 
@@ -68,7 +68,7 @@ class MyApp extends ConsumerWidget {
         scope: HotKeyScope.inapp,
       ),
       keyDownHandler: (_) {
-        ref.read(commandPromptProvider.notifier).update((state) => !state);
+        ref.read(commandPaletteProvider.notifier).update((state) => !state);
       },
     );
   }

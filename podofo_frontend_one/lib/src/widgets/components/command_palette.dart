@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class CommandPrompt extends StatelessWidget {
-  const CommandPrompt({super.key});
+class CommandPalette extends StatelessWidget {
+  const CommandPalette({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -32,11 +32,7 @@ class CommandPrompt extends StatelessWidget {
               ),
             ),
             Divider(height: 1),
-            Expanded(
-              child: Center(
-                child: Text('No results found'),
-              ),
-            ),
+            Expanded(child: Center(child: Text('No results found'))),
           ],
         ),
       ),

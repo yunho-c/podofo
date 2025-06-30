@@ -49,6 +49,7 @@ dependencies:
   pdfrx:
     path: ../../pdfrx
   url_launcher: ^6.3.1
+  image: ^4.5.4
 
 dev_dependencies:
   flutter_test:

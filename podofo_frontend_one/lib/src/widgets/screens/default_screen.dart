@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:podofo_one/src/providers.dart';
-import 'package:podofo_one/src/tabs.dart';
-import 'package:podofo_one/src/widgets/command_prompt.dart';
-import 'package:podofo_one/src/widgets/main_content.dart';
+import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/widgets/header/tabs.dart';
+import 'package:podofo_one/src/widgets/components/command_palette.dart';
+import 'package:podofo_one/src/widgets/components/main_area.dart';
 import 'package:podofo_one/src/widgets/panes/activity_bar.dart';
 import 'package:podofo_one/src/widgets/panes/pane_content.dart';
 import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
 import 'package:window_manager/window_manager.dart';
 
-class HomePage extends ConsumerWidget {
-  const HomePage({super.key});
+class DefaultScreen extends ConsumerWidget {
+  const DefaultScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tabs = ref.watch(tabsProvider);
     final currentTabIndex = ref.watch(currentTabIndexProvider);
-    final showCommandPrompt = ref.watch(commandPromptProvider);
+    final showCommandPalette = ref.watch(commandPaletteProvider);
 
     return Scaffold(
       body: Stack(
@@ -32,7 +32,7 @@ class HomePage extends ConsumerWidget {
                     child: InkWell(
                       onTap: () {
                         ref
-                            .read(commandPromptProvider.notifier)
+                            .read(commandPaletteProvider.notifier)
                             .update((state) => !state);
                       },
                       child: Container(
@@ -149,7 +149,7 @@ class HomePage extends ConsumerWidget {
                         }
                       },
                     ),
-                    const MainContent(),
+                    const MainArea(),
                     PaneContent(
                       provider: rightPaneProvider,
                       contentBuilder: (pane) {
@@ -179,7 +179,7 @@ class HomePage extends ConsumerWidget {
               ),
             ],
           ),
-          if (showCommandPrompt) const CommandPrompt(),
+          if (showCommandPalette) const CommandPalette(),
         ],
       ),
     );
