@@ -1,15 +1,12 @@
+import 'dart:ui';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
 import 'package:pdfrx/pdfrx.dart';
-import 'dart:ui';
+// import 'package:podofo_one/src/widgets/panes/'
 
-enum LeftPane { explorer, search, sourceControl, debug, extensions }
-
-enum RightPane { outline, timeline }
-
-final leftPaneProvider = StateProvider<LeftPane?>((ref) => LeftPane.explorer);
-final rightPaneProvider = StateProvider<RightPane?>((ref) => null);
+final leftPaneProvider = StateProvider<dynamic>((ref) => null);
+final rightPaneProvider = StateProvider<dynamic>((ref) => null);
 
 final commandPaletteProvider = StateProvider<bool>((ref) => false);
 

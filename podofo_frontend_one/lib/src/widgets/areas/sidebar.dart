@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ActivityBarItem {
+class SideBarItem {
   final IconData icon;
   final dynamic pane;
 
-  ActivityBarItem({required this.icon, required this.pane});
+  SideBarItem({required this.icon, required this.pane});
 }
 
-class ActivityBar extends ConsumerWidget {
-  final List<ActivityBarItem> items;
+class SideBar extends ConsumerWidget {
+  final List<SideBarItem> items;
   final StateProvider<dynamic> provider;
 
-  const ActivityBar({super.key, required this.items, required this.provider});
+  const SideBar({super.key, required this.items, required this.provider});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

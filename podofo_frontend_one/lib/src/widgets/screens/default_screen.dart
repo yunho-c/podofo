@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:podofo_one/src/providers/providers.dart';
-import 'package:podofo_one/src/widgets/header/tabs.dart';
+import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/widgets/components/command_palette.dart';
-import 'package:podofo_one/src/widgets/components/main_area.dart';
-import 'package:podofo_one/src/widgets/panes/activity_bar.dart';
-import 'package:podofo_one/src/widgets/panes/pane_content.dart';
+import 'package:podofo_one/src/widgets/areas/main_area.dart';
+import 'package:podofo_one/src/widgets/areas/sidebar.dart';
+import 'package:podofo_one/src/widgets/panes/pane_widget.dart';
 import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
+import 'package:podofo_one/src/widgets/panes/pane_data.dart';
 import 'package:window_manager/window_manager.dart';
 
 class DefaultScreen extends ConsumerWidget {
@@ -107,72 +108,16 @@ class DefaultScreen extends ConsumerWidget {
               Expanded(
                 child: Row(
                   children: [
-                    ActivityBar(
+                    SideBar(
                       provider: leftPaneProvider,
-                      items: [
-                        ActivityBarItem(
-                          icon: Icons.description,
-                          pane: LeftPane.explorer,
-                        ),
-                        ActivityBarItem(
-                          icon: Icons.search,
-                          pane: LeftPane.search,
-                        ),
-                        ActivityBarItem(
-                          icon: Icons.source,
-                          pane: LeftPane.sourceControl,
-                        ),
-                        ActivityBarItem(
-                          icon: Icons.bug_report,
-                          pane: LeftPane.debug,
-                        ),
-                        ActivityBarItem(
-                          icon: Icons.extension,
-                          pane: LeftPane.extensions,
-                        ),
-                      ],
+                      items: leftPaneData.items,
                     ),
-                    PaneContent(
-                      provider: leftPaneProvider,
-                      contentBuilder: (pane) {
-                        switch (pane as LeftPane) {
-                          case LeftPane.explorer:
-                            return const Center(child: Text('Explorer'));
-                          case LeftPane.search:
-                            return const Center(child: Text('Search'));
-                          case LeftPane.sourceControl:
-                            return const Center(child: Text('Source Control'));
-                          case LeftPane.debug:
-                            return const Center(child: Text('Debug'));
-                          case LeftPane.extensions:
-                            return const Center(child: Text('Extensions'));
-                        }
-                      },
-                    ),
+                    PaneWidget(provider: leftPaneProvider),
                     const MainArea(),
-                    PaneContent(
+                    PaneWidget(provider: rightPaneProvider),
+                    SideBar(
                       provider: rightPaneProvider,
-                      contentBuilder: (pane) {
-                        switch (pane as RightPane) {
-                          case RightPane.outline:
-                            return const Center(child: Text('Outline'));
-                          case RightPane.timeline:
-                            return const Center(child: Text('Timeline'));
-                        }
-                      },
-                    ),
-                    ActivityBar(
-                      provider: rightPaneProvider,
-                      items: [
-                        ActivityBarItem(
-                          icon: Icons.toc,
-                          pane: RightPane.outline,
-                        ),
-                        ActivityBarItem(
-                          icon: Icons.timeline,
-                          pane: RightPane.timeline,
-                        ),
-                      ],
+                      items: rightPaneData.items,
                     ),
                   ],
                 ),
