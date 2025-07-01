@@ -58,7 +58,7 @@ class DefaultScreen extends ConsumerWidget {
                       items: leftPaneData.items,
                     ),
                     PaneWidget(provider: leftPaneProvider),
-                    const MainArea(),
+                    const Expanded(child: MainArea()),
                     PaneWidget(provider: rightPaneProvider),
                     SideBar(
                       provider: rightPaneProvider,

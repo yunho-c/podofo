@@ -98,13 +98,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
       }
     }
 
-    return Expanded(
-      // child: Scaffold(
-      //   appBar: AppBar(actions: const []),
-      //   body: body,
-      // ), // material
-      child: body, // shadcn
-    );
+    return body;
   }
 }
 

@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
-// import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart'
+    hide ThemeMode, CircularProgressIndicator;
 
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/workers/thumbnail_worker.dart';
