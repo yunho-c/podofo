@@ -13,7 +13,7 @@ class PaneWidget extends ConsumerWidget {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
       width: activePane == null ? 0 : 250,
-      curve: Curves.easeInOut,
+      curve: Curves.easeOutExpo,
       child: activePane == null ? null : activePane,
     );
   }

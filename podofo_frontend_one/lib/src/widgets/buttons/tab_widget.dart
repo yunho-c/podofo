@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/material.dart' hide Tab;
-import 'package:podofo_one/src/providers/tab_provider.dart' as custom_tabs;
+
+import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/utils/responsive_icon.dart';
 
 class TabWidget extends StatefulWidget {
   const TabWidget({
     super.key,
-    required this.tab,
+    required this.document,
     required this.isSelected,
     required this.onTap,
     required this.onClose,
   });
 
-  final custom_tabs.Tab tab;
+  final Document document;
   final bool isSelected;
   final VoidCallback onTap;
   final VoidCallback onClose;
@@ -34,11 +34,11 @@ class _TabWidgetState extends State<TabWidget> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           color: widget.isSelected
-              ? Theme.of(context).colorScheme.background
+              ? Theme.of(context).colorScheme.tertiary
               : Colors.transparent,
           child: Row(
             children: [
-              Text(widget.tab.title),
+              Text(widget.document.title),
               const SizedBox(width: 8),
               if (_isHovering)
                 IconButton(

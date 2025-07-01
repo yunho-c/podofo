@@ -29,7 +29,8 @@ class ThumbnailsState {
 class ThumbnailsNotifier extends StateNotifier<ThumbnailsState> {
   ThumbnailsNotifier() : super(const ThumbnailsState());
 
-  Future<void> generateThumbnails(String filePath) async {
+  Future<void> generateThumbnails(PdfDocument document) async {
+    final filePath = document.sourceName;
     if (state.isGenerating[filePath] == true) return;
 
     state = state.copyWith(
@@ -37,7 +38,6 @@ class ThumbnailsNotifier extends StateNotifier<ThumbnailsState> {
     );
 
     try {
-      final document = await PdfDocument.openFile(filePath);
       final newThumbnailsForPdf = <int, Uint8List>{};
       for (int i = 1; i <= document.pages.length; i++) {
         final page = document.pages[i - 1];
@@ -46,7 +46,7 @@ class ThumbnailsNotifier extends StateNotifier<ThumbnailsState> {
           width: pdfImage!.width,
           height: pdfImage.height,
           bytes: pdfImage.pixels.buffer,
-          order: img.ChannelOrder.rgba,
+          order: img.ChannelOrder.bgra,
         );
         final imageBytes = img.encodeJpg(image, quality: 50);
         newThumbnailsForPdf[i] = imageBytes;

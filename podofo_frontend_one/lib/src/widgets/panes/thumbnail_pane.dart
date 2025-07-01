@@ -1,8 +1,9 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
+
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/workers/thumbnail_worker.dart';
 
@@ -42,25 +43,27 @@ class ThumbnailPane extends ConsumerWidget {
         itemBuilder: (context, index) {
           final pageNumber = thumbnails.keys.elementAt(index);
           final thumbnailBytes = thumbnails.values.elementAt(index);
-          final gridTile = GridTile(
-            header: GridTileBar(title: Text('$pageNumber')),
-            child: Image.memory(thumbnailBytes),
-          );
+
+          Widget imageWidget = Image.memory(thumbnailBytes);
 
           if (darkMode) {
-            return shader.when(
+            imageWidget = shader.when(
               data: (fs) => ImageFiltered(
                 imageFilter: ImageFilter.shader(fs),
-                child: gridTile,
+                child: imageWidget,
               ),
-              loading: () => gridTile,
+              loading: () => imageWidget,
               error: (e, s) {
-                return gridTile;
+                // Maybe log the error
+                return imageWidget;
               },
             );
-          } else {
-            return gridTile;
           }
+
+          return GridTile(
+            header: GridTileBar(title: Text('$pageNumber')),
+            child: imageWidget,
+          );
         },
       );
     }

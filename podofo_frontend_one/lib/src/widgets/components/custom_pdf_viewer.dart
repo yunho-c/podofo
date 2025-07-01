@@ -15,7 +15,8 @@ class CustomPdfViewer extends ConsumerStatefulWidget {
 class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   @override
   Widget build(BuildContext context) {
-    final filePath = ref.watch(filePathProvider);
+    // final filePath = ref.watch(filePathProvider);
+    final pdfDocument = ref.watch(currentDocumentProvider);
     final pdfViewerController = ref.watch(pdfViewerControllerProvider);
     final theme = ref.watch(themeProvider);
     final bool darkMode = theme == ThemeMode.dark;
@@ -23,7 +24,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
 
     Widget buildPdfViewer() {
       return PdfViewer.file(
-        filePath!,
+        // filePath!,
+        pdfDocument!.sourceName,
         controller: pdfViewerController,
         params: PdfViewerParams(
           textSelectionParams: const PdfTextSelectionParams(
@@ -66,7 +68,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     }
 
     Widget body;
-    if (filePath == null) {
+    // if (filePath == null) {
+    if (pdfDocument == null) {
       body = const Center(
         child: Text('Press the folder icon to pick a PDF file.'),
       );
@@ -96,8 +99,6 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     );
   }
 }
-
-
 
 // // import 'dart:async';
 // import 'package:flutter/gestures.dart';

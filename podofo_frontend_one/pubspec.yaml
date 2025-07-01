@@ -49,6 +49,7 @@ dependencies:
   pdfrx:
     path: ../../pdfrx
   url_launcher: ^6.3.1
+  path: ^1.9.0
   image: ^4.5.4
 
 dev_dependencies:

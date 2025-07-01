@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 
-class OutlinePane extends StatelessWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdfrx/pdfrx.dart';
+
+import 'package:podofo_one/src/providers/providers.dart';
+
+class OutlinePane extends ConsumerWidget {
   const OutlinePane({super.key});
 
   @override

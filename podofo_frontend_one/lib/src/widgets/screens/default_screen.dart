@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:window_manager/window_manager.dart';
+
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/widgets/components/command_palette.dart';
@@ -7,8 +10,7 @@ import 'package:podofo_one/src/widgets/areas/main_area.dart';
 import 'package:podofo_one/src/widgets/areas/sidebar.dart';
 import 'package:podofo_one/src/widgets/panes/pane_widget.dart';
 import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
-import 'package:podofo_one/src/widgets/panes/pane_data.dart';
-import 'package:window_manager/window_manager.dart';
+import 'package:podofo_one/src/data/pane_data.dart';
 
 class DefaultScreen extends ConsumerWidget {
   const DefaultScreen({super.key});
@@ -63,7 +65,7 @@ class DefaultScreen extends ConsumerWidget {
                           final tab = tabs[index];
                           final isSelected = index == currentTabIndex;
                           return TabWidget(
-                            tab: tab,
+                            document: tab,
                             isSelected: isSelected,
                             onTap: () =>
                                 ref
@@ -71,16 +73,30 @@ class DefaultScreen extends ConsumerWidget {
                                         .state =
                                     index,
                             onClose: () {
-                              ref.read(tabsProvider.notifier).state = [
-                                for (int i = 0; i < tabs.length; i++)
-                                  if (i != index) tabs[i],
-                              ];
-                              if (currentTabIndex >= tabs.length - 1) {
+                              final oldTabsCount = tabs.length;
+                              final oldTabIndex = currentTabIndex;
+
+                              if (oldTabsCount == 1) {
                                 ref
                                         .read(currentTabIndexProvider.notifier)
                                         .state =
-                                    tabs.length - 2;
+                                    0;
+                              } else if (index < oldTabIndex) {
+                                ref
+                                        .read(currentTabIndexProvider.notifier)
+                                        .state =
+                                    oldTabIndex - 1;
+                              } else if (index == oldTabIndex &&
+                                  oldTabIndex == oldTabsCount - 1) {
+                                ref
+                                        .read(currentTabIndexProvider.notifier)
+                                        .state =
+                                    oldTabIndex - 1;
                               }
+
+                              ref
+                                  .read(loadedDocumentsProvider.notifier)
+                                  .removeDocument(tab.filePath);
                             },
                           );
                         },
