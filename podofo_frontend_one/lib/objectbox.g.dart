@@ -15,6 +15,7 @@ import 'package:objectbox/objectbox.dart' as obx;
 import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
 import 'src/data/document_entity.dart';
+import 'src/data/thumbnail_entity.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
 
@@ -35,6 +36,41 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(2, 288813176142781929),
         name: 'filePath',
         type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(2, 3363719076893792824),
+    name: 'ThumbnailEntity',
+    lastPropertyId: const obx_int.IdUid(4, 1073596380333381628),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 6586970717967998531),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 1112441783418710889),
+        name: 'filePath',
+        type: 9,
+        flags: 8,
+        indexId: const obx_int.IdUid(1, 4434960590162131309),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 8686004414725114554),
+        name: 'pageNumber',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 1073596380333381628),
+        name: 'thumbnailData',
+        type: 23,
         flags: 0,
       ),
     ],
@@ -81,8 +117,8 @@ Future<obx.Store> openStore({
 obx_int.ModelDefinition getObjectBoxModel() {
   final model = obx_int.ModelInfo(
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(1, 892949797226551813),
-    lastIndexId: const obx_int.IdUid(0, 0),
+    lastEntityId: const obx_int.IdUid(2, 3363719076893792824),
+    lastIndexId: const obx_int.IdUid(1, 4434960590162131309),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -128,6 +164,54 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    ThumbnailEntity: obx_int.EntityDefinition<ThumbnailEntity>(
+      model: _entities[1],
+      toOneRelations: (ThumbnailEntity object) => [],
+      toManyRelations: (ThumbnailEntity object) => {},
+      getId: (ThumbnailEntity object) => object.id,
+      setId: (ThumbnailEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (ThumbnailEntity object, fb.Builder fbb) {
+        final filePathOffset = object.filePath == null
+            ? null
+            : fbb.writeString(object.filePath!);
+        final thumbnailDataOffset = object.thumbnailData == null
+            ? null
+            : fbb.writeListInt8(object.thumbnailData!);
+        fbb.startTable(5);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, filePathOffset);
+        fbb.addInt64(2, object.pageNumber);
+        fbb.addOffset(3, thumbnailDataOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final filePathParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 6);
+        final pageNumberParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          8,
+        );
+        final thumbnailDataParam =
+            const fb.Uint8ListReader(
+                  lazy: false,
+                ).vTableGetNullable(buffer, rootOffset, 10)
+                as Uint8List?;
+        final object = ThumbnailEntity(
+          filePath: filePathParam,
+          pageNumber: pageNumberParam,
+          thumbnailData: thumbnailDataParam,
+        )..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0);
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -143,5 +227,28 @@ class DocumentEntity_ {
   /// See [DocumentEntity.filePath].
   static final filePath = obx.QueryStringProperty<DocumentEntity>(
     _entities[0].properties[1],
+  );
+}
+
+/// [ThumbnailEntity] entity fields to define ObjectBox queries.
+class ThumbnailEntity_ {
+  /// See [ThumbnailEntity.id].
+  static final id = obx.QueryIntegerProperty<ThumbnailEntity>(
+    _entities[1].properties[0],
+  );
+
+  /// See [ThumbnailEntity.filePath].
+  static final filePath = obx.QueryStringProperty<ThumbnailEntity>(
+    _entities[1].properties[1],
+  );
+
+  /// See [ThumbnailEntity.pageNumber].
+  static final pageNumber = obx.QueryIntegerProperty<ThumbnailEntity>(
+    _entities[1].properties[2],
+  );
+
+  /// See [ThumbnailEntity.thumbnailData].
+  static final thumbnailData = obx.QueryByteVectorProperty<ThumbnailEntity>(
+    _entities[1].properties[3],
   );
 }

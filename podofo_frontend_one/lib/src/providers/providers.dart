@@ -108,7 +108,8 @@ final shaderProvider = FutureProvider<FragmentShader>((ref) async {
 
 final thumbnailsProvider =
     StateNotifierProvider<ThumbnailsNotifier, ThumbnailsState>((ref) {
-      final notifier = ThumbnailsNotifier();
+      final objectbox = ref.watch(objectboxProvider);
+      final notifier = ThumbnailsNotifier(objectbox);
       ref.listen(currentDocumentProvider, (_, doc) {
         if (doc != null) {
           notifier.generateThumbnails(doc.pdfDocument);

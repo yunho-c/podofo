@@ -21,10 +21,41 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "2:3363719076893792824",
+      "lastPropertyId": "4:1073596380333381628",
+      "name": "ThumbnailEntity",
+      "properties": [
+        {
+          "id": "1:6586970717967998531",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1112441783418710889",
+          "name": "filePath",
+          "type": 9,
+          "flags": 8,
+          "indexId": "1:4434960590162131309"
+        },
+        {
+          "id": "3:8686004414725114554",
+          "name": "pageNumber",
+          "type": 6
+        },
+        {
+          "id": "4:1073596380333381628",
+          "name": "thumbnailData",
+          "type": 23
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "1:892949797226551813",
-  "lastIndexId": "0:0",
+  "lastEntityId": "2:3363719076893792824",
+  "lastIndexId": "1:4434960590162131309",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,
