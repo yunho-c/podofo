@@ -1,11 +1,11 @@
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/main.dart';
 import 'package:podofo_one/objectbox.g.dart';

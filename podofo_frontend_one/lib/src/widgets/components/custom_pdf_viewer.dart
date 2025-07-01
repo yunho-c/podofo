@@ -1,9 +1,12 @@
-import 'package:flutter/material.dart';
+import 'dart:ui';
+// import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import 'package:podofo_one/src/providers/providers.dart';
-import 'dart:ui';
 
 class CustomPdfViewer extends ConsumerStatefulWidget {
   const CustomPdfViewer({super.key});
@@ -53,13 +56,15 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
               : const Color.fromRGBO(250, 250, 250, 1.0),
           pageDropShadow: darkMode
               ? const BoxShadow(
-                  color: Colors.white54,
+                  // color: Colors.white54, // material
+                  color: Colors.white, // shadcn
                   blurRadius: 4,
                   spreadRadius: 0,
                   offset: Offset(0, 4),
                 )
               : const BoxShadow(
-                  color: Colors.black54,
+                  // color: Colors.black54, // material
+                  color: Colors.black,
                   blurRadius: 4,
                   spreadRadius: 0,
                   offset: Offset(0, 4),
@@ -92,10 +97,11 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     }
 
     return Expanded(
-      child: Scaffold(
-        appBar: AppBar(actions: const []),
-        body: body,
-      ),
+      // child: Scaffold(
+      //   appBar: AppBar(actions: const []),
+      //   body: body,
+      // ), // material
+      child: body, // shadcn
     );
   }
 }

@@ -1,15 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'package:podofo_one/src/providers/providers.dart';
-import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/widgets/components/command_palette.dart';
 import 'package:podofo_one/src/widgets/areas/main_area.dart';
+import 'package:podofo_one/src/widgets/areas/header.dart';
 import 'package:podofo_one/src/widgets/areas/sidebar.dart';
 import 'package:podofo_one/src/widgets/panes/pane_widget.dart';
-import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
 import 'package:podofo_one/src/data/pane_data.dart';
 
 class DefaultScreen extends ConsumerWidget {
@@ -17,8 +16,6 @@ class DefaultScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tabs = ref.watch(tabsProvider);
-    final currentTabIndex = ref.watch(currentTabIndexProvider);
     final showCommandPalette = ref.watch(commandPaletteProvider);
 
     return Scaffold(
@@ -40,88 +37,19 @@ class DefaultScreen extends ConsumerWidget {
                       },
                       child: Container(
                         width: 200,
-                        height: 20,
+                        height: 15,
                         decoration: BoxDecoration(
                           color: Theme.of(
                             context,
-                          ).colorScheme.onSurface.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(10),
+                          ).colorScheme.onSurface.withAlpha(50),
+                          borderRadius: BorderRadius.circular(5),
                         ),
                       ),
                     ),
                   ),
                 ),
               ),
-              Container(
-                height: 40,
-                color: Theme.of(context).colorScheme.surface,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: tabs.length,
-                        itemBuilder: (context, index) {
-                          final tab = tabs[index];
-                          final isSelected = index == currentTabIndex;
-                          return TabWidget(
-                            document: tab,
-                            isSelected: isSelected,
-                            onTap: () =>
-                                ref
-                                        .read(currentTabIndexProvider.notifier)
-                                        .state =
-                                    index,
-                            onClose: () {
-                              final oldTabsCount = tabs.length;
-                              final oldTabIndex = currentTabIndex;
-
-                              if (oldTabsCount == 1) {
-                                ref
-                                        .read(currentTabIndexProvider.notifier)
-                                        .state =
-                                    0;
-                              } else if (index < oldTabIndex) {
-                                ref
-                                        .read(currentTabIndexProvider.notifier)
-                                        .state =
-                                    oldTabIndex - 1;
-                              } else if (index == oldTabIndex &&
-                                  oldTabIndex == oldTabsCount - 1) {
-                                ref
-                                        .read(currentTabIndexProvider.notifier)
-                                        .state =
-                                    oldTabIndex - 1;
-                              }
-
-                              ref
-                                  .read(loadedDocumentsProvider.notifier)
-                                  .removeDocument(tab.filePath);
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.brightness_6),
-                      onPressed: () {
-                        final currentTheme = ref.read(themeProvider);
-                        ref
-                            .read(themeProvider.notifier)
-                            .state = currentTheme == ThemeMode.dark
-                            ? ThemeMode.light
-                            : ThemeMode.dark;
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.folder_open),
-                      onPressed: () => {
-                        ref.read(filePathProvider.notifier).pickFile(),
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              Header(),
               Expanded(
                 child: Row(
                   children: [

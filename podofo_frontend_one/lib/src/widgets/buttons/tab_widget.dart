@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
+
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/utils/responsive_icon.dart';
@@ -34,11 +36,21 @@ class _TabWidgetState extends State<TabWidget> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           color: widget.isSelected
-              ? Theme.of(context).colorScheme.tertiary
+              ? Theme.of(context).colorScheme.muted
               : Colors.transparent,
           child: Row(
             children: [
-              Text(widget.document.title),
+              Text(
+                widget.document.title,
+                style: widget.isSelected
+                    ? TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(context).colorScheme.foreground,
+                      )
+                    : TextStyle(
+                        color: Theme.of(context).colorScheme.mutedForeground,
+                      ),
+              ),
               const SizedBox(width: 8),
               if (_isHovering)
                 IconButton(
@@ -51,6 +63,7 @@ class _TabWidgetState extends State<TabWidget> {
                     ),
                   ),
                   onPressed: widget.onClose,
+                  variance: ButtonStyle.ghostIcon(),
                 ),
             ],
           ),

@@ -1,5 +1,7 @@
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class SideBarItem {
   final Widget icon;
@@ -20,7 +22,17 @@ class SideBar extends ConsumerWidget {
 
     return Container(
       width: 50,
-      color: Theme.of(context).colorScheme.surface.withOpacity(0.2),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.background,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(15),
+            spreadRadius: 0,
+            blurRadius: 5,
+            offset: const Offset(1, 0),
+          ),
+        ],
+      ),
       child: Column(
         children: items
             .map((item) => _buildIcon(ref, item.icon, item.pane, activePane))
@@ -37,15 +49,7 @@ class SideBar extends ConsumerWidget {
   ) {
     final bool isSelected = pane == activePane;
     return IconButton(
-      icon: isSelected
-          ? icon
-          : ColorFiltered(
-              colorFilter: const ColorFilter.mode(
-                Colors.grey,
-                BlendMode.srcIn,
-              ),
-              child: icon,
-            ),
+      icon: icon,
       onPressed: () {
         if (isSelected) {
           ref.read(provider.notifier).state = null;
@@ -53,6 +57,7 @@ class SideBar extends ConsumerWidget {
           ref.read(provider.notifier).state = pane;
         }
       },
+      variance: ButtonStyle.ghostIcon(),
     );
   }
 }
