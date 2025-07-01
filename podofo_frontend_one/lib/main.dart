@@ -1,19 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
-import 'package:podofo_one/src/widgets/screens/default_screen.dart';
-import 'package:podofo_one/src/providers/providers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:window_manager/window_manager.dart';
+
+import 'package:podofo_one/src/data/objectbox.dart';
+import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/widgets/screens/default_screen.dart';
+
+late final ObjectBox objectbox;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  objectbox = await ObjectBox.create();
   await hotKeyManager.unregisterAll();
   await _configureWindowManager();
-
-  final windowListener = _MyWindowListener();
-  windowManager.addListener(windowListener);
+  windowManager.addListener(_MyWindowListener());
 
   runApp(const ProviderScope(child: MyApp()));
 }
@@ -47,8 +50,9 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    _registerHotKeys(ref);
+    ref.watch(hotkeySetupProvider);
     final themeMode = ref.watch(themeProvider);
+    final initialDocuments = ref.watch(initialDocumentsProvider);
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,
@@ -56,20 +60,11 @@ class MyApp extends ConsumerWidget {
       theme: ThemeData.light(),
       darkTheme: ThemeData.dark(),
       themeMode: themeMode,
-      home: const DefaultScreen(),
-    );
-  }
-
-  void _registerHotKeys(WidgetRef ref) {
-    hotKeyManager.register(
-      HotKey(
-        key: PhysicalKeyboardKey.keyP,
-        modifiers: [HotKeyModifier.control],
-        scope: HotKeyScope.inapp,
+      home: initialDocuments.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (err, stack) => Center(child: Text('Error: $err')),
+        data: (_) => const DefaultScreen(),
       ),
-      keyDownHandler: (_) {
-        ref.read(commandPaletteProvider.notifier).update((state) => !state);
-      },
     );
   }
 }

@@ -6,7 +6,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import 'package:podofo_one/src/providers/providers.dart';
 
-class OutlinePane extends ConsumerWidget {
+class OutlinePane extends StatelessWidget {
   const OutlinePane({super.key});
 
   @override

@@ -12,17 +12,18 @@ class ThumbnailPane extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final filePath = ref.watch(filePathProvider);
+    final currentDoc = ref.watch(currentDocumentProvider);
     final theme = ref.watch(themeProvider);
     final bool darkMode = theme == ThemeMode.dark;
     final shader = ref.watch(shaderProvider);
 
-    if (filePath == null) {
+    if (currentDoc == null) {
       return const Center(child: Text('No document loaded'));
     } else {
       final thumbnailsState = ref.watch(thumbnailsProvider);
-      final thumbnails = thumbnailsState.thumbnails[filePath];
-      final isGenerating = thumbnailsState.isGenerating[filePath] ?? false;
+      final thumbnails = thumbnailsState.thumbnails[currentDoc.filePath];
+      final isGenerating =
+          thumbnailsState.isGenerating[currentDoc.filePath] ?? false;
 
       if (isGenerating) {
         return const Center(child: CircularProgressIndicator());

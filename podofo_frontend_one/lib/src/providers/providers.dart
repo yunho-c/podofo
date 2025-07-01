@@ -1,13 +1,21 @@
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'package:file_picker/file_picker.dart';
+import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:pdfrx/pdfrx.dart';
 
+import 'package:podofo_one/main.dart';
+import 'package:podofo_one/objectbox.g.dart';
 import 'package:podofo_one/src/data/document_data.dart';
+import 'package:podofo_one/src/data/document_entity.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/workers/thumbnail_worker.dart';
+
+
+final objectboxProvider = Provider((ref) => objectbox);
 
 final leftPaneProvider = StateProvider<dynamic>((ref) => null);
 final rightPaneProvider = StateProvider<dynamic>((ref) => null);
@@ -37,14 +45,32 @@ class FilePathNotifier extends Notifier<String?> {
   }
 }
 
+final initialDocumentsProvider =
+    FutureProvider<Map<String, Document>>((ref) async {
+  final box = ref.read(objectboxProvider).store.box<DocumentEntity>();
+  final documents = box.getAll();
+  final Map<String, Document> loadedDocuments = {};
+
+  for (final doc in documents) {
+    final pdfDocument = await PdfDocument.openFile(doc.filePath);
+    loadedDocuments[doc.filePath] = Document(
+      filePath: doc.filePath,
+      pdfDocument: pdfDocument,
+    );
+  }
+  return loadedDocuments;
+});
+
 final loadedDocumentsProvider =
     NotifierProvider<LoadedDocumentsNotifier, Map<String, Document>>(
-      LoadedDocumentsNotifier.new,
-    );
+  LoadedDocumentsNotifier.new,
+);
 
 class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
   @override
-  Map<String, Document> build() => {};
+  Map<String, Document> build() {
+    return ref.watch(initialDocumentsProvider).asData?.value ?? {};
+  }
 
   void addDocument(String filePath) async {
     if (state.containsKey(filePath)) {
@@ -62,13 +88,13 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
   }
 }
 
-final currentDocumentProvider = Provider<PdfDocument?>((ref) {
-  final tabs = ref.watch(tabsProvider);
+final currentDocumentProvider = Provider<Document?>((ref) {
+  final loadedDocuments = ref.watch(loadedDocumentsProvider);
   final currentTabIndex = ref.watch(currentTabIndexProvider);
-  if (tabs.isEmpty || currentTabIndex >= tabs.length) {
+  if (loadedDocuments.isEmpty || currentTabIndex >= loadedDocuments.length) {
     return null;
   }
-  return tabs[currentTabIndex].pdfDocument;
+  return loadedDocuments.values.toList()[currentTabIndex];
 });
 
 final pdfViewerControllerProvider = StateProvider<PdfViewerController>(
@@ -85,8 +111,21 @@ final thumbnailsProvider =
       final notifier = ThumbnailsNotifier();
       ref.listen(currentDocumentProvider, (_, doc) {
         if (doc != null) {
-          notifier.generateThumbnails(doc);
+          notifier.generateThumbnails(doc.pdfDocument);
         }
       });
       return notifier;
     });
+
+final hotkeySetupProvider = Provider<void>((ref) {
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.keyP,
+      modifiers: [HotKeyModifier.control],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      ref.read(commandPaletteProvider.notifier).update((state) => !state);
+    },
+  );
+});
