@@ -1,4 +1,6 @@
-import 'package:flutter/material.dart';
+// import 'package:flutter/material.dart';
+
+import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class CommandPalette extends StatelessWidget {
   const CommandPalette({super.key});
@@ -10,7 +12,8 @@ class CommandPalette extends StatelessWidget {
         width: 600,
         height: 400,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
+          // color: Theme.of(context).colorScheme.surface,
+          color: Theme.of(context).colorScheme.background,
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
@@ -25,11 +28,11 @@ class CommandPalette extends StatelessWidget {
           children: [
             TextField(
               autofocus: true,
-              decoration: InputDecoration(
-                contentPadding: EdgeInsets.all(16),
-                border: InputBorder.none,
-                hintText: 'Search files by name',
-              ),
+              // decoration: InputDecoration(
+              //   contentPadding: EdgeInsets.all(16),
+              //   border: InputBorder.none,
+              //   hintText: 'Search files by name',
+              // ),
             ),
             Divider(height: 1),
             Expanded(child: Center(child: Text('No results found'))),

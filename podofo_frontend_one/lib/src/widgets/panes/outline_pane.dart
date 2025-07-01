@@ -20,85 +20,75 @@ List<TreeNode<PdfOutlineNode>> _pdfOutlineToTreeNodes(
   ];
 }
 
-class OutlinePane extends ConsumerWidget {
+class OutlinePane extends ConsumerStatefulWidget {
   const OutlinePane({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final controller = ref.watch(pdfViewerControllerProvider);
-    final document = ref.watch(currentDocumentProvider);
+  ConsumerState<OutlinePane> createState() => _OutlinePaneState();
+}
 
-    if (document == null) {
-      return const Center(child: Text('No document loaded'));
+class _OutlinePaneState extends ConsumerState<OutlinePane> {
+  List<TreeNode<PdfOutlineNode>>? _treeNodes;
+
+  @override
+  Widget build(BuildContext context) {
+    final outline = ref.watch(outlineProvider);
+
+    if (outline.isLoading) {
+      _treeNodes = null;
+      return const Center(child: CircularProgressIndicator());
     }
 
-    return FutureBuilder<List<PdfOutlineNode>>(
-      future: document.pdfDocument.loadOutline(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
-        }
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final outline = snapshot.data!;
-        if (outline.isEmpty) {
-          return const Center(child: Text('No outline found'));
-        }
+    if (outline.hasError) {
+      _treeNodes = null;
+      return Center(child: Text('Error: ${outline.error}'));
+    }
 
-        // return _OutlineTreeView(
-        //   outline: outline,
-        //   onNodeTap: (dest) => controller.goToDest(dest),
-        // );
+    final outlineData = outline.value;
 
-        final outlineTree = _pdfOutlineToTreeNodes(outline);
+    if (outlineData == null || outlineData.isEmpty) {
+      _treeNodes = null;
+      return const Center(child: Text('No outline found'));
+    }
 
-        return TreeView<PdfOutlineNode>(
-          nodes: outlineTree,
-          // expandIcon: expandIcon,
-          shrinkWrap: true,
-          // recursiveSelection: recursiveSelection,
-          // branchLine: usePath ? BranchLine.path : BranchLine.line,
-          // onSelectionChanged: TreeView.defaultSelectionHandler(
-          //   treeItems,
-          //   (value) {
-          //     setState(() {
-          //       treeItems = value;
-          //     });
-          //   },
-          // ),
-          builder: (context, node) {
-            return TreeItemView(
-              onPressed: () {},
-              trailing: node.leaf
-                  ? Container(
-                      width: 16,
-                      height: 16,
-                      alignment: Alignment.center,
-                      child: const CircularProgressIndicator(),
-                    )
-                  : null,
-              leading: node.leaf
-                  ? const Icon(BootstrapIcons.fileImage)
-                  : Icon(
-                      node.expanded
-                          ? BootstrapIcons.folder2Open
-                          : BootstrapIcons.folder2,
-                    ),
-              onExpand: TreeView.defaultItemExpandHandler(outlineTree, node, (
-                value,
-              ) {
-                // setState(() {
-                //   outlineTree = value;
-                // });
-              }),
-              child: Text(node.data.title),
-            );
-          },
-        );
+    _treeNodes ??= _pdfOutlineToTreeNodes(outlineData);
 
-        // return Text(outline.toString());
-      },
+    return Align(
+      alignment: Alignment.topCenter,
+      child: TreeView<PdfOutlineNode>(
+        nodes: _treeNodes!,
+        expandIcon: true,
+        // shrinkWrap: true,
+        shrinkWrap: false,
+        builder: (context, node) {
+          return TreeItemView(
+            onPressed: () {
+              if (node.data.dest != null) {
+                ref.read(pdfViewerControllerProvider).goToDest(node.data.dest!);
+              }
+            },
+            // leading: node.leaf
+            //     ? const Icon(BootstrapIcons.dot)
+            //     : Icon(
+            //         node.expanded
+            //             ? BootstrapIcons.folder2Open
+            //             : BootstrapIcons.folder2,
+            //       ),
+            trailing: null,
+            onExpand: TreeView.defaultItemExpandHandler(_treeNodes!, node, (
+              value,
+            ) {
+              setState(() {
+                _treeNodes = value;
+              });
+            }),
+            child: Text(
+              node.data.title.trim(),
+              style: TextStyle(color: Theme.of(context).colorScheme.primary),
+            ),
+          );
+        },
+      ),
     );
   }
 }

@@ -28,7 +28,7 @@ class SideBar extends ConsumerWidget {
           BoxShadow(
             color: Colors.black.withAlpha(15),
             spreadRadius: 0,
-            blurRadius: 5,
+            blurRadius: 10,
             offset: const Offset(1, 0),
           ),
         ],

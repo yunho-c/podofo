@@ -57,14 +57,16 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
           pageDropShadow: darkMode
               ? const BoxShadow(
                   // color: Colors.white54, // material
-                  color: Colors.white, // shadcn
+                  // color: Colors.white, // shadcn
+                  color: Color.fromRGBO(255, 255, 255, 0.54), // shadcn OPT2
                   blurRadius: 4,
                   spreadRadius: 0,
                   offset: Offset(0, 4),
                 )
               : const BoxShadow(
                   // color: Colors.black54, // material
-                  color: Colors.black,
+                  // color: Colors.black, // shadcn
+                  color: Color.fromRGBO(0, 0, 0, 0.54), // shadcn OPT2
                   blurRadius: 4,
                   spreadRadius: 0,
                   offset: Offset(0, 4),

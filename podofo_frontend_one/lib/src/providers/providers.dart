@@ -97,6 +97,14 @@ final currentDocumentProvider = Provider<Document?>((ref) {
   return loadedDocuments.values.toList()[currentTabIndex];
 });
 
+final outlineProvider = FutureProvider<List<PdfOutlineNode>>((ref) async {
+  final document = ref.watch(currentDocumentProvider);
+  if (document == null) {
+    return [];
+  }
+  return await document.pdfDocument.loadOutline();
+});
+
 final pdfViewerControllerProvider = StateProvider<PdfViewerController>(
   (ref) => PdfViewerController(),
 );
