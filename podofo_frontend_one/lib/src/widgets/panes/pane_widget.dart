@@ -25,10 +25,10 @@ class PaneWidget extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(20),
                   child: Text(
                     activeItem.name,
-                    style: Theme.of(context).typography.xSmall.copyWith(
+                    style: Theme.of(context).typography.small.copyWith(
                       color: Theme.of(context).colorScheme.mutedForeground,
                     ),
                   ).semiBold(),

@@ -2,7 +2,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'package:podofo_one/src/data/objectbox.dart';
 import 'package:podofo_one/src/providers/providers.dart';
@@ -31,7 +30,7 @@ class MyApp extends ConsumerWidget {
     final initialDocuments = ref.watch(initialDocumentsProvider);
 
     Typography typography = const Typography.geist().copyWith(
-      sans: GoogleFonts.urbanist(),
+      sans: const TextStyle(fontFamily: 'Urbanist'),
     );
 
     return ShadcnApp(

@@ -42,11 +42,11 @@ class _TabWidgetState extends State<TabWidget> {
                 widget.document.title,
                 style: widget.isSelected
                     ? TextStyle(
-                        fontWeight: FontWeight.w500,
+                        fontWeight: FontWeight.w600,
                         color: Theme.of(context).colorScheme.foreground,
                       )
                     : TextStyle(
-                        fontWeight: FontWeight.w200,
+                        fontWeight: FontWeight.w500,
                         color: Theme.of(context).colorScheme.mutedForeground,
                       ),
               ),
