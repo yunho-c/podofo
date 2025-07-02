@@ -52,9 +52,43 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "3:6978279246222423302",
+      "lastPropertyId": "5:4220086204996451028",
+      "name": "UserState",
+      "properties": [
+        {
+          "id": "1:188818795431092893",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7702284734605549523",
+          "name": "appearance",
+          "type": 9
+        },
+        {
+          "id": "3:6722573925179636413",
+          "name": "highlight",
+          "type": 1
+        },
+        {
+          "id": "4:6531013531422759696",
+          "name": "highlightColor",
+          "type": 9
+        },
+        {
+          "id": "5:4220086204996451028",
+          "name": "previousPosition",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "2:3363719076893792824",
+  "lastEntityId": "3:6978279246222423302",
   "lastIndexId": "1:4434960590162131309",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",

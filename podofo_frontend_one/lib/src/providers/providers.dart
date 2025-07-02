@@ -12,6 +12,7 @@ import 'package:podofo_one/objectbox.g.dart';
 import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/data/document_entity.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
+import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/widgets/areas/sidebar.dart';
 import 'package:podofo_one/src/workers/thumbnail_worker.dart';
 
@@ -179,6 +180,9 @@ final thumbnailsProvider =
       return notifier;
     });
 
+// TODO: Data-ify this, instead of hard-coding.
+// TODO: Persistence (serialization), editor visualization, editing
+// TODO: Real-time visualization for the entire app (toggleable via 'More')
 final hotkeySetupProvider = Provider<void>((ref) {
   hotKeyManager.register(
     HotKey(
@@ -188,6 +192,19 @@ final hotkeySetupProvider = Provider<void>((ref) {
     ),
     keyDownHandler: (_) {
       ref.read(commandPaletteProvider.notifier).update((state) => !state);
+    },
+  );
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.keyH,
+      modifiers: [],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      final currentHighlight = ref.read(userStateNotifierProvider).highlight;
+      ref
+          .read(userStateNotifierProvider.notifier)
+          .setHighlight(!currentHighlight);
     },
   );
 });

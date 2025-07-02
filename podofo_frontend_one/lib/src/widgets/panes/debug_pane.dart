@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class DebugPane extends ConsumerStatefulWidget {
@@ -14,6 +15,7 @@ class _DebugPaneState extends ConsumerState<DebugPane> {
 
   @override
   Widget build(BuildContext context) {
+    final userState = ref.watch(userStateNotifierProvider);
     return Container(
       padding: const EdgeInsets.all(10.0),
       child: Column(
@@ -44,6 +46,26 @@ class _DebugPaneState extends ConsumerState<DebugPane> {
                           },
                         ),
                         Text(_value.value.toStringAsFixed(2)),
+                      ],
+                    ).withPadding(horizontal: 16, vertical: 8),
+                  ).withPadding(top: 8),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Collapsible(
+              children: [
+                const CollapsibleTrigger(child: Text('User State')),
+                CollapsibleContent(
+                  child: OutlinedContainer(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Highlight').small(),
+                        Text('${userState.highlight}'),
+                        Text('Appearance').small(),
+                        Text('${userState.appearance}'),
                       ],
                     ).withPadding(horizontal: 16, vertical: 8),
                   ).withPadding(top: 8),

@@ -5,6 +5,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
+import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
 import 'package:podofo_one/src/widgets/components/hotkey_editor.dart';
 
@@ -16,6 +17,7 @@ class Header extends ConsumerWidget {
     final currentTheme = ref.read(themeModeProvider);
     final currentTabIndex = ref.watch(currentTabIndexProvider);
     final tabs = ref.watch(tabsProvider);
+    final userState = ref.watch(userStateNotifierProvider);
     return Container(
       height: 40,
       color: Theme.of(context).colorScheme.background, // shadcn
@@ -79,8 +81,19 @@ class Header extends ConsumerWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(FontAwesomeIcons.highlighter),
-            onPressed: () => {},
+            icon: FaIcon(
+              FontAwesomeIcons.highlighter,
+              color: userState.highlight
+                  ? Colors.green
+                  : Theme.of(context).colorScheme.foreground,
+            ),
+            onPressed: () {
+              // final currentHighlight = userState.highlight;
+              ref
+                  .read(userStateNotifierProvider.notifier)
+                  // .setHighlight(!currentHighlight);
+                  .setHighlight(!userState.highlight);
+            },
             variance: ButtonStyle.ghostIcon(),
           ),
           IconButton(
@@ -122,6 +135,19 @@ class Header extends ConsumerWidget {
                           MenuButton(
                             child: Text('Utilities'),
                             trailing: Text('⌘⌥U').xSmall.muted,
+                            subMenu: [
+                              MenuButton(child: Text('Smart Rename')),
+                              MenuButton(child: Text('Optimize File Size')),
+                              MenuButton(
+                                child: Text('Re-Draw Text Boundaries'),
+                              ),
+                              MenuButton(
+                                enabled: false,
+                                child: Text('Translate').xSmall.medium.muted,
+                              ),
+                              MenuButton(child: Text('Dynamic')),
+                              MenuButton(child: Text('Static')),
+                            ],
                           ),
                           MenuButton(
                             child: Text('Extensions'),

@@ -16,6 +16,7 @@ import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
 import 'src/data/document_entity.dart';
 import 'src/data/thumbnail_entity.dart';
+import 'src/providers/user_state_provider.dart';
 
 export 'package:objectbox/objectbox.dart'; // so that callers only have to import this file
 
@@ -77,6 +78,46 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(3, 6978279246222423302),
+    name: 'UserState',
+    lastPropertyId: const obx_int.IdUid(5, 4220086204996451028),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 188818795431092893),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 7702284734605549523),
+        name: 'appearance',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 6722573925179636413),
+        name: 'highlight',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 6531013531422759696),
+        name: 'highlightColor',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 4220086204996451028),
+        name: 'previousPosition',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -117,7 +158,7 @@ Future<obx.Store> openStore({
 obx_int.ModelDefinition getObjectBoxModel() {
   final model = obx_int.ModelInfo(
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(2, 3363719076893792824),
+    lastEntityId: const obx_int.IdUid(3, 6978279246222423302),
     lastIndexId: const obx_int.IdUid(1, 4434960590162131309),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
@@ -212,6 +253,56 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    UserState: obx_int.EntityDefinition<UserState>(
+      model: _entities[2],
+      toOneRelations: (UserState object) => [],
+      toManyRelations: (UserState object) => {},
+      getId: (UserState object) => object.id,
+      setId: (UserState object, int id) {
+        object.id = id;
+      },
+      objectToFB: (UserState object, fb.Builder fbb) {
+        final appearanceOffset = fbb.writeString(object.appearance);
+        final highlightColorOffset = object.highlightColor == null
+            ? null
+            : fbb.writeString(object.highlightColor!);
+        final previousPositionOffset = object.previousPosition == null
+            ? null
+            : fbb.writeString(object.previousPosition!);
+        fbb.startTable(6);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, appearanceOffset);
+        fbb.addBool(2, object.highlight);
+        fbb.addOffset(3, highlightColorOffset);
+        fbb.addOffset(4, previousPositionOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+
+        final object = UserState()
+          ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
+          ..appearance = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGet(buffer, rootOffset, 6, '')
+          ..highlight = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            8,
+            false,
+          )
+          ..highlightColor = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 10)
+          ..previousPosition = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 12);
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -250,5 +341,33 @@ class ThumbnailEntity_ {
   /// See [ThumbnailEntity.thumbnailData].
   static final thumbnailData = obx.QueryByteVectorProperty<ThumbnailEntity>(
     _entities[1].properties[3],
+  );
+}
+
+/// [UserState] entity fields to define ObjectBox queries.
+class UserState_ {
+  /// See [UserState.id].
+  static final id = obx.QueryIntegerProperty<UserState>(
+    _entities[2].properties[0],
+  );
+
+  /// See [UserState.appearance].
+  static final appearance = obx.QueryStringProperty<UserState>(
+    _entities[2].properties[1],
+  );
+
+  /// See [UserState.highlight].
+  static final highlight = obx.QueryBooleanProperty<UserState>(
+    _entities[2].properties[2],
+  );
+
+  /// See [UserState.highlightColor].
+  static final highlightColor = obx.QueryStringProperty<UserState>(
+    _entities[2].properties[3],
+  );
+
+  /// See [UserState.previousPosition].
+  static final previousPosition = obx.QueryStringProperty<UserState>(
+    _entities[2].properties[4],
   );
 }
