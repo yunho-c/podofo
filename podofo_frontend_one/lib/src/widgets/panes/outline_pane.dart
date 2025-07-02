@@ -64,7 +64,14 @@ class _OutlinePaneState extends ConsumerState<OutlinePane> {
           return TreeItemView(
             onPressed: () {
               if (node.data.dest != null) {
-                ref.read(pdfViewerControllerProvider).goToDest(node.data.dest!);
+                try {
+                  ref
+                      .read(pdfViewerControllerProvider)
+                      .goToDest(node.data.dest!);
+                } catch (e) {
+                  // FIXME: show error to user
+                  debugPrint('Error: $e');
+                }
               }
             },
             // leading: node.leaf

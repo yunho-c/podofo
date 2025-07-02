@@ -19,7 +19,6 @@ class _DebugPaneState extends ConsumerState<DebugPane> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text('Debug').semiBold().center(),
           Expanded(
             child: Collapsible(
               children: [

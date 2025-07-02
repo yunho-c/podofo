@@ -17,7 +17,7 @@ class CommandPalette extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
           boxShadow: [
             BoxShadow(
-              color: Colors.black,
+              color: Colors.black.withAlpha(50),
               spreadRadius: 5,
               blurRadius: 7,
               offset: const Offset(0, 3),
