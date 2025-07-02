@@ -1,5 +1,6 @@
+import 'dart:async';
 import 'dart:ui';
-// import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -15,7 +16,19 @@ class CustomPdfViewer extends ConsumerStatefulWidget {
   ConsumerState<CustomPdfViewer> createState() => _CustomPdfViewerState();
 }
 
+const int linkHoverScanFreq = 300;
+
 class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
+  OverlayEntry? _overlayEntry;
+  PdfLink? _hoveredLink;
+  Timer? _hoverTimer;
+
+  @override
+  void dispose() {
+    _removeHoverCard();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentDocument = ref.watch(currentDocumentProvider);
@@ -81,17 +94,108 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         child: Text('Press the folder icon to pick a PDF file.'),
       );
     } else {
-      if (darkMode && shader != null) {
-        body = ImageFiltered(
-          imageFilter: ImageFilter.shader(shader),
-          child: buildPdfViewer(),
-        );
-      } else {
-        body = buildPdfViewer();
-      }
+      final viewer = darkMode && shader != null
+          ? ImageFiltered(
+              imageFilter: ImageFilter.shader(shader),
+              child: buildPdfViewer(),
+            )
+          : buildPdfViewer();
+
+      body = MouseRegion(
+        onHover: _onHover,
+        onExit: (_) => _removeHoverCard(),
+        child: viewer,
+      );
     }
 
     return body;
+  }
+
+  void _onHover(PointerHoverEvent event) {
+    final pdfViewerController = ref.read(pdfViewerControllerProvider);
+    if (!pdfViewerController.isReady) return;
+
+    final hitResult = pdfViewerController.getPdfPageHitTestResult(
+      event.localPosition,
+      useDocumentLayoutCoordinates: false,
+    );
+
+    _hoverTimer?.cancel();
+
+    if (hitResult == null) {
+      _removeHoverCard();
+      return;
+    }
+
+    _hoverTimer = Timer(
+      const Duration(milliseconds: linkHoverScanFreq),
+      () async {
+        final links = await hitResult.page.loadLinks();
+        PdfLink? foundLink;
+        String linkType;
+        for (final link in links) {
+          for (final rect in link.rects) {
+            if (rect.containsPoint(hitResult.offset)) {
+              foundLink = link;
+              // linkType = link.url != null ? "web" : "internal"; // util
+              break;
+            }
+          }
+          if (foundLink != null) break;
+        }
+
+        if (!mounted) return;
+
+        if (foundLink != null) {
+          if (_hoveredLink != foundLink) {
+            _removeHoverCard();
+            _hoveredLink = foundLink;
+            if (foundLink.url != null) {
+              // web
+              _showHoverCard(event.position, foundLink.url!.toString());
+            } else if (foundLink.dest != null) {
+              _showHoverCard(
+                event.position,
+                "Page ${foundLink.dest!.pageNumber.toString()}",
+              );
+            }
+          }
+        } else {
+          _removeHoverCard();
+        }
+      },
+    );
+  }
+
+  void _showHoverCard(Offset globalPosition, String url) {
+    _overlayEntry = _createOverlayEntry(globalPosition, url);
+    Overlay.of(context).insert(_overlayEntry!);
+  }
+
+  void _removeHoverCard() {
+    _hoverTimer?.cancel();
+    if (_overlayEntry != null) {
+      _overlayEntry!.remove();
+      _overlayEntry = null;
+    }
+    _hoveredLink = null;
+  }
+
+  OverlayEntry _createOverlayEntry(Offset globalPosition, String url) {
+    return OverlayEntry(
+      builder: (context) => Positioned(
+        left: globalPosition.dx + 15,
+        top: globalPosition.dy + 15,
+        child: IgnorePointer(
+          child: Card(
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text(url, style: Theme.of(context).typography.small),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
