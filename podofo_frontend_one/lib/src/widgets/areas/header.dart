@@ -69,9 +69,9 @@ class Header extends ConsumerWidget {
           IconButton(
             icon: const Icon(Icons.brightness_6),
             onPressed: () {
-              final currentTheme = ref.read(themeProvider);
+              final currentTheme = ref.read(themeModeProvider);
               ref
-                  .read(themeProvider.notifier)
+                  .read(themeModeProvider.notifier)
                   .state = currentTheme == ThemeMode.dark
                   ? ThemeMode.light
                   : ThemeMode.dark;

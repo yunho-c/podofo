@@ -22,7 +22,34 @@ final rightPaneProvider = StateProvider<SideBarItem?>((ref) => null);
 
 final commandPaletteProvider = StateProvider<bool>((ref) => false);
 
-final themeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.dark);
+final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.dark);
+
+// HACK: This is copy-pasted from `main.dart` and does not properly implement
+//       state reactivity.
+Typography typography = const Typography.geist().copyWith(
+  sans: const TextStyle(fontFamily: 'Urbanist'),
+);
+
+final themeDataProvider = Provider<ThemeData>((ref) {
+  final themeMode = ref.watch(themeModeProvider);
+  return switch (themeMode) {
+    ThemeMode.light => ThemeData(
+      typography: typography,
+      colorScheme: ColorSchemes.lightZinc(),
+      radius: 0.5,
+    ),
+    ThemeMode.dark => ThemeData(
+      typography: typography,
+      colorScheme: ColorSchemes.darkZinc(),
+      radius: 0.5,
+    ),
+    _ => ThemeData(
+      typography: typography,
+      colorScheme: ColorSchemes.darkZinc(),
+      radius: 0.5,
+    ),
+  };
+});
 
 final filePathProvider = NotifierProvider<FilePathNotifier, String?>(
   FilePathNotifier.new,

@@ -8,6 +8,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/workers/open_graph_worker.dart';
 
 class CustomPdfViewer extends ConsumerStatefulWidget {
   const CustomPdfViewer({super.key});
@@ -23,6 +24,39 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   PdfLink? _hoveredLink;
   Timer? _hoverTimer;
 
+  Future<void> _fetchAndShowOpenGraph(
+    Offset displayPosition,
+    String url,
+  ) async {
+    final themeData = ref.watch(themeDataProvider);
+    try {
+      // Fetch actual Open Graph data
+      final openGraphData = await fetchOpenGraphData(url);
+
+      final previewContents = Column(
+        spacing: 10.0,
+        children: [
+          if (openGraphData.title != null)
+            Text(openGraphData.title!, style: themeData.typography.h4),
+          // if (openGraphData.title != null) const Gap(5.0),
+          if (openGraphData.description != null)
+            Text(openGraphData.description!, style: themeData.typography.small),
+          if (openGraphData.imageUrl != null)
+            Image.network(openGraphData.imageUrl!),
+          if (openGraphData.siteName != null)
+            Text(openGraphData.siteName!, style: themeData.typography.small),
+          if (openGraphData.url != null)
+            Text(openGraphData.url!, style: themeData.typography.small),
+        ],
+      );
+      _showHoverCard(displayPosition, widget: previewContents);
+    } catch (e) {
+      // Fallback to showing the URL if fetching or parsing fails
+      print('Error fetching Open Graph data for $url: $e');
+      _showHoverCard(displayPosition, text: url);
+    }
+  }
+
   @override
   void dispose() {
     _removeHoverCard();
@@ -33,7 +67,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   Widget build(BuildContext context) {
     final currentDocument = ref.watch(currentDocumentProvider);
     final pdfViewerController = ref.watch(pdfViewerControllerProvider);
-    final theme = ref.watch(themeProvider);
+    final theme = ref.watch(themeModeProvider);
     final bool darkMode = theme == ThemeMode.dark;
     final shader = ref.watch(shaderProvider);
 
@@ -152,12 +186,15 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
             _hoveredLink = foundLink;
             if (foundLink.url != null) {
               // web link
-              _showHoverCard(event.position, foundLink.url!.toString());
+              await _fetchAndShowOpenGraph(
+                event.position,
+                foundLink.url!.toString(),
+              );
             } else if (foundLink.dest != null) {
               // internal link
               _showHoverCard(
                 event.position,
-                "Page ${foundLink.dest!.pageNumber.toString()}",
+                text: "Page ${foundLink.dest!.pageNumber.toString()}",
               );
             }
           }
@@ -168,8 +205,12 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     );
   }
 
-  void _showHoverCard(Offset globalPosition, String url) {
-    _overlayEntry = _createOverlayEntry(globalPosition, url);
+  void _showHoverCard(Offset globalPosition, {String? text, Widget? widget}) {
+    _overlayEntry = _createOverlayEntry(
+      globalPosition,
+      text: text,
+      widget: widget,
+    );
     Overlay.of(context).insert(_overlayEntry!);
   }
 
@@ -182,23 +223,37 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     _hoveredLink = null;
   }
 
-  OverlayEntry _createOverlayEntry(Offset globalPosition, String url) {
+  OverlayEntry _createOverlayEntry(
+    Offset globalPosition, {
+    String? text,
+    Widget? widget,
+  }) {
     return OverlayEntry(
       builder: (context) => Positioned(
         left: globalPosition.dx + 15,
         top: globalPosition.dy + 15,
         child: IgnorePointer(
-          child: Card(
-            boxShadow: [
-              BoxShadow(
-                color: Theme.of(context).colorScheme.primary.withAlpha(50),
-                offset: Offset(0, 2),
-                blurRadius: 2,
+          child: Container(
+            constraints: BoxConstraints(maxWidth: 400),
+            child: Card(
+              boxShadow: [
+                BoxShadow(
+                  color: Theme.of(context).colorScheme.primary.withAlpha(50),
+                  offset: Offset(0, 2),
+                  blurRadius: 2,
+                ),
+              ],
+              child: Padding(
+                padding: const EdgeInsets.all(1.0),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (text != null)
+                      Text(text, style: Theme.of(context).typography.small),
+                    if (widget != null) widget,
+                  ],
+                ),
               ),
-            ],
-            child: Padding(
-              padding: const EdgeInsets.all(1.0),
-              child: Text(url, style: Theme.of(context).typography.small),
             ),
           ),
         ),

@@ -26,7 +26,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(hotkeySetupProvider);
-    final themeMode = ref.watch(themeProvider);
+    final themeMode = ref.watch(themeModeProvider);
     final initialDocuments = ref.watch(initialDocumentsProvider);
 
     Typography typography = const Typography.geist().copyWith(

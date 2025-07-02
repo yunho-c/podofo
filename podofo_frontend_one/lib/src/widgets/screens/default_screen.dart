@@ -17,7 +17,7 @@ class DefaultScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final showCommandPalette = ref.watch(commandPaletteProvider);
-    // final themeMode = ref.watch(themeProvider);
+    // final themeMode = ref.watch(themeModeProvider);
     windowManager.setBackgroundColor(Theme.of(context).colorScheme.background);
 
     return Stack(
