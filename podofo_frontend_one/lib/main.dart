@@ -36,6 +36,9 @@ class MyApp extends ConsumerWidget {
     return ShadcnApp(
       debugShowCheckedModeBanner: false,
       title: 'PoDoFo',
+      background: themeMode == ThemeMode.light
+          ? Color.fromRGBO(255, 255, 255, 1.0)
+          : Color.fromRGBO(0, 0, 0, 1.0),
       theme: ThemeData(
         typography: typography,
         colorScheme: ColorSchemes.lightZinc(),

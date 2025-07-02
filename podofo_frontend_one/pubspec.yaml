@@ -53,7 +53,9 @@ dependencies:
   image: ^4.5.4
   objectbox: ^4.3.0
   objectbox_flutter_libs: ^4.3.0
-  shadcn_flutter: ^0.0.37
+  # shadcn_flutter: ^0.0.37
+  shadcn_flutter:
+    path: ../../shadcn_flutter
   http: ^1.4.0
   html: ^0.15.6
   font_awesome_flutter: ^10.8.0
