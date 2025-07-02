@@ -34,18 +34,19 @@ class SideBar extends ConsumerWidget {
           ),
         ],
       ),
-      child: Column(
-        children:
-            items.map((item) => _buildIcon(ref, item, activeItem)).toList(),
+      child: Padding(
+        padding: const EdgeInsets.all(6),
+        child: Column(
+          spacing: 2.0,
+          children: items
+              .map((item) => _buildIcon(ref, item, activeItem))
+              .toList(),
+        ),
       ),
     );
   }
 
-  Widget _buildIcon(
-    WidgetRef ref,
-    SideBarItem item,
-    SideBarItem? activeItem,
-  ) {
+  Widget _buildIcon(WidgetRef ref, SideBarItem item, SideBarItem? activeItem) {
     final bool isSelected = item == activeItem;
     return IconButton(
       icon: item.icon,

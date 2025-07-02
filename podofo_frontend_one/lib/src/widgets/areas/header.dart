@@ -1,17 +1,21 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
+import 'package:podofo_one/src/widgets/components/hotkey_editor.dart';
 
 class Header extends ConsumerWidget {
   const Header({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final tabs = ref.watch(tabsProvider);
+    final currentTheme = ref.read(themeModeProvider);
     final currentTabIndex = ref.watch(currentTabIndexProvider);
+    final tabs = ref.watch(tabsProvider);
     return Container(
       height: 40,
       color: Theme.of(context).colorScheme.background, // shadcn
@@ -31,8 +35,19 @@ class Header extends ConsumerWidget {
           Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
-              itemCount: tabs.length,
+              itemCount: tabs.length + 1,
               itemBuilder: (context, index) {
+                // HACK: one-off function to append icon to the right of
+                //       the last tab.
+                if (index == tabs.length) {
+                  return IconButton(
+                    icon: const Icon(BootstrapIcons.plus),
+                    onPressed: () => {
+                      ref.read(filePathProvider.notifier).pickFile(),
+                    },
+                    variance: ButtonStyle.ghostIcon(),
+                  );
+                }
                 final tab = tabs[index];
                 final isSelected = index == currentTabIndex;
                 return TabWidget(
@@ -64,9 +79,17 @@ class Header extends ConsumerWidget {
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.brightness_6),
+            icon: const Icon(FontAwesomeIcons.highlighter),
+            onPressed: () => {},
+            variance: ButtonStyle.ghostIcon(),
+          ),
+          IconButton(
+            icon: Icon(
+              currentTheme == ThemeMode.dark
+                  ? Icons.nightlight_outlined
+                  : Icons.wb_sunny_outlined,
+            ),
             onPressed: () {
-              final currentTheme = ref.read(themeModeProvider);
               ref
                   .read(themeModeProvider.notifier)
                   .state = currentTheme == ThemeMode.dark
@@ -76,12 +99,7 @@ class Header extends ConsumerWidget {
             variance: ButtonStyle.ghostIcon(),
           ),
           IconButton(
-            icon: const Icon(Icons.folder_open),
-            onPressed: () => {ref.read(filePathProvider.notifier).pickFile()},
-            variance: ButtonStyle.ghostIcon(),
-          ),
-          IconButton(
-            icon: const Icon(BootstrapIcons.magic),
+            icon: const Icon(BootstrapIcons.headphones),
             onPressed: () => {},
             variance: ButtonStyle.ghostIcon(),
           ),
@@ -112,6 +130,13 @@ class Header extends ConsumerWidget {
                           MenuButton(
                             child: Text('Settings'),
                             trailing: Text('⌘⌥S').xSmall.muted,
+                          ),
+                          MenuButton(
+                            child: Text('Hotkeys'),
+                            trailing: Text('⌘⌥H').xSmall.muted,
+                            onPressed: (context) => {
+                              HotkeyEditor.show(context),
+                            },
                           ),
                           MenuDivider(),
                           // MenuButton(

@@ -22,28 +22,29 @@ class DefaultScreen extends ConsumerWidget {
 
     return Stack(
       children: [
-        Column(
-          children: [
-            TitleBar(),
-            Header(),
-            Expanded(
-              child: Row(
-                children: [
-                  SideBar(
-                    provider: leftPaneProvider,
-                    items: leftPaneData.items,
-                  ),
-                  PaneWidget(provider: leftPaneProvider),
-                  const Expanded(child: MainArea()),
-                  PaneWidget(provider: rightPaneProvider),
-                  SideBar(
-                    provider: rightPaneProvider,
-                    items: rightPaneData.items,
-                  ),
-                ],
+        TitleBar(
+          child: Column(
+            children: [
+              Header(),
+              Expanded(
+                child: Row(
+                  children: [
+                    SideBar(
+                      provider: leftPaneProvider,
+                      items: leftPaneData.items,
+                    ),
+                    PaneWidget(provider: leftPaneProvider),
+                    const Expanded(child: MainArea()),
+                    PaneWidget(provider: rightPaneProvider),
+                    SideBar(
+                      provider: rightPaneProvider,
+                      items: rightPaneData.items,
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
         if (showCommandPalette) const CommandPalette(),
       ],
