@@ -1,33 +1,41 @@
-// import 'package:flutter/material.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import 'package:podofo_one/src/widgets/areas/sidebar.dart';
+
 class PaneWidget extends ConsumerWidget {
-  final StateProvider<dynamic> provider;
+  final StateProvider<SideBarItem?> provider;
 
   const PaneWidget({super.key, required this.provider});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activePane = ref.watch(provider);
+    final activeItem = ref.watch(provider);
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 200),
-      width: activePane == null ? 0 : 250,
-      curve: Curves.easeOutExpo,
-      child: activePane == null ? null : activePane,
+      width: activeItem == null ? 0 : 250,
+      curve: Curves.easeInOutCirc,
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.background,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withAlpha(15),
-            spreadRadius: 0,
-            blurRadius: 5,
-            offset: const Offset(1, 0),
-          ),
-        ],
       ),
+      child: activeItem == null
+          ? null
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    activeItem.name,
+                    style: Theme.of(context).typography.xSmall.copyWith(
+                      color: Theme.of(context).colorScheme.mutedForeground,
+                    ),
+                  ).semiBold(),
+                ),
+                Expanded(child: activeItem.pane),
+              ],
+            ),
     );
   }
 }

@@ -81,17 +81,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         child: Text('Press the folder icon to pick a PDF file.'),
       );
     } else {
-      if (darkMode) {
-        body = shader.when(
-          data: (fs) => ImageFiltered(
-            imageFilter: ImageFilter.shader(fs),
-            child: buildPdfViewer(),
-          ),
-          loading: buildPdfViewer,
-          error: (e, s) {
-            print(e);
-            return buildPdfViewer();
-          },
+      if (darkMode && shader != null) {
+        body = ImageFiltered(
+          imageFilter: ImageFilter.shader(shader),
+          child: buildPdfViewer(),
         );
       } else {
         body = buildPdfViewer();

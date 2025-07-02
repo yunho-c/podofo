@@ -12,13 +12,13 @@ import 'package:podofo_one/objectbox.g.dart';
 import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/data/document_entity.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
+import 'package:podofo_one/src/widgets/areas/sidebar.dart';
 import 'package:podofo_one/src/workers/thumbnail_worker.dart';
-
 
 final objectboxProvider = Provider((ref) => objectbox);
 
-final leftPaneProvider = StateProvider<dynamic>((ref) => null);
-final rightPaneProvider = StateProvider<dynamic>((ref) => null);
+final leftPaneProvider = StateProvider<SideBarItem?>((ref) => null);
+final rightPaneProvider = StateProvider<SideBarItem?>((ref) => null);
 
 final commandPaletteProvider = StateProvider<bool>((ref) => false);
 
@@ -45,8 +45,9 @@ class FilePathNotifier extends Notifier<String?> {
   }
 }
 
-final initialDocumentsProvider =
-    FutureProvider<Map<String, Document>>((ref) async {
+final initialDocumentsProvider = FutureProvider<Map<String, Document>>((
+  ref,
+) async {
   final box = ref.read(objectboxProvider).store.box<DocumentEntity>();
   final documents = box.getAll();
   final Map<String, Document> loadedDocuments = {};
@@ -63,8 +64,8 @@ final initialDocumentsProvider =
 
 final loadedDocumentsProvider =
     NotifierProvider<LoadedDocumentsNotifier, Map<String, Document>>(
-  LoadedDocumentsNotifier.new,
-);
+      LoadedDocumentsNotifier.new,
+    );
 
 class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
   @override
@@ -109,10 +110,35 @@ final pdfViewerControllerProvider = StateProvider<PdfViewerController>(
   (ref) => PdfViewerController(),
 );
 
-final shaderProvider = FutureProvider<FragmentShader>((ref) async {
-  final program = await FragmentProgram.fromAsset('shaders/invert.frag');
-  return program.fragmentShader();
-});
+final shaderProvider = NotifierProvider<ShaderNotifier, FragmentShader?>(
+  ShaderNotifier.new,
+);
+
+class ShaderNotifier extends Notifier<FragmentShader?> {
+  FragmentProgram? _program;
+
+  @override
+  FragmentShader? build() {
+    _loadProgram();
+    return null;
+  }
+
+  Future<void> _loadProgram() async {
+    try {
+      _program = await FragmentProgram.fromAsset('shaders/invert.frag');
+      state = _program?.fragmentShader()?..setFloat(2, 1.0);
+    } catch (e, s) {
+      print('Failed to load shader: $e');
+      print(s);
+    }
+  }
+
+  void setUniform(double value) {
+    if (_program != null) {
+      state = _program!.fragmentShader()..setFloat(2, value);
+    }
+  }
+}
 
 final thumbnailsProvider =
     StateNotifierProvider<ThumbnailsNotifier, ThumbnailsState>((ref) {

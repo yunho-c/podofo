@@ -6,19 +6,20 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 class SideBarItem {
   final Widget icon;
   final dynamic pane;
+  final String name;
 
-  SideBarItem({required this.icon, required this.pane});
+  SideBarItem({required this.icon, required this.pane, required this.name});
 }
 
 class SideBar extends ConsumerWidget {
   final List<SideBarItem> items;
-  final StateProvider<dynamic> provider;
+  final StateProvider<SideBarItem?> provider;
 
   const SideBar({super.key, required this.items, required this.provider});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activePane = ref.watch(provider);
+    final activeItem = ref.watch(provider);
 
     return Container(
       width: 50,
@@ -34,27 +35,25 @@ class SideBar extends ConsumerWidget {
         ],
       ),
       child: Column(
-        children: items
-            .map((item) => _buildIcon(ref, item.icon, item.pane, activePane))
-            .toList(),
+        children:
+            items.map((item) => _buildIcon(ref, item, activeItem)).toList(),
       ),
     );
   }
 
   Widget _buildIcon(
     WidgetRef ref,
-    Widget icon,
-    dynamic pane,
-    dynamic activePane,
+    SideBarItem item,
+    SideBarItem? activeItem,
   ) {
-    final bool isSelected = pane == activePane;
+    final bool isSelected = item == activeItem;
     return IconButton(
-      icon: icon,
+      icon: item.icon,
       onPressed: () {
         if (isSelected) {
           ref.read(provider.notifier).state = null;
         } else {
-          ref.read(provider.notifier).state = pane;
+          ref.read(provider.notifier).state = item;
         }
       },
       variance: ButtonStyle.ghostIcon(),

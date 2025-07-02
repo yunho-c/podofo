@@ -1,5 +1,3 @@
-// import 'package:flutter/material.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:window_manager/window_manager.dart';
@@ -31,19 +29,6 @@ class MyApp extends ConsumerWidget {
     ref.watch(hotkeySetupProvider);
     final themeMode = ref.watch(themeProvider);
     final initialDocuments = ref.watch(initialDocumentsProvider);
-
-    // return MaterialApp(
-    //   debugShowCheckedModeBanner: false,
-    //   title: 'PoDoFo',
-    //   theme: ThemeData.light(),
-    //   darkTheme: ThemeData.dark(),
-    //   themeMode: themeMode,
-    //   home: initialDocuments.when(
-    //     loading: () => const Center(child: CircularProgressIndicator()),
-    //     error: (err, stack) => Center(child: Text('Error: $err')),
-    //     data: (_) => const DefaultScreen(),
-    //   ),
-    // );
 
     Typography typography = const Typography.geist().copyWith(
       sans: GoogleFonts.urbanist(),

@@ -83,6 +83,16 @@ class Header extends ConsumerWidget {
             onPressed: () => {ref.read(filePathProvider.notifier).pickFile()},
             variance: ButtonStyle.ghostIcon(),
           ),
+          IconButton(
+            icon: const Icon(BootstrapIcons.magic),
+            onPressed: () => {},
+            variance: ButtonStyle.ghostIcon(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.more_horiz_outlined),
+            onPressed: () => {},
+            variance: ButtonStyle.ghostIcon(),
+          ),
         ],
       ),
     );

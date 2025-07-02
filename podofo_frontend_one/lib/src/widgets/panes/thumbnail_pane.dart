@@ -1,10 +1,10 @@
 import 'dart:ui';
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide ThemeMode;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:shadcn_flutter/shadcn_flutter.dart'
-    hide ThemeMode, CircularProgressIndicator;
+    hide CircularProgressIndicator;
 
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/workers/thumbnail_worker.dart';
@@ -49,17 +49,10 @@ class ThumbnailPane extends ConsumerWidget {
 
           Widget imageWidget = Image.memory(thumbnailBytes);
 
-          if (darkMode) {
-            imageWidget = shader.when(
-              data: (fs) => ImageFiltered(
-                imageFilter: ImageFilter.shader(fs),
-                child: imageWidget,
-              ),
-              loading: () => imageWidget,
-              error: (e, s) {
-                // Maybe log the error
-                return imageWidget;
-              },
+          if (darkMode && shader != null) {
+            imageWidget = ImageFiltered(
+              imageFilter: ImageFilter.shader(shader),
+              child: imageWidget,
             );
           }
 

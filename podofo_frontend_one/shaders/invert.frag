@@ -1,6 +1,7 @@
 #include <flutter/runtime_effect.glsl>
 
 uniform vec2 uSize;
+uniform float invertStrength;
 uniform sampler2D image;
 
 // Convert color from RGB color space to HSL color space
@@ -93,7 +94,7 @@ void main() {
     vec3 hsl_color = rgb_to_hsl(original_color.rgb);
 
     // Invert the Lightness component
-    hsl_color.z = 1.0 - hsl_color.z;
+    hsl_color.z = invertStrength - hsl_color.z;
 
     // Convert the modified HSL color back to RGB
     vec3 inverted_rgb = hsl_to_rgb(hsl_color);

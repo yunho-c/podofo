@@ -1,5 +1,3 @@
-// import 'package:flutter/material.dart';
-
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/data/document_data.dart';
@@ -48,6 +46,7 @@ class _TabWidgetState extends State<TabWidget> {
                         color: Theme.of(context).colorScheme.foreground,
                       )
                     : TextStyle(
+                        fontWeight: FontWeight.w200,
                         color: Theme.of(context).colorScheme.mutedForeground,
                       ),
               ),

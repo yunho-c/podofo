@@ -23,39 +23,44 @@ final leftPaneData = () {
   return PaneData(
     items: [
       SideBarItem(
+        name: 'Thumbnails',
         icon: const ResponsiveIcon(
           lightThemeIcon: Icon(Icons.grid_view),
           darkThemeIcon: Icon(Icons.grid_view, color: Colors.white),
         ),
-        pane: ThumbnailPane(),
+        pane: const ThumbnailPane(),
       ),
       SideBarItem(
+        name: 'Outline',
         icon: const ResponsiveIcon(
           lightThemeIcon: Icon(Icons.density_medium),
           darkThemeIcon: Icon(Icons.density_medium, color: Colors.white),
         ),
-        pane: OutlinePane(),
+        pane: const OutlinePane(),
       ),
       SideBarItem(
+        name: 'Annotations',
         icon: const ResponsiveIcon(
           lightThemeIcon: Icon(Icons.comment_bank_outlined),
           darkThemeIcon: Icon(Icons.comment_bank_outlined, color: Colors.white),
         ),
-        pane: AnnotationPane(),
+        pane: const AnnotationPane(),
       ),
       SideBarItem(
+        name: 'Search',
         icon: const ResponsiveIcon(
           lightThemeIcon: Icon(Icons.search),
           darkThemeIcon: Icon(Icons.search, color: Colors.white),
         ),
-        pane: SearchPane(),
+        pane: const SearchPane(),
       ),
       SideBarItem(
+        name: 'AI Search',
         icon: const ResponsiveIcon(
           lightThemeIcon: Icon(Icons.android_outlined),
           darkThemeIcon: Icon(Icons.android_outlined, color: Colors.white),
         ),
-        pane: AISearchPane(),
+        pane: const AISearchPane(),
       ),
     ],
   );
@@ -64,32 +69,36 @@ final leftPaneData = () {
 final rightPaneData = PaneData(
   items: [
     SideBarItem(
+      name: 'AI Chat',
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.star_border_outlined),
         darkThemeIcon: Icon(Icons.star_border_outlined, color: Colors.white),
       ),
-      pane: AIChatPane(),
+      pane: const AIChatPane(),
     ),
     SideBarItem(
+      name: 'Timeline',
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.area_chart_outlined),
         darkThemeIcon: Icon(Icons.area_chart_outlined, color: Colors.white),
       ),
-      pane: TimelinePane(),
+      pane: const TimelinePane(),
     ),
     SideBarItem(
+      name: 'Extensions',
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.extension_outlined),
         darkThemeIcon: Icon(Icons.extension_outlined, color: Colors.white),
       ),
-      pane: ExtensionsPane(),
+      pane: const ExtensionsPane(),
     ),
     SideBarItem(
+      name: 'Debug',
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.pest_control_outlined),
         darkThemeIcon: Icon(Icons.pest_control_outlined, color: Colors.white),
       ),
-      pane: DebugPane(),
+      pane: const DebugPane(),
     ),
   ],
 );
