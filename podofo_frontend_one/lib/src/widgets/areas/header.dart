@@ -1,5 +1,3 @@
-// import 'package:flutter/material.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -16,7 +14,6 @@ class Header extends ConsumerWidget {
     final currentTabIndex = ref.watch(currentTabIndexProvider);
     return Container(
       height: 40,
-      // color: Theme.of(context).colorScheme.surface, // material
       color: Theme.of(context).colorScheme.background, // shadcn
       // decoration: BoxDecoration(
       //   color: Theme.of(context).colorScheme.background,
@@ -88,10 +85,69 @@ class Header extends ConsumerWidget {
             onPressed: () => {},
             variance: ButtonStyle.ghostIcon(),
           ),
-          IconButton(
-            icon: const Icon(Icons.more_horiz_outlined),
-            onPressed: () => {},
-            variance: ButtonStyle.ghostIcon(),
+          Builder(
+            builder: (context) {
+              return IconButton(
+                icon: const Icon(Icons.more_vert_rounded),
+                variance: ButtonStyle.ghostIcon(),
+                onPressed: () {
+                  final RenderBox renderBox =
+                      context.findRenderObject() as RenderBox;
+                  final Offset offset = renderBox.localToGlobal(Offset.zero);
+                  showDropdown(
+                    context: context,
+                    position: offset,
+                    builder: (context) {
+                      return DropdownMenu(
+                        children: [
+                          // MenuDivider(),
+                          MenuButton(
+                            child: Text('Utilities'),
+                            trailing: Text('⌘⌥U').xSmall.muted,
+                          ),
+                          MenuButton(
+                            child: Text('Extensions'),
+                            trailing: Text('⌘⌥E').xSmall.muted,
+                          ),
+                          MenuButton(
+                            child: Text('Settings'),
+                            trailing: Text('⌘⌥S').xSmall.muted,
+                          ),
+                          MenuDivider(),
+                          // MenuButton(
+                          //   subMenu: [
+                          MenuButton(
+                            enabled: false,
+                            child: Text('Community').xSmall.medium.muted,
+                          ),
+                          MenuButton(child: Text('Bug Tracker')),
+                          MenuButton(child: Text('Discord')),
+                          //   ],
+                          //   child: Text('Community'),
+                          // ),
+                          MenuButton(child: Text('GitHub')),
+                          MenuButton(child: Text('Blog')),
+                          MenuDivider(),
+                          // MenuButton(
+                          //   enabled: false,
+                          //   child: Text(
+                          //     'Thank you for using PoDoFo!',
+                          //   ).xSmall.medium.muted,
+                          // ),
+                          MenuLabel(child: Text('PoDoFo')),
+                          MenuLabel(child: Text('Version X.X.X').xSmall.muted),
+                          MenuButton(child: Text('Donate')),
+                          MenuButton(child: Text('Contributors')),
+                          MenuButton(child: Text('Open-Source')),
+                        ],
+                      );
+                    },
+                  ).future.then((_) {
+                    print('Closed');
+                  });
+                },
+              );
+            },
           ),
         ],
       ),

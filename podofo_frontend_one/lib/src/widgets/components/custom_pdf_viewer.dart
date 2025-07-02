@@ -38,7 +38,6 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         children: [
           if (openGraphData.title != null)
             Text(openGraphData.title!, style: themeData.typography.h4),
-          // if (openGraphData.title != null) const Gap(5.0),
           if (openGraphData.description != null)
             Text(openGraphData.description!, style: themeData.typography.small),
           if (openGraphData.imageUrl != null)

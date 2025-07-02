@@ -23,19 +23,30 @@ class _MainAreaState extends State<MainArea> {
           child: MouseRegion(
             onEnter: (_) => setState(() => _isHovering = true),
             onExit: (_) => setState(() => _isHovering = false),
-            child: Container(width: 50, height: 50, color: Colors.transparent),
-          ),
-        ),
-        if (_isHovering)
-          Positioned(
-            top: 10,
-            left: 10,
-            child: IconButton(
-              icon: const Icon(Icons.arrow_back_outlined),
-              onPressed: () => {},
-              variance: ButtonStyle.outlineIcon(),
+            child: Container(
+              width: 60, // Reverting to original intended size
+              height: 60, // Reverting to original intended size
+              color: Colors.transparent,
+              child: AnimatedOpacity(
+                opacity: _isHovering ? 1.0 : 0.0,
+                duration: const Duration(milliseconds: 100),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: IconButton(
+                        icon: const Icon(Icons.arrow_back_outlined),
+                        onPressed: () => {},
+                        variance: ButtonStyle.outlineIcon(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
+        ),
       ],
     );
   }
