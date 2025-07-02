@@ -23,11 +23,7 @@ class _MainAreaState extends State<MainArea> {
           child: MouseRegion(
             onEnter: (_) => setState(() => _isHovering = true),
             onExit: (_) => setState(() => _isHovering = false),
-            child: Container(
-              width: 400,
-              height: 400,
-              color: Colors.transparent,
-            ),
+            child: Container(width: 50, height: 50, color: Colors.transparent),
           ),
         ),
         if (_isHovering)

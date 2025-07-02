@@ -151,9 +151,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
             _removeHoverCard();
             _hoveredLink = foundLink;
             if (foundLink.url != null) {
-              // web
+              // web link
               _showHoverCard(event.position, foundLink.url!.toString());
             } else if (foundLink.dest != null) {
+              // internal link
               _showHoverCard(
                 event.position,
                 "Page ${foundLink.dest!.pageNumber.toString()}",
@@ -188,8 +189,15 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         top: globalPosition.dy + 15,
         child: IgnorePointer(
           child: Card(
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withAlpha(50),
+                offset: Offset(0, 2),
+                blurRadius: 2,
+              ),
+            ],
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(1.0),
               child: Text(url, style: Theme.of(context).typography.small),
             ),
           ),
