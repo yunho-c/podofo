@@ -1,4 +1,4 @@
-package com.example.podofo_one
+package com.yunho_cho.podofo_one
 
 import io.flutter.embedding.android.FlutterActivity
 
