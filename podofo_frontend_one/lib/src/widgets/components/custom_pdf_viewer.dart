@@ -78,9 +78,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         currentDocument.filePath,
         controller: pdfViewerController,
         params: PdfViewerParams(
-          textSelectionParams: const PdfTextSelectionParams(
-            textSelectionTriggeredBySwipe: true,
-          ),
+          enableTextSelection: true,
           linkHandlerParams: PdfLinkHandlerParams(
             onLinkTap: (link) {
               if (link.url != null) {
