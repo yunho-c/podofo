@@ -51,12 +51,15 @@ class Header extends ConsumerWidget {
                 // HACK: one-off function to append icon to the right of
                 //       the last tab.
                 if (index == tabs.length) {
-                  return IconButton(
-                    icon: const Icon(BootstrapIcons.plus),
-                    onPressed: () => {
-                      ref.read(filePathProvider.notifier).pickFile(),
-                    },
-                    variance: ButtonStyle.ghostIcon(),
+                  return Container(
+                    padding: EdgeInsets.all(2),
+                    child: IconButton(
+                      icon: const Icon(BootstrapIcons.plus),
+                      onPressed: () => {
+                        ref.read(filePathProvider.notifier).pickFile(),
+                      },
+                      variance: ButtonStyle.ghostIcon(),
+                    ),
                   );
                 }
                 final tab = tabs[index];
