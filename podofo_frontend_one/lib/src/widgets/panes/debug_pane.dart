@@ -3,19 +3,13 @@ import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-class DebugPane extends ConsumerStatefulWidget {
+class DebugPane extends ConsumerWidget {
   const DebugPane({super.key});
 
   @override
-  ConsumerState<DebugPane> createState() => _DebugPaneState();
-}
-
-class _DebugPaneState extends ConsumerState<DebugPane> {
-  SliderValue _value = const SliderValue.single(1.0);
-
-  @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
+    final shaderStrength = ref.watch(shaderStrengthProvider);
     return Container(
       padding: const EdgeInsets.all(10.0),
       child: Column(
@@ -35,17 +29,13 @@ class _DebugPaneState extends ConsumerState<DebugPane> {
                         Slider(
                           min: 0.0,
                           max: 1.0,
-                          value: _value,
+                          value: SliderValue.single(shaderStrength),
                           onChanged: (value) {
-                            setState(() {
-                              _value = value;
-                            });
-                            ref
-                                .read(shaderProvider.notifier)
-                                .setUniform(value.value);
+                            ref.read(shaderStrengthProvider.notifier).state =
+                                value.value;
                           },
                         ),
-                        Text(_value.value.toStringAsFixed(2)),
+                        Text(shaderStrength.toStringAsFixed(2)),
                       ],
                     ).withPadding(horizontal: 16, vertical: 8),
                   ).withPadding(top: 8),

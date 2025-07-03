@@ -150,25 +150,40 @@ class ShaderNotifier extends Notifier<FragmentShader?> {
   @override
   FragmentShader? build() {
     _loadProgram();
-    return null;
+
+    final preference = ref.watch(shaderPreferenceProvider);
+    final strength = ref.watch(shaderStrengthProvider);
+
+    if (_program == null) {
+      return null;
+    }
+
+    if (preference) {
+      // return _program!.fragmentShader()..setFloat(2, strength);
+      ref.read(shaderPreferenceProvider.notifier).state = true;
+    } else {
+      // return _program!.fragmentShader()..setFloat(2, 0.0);
+      ref.read(shaderPreferenceProvider.notifier).state = false;
+    }
+
+    return _program!.fragmentShader()..setFloat(2, strength);
   }
 
   Future<void> _loadProgram() async {
+    if (_program != null) return;
     try {
       _program = await FragmentProgram.fromAsset('shaders/invert.frag');
-      state = _program?.fragmentShader()?..setFloat(2, 1.0);
+      ref.invalidateSelf();
     } catch (e, s) {
       print('Failed to load shader: $e');
       print(s);
     }
   }
-
-  void setUniform(double value) {
-    if (_program != null) {
-      state = _program!.fragmentShader()..setFloat(2, value);
-    }
-  }
 }
+
+final shaderStrengthProvider = StateProvider<double>((ref) => 1.0);
+
+final shaderPreferenceProvider = StateProvider<bool>((ref) => false);
 
 final thumbnailsProvider =
     StateNotifierProvider<ThumbnailsNotifier, ThumbnailsState>((ref) {

@@ -67,8 +67,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     final currentDocument = ref.watch(currentDocumentProvider);
     final pdfViewerController = ref.watch(pdfViewerControllerProvider);
     final theme = ref.watch(themeModeProvider);
-    final bool darkMode = theme == ThemeMode.dark;
     final shader = ref.watch(shaderProvider);
+    final shaderPreference = ref.watch(shaderPreferenceProvider);
+    final bool darkMode = theme == ThemeMode.dark;
 
     Widget buildPdfViewer() {
       if (currentDocument == null) {
@@ -125,7 +126,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         child: Text('Press the folder icon to pick a PDF file.'),
       );
     } else {
-      final viewer = darkMode && shader != null
+      final viewer = darkMode && shaderPreference && shader != null
           ? ImageFiltered(
               imageFilter: ImageFilter.shader(shader),
               child: buildPdfViewer(),

@@ -1,12 +1,11 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
-import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
+import 'package:podofo_one/src/widgets/components/dark_mode_button.dart';
 import 'package:podofo_one/src/widgets/components/dropdowns.dart';
 import 'package:podofo_one/src/widgets/components/highlight_button.dart';
 
@@ -15,7 +14,6 @@ class Header extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentTheme = ref.read(themeModeProvider);
     final currentTabIndex = ref.watch(currentTabIndexProvider);
     final tabs = ref.watch(tabsProvider);
     return Container(
@@ -82,21 +80,7 @@ class Header extends ConsumerWidget {
             ),
           ),
           HighlightButton(),
-          IconButton(
-            icon: Icon(
-              currentTheme == ThemeMode.dark
-                  ? Icons.nightlight_outlined
-                  : Icons.wb_sunny_outlined,
-            ),
-            onPressed: () {
-              ref
-                  .read(themeModeProvider.notifier)
-                  .state = currentTheme == ThemeMode.dark
-                  ? ThemeMode.light
-                  : ThemeMode.dark;
-            },
-            variance: ButtonStyle.ghostIcon(),
-          ),
+          const DarkModeButton(),
           IconButton(
             icon: const Icon(BootstrapIcons.headphones),
             onPressed: () => {},
