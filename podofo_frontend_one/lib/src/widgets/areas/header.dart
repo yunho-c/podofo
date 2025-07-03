@@ -8,6 +8,7 @@ import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
 import 'package:podofo_one/src/widgets/components/dropdowns.dart';
+import 'package:podofo_one/src/widgets/components/highlight_button.dart';
 
 class Header extends ConsumerWidget {
   const Header({super.key});
@@ -17,7 +18,6 @@ class Header extends ConsumerWidget {
     final currentTheme = ref.read(themeModeProvider);
     final currentTabIndex = ref.watch(currentTabIndexProvider);
     final tabs = ref.watch(tabsProvider);
-    final userState = ref.watch(userStateNotifierProvider);
     return Container(
       height: 40,
       color: Theme.of(context).colorScheme.background,
@@ -81,20 +81,7 @@ class Header extends ConsumerWidget {
               },
             ),
           ),
-          IconButton(
-            icon: FaIcon(
-              FontAwesomeIcons.highlighter,
-              color: userState.highlight
-                  ? Colors.green
-                  : Theme.of(context).colorScheme.foreground,
-            ),
-            onPressed: () {
-              ref
-                  .read(userStateNotifierProvider.notifier)
-                  .setHighlight(!userState.highlight);
-            },
-            variance: ButtonStyle.ghostIcon(),
-          ),
+          HighlightButton(),
           IconButton(
             icon: Icon(
               currentTheme == ThemeMode.dark
