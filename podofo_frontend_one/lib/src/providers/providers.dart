@@ -186,6 +186,19 @@ final thumbnailsProvider =
 // TODO: Persistence (serialization), editor visualization, editing
 // TODO: Real-time visualization for the entire app (toggleable via 'More')
 final hotkeySetupProvider = Provider<void>((ref) {
+  final Map<int, PhysicalKeyboardKey> topRowNumberKeys = {
+    1: PhysicalKeyboardKey.digit1,
+    2: PhysicalKeyboardKey.digit2,
+    3: PhysicalKeyboardKey.digit3,
+    4: PhysicalKeyboardKey.digit4,
+    5: PhysicalKeyboardKey.digit5,
+    6: PhysicalKeyboardKey.digit6,
+    7: PhysicalKeyboardKey.digit7,
+    8: PhysicalKeyboardKey.digit8,
+    9: PhysicalKeyboardKey.digit9,
+    0: PhysicalKeyboardKey.digit0,
+  };
+
   hotKeyManager.register(
     HotKey(
       key: PhysicalKeyboardKey.keyP,
@@ -264,6 +277,71 @@ final hotkeySetupProvider = Provider<void>((ref) {
       ref.read(leftPaneProvider.notifier).update((state) {
         return state == leftPaneData.items[4] ? null : leftPaneData.items[4];
       });
+    },
+  );
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.tab,
+      modifiers: [HotKeyModifier.control],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      final notifier = ref.read(currentTabIndexProvider.notifier);
+      final loadedDocuments = ref.read(loadedDocumentsProvider);
+      if (loadedDocuments.length > 1) {
+        notifier.state = (notifier.state + 1) % loadedDocuments.length;
+      }
+    },
+  );
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.tab,
+      modifiers: [HotKeyModifier.control, HotKeyModifier.shift],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      final notifier = ref.read(currentTabIndexProvider.notifier);
+      final loadedDocuments = ref.read(loadedDocumentsProvider);
+      if (loadedDocuments.length > 1) {
+        notifier.state =
+            (notifier.state - 1 + loadedDocuments.length) %
+            loadedDocuments.length;
+      }
+    },
+  );
+
+  topRowNumberKeys.forEach((number, key) {
+    hotKeyManager.register(
+      HotKey(
+        key: key,
+        modifiers: [
+          Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
+        ],
+        scope: HotKeyScope.inapp,
+      ),
+      keyDownHandler: (_) {
+        final loadedDocuments = ref.read(loadedDocumentsProvider);
+        if (number <= loadedDocuments.length) {
+          ref.read(currentTabIndexProvider.notifier).state = number - 1;
+        }
+      },
+    );
+  });
+
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.digit0,
+      modifiers: [
+        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
+      ],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      final loadedDocuments = ref.read(loadedDocumentsProvider);
+      if (loadedDocuments.isNotEmpty) {
+        ref.read(currentTabIndexProvider.notifier).state =
+            loadedDocuments.length - 1;
+      }
     },
   );
 });
