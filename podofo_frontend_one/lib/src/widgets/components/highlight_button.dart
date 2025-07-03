@@ -91,7 +91,7 @@ class HighlightButton extends ConsumerWidget {
                 MenuButton(
                   subMenu: [
                     MenuButton(
-                      child: Text('Use H key to toggle'),
+                      child: Text('Use H key to toggle on/off'),
                       trailing: Switch(value: false, onChanged: (value) {}),
                     ),
                     MenuButton(
@@ -107,7 +107,7 @@ class HighlightButton extends ConsumerWidget {
                       trailing: Switch(value: false, onChanged: (value) {}),
                     ),
                   ],
-                  child: Text('Highlight Settings'),
+                  child: Text('Settings'),
                 ),
               ],
             );
