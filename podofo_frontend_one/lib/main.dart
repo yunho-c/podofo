@@ -5,6 +5,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/data/objectbox.dart';
 import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/hotkey_provider.dart';
 import 'package:podofo_one/src/services/window.dart';
 import 'package:podofo_one/src/widgets/screens/default_screen.dart';
 
@@ -25,7 +26,7 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(hotkeySetupProvider);
+    ref.watch(hotkeyProvider);
     final themeMode = ref.watch(themeModeProvider);
     final themeData = ref.watch(themeDataProvider);
     final brightness = ref.watch(brightnessProvider);
