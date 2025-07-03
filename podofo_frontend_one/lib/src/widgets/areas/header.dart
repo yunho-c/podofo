@@ -34,6 +34,15 @@ class Header extends ConsumerWidget {
       // ),
       child: Row(
         children: [
+          Container(
+            padding: EdgeInsets.fromLTRB(7.5, 2, 7.5, 2),
+            child: IconButton(
+              icon: const Icon(Icons.home_outlined),
+              onPressed: () => {},
+              variance: ButtonStyle.ghostIcon(),
+              size: ButtonSize.normal,
+            ),
+          ),
           Expanded(
             child: ListView.builder(
               scrollDirection: Axis.horizontal,

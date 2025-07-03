@@ -344,4 +344,23 @@ final hotkeySetupProvider = Provider<void>((ref) {
       }
     },
   );
+
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.keyW,
+      modifiers: [
+        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
+      ],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      final loadedDocuments = ref.read(loadedDocumentsProvider);
+      final currentDocument = ref.read(currentDocumentProvider);
+      if (currentDocument != null) {
+        ref
+            .read(loadedDocumentsProvider.notifier)
+            .removeDocument(currentDocument.filePath);
+      }
+    },
+  );
 });
