@@ -1,3 +1,4 @@
+import 'dart:io' show Platform;
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +12,7 @@ import 'package:podofo_one/main.dart';
 import 'package:podofo_one/objectbox.g.dart';
 import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/data/document_entity.dart';
+import 'package:podofo_one/src/data/pane_data.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/widgets/areas/sidebar.dart';
@@ -205,6 +207,20 @@ final hotkeySetupProvider = Provider<void>((ref) {
       ref
           .read(userStateNotifierProvider.notifier)
           .setHighlight(!currentHighlight);
+    },
+  );
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.keyB,
+      modifiers: [
+        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
+      ],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      ref.read(leftPaneProvider.notifier).update((state) {
+        return state == null ? leftPaneData.items[0] : null;
+      });
     },
   );
 });
