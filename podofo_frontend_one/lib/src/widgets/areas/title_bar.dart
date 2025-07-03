@@ -88,18 +88,18 @@ class TitleBar extends ConsumerWidget {
             ],
           ),
         ],
-        child: GestureDetector(
-          onPanStart: (details) => windowManager.startDragging(),
-          child: GestureDetector(
-            onTap: () {
-              ref
-                  .read(commandPaletteProvider.notifier)
-                  .update((state) => !state);
-            },
-            child: Column(
-              children: [
-                SizedBox(
-                  height: 30,
+        child: Column(
+          children: [
+            GestureDetector(
+              onPanStart: (details) => windowManager.startDragging(),
+              child: SizedBox(
+                height: 30,
+                child: GestureDetector(
+                  onTap: () {
+                    ref
+                        .read(commandPaletteProvider.notifier)
+                        .update((state) => !state);
+                  },
                   child: Center(
                     child: Container(
                       width: 200,
@@ -111,10 +111,10 @@ class TitleBar extends ConsumerWidget {
                     ),
                   ),
                 ),
-                Expanded(child: child),
-              ],
+              ),
             ),
-          ),
+            Expanded(child: child),
+          ],
         ),
       );
     } else {
@@ -143,13 +143,13 @@ class TitleBar extends ConsumerWidget {
                     child: menu,
                   ),
                   Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        ref
-                            .read(commandPaletteProvider.notifier)
-                            .update((state) => !state);
-                      },
-                      child: Center(
+                    child: Center(
+                      child: GestureDetector(
+                        onTap: () {
+                          ref
+                              .read(commandPaletteProvider.notifier)
+                              .update((state) => !state);
+                        },
                         child: Container(
                           width: 200,
                           height: 15,
