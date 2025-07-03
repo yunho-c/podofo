@@ -94,7 +94,9 @@ void main() {
     vec3 hsl_color = rgb_to_hsl(original_color.rgb);
 
     // Invert the Lightness component
-    hsl_color.z = invertStrength - hsl_color.z;
+    // hsl_color.z = invertStrength - hsl_color.z; // OPT1
+    // hsl_color.z = 1 - hsl_color.z * invertStrength; // OPT2 (better)
+    hsl_color.z = (1+invertStrength)/2 - hsl_color.z * invertStrength; // OPT3 (best?)
 
     // Convert the modified HSL color back to RGB
     vec3 inverted_rgb = hsl_to_rgb(hsl_color);
