@@ -29,10 +29,6 @@ class MyApp extends ConsumerWidget {
     final themeMode = ref.watch(themeModeProvider);
     final initialDocuments = ref.watch(initialDocumentsProvider);
 
-    Typography typography = const Typography.geist().copyWith(
-      sans: const TextStyle(fontFamily: 'Urbanist'),
-    );
-
     return ShadcnApp(
       debugShowCheckedModeBanner: false,
       title: 'PoDoFo',
