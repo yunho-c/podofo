@@ -17,6 +17,13 @@ class UserState {
   String? previousPosition;
 
   UserState();
+
+  UserState.from(UserState other)
+      : id = other.id,
+        appearance = other.appearance,
+        highlight = other.highlight,
+        highlightColor = other.highlightColor,
+        previousPosition = other.previousPosition;
 }
 
 @Riverpod(keepAlive: true)
@@ -37,22 +44,22 @@ class UserStateNotifier extends _$UserStateNotifier {
   }
 
   void setAppearance(String appearance) {
-    state = state..appearance = appearance;
+    state = UserState.from(state)..appearance = appearance;
     _box.put(state, mode: PutMode.put);
   }
 
   void setHighlight(bool highlight) {
-    state = state..highlight = highlight;
+    state = UserState.from(state)..highlight = highlight;
     _box.put(state, mode: PutMode.put);
   }
 
   void setHighlightColor(String? highlightColor) {
-    state = state..highlightColor = highlightColor;
+    state = UserState.from(state)..highlightColor = highlightColor;
     _box.put(state, mode: PutMode.put);
   }
 
   void setPreviousPosition(String? previousPosition) {
-    state = state..previousPosition = previousPosition;
+    state = UserState.from(state)..previousPosition = previousPosition;
     _box.put(state, mode: PutMode.put);
   }
 }
