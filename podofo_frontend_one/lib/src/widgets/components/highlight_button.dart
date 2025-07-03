@@ -95,11 +95,11 @@ class HighlightButton extends ConsumerWidget {
                       trailing: Switch(value: false, onChanged: (value) {}),
                     ),
                     MenuButton(
-                      child: Text('Use number keys as color change shortcut'),
+                      child: Text('Use number keys to change colors'),
                       trailing: Switch(value: false, onChanged: (value) {}),
                     ),
                     MenuButton(
-                      child: Text('Use number keys as highlight shortcut'),
+                      child: Text('Use number keys to highlight'),
                       trailing: Switch(value: false, onChanged: (value) {}),
                     ),
                     MenuButton(

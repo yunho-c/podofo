@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/widgets/components/hotkey_editor.dart';
@@ -7,21 +9,29 @@ DropdownMenu moreOptionsDropdown = DropdownMenu(
     // MenuDivider(),
     MenuButton(
       child: const Text('Utilities'),
-      trailing: const Text('⌘⌥U').xSmall.muted,
+      // trailing: const Text('⌘⌥U').xSmall.muted,
+      trailing: MenuShortcut(
+        activator: SingleActivator(
+          LogicalKeyboardKey.keyU,
+          meta: true,
+          alt: true,
+        ),
+      ),
       subMenu: [
         MenuButton(child: Text('Smart Rename')),
         MenuButton(child: Text('Optimize File Size')),
         MenuButton(child: Text('Re-Draw Text Boundaries')),
+        MenuButton(child: Text('Generate outlines')),
         MenuButton(
           enabled: false,
           child: const Text('Translate').xSmall.medium.muted,
         ),
         MenuButton(
-          child: Text('Dynamic'),
+          child: Text('Static'),
           trailing: Switch(value: false, onChanged: (value) {}),
         ),
         MenuButton(
-          child: Text('Static'),
+          child: Text('Dynamic'),
           trailing: Switch(value: false, onChanged: (value) {}),
         ),
       ],
