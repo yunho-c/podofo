@@ -26,8 +26,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(hotkeySetupProvider);
-    final themeMode =
-        ref.watch(themeModeProvider).valueOrNull ?? ThemeMode.system;
+    final themeMode = ref.watch(themeModeProvider);
     final themeData = ref.watch(themeDataProvider);
     final brightness = ref.watch(brightnessProvider);
     final initialDocuments = ref.watch(initialDocumentsProvider);

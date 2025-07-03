@@ -27,7 +27,10 @@ DropdownMenu moreOptionsDropdown = DropdownMenu(
       ],
     ),
     MenuButton(child: Text('Extensions'), trailing: Text('⌘⌥E').xSmall.muted),
-    MenuButton(child: Text('Settings'), trailing: Text('⌘⌥S').xSmall.muted),
+    MenuButton(
+      child: Text('UserPreference'),
+      trailing: Text('⌘⌥S').xSmall.muted,
+    ),
     MenuButton(
       child: Text('Hotkeys'),
       trailing: Text('⌘⌥H').xSmall.muted,

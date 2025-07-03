@@ -26,33 +26,84 @@ final rightPaneProvider = StateProvider<SideBarItem?>((ref) => null);
 
 final commandPaletteProvider = StateProvider<bool>((ref) => false);
 
-final themeModeProvider = AsyncNotifierProvider<ThemeModeNotifier, ThemeMode>(
-  ThemeModeNotifier.new,
-);
+class UserPreference {
+  final ThemeMode themeMode;
+  final bool shaderPreference;
+  final double shaderStrength;
 
-class ThemeModeNotifier extends AsyncNotifier<ThemeMode> {
+  UserPreference({
+    this.themeMode = ThemeMode.system,
+    this.shaderPreference = false,
+    this.shaderStrength = 1.0,
+  });
+
+  UserPreference copyWith({
+    ThemeMode? themeMode,
+    bool? shaderPreference,
+    double? shaderStrength,
+  }) {
+    return UserPreference(
+      themeMode: themeMode ?? this.themeMode,
+      shaderPreference: shaderPreference ?? this.shaderPreference,
+      shaderStrength: shaderStrength ?? this.shaderStrength,
+    );
+  }
+}
+
+class UserPreferenceNotifier extends AsyncNotifier<UserPreference> {
   @override
-  Future<ThemeMode> build() async {
+  Future<UserPreference> build() async {
     final prefs = await SharedPreferences.getInstance();
     final themeModeName = prefs.getString('themeMode');
-    if (themeModeName != null) {
-      return ThemeMode.values.firstWhere(
-        (e) => e.name == themeModeName,
-        orElse: () => ThemeMode.system,
-      );
-    }
-    return ThemeMode.system;
+    final themeMode = themeModeName != null
+        ? ThemeMode.values.firstWhere(
+            (e) => e.name == themeModeName,
+            orElse: () => ThemeMode.system,
+          )
+        : ThemeMode.system;
+    final shaderPreference = prefs.getBool('shaderPreference') ?? false;
+    final shaderStrength = prefs.getDouble('shaderStrength') ?? 1.0;
+    return UserPreference(
+      themeMode: themeMode,
+      shaderPreference: shaderPreference,
+      shaderStrength: shaderStrength,
+    );
   }
 
   Future<void> setThemeMode(ThemeMode themeMode) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('themeMode', themeMode.name);
-    state = AsyncValue.data(themeMode);
+    state = AsyncValue.data(state.value!.copyWith(themeMode: themeMode));
+  }
+
+  Future<void> setShaderPreference(bool shaderPreference) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('shaderPreference', shaderPreference);
+    state = AsyncValue.data(
+      state.value!.copyWith(shaderPreference: shaderPreference),
+    );
+  }
+
+  Future<void> setShaderStrength(double shaderStrength) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setDouble('shaderStrength', shaderStrength);
+    state = AsyncValue.data(
+      state.value!.copyWith(shaderStrength: shaderStrength),
+    );
   }
 }
 
+final userPreferenceProvider =
+    AsyncNotifierProvider<UserPreferenceNotifier, UserPreference>(
+      UserPreferenceNotifier.new,
+    );
+
+final themeModeProvider = Provider<ThemeMode>((ref) {
+  return ref.watch(userPreferenceProvider).value?.themeMode ?? ThemeMode.system;
+});
+
 final brightnessProvider = Provider<Brightness>((ref) {
-  final themeMode = ref.watch(themeModeProvider).valueOrNull ?? ThemeMode.system;
+  final themeMode = ref.watch(themeModeProvider);
   // NOTE: This does not react to system theme changes.
   final platformBrightness =
       WidgetsBinding.instance.platformDispatcher.platformBrightness;
@@ -181,8 +232,9 @@ class ShaderNotifier extends Notifier<FragmentShader?> {
   FragmentShader? build() {
     _loadProgram();
 
-    final preference = ref.watch(shaderPreferenceProvider);
-    final strength = ref.watch(shaderStrengthProvider);
+    final userPreference = ref.watch(userPreferenceProvider).value;
+    final preference = userPreference?.shaderPreference ?? false;
+    final strength = userPreference?.shaderStrength ?? 1.0;
 
     if (_program == null) {
       return null;
@@ -190,10 +242,10 @@ class ShaderNotifier extends Notifier<FragmentShader?> {
 
     if (preference) {
       // return _program!.fragmentShader()..setFloat(2, strength);
-      ref.read(shaderPreferenceProvider.notifier).state = true;
+      ref.read(userPreferenceProvider.notifier).setShaderPreference(true);
     } else {
       // return _program!.fragmentShader()..setFloat(2, 0.0);
-      ref.read(shaderPreferenceProvider.notifier).state = false;
+      ref.read(userPreferenceProvider.notifier).setShaderPreference(false);
     }
 
     return _program!.fragmentShader()..setFloat(2, strength);
@@ -211,9 +263,13 @@ class ShaderNotifier extends Notifier<FragmentShader?> {
   }
 }
 
-final shaderStrengthProvider = StateProvider<double>((ref) => 1.0);
+final shaderStrengthProvider = Provider<double>((ref) {
+  return ref.watch(userPreferenceProvider).value?.shaderStrength ?? 1.0;
+});
 
-final shaderPreferenceProvider = StateProvider<bool>((ref) => false);
+final shaderPreferenceProvider = Provider<bool>((ref) {
+  return ref.watch(userPreferenceProvider).value?.shaderPreference ?? false;
+});
 
 final thumbnailsProvider =
     StateNotifierProvider<ThumbnailsNotifier, ThumbnailsState>((ref) {

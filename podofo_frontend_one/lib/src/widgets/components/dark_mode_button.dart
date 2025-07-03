@@ -8,8 +8,8 @@ class DarkModeButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final themeMode =
-        ref.watch(themeModeProvider).valueOrNull ?? ThemeMode.system;
+    final themeMode = ref.watch(themeModeProvider);
+    final userPreferenceNotifier = ref.read(userPreferenceProvider.notifier);
 
     return GestureDetector(
       onSecondaryTapUp: (details) {
@@ -30,8 +30,7 @@ class DarkModeButton extends ConsumerWidget {
                         trailing: Switch(
                           value: shaderPreference,
                           onChanged: (value) {
-                            ref.read(shaderPreferenceProvider.notifier).state =
-                                value;
+                            userPreferenceNotifier.setShaderPreference(value);
                           },
                         ),
                       ),
@@ -48,10 +47,9 @@ class DarkModeButton extends ConsumerWidget {
                           value: SliderValue.single(shaderStrength),
                           onChanged: shaderPreference
                               ? (value) {
-                                  ref
-                                          .read(shaderStrengthProvider.notifier)
-                                          .state =
-                                      value.value;
+                                  userPreferenceNotifier.setShaderStrength(
+                                    value.value,
+                                  );
                                 }
                               : null,
                         ),
@@ -76,7 +74,7 @@ class DarkModeButton extends ConsumerWidget {
             ThemeMode.dark => ThemeMode.system,
             ThemeMode.system => ThemeMode.light,
           };
-          ref.read(themeModeProvider.notifier).setThemeMode(nextTheme);
+          userPreferenceNotifier.setThemeMode(nextTheme);
         },
         variance: ButtonStyle.ghostIcon(),
       ),

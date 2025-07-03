@@ -31,8 +31,9 @@ class DebugPane extends ConsumerWidget {
                           max: 1.0,
                           value: SliderValue.single(shaderStrength),
                           onChanged: (value) {
-                            ref.read(shaderStrengthProvider.notifier).state =
-                                value.value;
+                            ref
+                                .read(userPreferenceProvider.notifier)
+                                .setShaderStrength(value.value);
                           },
                         ),
                         Text(shaderStrength.toStringAsFixed(2)),

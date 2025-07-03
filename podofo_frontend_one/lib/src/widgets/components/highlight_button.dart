@@ -107,7 +107,7 @@ class HighlightButton extends ConsumerWidget {
                       trailing: Switch(value: false, onChanged: (value) {}),
                     ),
                   ],
-                  child: Text('Settings'),
+                  child: Text('Highlight Settings'),
                 ),
               ],
             );
