@@ -7,7 +7,7 @@ import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
-import 'package:podofo_one/src/widgets/components/hotkey_editor.dart';
+import 'package:podofo_one/src/widgets/components/dropdowns.dart';
 
 class Header extends ConsumerWidget {
   const Header({super.key});
@@ -20,18 +20,7 @@ class Header extends ConsumerWidget {
     final userState = ref.watch(userStateNotifierProvider);
     return Container(
       height: 40,
-      color: Theme.of(context).colorScheme.background, // shadcn
-      // decoration: BoxDecoration(
-      //   color: Theme.of(context).colorScheme.background,
-      //   boxShadow: [
-      //     BoxShadow(
-      //       color: Colors.black.withAlpha(15),
-      //       spreadRadius: 0,
-      //       blurRadius: 5,
-      //       offset: const Offset(1, 0),
-      //     ),
-      //   ],
-      // ),
+      color: Theme.of(context).colorScheme.background,
       child: Row(
         children: [
           Container(
@@ -100,10 +89,8 @@ class Header extends ConsumerWidget {
                   : Theme.of(context).colorScheme.foreground,
             ),
             onPressed: () {
-              // final currentHighlight = userState.highlight;
               ref
                   .read(userStateNotifierProvider.notifier)
-                  // .setHighlight(!currentHighlight);
                   .setHighlight(!userState.highlight);
             },
             variance: ButtonStyle.ghostIcon(),
@@ -141,69 +128,7 @@ class Header extends ConsumerWidget {
                     context: context,
                     position: offset,
                     builder: (context) {
-                      return DropdownMenu(
-                        children: [
-                          // MenuDivider(),
-                          MenuButton(
-                            child: Text('Utilities'),
-                            trailing: Text('⌘⌥U').xSmall.muted,
-                            subMenu: [
-                              MenuButton(child: Text('Smart Rename')),
-                              MenuButton(child: Text('Optimize File Size')),
-                              MenuButton(
-                                child: Text('Re-Draw Text Boundaries'),
-                              ),
-                              MenuButton(
-                                enabled: false,
-                                child: Text('Translate').xSmall.medium.muted,
-                              ),
-                              MenuButton(child: Text('Dynamic')),
-                              MenuButton(child: Text('Static')),
-                            ],
-                          ),
-                          MenuButton(
-                            child: Text('Extensions'),
-                            trailing: Text('⌘⌥E').xSmall.muted,
-                          ),
-                          MenuButton(
-                            child: Text('Settings'),
-                            trailing: Text('⌘⌥S').xSmall.muted,
-                          ),
-                          MenuButton(
-                            child: Text('Hotkeys'),
-                            trailing: Text('⌘⌥H').xSmall.muted,
-                            onPressed: (context) => {
-                              HotkeyEditor.show(context),
-                            },
-                          ),
-                          MenuDivider(),
-                          // MenuButton(
-                          //   subMenu: [
-                          MenuButton(
-                            enabled: false,
-                            child: Text('Community').xSmall.medium.muted,
-                          ),
-                          MenuButton(child: Text('Bug Tracker')),
-                          MenuButton(child: Text('Discord')),
-                          //   ],
-                          //   child: Text('Community'),
-                          // ),
-                          MenuButton(child: Text('GitHub')),
-                          MenuButton(child: Text('Blog')),
-                          MenuDivider(),
-                          // MenuButton(
-                          //   enabled: false,
-                          //   child: Text(
-                          //     'Thank you for using PoDoFo!',
-                          //   ).xSmall.medium.muted,
-                          // ),
-                          MenuLabel(child: Text('PoDoFo')),
-                          MenuLabel(child: Text('Version X.X.X').xSmall.muted),
-                          MenuButton(child: Text('Donate')),
-                          MenuButton(child: Text('Contributors')),
-                          MenuButton(child: Text('Open-Source')),
-                        ],
-                      );
+                      return moreOptionsDropdown;
                     },
                   ).future.then((_) {
                     print('Closed');
