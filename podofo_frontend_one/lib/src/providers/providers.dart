@@ -2,6 +2,7 @@ import 'dart:io' show Platform;
 import 'dart:ui';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
@@ -25,7 +26,45 @@ final rightPaneProvider = StateProvider<SideBarItem?>((ref) => null);
 
 final commandPaletteProvider = StateProvider<bool>((ref) => false);
 
-final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.dark);
+final themeModeProvider = AsyncNotifierProvider<ThemeModeNotifier, ThemeMode>(
+  ThemeModeNotifier.new,
+);
+
+class ThemeModeNotifier extends AsyncNotifier<ThemeMode> {
+  @override
+  Future<ThemeMode> build() async {
+    final prefs = await SharedPreferences.getInstance();
+    final themeModeName = prefs.getString('themeMode');
+    if (themeModeName != null) {
+      return ThemeMode.values.firstWhere(
+        (e) => e.name == themeModeName,
+        orElse: () => ThemeMode.system,
+      );
+    }
+    return ThemeMode.system;
+  }
+
+  Future<void> setThemeMode(ThemeMode themeMode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('themeMode', themeMode.name);
+    state = AsyncValue.data(themeMode);
+  }
+}
+
+final brightnessProvider = Provider<Brightness>((ref) {
+  final themeMode = ref.watch(themeModeProvider).valueOrNull ?? ThemeMode.system;
+  // NOTE: This does not react to system theme changes.
+  final platformBrightness =
+      WidgetsBinding.instance.platformDispatcher.platformBrightness;
+  switch (themeMode) {
+    case ThemeMode.light:
+      return Brightness.light;
+    case ThemeMode.dark:
+      return Brightness.dark;
+    case ThemeMode.system:
+      return platformBrightness;
+  }
+});
 
 // HACK: This is copy-pasted from `main.dart` and does not properly implement
 //       state reactivity.
@@ -34,24 +73,15 @@ Typography typography = const Typography.geist().copyWith(
 );
 
 final themeDataProvider = Provider<ThemeData>((ref) {
-  final themeMode = ref.watch(themeModeProvider);
-  return switch (themeMode) {
-    ThemeMode.light => ThemeData(
-      typography: typography,
-      colorScheme: ColorSchemes.lightZinc(),
-      radius: 0.5,
-    ),
-    ThemeMode.dark => ThemeData(
-      typography: typography,
-      colorScheme: ColorSchemes.darkZinc(),
-      radius: 0.5,
-    ),
-    _ => ThemeData(
-      typography: typography,
-      colorScheme: ColorSchemes.darkZinc(),
-      radius: 0.5,
-    ),
-  };
+  final brightness = ref.watch(brightnessProvider);
+  final colorScheme = brightness == Brightness.dark
+      ? ColorSchemes.darkZinc()
+      : ColorSchemes.lightZinc();
+  return ThemeData(
+    typography: typography,
+    colorScheme: colorScheme,
+    radius: 0.5,
+  );
 });
 
 final filePathProvider = NotifierProvider<FilePathNotifier, String?>(

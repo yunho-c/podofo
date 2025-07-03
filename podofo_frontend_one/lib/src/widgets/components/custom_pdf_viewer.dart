@@ -66,10 +66,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   Widget build(BuildContext context) {
     final currentDocument = ref.watch(currentDocumentProvider);
     final pdfViewerController = ref.watch(pdfViewerControllerProvider);
-    final theme = ref.watch(themeModeProvider);
+    final brightness = ref.watch(brightnessProvider);
     final shader = ref.watch(shaderProvider);
     final shaderPreference = ref.watch(shaderPreferenceProvider);
-    final bool darkMode = theme == ThemeMode.dark;
 
     Widget buildPdfViewer() {
       if (currentDocument == null) {
@@ -96,10 +95,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
               orientation: ScrollbarOrientation.right,
             ),
           ],
-          backgroundColor: darkMode
+          backgroundColor: brightness == Brightness.dark
               ? const Color.fromRGBO(230, 230, 230, 1.0)
               : const Color.fromRGBO(250, 250, 250, 1.0),
-          pageDropShadow: darkMode
+          pageDropShadow: brightness == Brightness.dark
               ? const BoxShadow(
                   // color: Colors.white54, // material
                   // color: Colors.white, // shadcn
@@ -126,12 +125,13 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         child: Text('Press the folder icon to pick a PDF file.'),
       );
     } else {
-      final viewer = darkMode && shaderPreference && shader != null
-          ? ImageFiltered(
-              imageFilter: ImageFilter.shader(shader),
-              child: buildPdfViewer(),
-            )
-          : buildPdfViewer();
+      final viewer =
+          brightness == Brightness.dark && shaderPreference && shader != null
+              ? ImageFiltered(
+                  imageFilter: ImageFilter.shader(shader),
+                  child: buildPdfViewer(),
+                )
+              : buildPdfViewer();
 
       body = MouseRegion(
         onHover: _onHover,

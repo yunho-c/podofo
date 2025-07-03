@@ -13,8 +13,8 @@ class ThumbnailPane extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentDoc = ref.watch(currentDocumentProvider);
-    final theme = ref.watch(themeModeProvider);
-    final bool darkMode = theme == ThemeMode.dark;
+    final brightness = ref.watch(brightnessProvider);
+    final bool darkMode = brightness == Brightness.dark;
     final shader = ref.watch(shaderProvider);
 
     if (currentDoc == null) {

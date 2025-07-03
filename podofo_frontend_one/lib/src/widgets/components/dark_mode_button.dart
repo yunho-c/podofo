@@ -8,7 +8,8 @@ class DarkModeButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final currentTheme = ref.watch(themeModeProvider);
+    final themeMode =
+        ref.watch(themeModeProvider).valueOrNull ?? ThemeMode.system;
 
     return GestureDetector(
       onSecondaryTapUp: (details) {
@@ -64,18 +65,18 @@ class DarkModeButton extends ConsumerWidget {
         );
       },
       child: IconButton(
-        icon: Icon(switch (currentTheme) {
+        icon: Icon(switch (themeMode) {
           ThemeMode.light => Icons.wb_sunny_outlined,
           ThemeMode.dark => Icons.nightlight_outlined,
           ThemeMode.system => Icons.brightness_auto_outlined,
         }),
         onPressed: () {
-          final nextTheme = switch (currentTheme) {
+          final nextTheme = switch (themeMode) {
             ThemeMode.light => ThemeMode.dark,
             ThemeMode.dark => ThemeMode.system,
             ThemeMode.system => ThemeMode.light,
           };
-          ref.read(themeModeProvider.notifier).state = nextTheme;
+          ref.read(themeModeProvider.notifier).setThemeMode(nextTheme);
         },
         variance: ButtonStyle.ghostIcon(),
       ),

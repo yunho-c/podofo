@@ -26,25 +26,20 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(hotkeySetupProvider);
-    final themeMode = ref.watch(themeModeProvider);
+    final themeMode =
+        ref.watch(themeModeProvider).valueOrNull ?? ThemeMode.system;
+    final themeData = ref.watch(themeDataProvider);
+    final brightness = ref.watch(brightnessProvider);
     final initialDocuments = ref.watch(initialDocumentsProvider);
 
     return ShadcnApp(
       debugShowCheckedModeBanner: false,
       title: 'PoDoFo',
-      background: themeMode == ThemeMode.light
-          ? Color.fromRGBO(255, 255, 255, 1.0)
-          : Color.fromRGBO(0, 0, 0, 1.0),
-      theme: ThemeData(
-        typography: typography,
-        colorScheme: ColorSchemes.lightZinc(),
-        radius: 0.5,
-      ),
-      darkTheme: ThemeData(
-        typography: typography,
-        colorScheme: ColorSchemes.darkZinc(),
-        radius: 0.5,
-      ),
+      background: brightness == Brightness.light
+          ? const Color.fromRGBO(255, 255, 255, 1.0)
+          : const Color.fromRGBO(0, 0, 0, 1.0),
+      theme: themeData,
+      darkTheme: themeData,
       themeMode: themeMode,
       home: initialDocuments.when(
         loading: () => const Center(child: CircularProgressIndicator()),
