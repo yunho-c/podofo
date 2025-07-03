@@ -81,7 +81,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(3, 6978279246222423302),
     name: 'UserState',
-    lastPropertyId: const obx_int.IdUid(5, 4220086204996451028),
+    lastPropertyId: const obx_int.IdUid(11, 8695437590385941028),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -112,6 +112,42 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(5, 4220086204996451028),
         name: 'previousPosition',
         type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 6758838385841374197),
+        name: 'audioReader',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 2323057399509311853),
+        name: 'useKeyboardShortcutsToPlayPause',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 6255649704887032057),
+        name: 'commandClickToReadSentence',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 773281826864018078),
+        name: 'audioBackend',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(10, 3428914027084164101),
+        name: 'audioVoice',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(11, 8695437590385941028),
+        name: 'audioSpeed',
+        type: 8,
         flags: 0,
       ),
     ],
@@ -269,12 +305,22 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final previousPositionOffset = object.previousPosition == null
             ? null
             : fbb.writeString(object.previousPosition!);
-        fbb.startTable(6);
+        final audioBackendOffset = fbb.writeString(object.audioBackend);
+        final audioVoiceOffset = object.audioVoice == null
+            ? null
+            : fbb.writeString(object.audioVoice!);
+        fbb.startTable(12);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, appearanceOffset);
         fbb.addBool(2, object.highlight);
         fbb.addOffset(3, highlightColorOffset);
         fbb.addOffset(4, previousPositionOffset);
+        fbb.addBool(5, object.audioReader);
+        fbb.addBool(6, object.useKeyboardShortcutsToPlayPause);
+        fbb.addBool(7, object.commandClickToReadSentence);
+        fbb.addOffset(8, audioBackendOffset);
+        fbb.addOffset(9, audioVoiceOffset);
+        fbb.addFloat64(10, object.audioSpeed);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -298,7 +344,37 @@ obx_int.ModelDefinition getObjectBoxModel() {
           ).vTableGetNullable(buffer, rootOffset, 10)
           ..previousPosition = const fb.StringReader(
             asciiOptimization: true,
-          ).vTableGetNullable(buffer, rootOffset, 12);
+          ).vTableGetNullable(buffer, rootOffset, 12)
+          ..audioReader = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            14,
+            false,
+          )
+          ..useKeyboardShortcutsToPlayPause = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            16,
+            false,
+          )
+          ..commandClickToReadSentence = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            18,
+            false,
+          )
+          ..audioBackend = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGet(buffer, rootOffset, 20, '')
+          ..audioVoice = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 22)
+          ..audioSpeed = const fb.Float64Reader().vTableGet(
+            buffer,
+            rootOffset,
+            24,
+            0,
+          );
 
         return object;
       },
@@ -369,5 +445,34 @@ class UserState_ {
   /// See [UserState.previousPosition].
   static final previousPosition = obx.QueryStringProperty<UserState>(
     _entities[2].properties[4],
+  );
+
+  /// See [UserState.audioReader].
+  static final audioReader = obx.QueryBooleanProperty<UserState>(
+    _entities[2].properties[5],
+  );
+
+  /// See [UserState.useKeyboardShortcutsToPlayPause].
+  static final useKeyboardShortcutsToPlayPause =
+      obx.QueryBooleanProperty<UserState>(_entities[2].properties[6]);
+
+  /// See [UserState.commandClickToReadSentence].
+  static final commandClickToReadSentence = obx.QueryBooleanProperty<UserState>(
+    _entities[2].properties[7],
+  );
+
+  /// See [UserState.audioBackend].
+  static final audioBackend = obx.QueryStringProperty<UserState>(
+    _entities[2].properties[8],
+  );
+
+  /// See [UserState.audioVoice].
+  static final audioVoice = obx.QueryStringProperty<UserState>(
+    _entities[2].properties[9],
+  );
+
+  /// See [UserState.audioSpeed].
+  static final audioSpeed = obx.QueryDoubleProperty<UserState>(
+    _entities[2].properties[10],
   );
 }

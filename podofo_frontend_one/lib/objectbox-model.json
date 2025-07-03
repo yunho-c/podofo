@@ -55,7 +55,7 @@
     },
     {
       "id": "3:6978279246222423302",
-      "lastPropertyId": "5:4220086204996451028",
+      "lastPropertyId": "11:8695437590385941028",
       "name": "UserState",
       "properties": [
         {
@@ -83,6 +83,36 @@
           "id": "5:4220086204996451028",
           "name": "previousPosition",
           "type": 9
+        },
+        {
+          "id": "6:6758838385841374197",
+          "name": "audioReader",
+          "type": 1
+        },
+        {
+          "id": "7:2323057399509311853",
+          "name": "useKeyboardShortcutsToPlayPause",
+          "type": 1
+        },
+        {
+          "id": "8:6255649704887032057",
+          "name": "commandClickToReadSentence",
+          "type": 1
+        },
+        {
+          "id": "9:773281826864018078",
+          "name": "audioBackend",
+          "type": 9
+        },
+        {
+          "id": "10:3428914027084164101",
+          "name": "audioVoice",
+          "type": 9
+        },
+        {
+          "id": "11:8695437590385941028",
+          "name": "audioSpeed",
+          "type": 8
         }
       ],
       "relations": []

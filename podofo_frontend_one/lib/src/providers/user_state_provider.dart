@@ -16,6 +16,13 @@ class UserState {
   String? highlightColor;
   String? previousPosition;
 
+  bool audioReader = false;
+  bool useKeyboardShortcutsToPlayPause = false;
+  bool commandClickToReadSentence = false;
+  String audioBackend = 'system';
+  String? audioVoice;
+  double audioSpeed = 1.0;
+
   UserState();
 
   UserState.from(UserState other)
@@ -23,7 +30,13 @@ class UserState {
         appearance = other.appearance,
         highlight = other.highlight,
         highlightColor = other.highlightColor,
-        previousPosition = other.previousPosition;
+        previousPosition = other.previousPosition,
+        audioReader = other.audioReader,
+        useKeyboardShortcutsToPlayPause = other.useKeyboardShortcutsToPlayPause,
+        commandClickToReadSentence = other.commandClickToReadSentence,
+        audioBackend = other.audioBackend,
+        audioVoice = other.audioVoice,
+        audioSpeed = other.audioSpeed;
 }
 
 @Riverpod(keepAlive: true)
@@ -60,6 +73,38 @@ class UserStateNotifier extends _$UserStateNotifier {
 
   void setPreviousPosition(String? previousPosition) {
     state = UserState.from(state)..previousPosition = previousPosition;
+    _box.put(state, mode: PutMode.put);
+  }
+
+  void setAudioReader(bool audioReader) {
+    state = UserState.from(state)..audioReader = audioReader;
+    _box.put(state, mode: PutMode.put);
+  }
+
+  void setUseKeyboardShortcutsToPlayPause(bool useKeyboardShortcutsToPlayPause) {
+    state = UserState.from(state)
+      ..useKeyboardShortcutsToPlayPause = useKeyboardShortcutsToPlayPause;
+    _box.put(state, mode: PutMode.put);
+  }
+
+  void setCommandClickToReadSentence(bool commandClickToReadSentence) {
+    state = UserState.from(state)
+      ..commandClickToReadSentence = commandClickToReadSentence;
+    _box.put(state, mode: PutMode.put);
+  }
+
+  void setAudioBackend(String audioBackend) {
+    state = UserState.from(state)..audioBackend = audioBackend;
+    _box.put(state, mode: PutMode.put);
+  }
+
+  void setAudioVoice(String? audioVoice) {
+    state = UserState.from(state)..audioVoice = audioVoice;
+    _box.put(state, mode: PutMode.put);
+  }
+
+  void setAudioSpeed(double audioSpeed) {
+    state = UserState.from(state)..audioSpeed = audioSpeed;
     _box.put(state, mode: PutMode.put);
   }
 }

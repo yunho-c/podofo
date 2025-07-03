@@ -8,6 +8,7 @@ import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
 import 'package:podofo_one/src/widgets/components/dark_mode_button.dart';
 import 'package:podofo_one/src/widgets/components/dropdowns.dart';
 import 'package:podofo_one/src/widgets/components/highlight_button.dart';
+import 'package:podofo_one/src/widgets/components/audio_reader_button.dart';
 
 class Header extends ConsumerWidget {
   const Header({super.key});
@@ -81,11 +82,7 @@ class Header extends ConsumerWidget {
           ),
           HighlightButton(),
           const DarkModeButton(),
-          IconButton(
-            icon: const Icon(BootstrapIcons.headphones),
-            onPressed: () => {},
-            variance: ButtonStyle.ghostIcon(),
-          ),
+          AudioReaderButton(),
           Builder(
             builder: (context) {
               return IconButton(
