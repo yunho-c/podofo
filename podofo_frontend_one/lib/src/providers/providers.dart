@@ -219,7 +219,50 @@ final hotkeySetupProvider = Provider<void>((ref) {
     ),
     keyDownHandler: (_) {
       ref.read(leftPaneProvider.notifier).update((state) {
-        return state == null ? leftPaneData.items[0] : null;
+        return state == leftPaneData.items[0] ? null : leftPaneData.items[0];
+      });
+    },
+  );
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.keyO,
+      modifiers: [
+        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
+      ],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      ref.read(leftPaneProvider.notifier).update((state) {
+        return state == leftPaneData.items[1] ? null : leftPaneData.items[1];
+      });
+    },
+  );
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.keyF,
+      modifiers: [
+        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
+      ],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      ref.read(leftPaneProvider.notifier).update((state) {
+        return state == leftPaneData.items[3] ? null : leftPaneData.items[3];
+      });
+    },
+  );
+  hotKeyManager.register(
+    HotKey(
+      key: PhysicalKeyboardKey.keyF,
+      modifiers: [
+        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
+        HotKeyModifier.shift,
+      ],
+      scope: HotKeyScope.inapp,
+    ),
+    keyDownHandler: (_) {
+      ref.read(leftPaneProvider.notifier).update((state) {
+        return state == leftPaneData.items[4] ? null : leftPaneData.items[4];
       });
     },
   );
