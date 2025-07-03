@@ -9,8 +9,6 @@ class DarkModeButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final currentTheme = ref.watch(themeModeProvider);
-    final shaderPreference = ref.watch(shaderPreferenceProvider);
-    final shaderStrength = ref.watch(shaderStrengthProvider);
 
     return GestureDetector(
       onSecondaryTapUp: (details) {
