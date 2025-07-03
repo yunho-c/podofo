@@ -38,98 +38,76 @@ class HighlightButton extends ConsumerWidget {
                 ),
                 MenuButton(
                   enabled: false,
-                  child: Avatar(
-                    initials: '',
-                    backgroundColor: Colors.red,
-                    size: 12,
-                  ),
-                ),
-                MenuButton(
-                  enabled: false,
-                  child: Avatar(
-                    initials: '',
-                    backgroundColor: Colors.orange,
-                    size: 12,
-                  ),
-                ),
-                MenuButton(
-                  enabled: false,
-                  child: Avatar(
-                    initials: '',
-                    backgroundColor: Colors.yellow,
-                    size: 12,
-                  ),
-                ),
-                MenuButton(
-                  enabled: false,
-                  child: Avatar(
-                    initials: '',
-                    backgroundColor: Colors.green,
-                    size: 12,
-                  ),
-                ),
-                MenuButton(
-                  enabled: false,
-                  child: Avatar(
-                    initials: '',
-                    backgroundColor: Colors.cyan,
-                    size: 12,
-                  ),
-                ),
-                MenuButton(
-                  enabled: false,
-                  child: Avatar(
-                    initials: '',
-                    backgroundColor: Colors.indigo,
-                    size: 12,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Row(
+                      children: [
+                        Avatar(
+                          initials: '',
+                          backgroundColor: Colors.red,
+                          size: 12,
+                        ),
+                        SizedBox(width: 8),
+                        Avatar(
+                          initials: '',
+                          backgroundColor: Colors.orange,
+                          size: 12,
+                        ),
+                        SizedBox(width: 8),
+                        Avatar(
+                          initials: '',
+                          backgroundColor: Colors.yellow,
+                          size: 12,
+                        ),
+                        SizedBox(width: 8),
+                        Avatar(
+                          initials: '',
+                          backgroundColor: Colors.green,
+                          size: 12,
+                        ),
+                        SizedBox(width: 8),
+                        Avatar(
+                          initials: '',
+                          backgroundColor: Colors.cyan,
+                          size: 12,
+                        ),
+                        SizedBox(width: 8),
+                        Avatar(
+                          initials: '',
+                          backgroundColor: Colors.indigo,
+                          size: 12,
+                        ),
+                        SizedBox(width: 8),
+                        Avatar(
+                          initials: '+',
+                          backgroundColor: Colors.transparent,
+                          size: 12,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 MenuDivider(),
-                const MenuButton(
-                  trailing: MenuShortcut(
-                    activator: SingleActivator(
-                      LogicalKeyboardKey.bracketLeft,
-                      control: true,
-                    ),
-                  ),
-                  child: Text('Back'),
-                ),
-                const MenuButton(
-                  trailing: MenuShortcut(
-                    activator: SingleActivator(
-                      LogicalKeyboardKey.bracketRight,
-                      control: true,
-                    ),
-                  ),
-                  enabled: false,
-                  child: Text('Forward'),
-                ),
-                const MenuButton(
-                  trailing: MenuShortcut(
-                    activator: SingleActivator(
-                      LogicalKeyboardKey.keyR,
-                      control: true,
-                    ),
-                  ),
-                  child: Text('Reload'),
-                ),
-                const MenuButton(
+                MenuButton(
                   subMenu: [
                     MenuButton(
-                      trailing: MenuShortcut(
-                        activator: SingleActivator(
-                          LogicalKeyboardKey.keyS,
-                          control: true,
-                        ),
-                      ),
-                      child: Text('Save Page As...'),
+                      child: Text('Use H key to toggle'),
+                      trailing: Switch(value: false, onChanged: (value) {}),
                     ),
-                    MenuButton(child: Text('Create Shortcut...')),
-                    MenuButton(child: Text('Name Window...')),
-                    MenuDivider(),
-                    MenuButton(child: Text('Developer Tools')),
+                    MenuButton(
+                      child: Text('Use number keys as color change shortcut'),
+                      trailing: Switch(value: false, onChanged: (value) {}),
+                    ),
+                    MenuButton(
+                      child: Text('Use number keys as highlight shortcut'),
+                      trailing: Switch(value: false, onChanged: (value) {}),
+                    ),
+                    MenuButton(
+                      child: Text('Show highlight options in context menu'),
+                      trailing: Switch(value: false, onChanged: (value) {}),
+                    ),
                   ],
-                  child: Text('More Tools'),
+                  child: Text('Settings'),
                 ),
               ],
             );
@@ -153,19 +131,3 @@ class HighlightButton extends ConsumerWidget {
     );
   }
 }
-
-// int people = 0;
-// bool showBookmarksBar = false;
-// bool showFullUrls = true;
-// @override
-// Widget build(BuildContext context) {
-//   final theme = Theme.of(context);
-//   return
-//     child: DashedContainer(
-//       borderRadius: BorderRadius.circular(theme.radiusMd),
-//       strokeWidth: 2,
-//       gap: 2,
-//       child: const Text('Right click here').center(),
-//     ).constrained(maxWidth: 300, maxHeight: 200),
-//   );
-// }
