@@ -2,6 +2,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/utils/responsive_icon.dart';
+import 'package:podofo_one/src/utils/text_utils.dart';
 
 class TabWidget extends StatefulWidget {
   const TabWidget({
@@ -39,7 +40,7 @@ class _TabWidgetState extends State<TabWidget> {
           child: Row(
             children: [
               Text(
-                widget.document.title,
+                removePdfExtension(widget.document.title),
                 style: widget.isSelected
                     ? TextStyle(
                         fontWeight: FontWeight.w600,
