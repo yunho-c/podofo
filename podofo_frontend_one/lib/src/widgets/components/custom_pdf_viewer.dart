@@ -67,14 +67,15 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
       height: thumbSize.height,
       decoration: BoxDecoration(
         color: Colors.gray.shade600.withAlpha(100),
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: BorderRadius.circular(10),
       ),
-      child: Center(
-        child: Text(
-          controller.pageNumber.toString(),
-          style: TextStyle(color: Colors.black),
-        ).xSmall.semiBold,
-      ),
+      // NOTE: Don't remove!
+      // child: Center(
+      //   child: Text(
+      //     controller.pageNumber.toString(),
+      //     style: TextStyle(color: Colors.black),
+      //   ).xSmall.semiBold,
+      // ),
     );
   }
 
