@@ -10,6 +10,7 @@ import 'package:podofo_one/src/widgets/panes/ai_chat_pane.dart';
 import 'package:podofo_one/src/widgets/panes/extensions_pane.dart';
 import 'package:podofo_one/src/widgets/panes/outline_pane.dart';
 import 'package:podofo_one/src/widgets/panes/search_pane.dart';
+import 'package:podofo_one/src/widgets/panes/study_pane.dart';
 import 'package:podofo_one/src/widgets/panes/thumbnail_pane.dart';
 import 'package:podofo_one/src/widgets/panes/timeline_pane.dart';
 
@@ -83,6 +84,14 @@ final rightPaneData = PaneData(
         darkThemeIcon: Icon(Icons.area_chart_outlined, color: Colors.white),
       ),
       pane: const TimelinePane(),
+    ),
+    SideBarItem(
+      name: 'Study',
+      icon: const ResponsiveIcon(
+        lightThemeIcon: Icon(Icons.school_outlined),
+        darkThemeIcon: Icon(Icons.school_outlined, color: Colors.white),
+      ),
+      pane: const StudyPane(),
     ),
     SideBarItem(
       name: 'Extensions',
