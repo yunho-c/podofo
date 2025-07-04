@@ -4,6 +4,8 @@ import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/utils/responsive_icon.dart';
 import 'package:podofo_one/src/utils/text_utils.dart';
 
+final double TAB_WIDTH = 300;
+
 class TabWidget extends StatefulWidget {
   const TabWidget({
     super.key,
@@ -33,39 +35,52 @@ class _TabWidgetState extends State<TabWidget> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          color: widget.isSelected
-              ? Theme.of(context).colorScheme.muted
-              : Colors.transparent,
-          child: Row(
-            children: [
-              Text(
-                removePdfExtension(widget.document.title),
-                style: widget.isSelected
-                    ? TextStyle(
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.foreground,
-                      )
-                    : TextStyle(
-                        fontWeight: FontWeight.w500,
-                        color: Theme.of(context).colorScheme.mutedForeground,
-                      ),
-              ),
-              const SizedBox(width: 8),
-              if (_isHovering)
-                IconButton(
-                  icon: const ResponsiveIcon(
-                    lightThemeIcon: Icon(Icons.close, size: 16),
-                    darkThemeIcon: Icon(
-                      Icons.close,
-                      size: 16,
-                      color: Colors.white,
-                    ),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(4),
+              topRight: Radius.circular(4),
+            ),
+            color: widget.isSelected
+                ? Theme.of(context).colorScheme.muted
+                : Colors.transparent,
+          ),
+          child: SizedBox(
+            width: TAB_WIDTH,
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    removePdfExtension(widget.document.title),
+                    overflow: TextOverflow.ellipsis,
+                    style: widget.isSelected
+                        ? TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.foreground,
+                          )
+                        : TextStyle(
+                            fontWeight: FontWeight.w500,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.mutedForeground,
+                          ),
                   ),
-                  onPressed: widget.onClose,
-                  variance: ButtonStyle.ghostIcon(),
                 ),
-            ],
+                if (_isHovering)
+                  IconButton(
+                    icon: const ResponsiveIcon(
+                      lightThemeIcon: Icon(Icons.close, size: 16),
+                      darkThemeIcon: Icon(
+                        Icons.close,
+                        size: 16,
+                        color: Colors.white,
+                      ),
+                    ),
+                    onPressed: widget.onClose,
+                    variance: ButtonStyle.ghostIcon(),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
