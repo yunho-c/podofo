@@ -38,8 +38,8 @@ class _TabWidgetState extends State<TabWidget> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
+              topLeft: Radius.circular(5),
+              topRight: Radius.circular(5),
             ),
             color: widget.isSelected
                 ? Theme.of(context).colorScheme.muted

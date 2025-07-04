@@ -6,7 +6,11 @@ import 'package:podofo_one/src/widgets/components/hotkey_editor.dart';
 
 DropdownMenu moreOptionsDropdown = DropdownMenu(
   children: [
-    // MenuDivider(),
+    MenuButton(
+      child: Text('Auto-Save'),
+      trailing: Switch(value: false, onChanged: (value) {}),
+    ),
+    MenuDivider(),
     MenuButton(
       child: const Text('Utilities'),
       // trailing: const Text('⌘⌥U').xSmall.muted,
@@ -38,14 +42,11 @@ DropdownMenu moreOptionsDropdown = DropdownMenu(
     ),
     MenuButton(child: Text('Extensions'), trailing: Text('⌘⌥E').xSmall.muted),
     MenuButton(
-      child: Text('UserPreference'),
-      trailing: Text('⌘⌥S').xSmall.muted,
-    ),
-    MenuButton(
       child: Text('Hotkeys'),
       trailing: Text('⌘⌥H').xSmall.muted,
       onPressed: (context) => {HotkeyEditor.show(context)},
     ),
+    MenuButton(child: Text('Settings'), trailing: Text('⌘⌥S').xSmall.muted),
     MenuDivider(),
     // MenuButton(
     //   subMenu: [
