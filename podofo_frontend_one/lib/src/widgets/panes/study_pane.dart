@@ -16,39 +16,55 @@ class StudyPane extends StatelessWidget {
           // Button.card(child: const Text('Study Pane')),
           // const SizedBox(height: 16),
           Button(
+            alignment: AlignmentGeometry.topLeft,
+            enabled: true,
             style: ButtonStyle.outline(size: ButtonSize.large),
             onTapDown: (details) => {},
-            enabled: true,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Summarize'),
-                const Text('Create an executive summary').small,
+                const Text('Summarize').x2Large,
+                // const Text('Create an executive summary').small,
               ],
             ),
           ),
           Button(
-            style: ButtonStyle.outline(size: ButtonSize.large),
+            alignment: AlignmentGeometry.topLeft,
             enabled: true,
+            style: ButtonStyle.outline(size: ButtonSize.large),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Generate FAQ'),
+                const Text('FAQ').x2Large,
                 const Text('with answer keys').small,
               ],
             ),
           ),
           Button(
-            style: ButtonStyle.outline(size: ButtonSize.large),
+            alignment: AlignmentGeometry.topLeft,
             enabled: true,
+            style: ButtonStyle.outline(size: ButtonSize.large),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Quiz Mode'),
-                const Text('Enter Quiz Mode').small,
+                const Text('Quiz Mode').x2Large,
+                // const Text('Enter Quiz Mode').small,
               ],
             ),
           ),
+          Button(
+            alignment: AlignmentGeometry.topLeft,
+            enabled: true,
+            style: ButtonStyle.outline(size: ButtonSize.large),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Anki').x2Large,
+                // const Text('Generate flashcards').small,
+              ],
+            ),
+          ),
+
           // Button(
           //   style: ButtonStyle.outline(size: ButtonSize.large),
           //   child: const Text('Summary'),
