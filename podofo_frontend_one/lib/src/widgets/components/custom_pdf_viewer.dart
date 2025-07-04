@@ -113,11 +113,11 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
             linkColor: const Color.fromRGBO(100, 100, 255, 0.01),
           ),
           viewerOverlayBuilder: (context, size, handleLinkTap) {
-            final documentSize = pdfViewerController.documentSize;
             Size thumbSize;
-            if (documentSize.height > 0) {
+            if (pdfViewerController.isReady &&
+                pdfViewerController.documentSize.height > 0) {
               final viewportHeight = size.height;
-              final documentHeight = documentSize.height;
+              final documentHeight = pdfViewerController.documentSize.height;
               final thumbHeight =
                   (viewportHeight / documentHeight) * viewportHeight;
               thumbSize = Size(10, thumbHeight.clamp(40.0, viewportHeight));
