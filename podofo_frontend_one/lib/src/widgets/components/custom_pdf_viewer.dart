@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:ui';
-import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart'
+    show SelectionArea, AdaptiveTextSelectionToolbar;
+import 'package:flutter/services.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -101,7 +103,28 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         currentDocument.filePath,
         controller: pdfViewerController,
         params: PdfViewerParams(
-          enableTextSelection: true,
+          selectableRegionInjector: (context, child) {
+            return SelectionArea(
+              contextMenuBuilder: (context, selectableRegionState) {
+                final buttonItems =
+                    selectableRegionState.contextMenuButtonItems;
+                final customButton = ContextMenuButtonItem(
+                  onPressed: () {
+                    // ignore: avoid_print
+                    print('Custom Action: Search selected text maybe?');
+                    selectableRegionState.hideToolbar();
+                  },
+                  label: 'Custom Action',
+                );
+
+                return AdaptiveTextSelectionToolbar.buttonItems(
+                  anchors: selectableRegionState.contextMenuAnchors,
+                  buttonItems: [...buttonItems, customButton],
+                );
+              },
+              child: child,
+            );
+          },
           linkHandlerParams: PdfLinkHandlerParams(
             onLinkTap: (link) {
               if (link.url != null) {
