@@ -111,30 +111,40 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
             },
             linkColor: const Color.fromRGBO(100, 100, 255, 0.01),
           ),
-          viewerOverlayBuilder: (context, size, handleLinkTap) => [
-            PdfViewerScrollThumb(
-              thumbSize: const Size(15, 40),
-              controller: pdfViewerController,
-              orientation: ScrollbarOrientation.right,
-              thumbBuilder: _buildScrollThumb,
-            ),
-          ],
+          viewerOverlayBuilder: (context, size, handleLinkTap) {
+            final documentSize = pdfViewerController.documentSize;
+            Size thumbSize;
+            if (documentSize.height > 0) {
+              final viewportHeight = size.height;
+              final documentHeight = documentSize.height;
+              final thumbHeight =
+                  (viewportHeight / documentHeight) * viewportHeight;
+              thumbSize = Size(10, thumbHeight.clamp(40.0, viewportHeight));
+            } else {
+              thumbSize = const Size(15, 40);
+            }
+
+            return [
+              PdfViewerScrollThumb(
+                thumbSize: thumbSize,
+                controller: pdfViewerController,
+                orientation: ScrollbarOrientation.right,
+                thumbBuilder: _buildScrollThumb,
+              ),
+            ];
+          },
           backgroundColor: brightness == Brightness.dark
               ? const Color.fromRGBO(230, 230, 230, 1.0)
               : const Color.fromRGBO(250, 250, 250, 1.0),
           pageDropShadow: brightness == Brightness.dark
               ? const BoxShadow(
-                  // color: Colors.white54, // material
-                  // color: Colors.white, // shadcn
-                  color: Color.fromRGBO(255, 255, 255, 0.54), // shadcn OPT2
+                  color: Color.fromRGBO(255, 255, 255, 0.54), // white54
                   blurRadius: 4,
                   spreadRadius: 0,
                   offset: Offset(0, 4),
                 )
               : const BoxShadow(
-                  // color: Colors.black54, // material
-                  // color: Colors.black, // shadcn
-                  color: Color.fromRGBO(0, 0, 0, 0.54), // shadcn OPT2
+                  color: Color.fromRGBO(0, 0, 0, 0.54), // black54
                   blurRadius: 4,
                   spreadRadius: 0,
                   offset: Offset(0, 4),
