@@ -176,6 +176,20 @@ final loadedDocumentsProvider =
       LoadedDocumentsNotifier.new,
     );
 
+/// Manages the state of loaded documents, acting as a bridge between the
+/// persistent storage (cold state) and the in-memory representation (hot state).
+///
+/// This notifier is responsible for:
+///   - Loading the initial set of documents from ObjectBox (`initialDocumentsProvider`).
+///   - Providing the fully loaded `Document` objects to the UI for fast access.
+///   - Synchronizing any changes (additions/removals) back to ObjectBox to
+///     ensure persistence across sessions.
+///
+/// This "hot/cold" state pattern is used to optimize performance. The "hot"
+/// state (in-memory `Map<String, Document>`) provides immediate access to
+/// fully-hydrated `Document` objects, which is crucial for a responsive UI.
+/// The "cold" state (ObjectBox `DocumentEntity`) ensures that the list of
+/// documents is not lost when the app is closed.
 class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
   @override
   Map<String, Document> build() {
@@ -184,6 +198,9 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
 
   void addDocument(String filePath) async {
     if (state.containsKey(filePath)) {
+      ref.read(currentTabIndexProvider.notifier).state = state.keys
+          .toList()
+          .indexOf(filePath);
       return;
     }
     final pdfDocument = await PdfDocument.openFile(filePath);
@@ -191,10 +208,23 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
       ...state,
       filePath: Document(filePath: filePath, pdfDocument: pdfDocument),
     };
+
+    // Add to objectbox
+    final box = ref.read(objectboxProvider).store.box<DocumentEntity>();
+    box.put(DocumentEntity(filePath: filePath));
   }
 
   void removeDocument(String filePath) {
     state = Map.from(state)..remove(filePath);
+
+    // Remove from objectbox
+    final box = ref.read(objectboxProvider).store.box<DocumentEntity>();
+    final query = box.query(DocumentEntity_.filePath.equals(filePath)).build();
+    final result = query.findFirst();
+    if (result != null) {
+      box.remove(result.id);
+    }
+    query.close();
   }
 }
 

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
@@ -10,7 +12,15 @@ class ObjectBox {
 
   static Future<ObjectBox> create() async {
     final docsDir = await getApplicationDocumentsDirectory();
-    final store = await openStore(directory: p.join(docsDir.path, "obx-docs"));
+    final dbDir = Directory(p.join(docsDir.path, "obx-docs"));
+
+    // // DEBUG: Deletes the database directory on startup.
+    // // NOTE: Remove this block for production release.
+    // if (dbDir.existsSync()) {
+    //   dbDir.deleteSync(recursive: true);
+    // }
+
+    final store = await openStore(directory: dbDir.path);
     return ObjectBox._create(store);
   }
 }
