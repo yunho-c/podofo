@@ -56,6 +56,28 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     }
   }
 
+  Widget _buildScrollThumb(
+    BuildContext context,
+    Size thumbSize,
+    int? pageNumber,
+    PdfViewerController controller,
+  ) {
+    return Container(
+      width: thumbSize.width,
+      height: thumbSize.height,
+      decoration: BoxDecoration(
+        color: Colors.gray.shade600.withAlpha(100),
+        borderRadius: BorderRadius.circular(2),
+      ),
+      child: Center(
+        child: Text(
+          controller.pageNumber.toString(),
+          style: TextStyle(color: Colors.black),
+        ).xSmall.semiBold,
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _removeHoverCard();
@@ -91,8 +113,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
           ),
           viewerOverlayBuilder: (context, size, handleLinkTap) => [
             PdfViewerScrollThumb(
+              thumbSize: const Size(15, 40),
               controller: pdfViewerController,
               orientation: ScrollbarOrientation.right,
+              thumbBuilder: _buildScrollThumb,
             ),
           ],
           backgroundColor: brightness == Brightness.dark
@@ -127,11 +151,11 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     } else {
       final viewer =
           brightness == Brightness.dark && shaderPreference && shader != null
-              ? ImageFiltered(
-                  imageFilter: ImageFilter.shader(shader),
-                  child: buildPdfViewer(),
-                )
-              : buildPdfViewer();
+          ? ImageFiltered(
+              imageFilter: ImageFilter.shader(shader),
+              child: buildPdfViewer(),
+            )
+          : buildPdfViewer();
 
       body = MouseRegion(
         onHover: _onHover,
