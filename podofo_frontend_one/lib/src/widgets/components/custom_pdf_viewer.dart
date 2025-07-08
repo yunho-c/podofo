@@ -87,6 +87,15 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     super.dispose();
   }
 
+  void _savePageNumber(int? pageNumber) {
+    final currentDocument = ref.read(currentDocumentProvider);
+    if (currentDocument != null && pageNumber != null) {
+      ref
+          .read(loadedDocumentsProvider.notifier)
+          .updateDocumentPage(currentDocument.filePath, pageNumber);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final currentDocument = ref.watch(currentDocumentProvider);
@@ -102,7 +111,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
       return PdfViewer.file(
         currentDocument.filePath,
         controller: pdfViewerController,
+        initialPageNumber: currentDocument.lastOpenedPage ?? 1,
         params: PdfViewerParams(
+          onPageChanged: _savePageNumber,
           selectableRegionInjector: (context, child) {
             return SelectionArea(
               contextMenuBuilder: (context, selectableRegionState) {

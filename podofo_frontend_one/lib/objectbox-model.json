@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:892949797226551813",
-      "lastPropertyId": "2:288813176142781929",
+      "lastPropertyId": "3:4052886656905752128",
       "name": "DocumentEntity",
       "properties": [
         {
@@ -18,6 +18,11 @@
           "id": "2:288813176142781929",
           "name": "filePath",
           "type": 9
+        },
+        {
+          "id": "3:4052886656905752128",
+          "name": "lastOpenedPage",
+          "type": 6
         }
       ],
       "relations": []

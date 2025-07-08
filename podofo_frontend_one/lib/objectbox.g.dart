@@ -24,7 +24,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(1, 892949797226551813),
     name: 'DocumentEntity',
-    lastPropertyId: const obx_int.IdUid(2, 288813176142781929),
+    lastPropertyId: const obx_int.IdUid(3, 4052886656905752128),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -37,6 +37,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(2, 288813176142781929),
         name: 'filePath',
         type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 4052886656905752128),
+        name: 'lastOpenedPage',
+        type: 6,
         flags: 0,
       ),
     ],
@@ -218,9 +224,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
       },
       objectToFB: (DocumentEntity object, fb.Builder fbb) {
         final filePathOffset = fbb.writeString(object.filePath);
-        fbb.startTable(3);
+        fbb.startTable(4);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, filePathOffset);
+        fbb.addInt64(2, object.lastOpenedPage);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -236,7 +243,16 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final filePathParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 6, '');
-        final object = DocumentEntity(id: idParam, filePath: filePathParam);
+        final lastOpenedPageParam = const fb.Int64Reader().vTableGetNullable(
+          buffer,
+          rootOffset,
+          8,
+        );
+        final object = DocumentEntity(
+          id: idParam,
+          filePath: filePathParam,
+          lastOpenedPage: lastOpenedPageParam,
+        );
 
         return object;
       },
@@ -394,6 +410,11 @@ class DocumentEntity_ {
   /// See [DocumentEntity.filePath].
   static final filePath = obx.QueryStringProperty<DocumentEntity>(
     _entities[0].properties[1],
+  );
+
+  /// See [DocumentEntity.lastOpenedPage].
+  static final lastOpenedPage = obx.QueryIntegerProperty<DocumentEntity>(
+    _entities[0].properties[2],
   );
 }
 

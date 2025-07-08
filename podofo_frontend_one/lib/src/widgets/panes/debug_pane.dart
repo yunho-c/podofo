@@ -10,6 +10,7 @@ class DebugPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
     final shaderStrength = ref.watch(shaderStrengthProvider);
+    final loadedDocuments = ref.watch(loadedDocumentsProvider);
     return Container(
       padding: const EdgeInsets.all(10.0),
       child: Column(
@@ -18,26 +19,32 @@ class DebugPane extends ConsumerWidget {
           Expanded(
             child: Collapsible(
               children: [
-                const CollapsibleTrigger(child: Text('Dark Mode')),
+                const CollapsibleTrigger(child: Text('Loaded Documents')),
                 CollapsibleContent(
                   child: OutlinedContainer(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Inversion Shader Strength').small(),
-                        gap(8),
-                        Slider(
-                          min: 0.0,
-                          max: 1.0,
-                          value: SliderValue.single(shaderStrength),
-                          onChanged: (value) {
-                            ref
-                                .read(userPreferenceProvider.notifier)
-                                .setShaderStrength(value.value);
-                          },
-                        ),
-                        Text(shaderStrength.toStringAsFixed(2)),
+                        for (final doc in loadedDocuments.values)
+                          Text(
+                            '${doc.title}: ${doc.lastOpenedPage ?? 'Not set'}',
+                          ).small(),
                       ],
+                    ).withPadding(horizontal: 16, vertical: 8),
+                  ).withPadding(top: 8),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Collapsible(
+              children: [
+                const CollapsibleTrigger(child: Text('Dark Mode')),
+                CollapsibleContent(
+                  child: OutlinedContainer(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [],
                     ).withPadding(horizontal: 16, vertical: 8),
                   ).withPadding(top: 8),
                 ),

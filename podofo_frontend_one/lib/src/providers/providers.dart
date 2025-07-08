@@ -1,6 +1,5 @@
 import 'dart:io' show Platform;
 import 'dart:ui';
-import 'package:flutter/services.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
@@ -166,6 +165,7 @@ final initialDocumentsProvider = FutureProvider<Map<String, Document>>((
     loadedDocuments[doc.filePath] = Document(
       filePath: doc.filePath,
       pdfDocument: pdfDocument,
+      lastOpenedPage: doc.lastOpenedPage,
     );
   }
   return loadedDocuments;
@@ -223,6 +223,27 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
     final result = query.findFirst();
     if (result != null) {
       box.remove(result.id);
+    }
+    query.close();
+  }
+
+  void updateDocumentPage(String filePath, int pageNumber) {
+    if (!state.containsKey(filePath)) return;
+
+    // Update in-memory state
+    final newState = Map<String, Document>.from(state);
+    newState[filePath] = newState[filePath]!.copyWith(
+      lastOpenedPage: pageNumber,
+    );
+    state = newState;
+
+    // Update objectbox
+    final box = ref.read(objectboxProvider).store.box<DocumentEntity>();
+    final query = box.query(DocumentEntity_.filePath.equals(filePath)).build();
+    final result = query.findFirst();
+    if (result != null) {
+      result.lastOpenedPage = pageNumber;
+      box.put(result);
     }
     query.close();
   }
