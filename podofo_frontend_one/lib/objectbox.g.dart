@@ -87,7 +87,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(3, 6978279246222423302),
     name: 'UserState',
-    lastPropertyId: const obx_int.IdUid(11, 8695437590385941028),
+    lastPropertyId: const obx_int.IdUid(12, 6500702086585218178),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -154,6 +154,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(11, 8695437590385941028),
         name: 'audioSpeed',
         type: 8,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(12, 6500702086585218178),
+        name: 'selectedText',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -325,7 +331,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final audioVoiceOffset = object.audioVoice == null
             ? null
             : fbb.writeString(object.audioVoice!);
-        fbb.startTable(12);
+        final selectedTextOffset = object.selectedText == null
+            ? null
+            : fbb.writeString(object.selectedText!);
+        fbb.startTable(13);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, appearanceOffset);
         fbb.addBool(2, object.highlight);
@@ -337,6 +346,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(8, audioBackendOffset);
         fbb.addOffset(9, audioVoiceOffset);
         fbb.addFloat64(10, object.audioSpeed);
+        fbb.addOffset(11, selectedTextOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -390,7 +400,10 @@ obx_int.ModelDefinition getObjectBoxModel() {
             rootOffset,
             24,
             0,
-          );
+          )
+          ..selectedText = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 26);
 
         return object;
       },
@@ -495,5 +508,10 @@ class UserState_ {
   /// See [UserState.audioSpeed].
   static final audioSpeed = obx.QueryDoubleProperty<UserState>(
     _entities[2].properties[10],
+  );
+
+  /// See [UserState.selectedText].
+  static final selectedText = obx.QueryStringProperty<UserState>(
+    _entities[2].properties[11],
   );
 }

@@ -53,7 +53,14 @@ class DebugPane extends ConsumerWidget {
               CollapsibleContent(
                 child: OutlinedContainer(
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text('Selected Text').small(),
+                      Text(
+                        '${userState.selectedText}',
+                        maxLines: 5,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                       Text('Highlight').small(),
                       Text('${userState.highlight}'),
                       Text('Appearance').small(),

@@ -16,6 +16,8 @@ class UserState {
   String? highlightColor;
   String? previousPosition;
 
+  String? selectedText;
+
   bool audioReader = false;
   bool useKeyboardShortcutsToPlayPause = false;
   bool commandClickToReadSentence = false;
@@ -31,6 +33,7 @@ class UserState {
         highlight = other.highlight,
         highlightColor = other.highlightColor,
         previousPosition = other.previousPosition,
+        selectedText = other.selectedText,
         audioReader = other.audioReader,
         useKeyboardShortcutsToPlayPause = other.useKeyboardShortcutsToPlayPause,
         commandClickToReadSentence = other.commandClickToReadSentence,
@@ -54,6 +57,10 @@ class UserStateNotifier extends _$UserStateNotifier {
       return newUserState;
     }
     return userState;
+  }
+
+  void updateSelectedText(String? text) {
+    state = UserState.from(state)..selectedText = text;
   }
 
   void setAppearance(String appearance) {

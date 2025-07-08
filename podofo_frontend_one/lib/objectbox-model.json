@@ -60,7 +60,7 @@
     },
     {
       "id": "3:6978279246222423302",
-      "lastPropertyId": "11:8695437590385941028",
+      "lastPropertyId": "12:6500702086585218178",
       "name": "UserState",
       "properties": [
         {
@@ -118,6 +118,11 @@
           "id": "11:8695437590385941028",
           "name": "audioSpeed",
           "type": 8
+        },
+        {
+          "id": "12:6500702086585218178",
+          "name": "selectedText",
+          "type": 9
         }
       ],
       "relations": []

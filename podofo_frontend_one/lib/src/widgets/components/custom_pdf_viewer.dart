@@ -10,6 +10,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/workers/open_graph_worker.dart';
 
 class CustomPdfViewer extends ConsumerStatefulWidget {
@@ -116,6 +117,11 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
           onPageChanged: _savePageNumber,
           selectableRegionInjector: (context, child) {
             return SelectionArea(
+              onSelectionChanged: (selectedContent) {
+                ref
+                    .read(userStateNotifierProvider.notifier)
+                    .updateSelectedText(selectedContent?.plainText);
+              },
               contextMenuBuilder: (context, selectableRegionState) {
                 final buttonItems =
                     selectableRegionState.contextMenuButtonItems;
