@@ -1,9 +1,11 @@
 import 'dart:ui';
+import 'package:flutter/material.dart' show Scaffold;
+import 'package:flutter/widgets.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:pdfrx/pdfrx.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' hide Scaffold;
 
-import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/widgets/components/thumbnail_card.dart';
 
@@ -15,85 +17,66 @@ class ThumbnailPane extends ConsumerStatefulWidget {
 }
 
 class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
-  List<FocusNode> _focusNodes = [];
-  bool _isNavigating = false;
-  int _selectedIndex = 0;
+  late final PdfViewerController _pdfViewerController;
+  final List<FocusNode> _focusNodes = [];
+  String? _currentDocPath;
 
   @override
   void initState() {
     super.initState();
-    final doc = ref.read(currentDocumentProvider);
-    if (doc != null) {
-      _updateFocusNodes(doc.pdfDocument.pages.length);
-    }
-
-    // Reload FocusNodes if more of PdfDocument is lazily loaded (NOTE: don't remove)
-    // ref.listen<Document?>(currentDocumentProvider, (previous, next) {
-    //   final prevPageCount = previous?.pdfDocument.pages.length;
-    //   final nextPageCount = next?.pdfDocument.pages.length;
-    //   if (mounted && prevPageCount != nextPageCount) {
-    //     setState(() {
-    //       _updateFocusNodes(nextPageCount ?? 0);
-    //     });
-    //   }
-    // });
-  }
-
-  // TODO: handle change of currentDocument (probably rebuild? or reload)
-
-  // @override
-  // void didChangeDependencies() {
-  //   // TODO: implement didChangeDependencies
-  //   super.didChangeDependencies();
-  // }
-
-  void _updateFocusNodes(int count) {
-    _disposeFocusNodes();
-    _focusNodes = List.generate(count, (_) => FocusNode());
-  }
-
-  void _disposeFocusNodes() {
-    for (final node in _focusNodes) {
-      node.dispose();
-    }
+    _pdfViewerController = ref.read(pdfViewerControllerProvider);
+    // _pdfViewerController.pageListenable.addListener(_onPageChanged);
   }
 
   @override
   void dispose() {
-    _disposeFocusNodes();
+    // _pdfViewerController.pageListenable.removeListener(_onPageChanged);
+    for (var node in _focusNodes) {
+      node.dispose();
+    }
     super.dispose();
+  }
+
+  void _onPageChanged() {
+    if (!mounted) return;
+    final pageNumber = _pdfViewerController.pageNumber;
+    if (pageNumber == null) return;
+    final index = pageNumber - 1;
+    if (index >= 0 && index < _focusNodes.length) {
+      if (!_focusNodes[index].hasFocus) {
+        _focusNodes[index].requestFocus();
+      }
+    }
+  }
+
+  void _updateFocusNodes(int count) {
+    if (_focusNodes.length != count) {
+      for (var node in _focusNodes) {
+        node.dispose();
+      }
+      _focusNodes.clear();
+      _focusNodes.addAll(List.generate(count, (index) => FocusNode()));
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final doc = ref.watch(currentDocumentProvider);
-    // Enable auto-focusing on current page
-    ref.listen(currentDocumentProvider, ((previous, next) {
-      final int currentPage = next?.lastOpenedPage ?? 0;
-      if (mounted &&
-          !_isNavigating &&
-          currentPage != _selectedIndex &&
-          _focusNodes.isNotEmpty &&
-          currentPage < _focusNodes.length &&
-          _focusNodes[currentPage].canRequestFocus) {
-        _focusNodes[currentPage].requestFocus();
-      }
-    }));
-
-    if (doc == null) {
-      return const Center(child: Text('No document loaded'));
-    }
-
-    final currentPage = doc.lastOpenedPage ?? 0;
+    final currentDoc = ref.watch(currentDocumentProvider);
     final brightness = ref.watch(brightnessProvider);
     final bool darkMode = brightness == Brightness.dark;
     final shader = ref.watch(shaderProvider);
-    final thumbnailsState = ref.watch(thumbnailsProvider);
-    final thumbnails = thumbnailsState.thumbnails[doc.filePath];
-    final isGenerating = thumbnailsState.isGenerating[doc.filePath] ?? false;
-    final pdfViewerController = ref.read(pdfViewerControllerProvider);
 
-    if (isGenerating && (thumbnails == null || thumbnails.isEmpty)) {
+    if (currentDoc == null) {
+      _currentDocPath = null;
+      return const Center(child: Text('No document loaded'));
+    }
+
+    final thumbnailsState = ref.watch(thumbnailsProvider);
+    final thumbnails = thumbnailsState.thumbnails[currentDoc.filePath];
+    final isGenerating =
+        thumbnailsState.isGenerating[currentDoc.filePath] ?? false;
+
+    if (isGenerating) {
       return const Center(child: CircularProgressIndicator());
     }
 
@@ -101,8 +84,26 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
       return const Center(child: Text('No thumbnails available.'));
     }
 
+    _updateFocusNodes(thumbnails.length);
+
+    if (_currentDocPath != currentDoc.filePath) {
+      _currentDocPath = currentDoc.filePath;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        // final pageNumber =
+        //     _pdfViewerController.pageNumber ?? currentDoc.lastOpenedPage ?? 1;
+        final pageNumber = currentDoc.lastOpenedPage ?? 1;
+        final index = pageNumber - 1;
+        if (index >= 0 && index < _focusNodes.length) {
+          if (!_focusNodes[index].hasFocus) {
+            _focusNodes[index].requestFocus();
+          }
+        }
+      });
+    }
+
     return Scaffold(
-      child: Padding(
+      body: Padding(
         padding: const EdgeInsets.all(8.0),
         child: FocusTraversalGroup(
           child: GridView.builder(
@@ -126,30 +127,17 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
                 );
               }
               return ThumbnailCard(
-                focusNode: _focusNodes[pageNumber],
+                focusNode: _focusNodes[index],
                 thumbnail: Container(
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(4),
                   ),
                   child: imageWidget,
                 ),
                 label: '${pageNumber + 1}',
-                onPressed: () async {
-                  _isNavigating = true;
-                  _selectedIndex = pageNumber;
-                  await pdfViewerController.goToPage(pageNumber: pageNumber);
-                  _isNavigating = false;
-                },
-                onFocus: (hasFocus) async {
-                  if (hasFocus) {
-                    if (pdfViewerController.isReady) {
-                      _isNavigating = true;
-                      _selectedIndex = pageNumber;
-                      await pdfViewerController.goToPage(
-                        pageNumber: pageNumber,
-                      );
-                    }
-                    _isNavigating = false;
+                onPressed: () {
+                  if (_pdfViewerController.isReady) {
+                    _pdfViewerController.goToPage(pageNumber: index + 1);
                   }
                 },
               );
