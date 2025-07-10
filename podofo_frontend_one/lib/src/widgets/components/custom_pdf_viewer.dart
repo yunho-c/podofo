@@ -136,25 +136,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
 
                 final allButtonItems = [...buttonItems, customButton];
 
-                return AdaptiveTextSelectionToolbar(
-                  anchors: selectableRegionState.contextMenuAnchors,
-                  children: [
-                    Card(
-                      padding: const EdgeInsets.all(4),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: allButtonItems.map((item) {
-                          return Button(
-                            style: ButtonVariance.ghost,
-                            alignment: Alignment.centerLeft,
-                            onPressed: item.onPressed,
-                            child: Text(item.label ?? ''),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ],
+                return buildSelectableRegionContextMenu(
+                  context,
+                  selectableRegionState,
+                  allButtonItems,
                 );
               },
               child: child,
