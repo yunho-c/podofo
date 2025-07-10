@@ -40,7 +40,7 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
   }
 
   void _onPageChanged(int pageNumber) {
-    if (!_isNavigating) {
+    if (!_isNavigating && !_inImplicitFocusChange) {
       final index = pageNumber - 1;
       if (index >= 0 && index < _focusNodes.length) {
         if (!_focusNodes[index].hasFocus) {
@@ -64,9 +64,10 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
     }
   }
 
-  void navigate(int pageNumber) {
+  void navigate(int pageNumber) async {
     _isNavigating = true;
-    pdfViewerController.goToPage(pageNumber: pageNumber);
+    _lastHandledPage = pageNumber;
+    await pdfViewerController.goToPage(pageNumber: pageNumber);
     _isNavigating = false;
   }
 
@@ -77,7 +78,8 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
     ref.listen<Document?>(currentDocumentProvider, (prev, next) {
       if (next != null &&
           next.lastOpenedPage != null &&
-          next.lastOpenedPage != _lastHandledPage) {
+          next.lastOpenedPage != _lastHandledPage &&
+          !_isNavigating) {
         _lastHandledPage = next.lastOpenedPage;
         _onPageChanged(next.lastOpenedPage!);
       }
@@ -112,54 +114,53 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(8.0),
-        child: FocusTraversalGroup(
-          child: GridView.builder(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 1,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-              childAspectRatio: 1 / 1.38,
-            ),
-            itemCount: thumbnails.length,
-            itemBuilder: (BuildContext context, int index) {
-              final pageNumber = thumbnails.keys.elementAt(index);
-              final thumbnailBytes = thumbnails.values.elementAt(index);
-
-              Widget imageWidget = Image.memory(thumbnailBytes);
-
-              if (darkMode && shader != null) {
-                imageWidget = ImageFiltered(
-                  imageFilter: ImageFilter.shader(shader),
-                  child: imageWidget,
-                );
-              }
-              return ThumbnailCard(
-                focusNode: _focusNodes[index],
-                thumbnail: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: imageWidget,
-                ),
-                label: '${pageNumber + 1}',
-                onPressed: () {
-                  navigate(index + 1);
-                  // _inImplicitFocusChange = true;
-                  // _focusNodes[index].requestFocus();
-                },
-                onFocus: (isFocused) {
-                  if (isFocused) {
-                    if (_inImplicitFocusChange) {
-                      _inImplicitFocusChange = false;
-                    } else {
-                      navigate(index + 1);
-                    }
-                    // pdfViewerController.goToPage(pageNumber: index + 1);
-                  }
-                },
-              );
-            },
+        // child: FocusTraversalGroup(
+        child: GridView.builder(
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 1,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 1 / 1.38,
           ),
+          itemCount: thumbnails.length,
+          itemBuilder: (BuildContext context, int index) {
+            final pageNumber = thumbnails.keys.elementAt(index);
+            final thumbnailBytes = thumbnails.values.elementAt(index);
+
+            Widget imageWidget = Image.memory(thumbnailBytes);
+
+            if (darkMode && shader != null) {
+              imageWidget = ImageFiltered(
+                imageFilter: ImageFilter.shader(shader),
+                child: imageWidget,
+              );
+            }
+            return ThumbnailCard(
+              focusNode: _focusNodes[index],
+              thumbnail: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: imageWidget,
+              ),
+              label: '${pageNumber + 1}',
+              onPressed: () {
+                navigate(index + 1);
+                _inImplicitFocusChange = true;
+                _focusNodes[index].requestFocus();
+              },
+              onFocus: (isFocused) {
+                if (isFocused) {
+                  if (_inImplicitFocusChange) {
+                    _inImplicitFocusChange = false;
+                  } else {
+                    navigate(index + 1);
+                  }
+                }
+              },
+            );
+          },
+          // ),
         ),
       ),
     );
