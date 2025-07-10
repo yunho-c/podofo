@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide Scaffold;
 
+import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/widgets/components/thumbnail_card.dart';
 
@@ -17,30 +18,19 @@ class ThumbnailPane extends ConsumerStatefulWidget {
 }
 
 class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
-  late final PdfViewerController _pdfViewerController;
   final List<FocusNode> _focusNodes = [];
   String? _currentDocPath;
-
-  @override
-  void initState() {
-    super.initState();
-    _pdfViewerController = ref.read(pdfViewerControllerProvider);
-    // _pdfViewerController.pageListenable.addListener(_onPageChanged);
-  }
+  int? _lastHandledPage;
 
   @override
   void dispose() {
-    // _pdfViewerController.pageListenable.removeListener(_onPageChanged);
     for (var node in _focusNodes) {
       node.dispose();
     }
     super.dispose();
   }
 
-  void _onPageChanged() {
-    if (!mounted) return;
-    final pageNumber = _pdfViewerController.pageNumber;
-    if (pageNumber == null) return;
+  void _onPageChanged(int pageNumber) {
     final index = pageNumber - 1;
     if (index >= 0 && index < _focusNodes.length) {
       if (!_focusNodes[index].hasFocus) {
@@ -61,13 +51,25 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
 
   @override
   Widget build(BuildContext context) {
+    final pdfViewerController = ref.read(pdfViewerControllerProvider);
     final currentDoc = ref.watch(currentDocumentProvider);
+
+    ref.listen<Document?>(currentDocumentProvider, (prev, next) {
+      if (next != null &&
+          next.lastOpenedPage != null &&
+          next.lastOpenedPage != _lastHandledPage) {
+        _lastHandledPage = next.lastOpenedPage;
+        _onPageChanged(next.lastOpenedPage!);
+      }
+    });
+
     final brightness = ref.watch(brightnessProvider);
     final bool darkMode = brightness == Brightness.dark;
     final shader = ref.watch(shaderProvider);
 
     if (currentDoc == null) {
       _currentDocPath = null;
+      _lastHandledPage = null;
       return const Center(child: Text('No document loaded'));
     }
 
@@ -88,17 +90,12 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
 
     if (_currentDocPath != currentDoc.filePath) {
       _currentDocPath = currentDoc.filePath;
+      _lastHandledPage = null;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-        // final pageNumber =
-        //     _pdfViewerController.pageNumber ?? currentDoc.lastOpenedPage ?? 1;
-        final pageNumber = currentDoc.lastOpenedPage ?? 1;
-        final index = pageNumber - 1;
-        if (index >= 0 && index < _focusNodes.length) {
-          if (!_focusNodes[index].hasFocus) {
-            _focusNodes[index].requestFocus();
-          }
-        }
+        final page = currentDoc.lastOpenedPage ?? 1;
+        _lastHandledPage = page;
+        _onPageChanged(page);
       });
     }
 
@@ -136,8 +133,11 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
                 ),
                 label: '${pageNumber + 1}',
                 onPressed: () {
-                  if (_pdfViewerController.isReady) {
-                    _pdfViewerController.goToPage(pageNumber: index + 1);
+                  pdfViewerController.goToPage(pageNumber: index + 1);
+                },
+                onFocusChange: (isFocused) {
+                  if (isFocused) {
+                    pdfViewerController.goToPage(pageNumber: index + 1);
                   }
                 },
               );
