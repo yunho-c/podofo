@@ -1,6 +1,3 @@
-// import 'package:flutter/material.dart';
-// import 'dart:ui';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -16,41 +13,27 @@ class SearchPane extends ConsumerStatefulWidget {
 }
 
 class _SearchPaneState extends ConsumerState<SearchPane> {
-  PdfTextSearcher? _textSearcher;
   final _searchTextController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    _initializeTextSearcher();
-  }
-
-  void _initializeTextSearcher() {
-    final pdfViewerController = ref.read(pdfViewerControllerProvider);
-    _textSearcher = PdfTextSearcher(pdfViewerController)
-      ..addListener(_searchResultUpdated);
+    final textSearcher = ref.read(pdfTextSearcherProvider);
+    textSearcher.addListener(_searchResultUpdated);
     _searchTextController.addListener(_searchTextUpdated);
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (_textSearcher == null) {
-      _initializeTextSearcher();
-    }
-  }
-
-  @override
   void dispose() {
-    _textSearcher?.removeListener(_searchResultUpdated);
-    _textSearcher?.dispose();
+    final textSearcher = ref.read(pdfTextSearcherProvider);
+    textSearcher.removeListener(_searchResultUpdated);
     _searchTextController.removeListener(_searchTextUpdated);
     _searchTextController.dispose();
     super.dispose();
   }
 
   void _searchTextUpdated() {
-    _textSearcher?.startTextSearch(_searchTextController.text);
+    ref.read(pdfTextSearcherProvider).startTextSearch(_searchTextController.text);
   }
 
   void _searchResultUpdated() {
@@ -61,10 +44,7 @@ class _SearchPaneState extends ConsumerState<SearchPane> {
 
   @override
   Widget build(BuildContext context) {
-    final textSearcher = _textSearcher;
-    if (textSearcher == null) {
-      return const Center(child: Text('Initializing...'));
-    }
+    final textSearcher = ref.watch(pdfTextSearcherProvider);
     return TextSearchView(
       textSearcher: textSearcher,
       searchTextController: _searchTextController,
@@ -155,22 +135,6 @@ class _TextSearchViewState extends State<TextSearchView> {
                   autofocus: true,
                   focusNode: focusNode,
                   controller: widget.searchTextController,
-                  // decoration: InputDecoration(
-                  //   hintText: 'Search...',
-                  //   border: const OutlineInputBorder(),
-                  //   contentPadding: const EdgeInsets.symmetric(
-                  //     horizontal: 12.0,
-                  //   ),
-                  //   suffixIcon: widget.textSearcher.hasMatches
-                  //       ? Text(
-                  //           '${widget.textSearcher.currentIndex! + 1} / ${widget.textSearcher.matches.length}',
-                  //           style: const TextStyle(
-                  //             fontSize: 12,
-                  //             color: Colors.grey,
-                  //           ),
-                  //         )
-                  //       : null,
-                  // ),
                   textInputAction: TextInputAction.search,
                 ),
               ),

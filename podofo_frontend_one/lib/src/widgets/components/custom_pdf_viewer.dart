@@ -105,6 +105,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     final brightness = ref.watch(brightnessProvider);
     final shader = ref.watch(shaderProvider);
     final shaderPreference = ref.watch(shaderPreferenceProvider);
+    final textSearcher = ref.watch(pdfTextSearcherProvider);
 
     Widget buildPdfViewer() {
       if (currentDocument == null) {
@@ -115,6 +116,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         controller: pdfViewerController,
         initialPageNumber: currentDocument.lastOpenedPage ?? 1,
         params: PdfViewerParams(
+          pagePaintCallbacks: [
+            if (textSearcher != null) textSearcher!.pageTextMatchPaintCallback,
+          ],
           onPageChanged: _savePageNumber,
           selectableRegionInjector: (context, child) {
             return SelectionArea(

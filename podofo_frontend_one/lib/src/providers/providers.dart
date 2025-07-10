@@ -331,3 +331,10 @@ final thumbnailsProvider =
       });
       return notifier;
     });
+
+final pdfTextSearcherProvider = Provider<PdfTextSearcher>((ref) {
+  final pdfViewerController = ref.watch(pdfViewerControllerProvider);
+  final searcher = PdfTextSearcher(pdfViewerController);
+  ref.onDispose(searcher.dispose);
+  return searcher;
+});
