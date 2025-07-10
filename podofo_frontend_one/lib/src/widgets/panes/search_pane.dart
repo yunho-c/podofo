@@ -14,26 +14,26 @@ class SearchPane extends ConsumerStatefulWidget {
 
 class _SearchPaneState extends ConsumerState<SearchPane> {
   final _searchTextController = TextEditingController();
+  late final PdfTextSearcher _textSearcher;
 
   @override
   void initState() {
     super.initState();
-    final textSearcher = ref.read(pdfTextSearcherProvider);
-    textSearcher.addListener(_searchResultUpdated);
+    _textSearcher = ref.read(pdfTextSearcherProvider);
+    _textSearcher.addListener(_searchResultUpdated);
     _searchTextController.addListener(_searchTextUpdated);
   }
 
   @override
   void dispose() {
-    final textSearcher = ref.read(pdfTextSearcherProvider);
-    textSearcher.removeListener(_searchResultUpdated);
+    _textSearcher.removeListener(_searchResultUpdated);
     _searchTextController.removeListener(_searchTextUpdated);
     _searchTextController.dispose();
     super.dispose();
   }
 
   void _searchTextUpdated() {
-    ref.read(pdfTextSearcherProvider).startTextSearch(_searchTextController.text);
+    _textSearcher.startTextSearch(_searchTextController.text);
   }
 
   void _searchResultUpdated() {
@@ -44,9 +44,8 @@ class _SearchPaneState extends ConsumerState<SearchPane> {
 
   @override
   Widget build(BuildContext context) {
-    final textSearcher = ref.watch(pdfTextSearcherProvider);
     return TextSearchView(
-      textSearcher: textSearcher,
+      textSearcher: _textSearcher,
       searchTextController: _searchTextController,
     );
   }
