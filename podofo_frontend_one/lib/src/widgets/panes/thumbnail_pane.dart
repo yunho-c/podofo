@@ -18,9 +18,17 @@ class ThumbnailPane extends ConsumerStatefulWidget {
 }
 
 class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
+  late final pdfViewerController;
   final List<FocusNode> _focusNodes = [];
   String? _currentDocPath;
   int? _lastHandledPage;
+  bool _isNavigating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    pdfViewerController = ref.read(pdfViewerControllerProvider);
+  }
 
   @override
   void dispose() {
@@ -31,10 +39,12 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
   }
 
   void _onPageChanged(int pageNumber) {
-    final index = pageNumber - 1;
-    if (index >= 0 && index < _focusNodes.length) {
-      if (!_focusNodes[index].hasFocus) {
-        _focusNodes[index].requestFocus();
+    if (!_isNavigating) {
+      final index = pageNumber - 1;
+      if (index >= 0 && index < _focusNodes.length) {
+        if (!_focusNodes[index].hasFocus) {
+          _focusNodes[index].requestFocus();
+        }
       }
     }
   }
@@ -49,9 +59,14 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
     }
   }
 
+  void navigate(int pageNumber) {
+    _isNavigating = true;
+    pdfViewerController.goToPage(pageNumber: pageNumber);
+    _isNavigating = false;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final pdfViewerController = ref.read(pdfViewerControllerProvider);
     final currentDoc = ref.watch(currentDocumentProvider);
 
     ref.listen<Document?>(currentDocumentProvider, (prev, next) {
@@ -91,12 +106,12 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
     if (_currentDocPath != currentDoc.filePath) {
       _currentDocPath = currentDoc.filePath;
       _lastHandledPage = null;
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        final page = currentDoc.lastOpenedPage ?? 1;
-        _lastHandledPage = page;
-        _onPageChanged(page);
-      });
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      //   if (!mounted) return;
+      //   final page = currentDoc.lastOpenedPage ?? 1;
+      //   _lastHandledPage = page;
+      //   _onPageChanged(page);
+      // });
     }
 
     return Scaffold(
@@ -133,13 +148,14 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
                 ),
                 label: '${pageNumber + 1}',
                 onPressed: () {
-                  pdfViewerController.goToPage(pageNumber: index + 1);
+                  navigate(index + 1);
                 },
-                onFocusChange: (isFocused) {
-                  if (isFocused) {
-                    pdfViewerController.goToPage(pageNumber: index + 1);
-                  }
-                },
+                // onFocus: (isFocused) {
+                //   if (isFocused) {
+                //     navigate(index + 1);
+                //     // pdfViewerController.goToPage(pageNumber: index + 1);
+                //   }
+                // },
               );
             },
           ),

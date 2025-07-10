@@ -1,12 +1,10 @@
-import 'package:flutter/widgets.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class ThumbnailCard extends StatelessWidget {
   final Widget thumbnail;
   final String label;
-  final VoidCallback onPressed;
-  final void Function(bool)? onFocusChange;
   final FocusNode focusNode;
+  final VoidCallback onPressed;
 
   const ThumbnailCard({
     super.key,
@@ -14,7 +12,6 @@ class ThumbnailCard extends StatelessWidget {
     required this.label,
     required this.onPressed,
     required this.focusNode,
-    this.onFocusChange,
   });
 
   @override
@@ -23,8 +20,17 @@ class ThumbnailCard extends StatelessWidget {
       focusNode: focusNode,
       style: ButtonVariance.menu,
       alignment: AlignmentDirectional.centerStart,
-      onFocus: onFocusChange,
-      onPressed: onPressed,
+      // onFocus: (isFocused) {
+      //   if (isFocused) {}
+      // },
+      // onFocus: (isFocused) => onPressed(),
+      // onPressed: onPressed,
+      onPressed: () {
+        if (!focusNode.hasFocus) {
+          onPressed();
+        }
+      },
+      // onPressed: () => {},
       child: Row(children: [Expanded(child: thumbnail)]),
     );
   }
