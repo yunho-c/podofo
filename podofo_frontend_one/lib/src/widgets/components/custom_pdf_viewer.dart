@@ -134,9 +134,27 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
                   label: 'Custom Action',
                 );
 
-                return AdaptiveTextSelectionToolbar.buttonItems(
+                final allButtonItems = [...buttonItems, customButton];
+
+                return AdaptiveTextSelectionToolbar(
                   anchors: selectableRegionState.contextMenuAnchors,
-                  buttonItems: [...buttonItems, customButton],
+                  children: [
+                    Card(
+                      padding: const EdgeInsets.all(4),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: allButtonItems.map((item) {
+                          return Button(
+                            style: ButtonVariance.ghost,
+                            alignment: Alignment.centerLeft,
+                            onPressed: item.onPressed,
+                            child: Text(item.label ?? ''),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
                 );
               },
               child: child,
