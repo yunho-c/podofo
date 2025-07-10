@@ -18,11 +18,12 @@ class ThumbnailPane extends ConsumerStatefulWidget {
 }
 
 class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
-  late final pdfViewerController;
+  late final PdfViewerController pdfViewerController;
   final List<FocusNode> _focusNodes = [];
   String? _currentDocPath;
   int? _lastHandledPage;
   bool _isNavigating = false;
+  bool _inImplicitFocusChange = false;
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
       final index = pageNumber - 1;
       if (index >= 0 && index < _focusNodes.length) {
         if (!_focusNodes[index].hasFocus) {
+          _inImplicitFocusChange = true;
           _focusNodes[index].requestFocus();
         }
       }
@@ -50,12 +52,15 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
   }
 
   void _updateFocusNodes(int count) {
-    if (_focusNodes.length != count) {
-      for (var node in _focusNodes) {
-        node.dispose();
+    if (_focusNodes.length < count) {
+      _focusNodes.addAll(
+        List.generate(count - _focusNodes.length, (index) => FocusNode()),
+      );
+    } else if (_focusNodes.length > count) {
+      for (var i = count; i < _focusNodes.length; i++) {
+        _focusNodes[i].dispose();
       }
-      _focusNodes.clear();
-      _focusNodes.addAll(List.generate(count, (index) => FocusNode()));
+      _focusNodes.removeRange(count, _focusNodes.length);
     }
   }
 
@@ -102,17 +107,7 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
     }
 
     _updateFocusNodes(thumbnails.length);
-
-    if (_currentDocPath != currentDoc.filePath) {
-      _currentDocPath = currentDoc.filePath;
-      _lastHandledPage = null;
-      // WidgetsBinding.instance.addPostFrameCallback((_) {
-      //   if (!mounted) return;
-      //   final page = currentDoc.lastOpenedPage ?? 1;
-      //   _lastHandledPage = page;
-      //   _onPageChanged(page);
-      // });
-    }
+    _lastHandledPage = null;
 
     return Scaffold(
       body: Padding(
@@ -149,13 +144,19 @@ class _ThumbnailPaneState extends ConsumerState<ThumbnailPane> {
                 label: '${pageNumber + 1}',
                 onPressed: () {
                   navigate(index + 1);
+                  // _inImplicitFocusChange = true;
+                  // _focusNodes[index].requestFocus();
                 },
-                // onFocus: (isFocused) {
-                //   if (isFocused) {
-                //     navigate(index + 1);
-                //     // pdfViewerController.goToPage(pageNumber: index + 1);
-                //   }
-                // },
+                onFocus: (isFocused) {
+                  if (isFocused) {
+                    if (_inImplicitFocusChange) {
+                      _inImplicitFocusChange = false;
+                    } else {
+                      navigate(index + 1);
+                    }
+                    // pdfViewerController.goToPage(pageNumber: index + 1);
+                  }
+                },
               );
             },
           ),
