@@ -20,6 +20,7 @@ class ThumbnailPane extends ConsumerWidget {
     if (currentDoc == null) {
       return const Center(child: Text('No document loaded'));
     } else {
+      final currentPageNumber = currentDoc.lastOpenedPage ?? 0;
       final thumbnailsState = ref.watch(thumbnailsProvider);
       final thumbnails = thumbnailsState.thumbnails[currentDoc.filePath];
       final isGenerating =
@@ -57,6 +58,7 @@ class ThumbnailPane extends ConsumerWidget {
                 );
               }
               return ThumbnailCard(
+                active: pageNumber == currentPageNumber,
                 thumbnail: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(4),
