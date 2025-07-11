@@ -181,7 +181,6 @@ final hotkeyProvider = Provider<void>((ref) {
       scope: HotKeyScope.inapp,
     ),
     keyDownHandler: (_) {
-      final loadedDocuments = ref.read(loadedDocumentsProvider);
       final currentDocument = ref.read(currentDocumentProvider);
       if (currentDocument != null) {
         ref

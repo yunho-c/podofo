@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/data/objectbox.dart';
 import 'package:podofo_one/src/providers/providers.dart';
 import 'package:podofo_one/src/providers/hotkey_provider.dart';
+import 'package:podofo_one/src/services/shortcuts.dart';
 import 'package:podofo_one/src/services/window.dart';
 import 'package:podofo_one/src/widgets/screens/default_screen.dart';
 
@@ -14,7 +14,7 @@ late final ObjectBox objectbox;
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   objectbox = await ObjectBox.create();
-  await hotKeyManager.unregisterAll();
+  // await hotKeyManager.unregisterAll();
   await configureWindowManager();
   windowManager.addListener(PodofoWindowListener());
 
@@ -41,6 +41,14 @@ class MyApp extends ConsumerWidget {
       theme: themeData,
       darkTheme: themeData,
       themeMode: themeMode,
+      shortcuts: {
+        ...WidgetsApp.defaultShortcuts,
+        ...kAppShortcuts,
+      },
+      actions: <Type, Action<Intent>>{
+        ...WidgetsApp.defaultActions,
+        ...kAppActions,
+      },
       home: initialDocuments.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(child: Text('Error: $err')),
