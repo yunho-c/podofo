@@ -326,7 +326,7 @@ final thumbnailsProvider =
       final notifier = ThumbnailsNotifier(objectbox);
       ref.listen(currentDocumentProvider, (_, doc) {
         if (doc != null) {
-          notifier.generateThumbnails(doc.pdfDocument);
+          notifier.retrieveThumbnails(doc.pdfDocument);
         }
       });
       return notifier;
