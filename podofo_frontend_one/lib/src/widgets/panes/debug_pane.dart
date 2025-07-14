@@ -1,5 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 

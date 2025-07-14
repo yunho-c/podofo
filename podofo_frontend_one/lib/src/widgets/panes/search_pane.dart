@@ -3,7 +3,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:synchronized/extension.dart';
 
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
 
 class SearchPane extends ConsumerStatefulWidget {
   const SearchPane({super.key});

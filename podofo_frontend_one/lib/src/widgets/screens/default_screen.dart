@@ -2,7 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/ui_provider.dart';
 import 'package:podofo_one/src/widgets/components/command_palette.dart';
 import 'package:podofo_one/src/widgets/areas/main_area.dart';
 import 'package:podofo_one/src/widgets/areas/header.dart';

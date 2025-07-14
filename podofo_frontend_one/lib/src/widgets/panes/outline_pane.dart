@@ -4,7 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
 
 List<TreeNode<PdfOutlineNode>> _pdfOutlineToTreeNodes(
   List<PdfOutlineNode> nodes,

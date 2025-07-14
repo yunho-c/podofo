@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/widgets/buttons/tab_widget.dart';
 import 'package:podofo_one/src/widgets/components/dark_mode_button.dart';

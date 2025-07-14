@@ -3,7 +3,8 @@ import 'package:window_manager/window_manager.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/data/objectbox.dart';
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
+import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/providers/hotkey_provider.dart';
 import 'package:podofo_one/src/services/shortcuts.dart';
 import 'package:podofo_one/src/services/window.dart';

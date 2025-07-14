@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:podofo_one/src/data/document_data.dart';
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
 
 /// TODO: Implement as a more efficient way to pass around loadedDocuments
 ///       information to tab builder; title, index, previewThumbnail

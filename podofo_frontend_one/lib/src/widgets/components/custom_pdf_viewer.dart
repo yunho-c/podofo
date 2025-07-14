@@ -10,7 +10,8 @@ import 'package:podofo_one/src/widgets/components/custom_context_menu.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
+import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/workers/open_graph_worker.dart';
 

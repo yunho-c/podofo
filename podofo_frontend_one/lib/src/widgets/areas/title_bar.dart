@@ -5,7 +5,8 @@ import 'package:flutter/material.dart' show SubmenuButton, MenuItemButton;
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
+import 'package:podofo_one/src/providers/ui_provider.dart';
 
 class TitleBar extends ConsumerWidget {
   final Widget child;

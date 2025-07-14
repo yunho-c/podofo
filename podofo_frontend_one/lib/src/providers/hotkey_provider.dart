@@ -5,7 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:hotkey_manager/hotkey_manager.dart';
 
 import 'package:podofo_one/src/data/pane_data.dart';
-import 'package:podofo_one/src/providers/providers.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
+import 'package:podofo_one/src/providers/ui_provider.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 
