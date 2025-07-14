@@ -67,6 +67,14 @@ class DebugPane extends ConsumerWidget {
                       Text('${userState.highlightActiveColorIndex}'),
                       Text('Appearance').small(),
                       Text('${userState.appearance}'),
+                      const SizedBox(height: 10),
+                      Button(
+                        child: const Text('Nuke User State'),
+                        style: ButtonStyle.ghost(),
+                        onPressed: () {
+                          ref.read(userStateNotifierProvider.notifier).nuke();
+                        },
+                      ),
                     ],
                   ).withPadding(horizontal: 16, vertical: 8),
                 ).withPadding(top: 8),

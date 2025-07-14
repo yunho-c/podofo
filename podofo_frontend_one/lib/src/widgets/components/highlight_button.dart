@@ -16,7 +16,6 @@ class HighlightButton extends ConsumerWidget {
         : Colors.yellow;
     final highlightColors = userState.highlightColorPalette
         .map((hex) => colorFromHex(hex))
-        .where((c) => c != null)
         .cast<Color>()
         .toList();
 
@@ -78,14 +77,12 @@ class HighlightButton extends ConsumerWidget {
                               },
                             ),
                           );
-                        }).toList(),
+                        }),
                         SizedBox(
                           width: 16,
                           height: 16,
                           child: ColorInput(
-                            color: ColorDerivative.fromColor(
-                              selectedColor ?? Colors.yellow,
-                            ),
+                            color: ColorDerivative.fromColor(selectedColor),
                             mode: PromptMode.popover,
                             onChanged: (value) {
                               ref
