@@ -14,6 +14,7 @@ class UserState {
   String appearance = 'light';
   bool highlight = false;
   String? highlightColor;
+  List<String> highlightColorPalette = [];
   String? previousPosition;
 
   String? selectedText;
@@ -32,6 +33,7 @@ class UserState {
         appearance = other.appearance,
         highlight = other.highlight,
         highlightColor = other.highlightColor,
+        highlightColorPalette = other.highlightColorPalette,
         previousPosition = other.previousPosition,
         selectedText = other.selectedText,
         audioReader = other.audioReader,
@@ -53,8 +55,27 @@ class UserStateNotifier extends _$UserStateNotifier {
     final userState = _box.get(1);
     if (userState == null) {
       final newUserState = UserState();
+      newUserState.highlightColorPalette = [
+        '#f44336',
+        '#ff9800',
+        '#ffeb3b',
+        '#4caf50',
+        '#00bcd4',
+        '#3f51b5',
+      ];
       _box.put(newUserState, mode: PutMode.put);
       return newUserState;
+    }
+    if (userState.highlightColorPalette.isEmpty) {
+      userState.highlightColorPalette = [
+        '#f44336',
+        '#ff9800',
+        '#ffeb3b',
+        '#4caf50',
+        '#00bcd4',
+        '#3f51b5',
+      ];
+      _box.put(userState);
     }
     return userState;
   }
@@ -112,6 +133,11 @@ class UserStateNotifier extends _$UserStateNotifier {
 
   void setAudioSpeed(double audioSpeed) {
     state = UserState.from(state)..audioSpeed = audioSpeed;
+    _box.put(state, mode: PutMode.put);
+  }
+
+  void setHighlightColorPalette(List<String> highlightColorPalette) {
+    state = UserState.from(state)..highlightColorPalette = highlightColorPalette;
     _box.put(state, mode: PutMode.put);
   }
 }

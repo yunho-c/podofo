@@ -60,7 +60,7 @@
     },
     {
       "id": "3:6978279246222423302",
-      "lastPropertyId": "12:6500702086585218178",
+      "lastPropertyId": "13:663375219767776082",
       "name": "UserState",
       "properties": [
         {
@@ -123,6 +123,11 @@
           "id": "12:6500702086585218178",
           "name": "selectedText",
           "type": 9
+        },
+        {
+          "id": "13:663375219767776082",
+          "name": "highlightColorPalette",
+          "type": 30
         }
       ],
       "relations": []

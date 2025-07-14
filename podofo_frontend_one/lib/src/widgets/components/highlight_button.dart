@@ -34,14 +34,11 @@ class HighlightButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
     final selectedColor = _colorFromHex(userState.highlightColor);
-    final highlightColors = [
-      Colors.red,
-      Colors.orange,
-      Colors.yellow,
-      Colors.green,
-      Colors.cyan,
-      Colors.indigo,
-    ];
+    final highlightColors = userState.highlightColorPalette
+        .map((hex) => _colorFromHex(hex))
+        .where((c) => c != null)
+        .cast<Color>()
+        .toList();
 
     Widget icon;
     if (userState.highlight) {
