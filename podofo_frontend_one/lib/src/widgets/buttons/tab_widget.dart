@@ -4,7 +4,7 @@ import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/utils/responsive_icon.dart';
 import 'package:podofo_one/src/utils/text_utils.dart';
 
-final double TAB_WIDTH = 300;
+final double tabWidth = 300;
 
 class TabWidget extends StatefulWidget {
   const TabWidget({
@@ -29,59 +29,63 @@ class _TabWidgetState extends State<TabWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return MouseRegion(
-      onEnter: (_) => setState(() => _isHovering = true),
-      onExit: (_) => setState(() => _isHovering = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(5),
-              topRight: Radius.circular(5),
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    return Button(
+      onPressed: widget.onTap,
+      onHover: (hovering) {
+        setState(() {
+          _isHovering = hovering;
+        });
+      },
+      // style: ButtonStyle.ghost(),
+      style: ButtonStyle.ghost().copyWith(
+        padding: (context, states, resolved) =>
+            const EdgeInsets.symmetric(horizontal: 12),
+        decoration: (context, states, decoration) {
+          return BoxDecoration(
+            color: widget.isSelected ? colorScheme.muted : Colors.transparent,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(8),
+              topRight: Radius.circular(8),
             ),
-            color: widget.isSelected
-                ? Theme.of(context).colorScheme.muted
-                : Colors.transparent,
-          ),
-          child: SizedBox(
-            width: TAB_WIDTH,
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    removePdfExtension(widget.document.title),
-                    overflow: TextOverflow.ellipsis,
-                    style: widget.isSelected
-                        ? TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.foreground,
-                          )
-                        : TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: Theme.of(
-                              context,
-                            ).colorScheme.mutedForeground,
-                          ),
+          );
+        },
+        textStyle: (context, states, resolved) => widget.isSelected
+            ? TextStyle(
+                fontWeight: FontWeight.w600,
+                color: colorScheme.foreground,
+              )
+            : TextStyle(
+                fontWeight: FontWeight.w500,
+                color: colorScheme.mutedForeground,
+              ),
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: tabWidth),
+        child: Row(
+          // spacing: 1.0,
+          children: [
+            Expanded(
+              child: Text(
+                removePdfExtension(widget.document.title),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (_isHovering)
+              IconButton(
+                icon: const ResponsiveIcon(
+                  lightThemeIcon: Icon(Icons.close, size: 16),
+                  darkThemeIcon: Icon(
+                    Icons.close,
+                    size: 16,
+                    color: Colors.white,
                   ),
                 ),
-                if (_isHovering)
-                  IconButton(
-                    icon: const ResponsiveIcon(
-                      lightThemeIcon: Icon(Icons.close, size: 16),
-                      darkThemeIcon: Icon(
-                        Icons.close,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                    onPressed: widget.onClose,
-                    variance: ButtonStyle.ghostIcon(),
-                  ),
-              ],
-            ),
-          ),
+                onPressed: widget.onClose,
+                variance: ButtonStyle.ghostIcon(),
+              ),
+          ],
         ),
       ),
     );

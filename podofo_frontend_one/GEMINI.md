@@ -1,7 +1,5 @@
 # Project Information
 
-
-
 ## Directory Structure
 
 podofo_frontend_one/lib:
@@ -73,3 +71,7 @@ podofo_frontend_one/lib:
 
 13 directories, 51 files
 ```
+
+## Dependencies
+
+- `shadcn_flutter`: `PoDoFo` uses `shadcn_flutter` package that overrides most `material` components, often allowing `material.dart` to not be imported at all. However, some of the elements have subtle differences in the call signature. The source code is available at `~/Documents/GitHub/shadcn_flutter`.

@@ -194,8 +194,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
                   offset: Offset(0, 4),
                 )
               : const BoxShadow(
-                  color: Color.fromRGBO(0, 0, 0, 0.54), // black54
-                  blurRadius: 4,
+                  color: Color.fromRGBO(0, 0, 0, 0.32), // black54
+                  blurRadius: 5,
                   spreadRadius: 0,
                   offset: Offset(0, 4),
                 ),
