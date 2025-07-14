@@ -14,17 +14,17 @@ import 'package:podofo_one/src/providers/user_state_provider.dart';
 // TODO: Persistence (serialization), editor visualization, editing
 // TODO: Real-time visualization for the entire app (toggleable via 'More')
 final hotkeyProvider = Provider<void>((ref) {
-  final Map<int, PhysicalKeyboardKey> topRowNumberKeys = {
-    1: PhysicalKeyboardKey.digit1,
-    2: PhysicalKeyboardKey.digit2,
-    3: PhysicalKeyboardKey.digit3,
-    4: PhysicalKeyboardKey.digit4,
-    5: PhysicalKeyboardKey.digit5,
-    6: PhysicalKeyboardKey.digit6,
-    7: PhysicalKeyboardKey.digit7,
-    8: PhysicalKeyboardKey.digit8,
-    9: PhysicalKeyboardKey.digit9,
-    0: PhysicalKeyboardKey.digit0,
+  final Map<int, LogicalKeyboardKey> topRowNumberKeys = {
+    1: LogicalKeyboardKey.digit1,
+    2: LogicalKeyboardKey.digit2,
+    3: LogicalKeyboardKey.digit3,
+    4: LogicalKeyboardKey.digit4,
+    5: LogicalKeyboardKey.digit5,
+    6: LogicalKeyboardKey.digit6,
+    7: LogicalKeyboardKey.digit7,
+    8: LogicalKeyboardKey.digit8,
+    9: LogicalKeyboardKey.digit9,
+    0: LogicalKeyboardKey.digit0,
   };
 
   hotKeyManager.register(
@@ -46,7 +46,9 @@ final hotkeyProvider = Provider<void>((ref) {
       scope: HotKeyScope.inapp,
     ),
     keyDownHandler: (_) {
-      final highlightMode = ref.read(userStateNotifierProvider).highlightModeEnabled;
+      final highlightMode = ref
+          .read(userStateNotifierProvider)
+          .highlightModeEnabled;
       ref
           .read(userStateNotifierProvider.notifier)
           .setHighlightModeEnabled(!highlightMode);
@@ -150,6 +152,18 @@ final hotkeyProvider = Provider<void>((ref) {
         scope: HotKeyScope.inapp,
       ),
       keyDownHandler: (_) {
+        final loadedDocuments = ref.read(loadedDocumentsProvider);
+        if (number <= loadedDocuments.length) {
+          ref.read(currentTabIndexProvider.notifier).state = number - 1;
+        }
+      },
+    );
+  });
+
+  topRowNumberKeys.forEach((number, key) {
+    hotKeyManager.register(
+      HotKey(key: key, scope: HotKeyScope.inapp),
+      keyDownHandler: (_) {
         final userState = ref.read(userStateNotifierProvider);
         final paletteSize = userState.highlightColorPalette.length;
         final index = number == 0 ? 9 : number - 1;
@@ -157,11 +171,6 @@ final hotkeyProvider = Provider<void>((ref) {
           ref
               .read(userStateNotifierProvider.notifier)
               .setHighlightActiveColorIndex(index);
-        } else {
-          final loadedDocuments = ref.read(loadedDocumentsProvider);
-          if (number <= loadedDocuments.length) {
-            ref.read(currentTabIndexProvider.notifier).state = number - 1;
-          }
         }
       },
     );

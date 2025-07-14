@@ -1,58 +1,28 @@
-import 'package:flutter/services.dart';
-import 'package:flutter/widgets.dart';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' hide colorToHex;
 
 import 'package:podofo_one/src/providers/user_state_provider.dart';
+import 'package:podofo_one/src/utils/color_utils.dart';
 
 class HighlightButton extends ConsumerWidget {
   const HighlightButton({super.key});
 
-  Color? _colorFromHex(String? hexString) {
-    if (hexString == null) {
-      return null;
-    }
-    final buffer = StringBuffer();
-    if (hexString.length == 6 || hexString.length == 7) {
-      buffer.write('ff');
-    }
-    buffer.write(hexString.replaceFirst('#', ''));
-    try {
-      return Color(int.parse(buffer.toString(), radix: 16));
-    } catch (e) {
-      return null;
-    }
-  }
-
-  String _colorToHex(Color color) {
-    return '#${color.value.toRadixString(16).substring(2)}';
-  }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
-    final String? colorHex;
-    if (userState.highlightColor != null) {
-      colorHex = userState.highlightColor;
-    } else if (userState.highlightActiveColorIndex <
-        userState.highlightColorPalette.length) {
-      colorHex =
-          userState.highlightColorPalette[userState.highlightActiveColorIndex];
-    } else {
-      colorHex = '#ffff00';
-    }
-    final selectedColor = _colorFromHex(colorHex);
+    final selectedColor = userState.highlightColor != null
+        ? colorFromHex(userState.highlightColor!)
+        : Colors.yellow;
     final highlightColors = userState.highlightColorPalette
-        .map((hex) => _colorFromHex(hex))
+        .map((hex) => colorFromHex(hex))
         .where((c) => c != null)
         .cast<Color>()
         .toList();
 
     Widget icon;
     if (userState.highlightModeEnabled) {
-      final color = selectedColor ?? Colors.yellow;
+      final color = selectedColor;
       icon = ColorFiltered(
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         child: FaIcon(
@@ -121,7 +91,7 @@ class HighlightButton extends ConsumerWidget {
                               ref
                                   .read(userStateNotifierProvider.notifier)
                                   .setHighlightColor(
-                                    _colorToHex(value.toColor()),
+                                    colorToHex(value.toColor()),
                                   );
                             },
                             storage: ColorHistoryStorage.of(context),

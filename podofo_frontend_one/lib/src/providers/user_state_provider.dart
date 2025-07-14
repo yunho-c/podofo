@@ -3,6 +3,7 @@ import 'package:objectbox/objectbox.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import 'package:podofo_one/src/providers/data_provider.dart';
+import 'package:podofo_one/src/utils/color_utils.dart';
 
 part 'user_state_provider.g.dart';
 
@@ -30,20 +31,20 @@ class UserState {
   UserState();
 
   UserState.from(UserState other)
-      : id = other.id,
-        appearance = other.appearance,
-        highlightModeEnabled = other.highlightModeEnabled,
-        highlightColor = other.highlightColor,
-        highlightActiveColorIndex = other.highlightActiveColorIndex,
-        highlightColorPalette = other.highlightColorPalette,
-        previousPosition = other.previousPosition,
-        selectedText = other.selectedText,
-        audioReader = other.audioReader,
-        useKeyboardShortcutsToPlayPause = other.useKeyboardShortcutsToPlayPause,
-        commandClickToReadSentence = other.commandClickToReadSentence,
-        audioBackend = other.audioBackend,
-        audioVoice = other.audioVoice,
-        audioSpeed = other.audioSpeed;
+    : id = other.id,
+      appearance = other.appearance,
+      highlightModeEnabled = other.highlightModeEnabled,
+      highlightColor = other.highlightColor,
+      highlightActiveColorIndex = other.highlightActiveColorIndex,
+      highlightColorPalette = other.highlightColorPalette,
+      previousPosition = other.previousPosition,
+      selectedText = other.selectedText,
+      audioReader = other.audioReader,
+      useKeyboardShortcutsToPlayPause = other.useKeyboardShortcutsToPlayPause,
+      commandClickToReadSentence = other.commandClickToReadSentence,
+      audioBackend = other.audioBackend,
+      audioVoice = other.audioVoice,
+      audioSpeed = other.audioSpeed;
 }
 
 @Riverpod(keepAlive: true)
@@ -58,25 +59,29 @@ class UserStateNotifier extends _$UserStateNotifier {
     if (userState == null) {
       final newUserState = UserState();
       newUserState.highlightColorPalette = [
-        '#f44336',
-        '#ff9800',
-        '#ffeb3b',
-        '#4caf50',
-        '#00bcd4',
-        '#3f51b5',
+        '#22f44336',
+        '#22ff9800',
+        '#22ffeb3b',
+        '#224caf50',
+        '#2200bcd4',
+        '#223f51b5',
       ];
       _box.put(newUserState, mode: PutMode.put);
       return newUserState;
     }
     if (userState.highlightColorPalette.isEmpty) {
       userState.highlightColorPalette = [
-        '#f44336',
-        '#ff9800',
-        '#ffeb3b',
-        '#4caf50',
-        '#00bcd4',
-        '#3f51b5',
+        '#22f44336',
+        '#22ff9800',
+        '#22ffeb3b',
+        '#224caf50',
+        '#2200bcd4',
+        '#223f51b5',
       ];
+      _box.put(userState);
+    }
+    if (userState.highlightColor == null) {
+      userState.highlightColor = userState.highlightColorPalette[0];
       _box.put(userState);
     }
     return userState;
@@ -102,7 +107,9 @@ class UserStateNotifier extends _$UserStateNotifier {
   }
 
   void setHighlightActiveColorIndex(int index) {
-    state = UserState.from(state)..highlightActiveColorIndex = index;
+    state = UserState.from(state)
+      ..highlightActiveColorIndex = index
+      ..highlightColor = state.highlightColorPalette[index];
     _box.put(state, mode: PutMode.put);
   }
 
@@ -116,7 +123,9 @@ class UserStateNotifier extends _$UserStateNotifier {
     _box.put(state, mode: PutMode.put);
   }
 
-  void setUseKeyboardShortcutsToPlayPause(bool useKeyboardShortcutsToPlayPause) {
+  void setUseKeyboardShortcutsToPlayPause(
+    bool useKeyboardShortcutsToPlayPause,
+  ) {
     state = UserState.from(state)
       ..useKeyboardShortcutsToPlayPause = useKeyboardShortcutsToPlayPause;
     _box.put(state, mode: PutMode.put);
@@ -144,7 +153,13 @@ class UserStateNotifier extends _$UserStateNotifier {
   }
 
   void setHighlightColorPalette(List<String> highlightColorPalette) {
-    state = UserState.from(state)..highlightColorPalette = highlightColorPalette;
+    state = UserState.from(state)
+      ..highlightColorPalette = highlightColorPalette;
     _box.put(state, mode: PutMode.put);
+  }
+
+  void nuke() {
+    _box.remove(1);
+    ref.invalidateSelf();
   }
 }
