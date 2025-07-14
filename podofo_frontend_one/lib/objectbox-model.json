@@ -60,7 +60,7 @@
     },
     {
       "id": "3:6978279246222423302",
-      "lastPropertyId": "15:3751037921321467436",
+      "lastPropertyId": "16:8031658732022810243",
       "name": "UserState",
       "properties": [
         {
@@ -133,6 +133,11 @@
           "id": "15:3751037921321467436",
           "name": "highlightActiveColorIndex",
           "type": 6
+        },
+        {
+          "id": "16:8031658732022810243",
+          "name": "enableAutoSave",
+          "type": 1
         }
       ],
       "relations": []

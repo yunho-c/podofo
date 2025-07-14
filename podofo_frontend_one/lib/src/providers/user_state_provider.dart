@@ -28,6 +28,8 @@ class UserState {
   String? audioVoice;
   double audioSpeed = 1.0;
 
+  bool autoSaveEnabled = true;
+
   UserState();
 
   UserState.from(UserState other)
@@ -44,7 +46,8 @@ class UserState {
       commandClickToReadSentence = other.commandClickToReadSentence,
       audioBackend = other.audioBackend,
       audioVoice = other.audioVoice,
-      audioSpeed = other.audioSpeed;
+      audioSpeed = other.audioSpeed,
+      autoSaveEnabled = other.autoSaveEnabled;
 }
 
 @Riverpod(keepAlive: true)
@@ -155,6 +158,11 @@ class UserStateNotifier extends _$UserStateNotifier {
   void setHighlightColorPalette(List<String> highlightColorPalette) {
     state = UserState.from(state)
       ..highlightColorPalette = highlightColorPalette;
+    _box.put(state, mode: PutMode.put);
+  }
+
+  void setAutoSaveEnabled(bool autoSaveEnabled) {
+    state = UserState.from(state)..autoSaveEnabled = autoSaveEnabled;
     _box.put(state, mode: PutMode.put);
   }
 

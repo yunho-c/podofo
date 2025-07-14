@@ -88,7 +88,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(3, 6978279246222423302),
     name: 'UserState',
-    lastPropertyId: const obx_int.IdUid(15, 3751037921321467436),
+    lastPropertyId: const obx_int.IdUid(16, 8031658732022810243),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -173,6 +173,12 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(15, 3751037921321467436),
         name: 'highlightActiveColorIndex',
         type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(16, 8031658732022810243),
+        name: 'autoSaveEnabled',
+        type: 1,
         flags: 0,
       ),
     ],
@@ -381,7 +387,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
               .map(fbb.writeString)
               .toList(growable: false),
         );
-        fbb.startTable(16);
+        fbb.startTable(17);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, appearanceOffset);
         fbb.addOffset(3, highlightColorOffset);
@@ -396,6 +402,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addOffset(12, highlightColorPaletteOffset);
         fbb.addBool(13, object.highlightModeEnabled);
         fbb.addInt64(14, object.highlightActiveColorIndex);
+        fbb.addBool(15, object.autoSaveEnabled);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -462,6 +469,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
             rootOffset,
             32,
             0,
+          )
+          ..autoSaveEnabled = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            34,
+            false,
           );
 
         return object;
@@ -623,6 +636,11 @@ class UserState_ {
   /// See [UserState.highlightActiveColorIndex].
   static final highlightActiveColorIndex = obx.QueryIntegerProperty<UserState>(
     _entities[2].properties[13],
+  );
+
+  /// See [UserState.autoSaveEnabled].
+  static final autoSaveEnabled = obx.QueryBooleanProperty<UserState>(
+    _entities[2].properties[14],
   );
 }
 
