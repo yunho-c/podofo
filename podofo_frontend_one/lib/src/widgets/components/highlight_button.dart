@@ -26,13 +26,26 @@ class HighlightButton extends ConsumerWidget {
     }
   }
 
+  String _colorToHex(Color color) {
+    return '#${color.value.toRadixString(16).substring(2)}';
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
+    final selectedColor = _colorFromHex(userState.highlightColor);
+    final highlightColors = [
+      Colors.red,
+      Colors.orange,
+      Colors.yellow,
+      Colors.green,
+      Colors.cyan,
+      Colors.indigo,
+    ];
 
     Widget icon;
     if (userState.highlight) {
-      final color = _colorFromHex(userState.highlightColor) ?? Colors.yellow;
+      final color = selectedColor ?? Colors.yellow;
       icon = ColorFiltered(
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
         child: FaIcon(
@@ -72,42 +85,20 @@ class HighlightButton extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Row(
                       children: [
-                        Avatar(
-                          initials: '',
-                          backgroundColor: Colors.red,
-                          size: 12,
-                        ),
-                        SizedBox(width: 8),
-                        Avatar(
-                          initials: '',
-                          backgroundColor: Colors.orange,
-                          size: 12,
-                        ),
-                        SizedBox(width: 8),
-                        Avatar(
-                          initials: '',
-                          backgroundColor: Colors.yellow,
-                          size: 12,
-                        ),
-                        SizedBox(width: 8),
-                        Avatar(
-                          initials: '',
-                          backgroundColor: Colors.green,
-                          size: 12,
-                        ),
-                        SizedBox(width: 8),
-                        Avatar(
-                          initials: '',
-                          backgroundColor: Colors.cyan,
-                          size: 12,
-                        ),
-                        SizedBox(width: 8),
-                        Avatar(
-                          initials: '',
-                          backgroundColor: Colors.indigo,
-                          size: 12,
-                        ),
-                        SizedBox(width: 8),
+                        ...highlightColors.map((color) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8.0),
+                            child: _HighlightColorButton(
+                              color: color,
+                              isSelected: selectedColor == color,
+                              onPressed: () {
+                                ref
+                                    .read(userStateNotifierProvider.notifier)
+                                    .setHighlightColor(_colorToHex(color));
+                              },
+                            ),
+                          );
+                        }).toList(),
                         Avatar(
                           initials: '+',
                           backgroundColor: Colors.transparent,
@@ -152,6 +143,39 @@ class HighlightButton extends ConsumerWidget {
               .setHighlight(!userState.highlight);
         },
         variance: ButtonStyle.ghostIcon(),
+      ),
+    );
+  }
+}
+
+class _HighlightColorButton extends StatelessWidget {
+  final Color color;
+  final bool isSelected;
+  final VoidCallback onPressed;
+
+  const _HighlightColorButton({
+    required this.color,
+    required this.isSelected,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 16,
+        height: 16,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: isSelected
+              ? Border.all(
+                  color: Theme.of(context).colorScheme.foreground,
+                  width: 2,
+                )
+              : null,
+        ),
       ),
     );
   }
