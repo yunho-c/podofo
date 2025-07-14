@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -9,15 +10,44 @@ import 'package:podofo_one/src/providers/user_state_provider.dart';
 class HighlightButton extends ConsumerWidget {
   const HighlightButton({super.key});
 
+  Color? _colorFromHex(String? hexString) {
+    if (hexString == null) {
+      return null;
+    }
+    final buffer = StringBuffer();
+    if (hexString.length == 6 || hexString.length == 7) {
+      buffer.write('ff');
+    }
+    buffer.write(hexString.replaceFirst('#', ''));
+    try {
+      return Color(int.parse(buffer.toString(), radix: 16));
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
+
+    Widget icon;
+    if (userState.highlight) {
+      final color = _colorFromHex(userState.highlightColor) ?? Colors.yellow;
+      icon = ColorFiltered(
+        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
+        child: FaIcon(
+          FontAwesomeIcons.highlighter,
+          color: Theme.of(context).colorScheme.foreground,
+        ),
+      );
+    } else {
+      icon = FaIcon(
+        FontAwesomeIcons.highlighter,
+        color: Theme.of(context).colorScheme.mutedForeground.withAlpha(200),
+      );
+    }
+
     return GestureDetector(
-      onTap: () {
-        ref
-            .read(userStateNotifierProvider.notifier)
-            .setHighlight(!userState.highlight);
-      },
       onSecondaryTapUp: (details) {
         showDropdown(
           context: context,
@@ -115,12 +145,7 @@ class HighlightButton extends ConsumerWidget {
         );
       },
       child: IconButton(
-        icon: FaIcon(
-          FontAwesomeIcons.highlighter,
-          color: userState.highlight
-              ? Theme.of(context).colorScheme.foreground
-              : Theme.of(context).colorScheme.mutedForeground.withAlpha(200),
-        ),
+        icon: icon,
         onPressed: () {
           ref
               .read(userStateNotifierProvider.notifier)
