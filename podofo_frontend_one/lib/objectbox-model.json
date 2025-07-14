@@ -60,7 +60,7 @@
     },
     {
       "id": "3:6978279246222423302",
-      "lastPropertyId": "13:663375219767776082",
+      "lastPropertyId": "15:3751037921321467436",
       "name": "UserState",
       "properties": [
         {
@@ -73,11 +73,6 @@
           "id": "2:7702284734605549523",
           "name": "appearance",
           "type": 9
-        },
-        {
-          "id": "3:6722573925179636413",
-          "name": "highlight",
-          "type": 1
         },
         {
           "id": "4:6531013531422759696",
@@ -128,6 +123,16 @@
           "id": "13:663375219767776082",
           "name": "highlightColorPalette",
           "type": 30
+        },
+        {
+          "id": "14:1230831264076461843",
+          "name": "highlightModeEnabled",
+          "type": 1
+        },
+        {
+          "id": "15:3751037921321467436",
+          "name": "highlightActiveColorIndex",
+          "type": 6
         }
       ],
       "relations": []
@@ -167,7 +172,9 @@
   "modelVersionParserMinimum": 5,
   "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredPropertyUids": [
+    6722573925179636413
+  ],
   "retiredRelationUids": [],
   "version": 1
 }

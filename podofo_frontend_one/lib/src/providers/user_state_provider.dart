@@ -12,8 +12,9 @@ class UserState {
   int id = 0;
 
   String appearance = 'light';
-  bool highlight = false;
+  bool highlightModeEnabled = false;
   String? highlightColor;
+  int highlightActiveColorIndex = 0;
   List<String> highlightColorPalette = [];
   String? previousPosition;
 
@@ -31,8 +32,9 @@ class UserState {
   UserState.from(UserState other)
       : id = other.id,
         appearance = other.appearance,
-        highlight = other.highlight,
+        highlightModeEnabled = other.highlightModeEnabled,
         highlightColor = other.highlightColor,
+        highlightActiveColorIndex = other.highlightActiveColorIndex,
         highlightColorPalette = other.highlightColorPalette,
         previousPosition = other.previousPosition,
         selectedText = other.selectedText,
@@ -89,13 +91,18 @@ class UserStateNotifier extends _$UserStateNotifier {
     _box.put(state, mode: PutMode.put);
   }
 
-  void setHighlight(bool highlight) {
-    state = UserState.from(state)..highlight = highlight;
+  void setHighlightModeEnabled(bool highlightModeEnabled) {
+    state = UserState.from(state)..highlightModeEnabled = highlightModeEnabled;
     _box.put(state, mode: PutMode.put);
   }
 
   void setHighlightColor(String? highlightColor) {
     state = UserState.from(state)..highlightColor = highlightColor;
+    _box.put(state, mode: PutMode.put);
+  }
+
+  void setHighlightActiveColorIndex(int index) {
+    state = UserState.from(state)..highlightActiveColorIndex = index;
     _box.put(state, mode: PutMode.put);
   }
 

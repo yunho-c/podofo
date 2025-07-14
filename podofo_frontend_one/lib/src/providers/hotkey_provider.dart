@@ -46,10 +46,10 @@ final hotkeyProvider = Provider<void>((ref) {
       scope: HotKeyScope.inapp,
     ),
     keyDownHandler: (_) {
-      final currentHighlight = ref.read(userStateNotifierProvider).highlight;
+      final highlightMode = ref.read(userStateNotifierProvider).highlightModeEnabled;
       ref
           .read(userStateNotifierProvider.notifier)
-          .setHighlight(!currentHighlight);
+          .setHighlightModeEnabled(!highlightMode);
     },
   );
   hotKeyManager.register(
@@ -150,9 +150,18 @@ final hotkeyProvider = Provider<void>((ref) {
         scope: HotKeyScope.inapp,
       ),
       keyDownHandler: (_) {
-        final loadedDocuments = ref.read(loadedDocumentsProvider);
-        if (number <= loadedDocuments.length) {
-          ref.read(currentTabIndexProvider.notifier).state = number - 1;
+        final userState = ref.read(userStateNotifierProvider);
+        final paletteSize = userState.highlightColorPalette.length;
+        final index = number == 0 ? 9 : number - 1;
+        if (index < paletteSize) {
+          ref
+              .read(userStateNotifierProvider.notifier)
+              .setHighlightActiveColorIndex(index);
+        } else {
+          final loadedDocuments = ref.read(loadedDocumentsProvider);
+          if (number <= loadedDocuments.length) {
+            ref.read(currentTabIndexProvider.notifier).state = number - 1;
+          }
         }
       },
     );

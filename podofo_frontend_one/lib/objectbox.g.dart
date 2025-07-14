@@ -88,7 +88,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(3, 6978279246222423302),
     name: 'UserState',
-    lastPropertyId: const obx_int.IdUid(13, 663375219767776082),
+    lastPropertyId: const obx_int.IdUid(15, 3751037921321467436),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -101,12 +101,6 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(2, 7702284734605549523),
         name: 'appearance',
         type: 9,
-        flags: 0,
-      ),
-      obx_int.ModelProperty(
-        id: const obx_int.IdUid(3, 6722573925179636413),
-        name: 'highlight',
-        type: 1,
         flags: 0,
       ),
       obx_int.ModelProperty(
@@ -167,6 +161,18 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(13, 663375219767776082),
         name: 'highlightColorPalette',
         type: 30,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(14, 1230831264076461843),
+        name: 'highlightModeEnabled',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(15, 3751037921321467436),
+        name: 'highlightActiveColorIndex',
+        type: 6,
         flags: 0,
       ),
     ],
@@ -248,7 +254,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
     retiredIndexUids: const [],
-    retiredPropertyUids: const [],
+    retiredPropertyUids: const [6722573925179636413],
     retiredRelationUids: const [],
     modelVersion: 5,
     modelVersionParserMinimum: 5,
@@ -375,10 +381,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
               .map(fbb.writeString)
               .toList(growable: false),
         );
-        fbb.startTable(14);
+        fbb.startTable(16);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, appearanceOffset);
-        fbb.addBool(2, object.highlight);
         fbb.addOffset(3, highlightColorOffset);
         fbb.addOffset(4, previousPositionOffset);
         fbb.addBool(5, object.audioReader);
@@ -389,6 +394,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addFloat64(10, object.audioSpeed);
         fbb.addOffset(11, selectedTextOffset);
         fbb.addOffset(12, highlightColorPaletteOffset);
+        fbb.addBool(13, object.highlightModeEnabled);
+        fbb.addInt64(14, object.highlightActiveColorIndex);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -401,12 +408,6 @@ obx_int.ModelDefinition getObjectBoxModel() {
           ..appearance = const fb.StringReader(
             asciiOptimization: true,
           ).vTableGet(buffer, rootOffset, 6, '')
-          ..highlight = const fb.BoolReader().vTableGet(
-            buffer,
-            rootOffset,
-            8,
-            false,
-          )
           ..highlightColor = const fb.StringReader(
             asciiOptimization: true,
           ).vTableGetNullable(buffer, rootOffset, 10)
@@ -449,7 +450,19 @@ obx_int.ModelDefinition getObjectBoxModel() {
           ..highlightColorPalette = const fb.ListReader<String>(
             fb.StringReader(asciiOptimization: true),
             lazy: false,
-          ).vTableGet(buffer, rootOffset, 28, []);
+          ).vTableGet(buffer, rootOffset, 28, [])
+          ..highlightModeEnabled = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            30,
+            false,
+          )
+          ..highlightActiveColorIndex = const fb.Int64Reader().vTableGet(
+            buffer,
+            rootOffset,
+            32,
+            0,
+          );
 
         return object;
       },
@@ -553,58 +566,63 @@ class UserState_ {
     _entities[2].properties[1],
   );
 
-  /// See [UserState.highlight].
-  static final highlight = obx.QueryBooleanProperty<UserState>(
-    _entities[2].properties[2],
-  );
-
   /// See [UserState.highlightColor].
   static final highlightColor = obx.QueryStringProperty<UserState>(
-    _entities[2].properties[3],
+    _entities[2].properties[2],
   );
 
   /// See [UserState.previousPosition].
   static final previousPosition = obx.QueryStringProperty<UserState>(
-    _entities[2].properties[4],
+    _entities[2].properties[3],
   );
 
   /// See [UserState.audioReader].
   static final audioReader = obx.QueryBooleanProperty<UserState>(
-    _entities[2].properties[5],
+    _entities[2].properties[4],
   );
 
   /// See [UserState.useKeyboardShortcutsToPlayPause].
   static final useKeyboardShortcutsToPlayPause =
-      obx.QueryBooleanProperty<UserState>(_entities[2].properties[6]);
+      obx.QueryBooleanProperty<UserState>(_entities[2].properties[5]);
 
   /// See [UserState.commandClickToReadSentence].
   static final commandClickToReadSentence = obx.QueryBooleanProperty<UserState>(
-    _entities[2].properties[7],
+    _entities[2].properties[6],
   );
 
   /// See [UserState.audioBackend].
   static final audioBackend = obx.QueryStringProperty<UserState>(
-    _entities[2].properties[8],
+    _entities[2].properties[7],
   );
 
   /// See [UserState.audioVoice].
   static final audioVoice = obx.QueryStringProperty<UserState>(
-    _entities[2].properties[9],
+    _entities[2].properties[8],
   );
 
   /// See [UserState.audioSpeed].
   static final audioSpeed = obx.QueryDoubleProperty<UserState>(
-    _entities[2].properties[10],
+    _entities[2].properties[9],
   );
 
   /// See [UserState.selectedText].
   static final selectedText = obx.QueryStringProperty<UserState>(
-    _entities[2].properties[11],
+    _entities[2].properties[10],
   );
 
   /// See [UserState.highlightColorPalette].
   static final highlightColorPalette = obx.QueryStringVectorProperty<UserState>(
+    _entities[2].properties[11],
+  );
+
+  /// See [UserState.highlightModeEnabled].
+  static final highlightModeEnabled = obx.QueryBooleanProperty<UserState>(
     _entities[2].properties[12],
+  );
+
+  /// See [UserState.highlightActiveColorIndex].
+  static final highlightActiveColorIndex = obx.QueryIntegerProperty<UserState>(
+    _entities[2].properties[13],
   );
 }
 

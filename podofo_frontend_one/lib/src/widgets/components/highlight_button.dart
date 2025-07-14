@@ -33,7 +33,17 @@ class HighlightButton extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
-    final selectedColor = _colorFromHex(userState.highlightColor);
+    final String? colorHex;
+    if (userState.highlightColor != null) {
+      colorHex = userState.highlightColor;
+    } else if (userState.highlightActiveColorIndex <
+        userState.highlightColorPalette.length) {
+      colorHex =
+          userState.highlightColorPalette[userState.highlightActiveColorIndex];
+    } else {
+      colorHex = '#ffff00';
+    }
+    final selectedColor = _colorFromHex(colorHex);
     final highlightColors = userState.highlightColorPalette
         .map((hex) => _colorFromHex(hex))
         .where((c) => c != null)
@@ -41,7 +51,7 @@ class HighlightButton extends ConsumerWidget {
         .toList();
 
     Widget icon;
-    if (userState.highlight) {
+    if (userState.highlightModeEnabled) {
       final color = selectedColor ?? Colors.yellow;
       icon = ColorFiltered(
         colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
@@ -82,16 +92,19 @@ class HighlightButton extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(horizontal: 8.0),
                     child: Row(
                       children: [
-                        ...highlightColors.map((color) {
+                        ...highlightColors.asMap().entries.map((entry) {
+                          final index = entry.key;
+                          final color = entry.value;
                           return Padding(
                             padding: const EdgeInsets.only(right: 8.0),
                             child: _HighlightColorButton(
                               color: color,
-                              isSelected: selectedColor == color,
+                              isSelected:
+                                  userState.highlightActiveColorIndex == index,
                               onPressed: () {
                                 ref
                                     .read(userStateNotifierProvider.notifier)
-                                    .setHighlightColor(_colorToHex(color));
+                                    .setHighlightActiveColorIndex(index);
                               },
                             ),
                           );
@@ -150,7 +163,7 @@ class HighlightButton extends ConsumerWidget {
         onPressed: () {
           ref
               .read(userStateNotifierProvider.notifier)
-              .setHighlight(!userState.highlight);
+              .setHighlightModeEnabled(!userState.highlightModeEnabled);
         },
         variance: ButtonStyle.ghostIcon(),
       ),
