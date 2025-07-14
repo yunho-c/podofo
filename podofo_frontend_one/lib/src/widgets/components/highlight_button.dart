@@ -161,8 +161,9 @@ class _HighlightColorButton extends StatelessWidget {
           shape: BoxShape.circle,
           border: isSelected
               ? Border.all(
-                  color: Theme.of(context).colorScheme.foreground,
-                  width: 2,
+                  color: Theme.of(context).colorScheme.muted,
+                  width: 5,
+                  strokeAlign: BorderSide.strokeAlignOutside,
                 )
               : null,
         ),

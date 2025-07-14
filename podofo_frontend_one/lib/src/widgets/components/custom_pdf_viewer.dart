@@ -131,16 +131,16 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
               contextMenuBuilder: (context, selectableRegionState) {
                 final buttonItems =
                     selectableRegionState.contextMenuButtonItems;
-                final customButton = ContextMenuButtonItem(
+                final highlightButton = ContextMenuButtonItem(
                   onPressed: () {
-                    // ignore: avoid_print
-                    print('Custom Action: Search selected text maybe?');
+                    // This is handled in custom_context_menu.dart
                     selectableRegionState.hideToolbar();
                   },
-                  label: 'Custom Action',
+                  label: 'Highlight',
+                  type: ContextMenuButtonType.custom,
                 );
 
-                final allButtonItems = [...buttonItems, customButton];
+                final allButtonItems = [...buttonItems, highlightButton];
 
                 return buildSelectableRegionContextMenu(
                   context,
