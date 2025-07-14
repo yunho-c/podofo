@@ -126,10 +126,36 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "4:7745109291682401919",
+      "lastPropertyId": "3:8929686710101065399",
+      "name": "DocumentHistoryEntity",
+      "properties": [
+        {
+          "id": "1:2470666268863648139",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7366747146599426737",
+          "name": "filePath",
+          "type": 9,
+          "flags": 34848,
+          "indexId": "2:2348996881805291555"
+        },
+        {
+          "id": "3:8929686710101065399",
+          "name": "lastOpened",
+          "type": 10
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "3:6978279246222423302",
-  "lastIndexId": "1:4434960590162131309",
+  "lastEntityId": "4:7745109291682401919",
+  "lastIndexId": "2:2348996881805291555",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

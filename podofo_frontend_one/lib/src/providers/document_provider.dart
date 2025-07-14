@@ -8,6 +8,19 @@ import 'package:podofo_one/src/data/document_entity.dart';
 import 'package:podofo_one/src/providers/data_provider.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/workers/thumbnail_worker.dart';
+import 'package:podofo_one/src/data/document_history_entity.dart';
+
+final documentHistoryProvider =
+    FutureProvider<List<DocumentHistoryEntity>>((ref) async {
+  final box = ref.read(objectboxProvider).store.box<DocumentHistoryEntity>();
+  final query = box
+      .query()
+      .order(DocumentHistoryEntity_.lastOpened, flags: Order.descending)
+      .build();
+  final history = query.find();
+  query.close();
+  return history;
+});
 
 final filePathProvider = NotifierProvider<FilePathNotifier, String?>(
   FilePathNotifier.new,
@@ -73,11 +86,21 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
     return ref.watch(initialDocumentsProvider).asData?.value ?? {};
   }
 
+  void _updateHistory(String filePath) {
+    final historyBox =
+        ref.read(objectboxProvider).store.box<DocumentHistoryEntity>();
+    historyBox.put(DocumentHistoryEntity(
+      filePath: filePath,
+      lastOpened: DateTime.now(),
+    ));
+    ref.invalidate(documentHistoryProvider);
+  }
+
   void addDocument(String filePath) async {
     if (state.containsKey(filePath)) {
-      ref.read(currentTabIndexProvider.notifier).state = state.keys
-          .toList()
-          .indexOf(filePath);
+      ref.read(currentTabIndexProvider.notifier).state =
+          state.keys.toList().indexOf(filePath);
+      _updateHistory(filePath);
       return;
     }
     final pdfDocument = await PdfDocument.openFile(filePath);
@@ -89,6 +112,7 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
     // Add to objectbox
     final box = ref.read(objectboxProvider).store.box<DocumentEntity>();
     box.put(DocumentEntity(filePath: filePath));
+    _updateHistory(filePath);
   }
 
   void removeDocument(String filePath) {

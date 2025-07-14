@@ -30,7 +30,9 @@ final hotkeyProvider = Provider<void>((ref) {
   hotKeyManager.register(
     HotKey(
       key: PhysicalKeyboardKey.keyP,
-      modifiers: [HotKeyModifier.control],
+      modifiers: [
+        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
+      ],
       scope: HotKeyScope.inapp,
     ),
     keyDownHandler: (_) {
