@@ -99,10 +99,23 @@ class HighlightButton extends ConsumerWidget {
                             ),
                           );
                         }).toList(),
-                        Avatar(
-                          initials: '+',
-                          backgroundColor: Colors.transparent,
-                          size: 12,
+                        SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: ColorInput(
+                            color: ColorDerivative.fromColor(
+                              selectedColor ?? Colors.yellow,
+                            ),
+                            mode: PromptMode.popover,
+                            onChanged: (value) {
+                              ref
+                                  .read(userStateNotifierProvider.notifier)
+                                  .setHighlightColor(
+                                    _colorToHex(value.toColor()),
+                                  );
+                            },
+                            storage: ColorHistoryStorage.of(context),
+                          ),
                         ),
                       ],
                     ),
