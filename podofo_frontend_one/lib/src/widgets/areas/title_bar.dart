@@ -76,12 +76,22 @@ class TitleBar extends ConsumerWidget {
                   behavior: HitTestBehavior.opaque,
                   onPanStart: (_) => windowManager.startDragging(),
                   child: Center(
-                    child: Button(
-                      style: ButtonStyle.ghost(),
-                      onPressed: () => ref
-                          .read(commandPaletteProvider.notifier)
-                          .update((value) => !value),
-                      child: const Text('PoDoFo'),
+                    child: Semantics(
+                      label: 'Recent files',
+                      button: true,
+                      child: GestureDetector(
+                        onTap: () => ref
+                            .read(commandPaletteProvider.notifier)
+                            .update((value) => !value),
+                        child: Container(
+                          width: 200,
+                          height: 15,
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.accent,
+                            borderRadius: BorderRadius.circular(5),
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),
