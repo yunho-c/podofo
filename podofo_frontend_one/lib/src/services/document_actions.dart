@@ -9,6 +9,8 @@ import 'pdf_highlights.dart';
 import 'pdf_session.dart';
 
 class DocumentActions {
+  static final _highlighting = Expando<bool>();
+
   static void error(WidgetRef ref, Object error) {
     ref.read(documentErrorProvider.notifier).state = error.toString();
   }
@@ -121,13 +123,24 @@ class DocumentActions {
     }
   }
 
-  static Future<void> highlight(WidgetRef ref) async {
+  static Future<void> highlight(WidgetRef ref, {String? color}) async {
     final document = ref.read(currentDocumentProvider);
     final controller = ref.read(pdfViewerControllerProvider);
     if (document == null || !controller.isReady) return;
+    final selection = controller.textSelectionDelegate;
+    if (_highlighting[selection] == true) return;
+    _highlighting[selection] = true;
+    final selectedColor =
+        color ??
+        ref.read(userStateNotifierProvider).highlightColor ??
+        '#66ffeb3b';
     try {
-      final selection = controller.textSelectionDelegate;
       final ranges = await selection.getSelectedTextRanges();
+      if (!ref.context.mounted ||
+          ref.read(currentDocumentProvider)?.session != document.session ||
+          document.session.lease.isClosed) {
+        return;
+      }
       final regions = ranges
           .map(
             (range) => HighlightRegion(
@@ -141,18 +154,18 @@ class DocumentActions {
           )
           .toList();
       if (regions.isEmpty) throw StateError('Select text in the PDF first.');
-      final color =
-          ref.read(userStateNotifierProvider).highlightColor ?? '#66ffeb3b';
       await selection.clearTextSelection();
       await ref
           .read(loadedDocumentsProvider.notifier)
           .highlight(
             document,
             regions,
-            int.parse(color.replaceFirst('#', ''), radix: 16),
+            int.parse(selectedColor.replaceFirst('#', ''), radix: 16),
           );
     } catch (e) {
       if (ref.context.mounted) error(ref, e);
+    } finally {
+      _highlighting[selection] = false;
     }
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -9,8 +10,10 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../providers/document_provider.dart';
 import '../../providers/theme_provider.dart';
+import '../../providers/user_state_provider.dart';
 import '../../services/document_actions.dart';
 import '../../workers/open_graph_worker.dart';
+import 'pdf_selection_menu.dart';
 
 class CustomPdfViewer extends ConsumerStatefulWidget {
   const CustomPdfViewer({super.key});
@@ -22,6 +25,20 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   OverlayEntry? _overlay;
   Timer? _hoverTimer;
   int _generation = 0;
+  final _selectionPointers = <int>{};
+  bool _selectionChanged = false;
+
+  void _applyHighlightMode() {
+    if (!mounted || !_selectionChanged || _selectionPointers.isNotEmpty) return;
+    if (!ref.read(userStateNotifierProvider).highlightModeEnabled) return;
+    final controller = ref.read(pdfViewerControllerProvider);
+    if (!controller.isReady ||
+        !controller.textSelectionDelegate.hasSelectedText) {
+      return;
+    }
+    _selectionChanged = false;
+    unawaited(DocumentActions.highlight(ref));
+  }
 
   void _clearHover() {
     _generation++;
@@ -71,21 +88,16 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         pagePaintCallbacks: [
           if (searcher != null) searcher.pageTextMatchPaintCallback,
         ],
-        customizeContextMenuItems: (params, items) {
-          if (params.textSelectionDelegate.hasSelectedText &&
-              document.pdfDocument.permissions?.allowsModifyAnnotations !=
-                  false) {
-            items.add(
-              ContextMenuButtonItem(
-                label: 'Highlight',
-                onPressed: () {
-                  params.dismissContextMenu();
-                  DocumentActions.highlight(ref);
-                },
-              ),
-            );
-          }
-        },
+        textSelectionParams: PdfTextSelectionParams(
+          onTextSelectionChange: (selection) {
+            _selectionChanged = selection.hasSelectedText;
+            _applyHighlightMode();
+          },
+        ),
+        buildContextMenu: (context, params) => PdfSelectionMenu(
+          params: params,
+          onHighlight: (color) => DocumentActions.highlight(ref, color: color),
+        ),
         linkHandlerParams: PdfLinkHandlerParams(
           onLinkTap: (link) async {
             _clearHover();
@@ -138,7 +150,22 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     return MouseRegion(
       onHover: _onHover,
       onExit: (_) => _clearHover(),
-      child: viewer,
+      child: Listener(
+        onPointerDown: (event) {
+          if (event.buttons == kPrimaryButton) {
+            _selectionPointers.add(event.pointer);
+          }
+        },
+        onPointerUp: (event) {
+          _selectionPointers.remove(event.pointer);
+          Future.microtask(_applyHighlightMode);
+        },
+        onPointerCancel: (event) {
+          _selectionPointers.remove(event.pointer);
+          _selectionChanged = false;
+        },
+        child: viewer,
+      ),
     );
   }
 

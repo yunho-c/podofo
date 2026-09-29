@@ -18,7 +18,7 @@ lockfile uses published packages; neither sibling checkout is required or modifi
 | shadcn_flutter | Published 0.0.54; updated theme, controls, outline, and Material bridge |
 | File dialogs | Flutter's file_selector 1.1.0 replaces file_picker; Save As needs a destination-only API so the application controls validation and replacement |
 | Code generation | build_runner 2.15.1 is deliberately pinned: newer versions require an analyzer version incompatible with ObjectBox's current generator |
-| Other packages | Compatible transitive upgrades are locked; unused Hive, Dio, Google Fonts, Riverpod generation, HTTP metadata parsing, global hotkeys, and icon dependencies were removed |
+| Other packages | Compatible transitive upgrades are locked; unused Hive, Dio, Google Fonts, Riverpod generation, HTTP metadata parsing, and global hotkeys were removed. Font Awesome 11.0.0 supplies the restored highlighter icon with the current Flutter API. |
 
 The older pdfrx selection-color fallback and shadcn selection/radio-export patches
 are no longer required by the migrated UI. Their original branches remain intact.
@@ -73,8 +73,15 @@ entitlement is needed for destination-only cards.
 
 ## Highlighting and saving
 
-Select text, then use the highlighter button, selection context menu, or
-Ctrl/Command+Shift+H. Color choices persist. Highlights are native PDF highlight
+The highlighter button toggles highlighting mode; enabling it also highlights
+an existing selection. While enabled, completed selections become highlights,
+with pointer tracking preventing a paused drag from committing prematurely.
+Right-click or long-press the highlighter for the compact color palette and
+inline custom-color picker. The selection context menu includes color swatches
+that apply a highlight directly, even when highlighting mode is off.
+Ctrl/Command+Shift+H also highlights the current selection. Color choices persist.
+Concurrent requests for the same selection are coalesced, and switching documents
+during selection extraction cancels the pending action. Highlights are native PDF highlight
 annotations with text attachment points, color, printable flags, and selected
 text where copying is permitted. Cropped-page offsets and page rotation are
 covered by native tests.

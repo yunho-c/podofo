@@ -46,6 +46,7 @@ dependencies:
   objectbox: 5.3.2
   objectbox_flutter_libs: 5.3.2
   shadcn_flutter: 0.0.54
+  font_awesome_flutter: 11.0.0
   synchronized: ^3.4.2
   crypto: ^3.0.7
   ffi: ^2.1.5

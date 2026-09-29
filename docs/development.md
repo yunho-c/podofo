@@ -74,7 +74,9 @@ the analyzer constraint merely to silence an SDK language-version warning.
 
 - Ctrl/Command+O opens a PDF; Ctrl/Command+P opens recent files.
 - Ctrl/Command+F searches; Ctrl/Command+B opens thumbnails.
-- Ctrl/Command+Shift+H highlights selected text; the toolbar selects colors.
+- The highlighter toggles highlighting mode. Right-click or long-press it for
+  colors; a selection-menu swatch highlights text directly.
+- Ctrl/Command+Shift+H highlights selected text.
 - Ctrl/Command+S saves; Ctrl/Command+Shift+S saves to another path.
 - Ctrl/Command+W closes the tab; Ctrl/Command+Q requests a safe quit.
 - Ctrl+Tab / Ctrl+Shift+Tab switches tabs; Ctrl/Command+1–9 selects a tab and

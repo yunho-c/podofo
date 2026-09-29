@@ -43,6 +43,20 @@ file-picker/window-manager interaction on those systems remain unverified.
 The widget tests exercise shared save/close logic; they do not drive operating
 system file dialogs or native window-close events.
 
+## Highlighting UI restoration follow-up
+
+The compact highlighter palette and selection menu were restored with the current
+PDF backend. The expanded reader test checks the right-click palette, inline
+custom-color persistence, mode toggling, deferred application during a paused
+selection gesture, and direct application from a selection-menu swatch before
+exercising saving and closing.
+
+All 15 regressions pass, static analysis reports no issues, and the Windows x64
+release rebuild passed (112.7 seconds). Logs are `highlight-ui-analysis.log`,
+`highlight-ui-tests.log`, and `highlight-ui-build.log`. Widget captures in
+`build/test-artifacts/highlight-*.png` were checked for palette and picker layout;
+the test engine uses fallback glyphs for some application text and icons.
+
 ## Non-blocking upstream warnings
 
 ObjectBox's generator uses an analyzer supporting Dart 3.12 language features;
