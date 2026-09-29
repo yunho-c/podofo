@@ -13,6 +13,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/user_state_provider.dart';
 import '../../services/document_actions.dart';
 import '../../workers/open_graph_worker.dart';
+import 'pdf_page_layout.dart';
 import 'pdf_selection_menu.dart';
 
 class CustomPdfViewer extends ConsumerStatefulWidget {
@@ -29,6 +30,36 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   int _generation = 0;
   final _selectionPointers = <int>{};
   bool _selectionChanged = false;
+
+  void _fitPageView(PdfViewerController controller, int page, bool twoPages) {
+    if (!mounted || !controller.isReady) return;
+    final bounds = pageViewBounds(controller.layout, page, twoPages: twoPages);
+    unawaited(
+      controller.goTo(
+        controller.calcMatrixForRect(bounds.inflate(controller.params.margin)),
+        duration: Duration.zero,
+      ),
+    );
+  }
+
+  Future<void> _setTwoPageView(bool enabled) async {
+    final document = ref.read(currentDocumentProvider);
+    final controller = ref.read(pdfViewerControllerProvider);
+    if (document == null ||
+        document.twoPageView == enabled ||
+        !controller.isReady) {
+      return;
+    }
+    final page = controller.pageNumber ?? document.lastOpenedPage ?? 1;
+    _clearHover();
+    ref
+        .read(loadedDocumentsProvider.notifier)
+        .setTwoPageView(document.filePath, enabled);
+    // Wait for pdfrx to apply the new layout and its own viewport adjustment.
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted || ref.read(pdfViewerControllerProvider) != controller) return;
+    _fitPageView(controller, page, enabled);
+  }
 
   void _applyHighlightMode() {
     if (!mounted || !_selectionChanged || _selectionPointers.isNotEmpty) return;
@@ -73,6 +104,12 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
       controller: controller,
       initialPageNumber: document.lastOpenedPage ?? 1,
       params: PdfViewerParams(
+        layoutPages: document.twoPageView ? layoutTwoPages : null,
+        sizeDelegateProvider: document.twoPageView
+            ? const PdfViewerSizeDelegateProviderLegacy(
+                useAlternativeFitScaleAsMinScale: false,
+              )
+            : null,
         pageDropShadow: const BoxShadow(
           color: Color(0x0C000000),
           blurRadius: 8,
@@ -82,6 +119,13 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
           Future.microtask(() {
             if (mounted) {
               ref.read(viewerReadyProvider.notifier).state = readyController;
+              if (document.twoPageView) {
+                _fitPageView(
+                  readyController,
+                  document.lastOpenedPage ?? 1,
+                  true,
+                );
+              }
             }
           });
         },
@@ -104,6 +148,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         buildContextMenu: (context, params) => PdfSelectionMenu(
           params: params,
           onHighlight: (color) => DocumentActions.highlight(ref, color: color),
+          twoPageView: document.twoPageView,
+          onTwoPageViewChanged: _setTwoPageView,
         ),
         linkHandlerParams: PdfLinkHandlerParams(
           onLinkTap: (link) async {
@@ -170,7 +216,25 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
             _selectionPointers.remove(event.pointer);
             _selectionChanged = false;
           },
-          child: viewer,
+          // pdfrx handles clicks within its transformed document. Also offer
+          // layout controls in the surrounding padding when zoomed out.
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onSecondaryTapUp: (details) {
+              _clearHover();
+              showDropdown(
+                context: context,
+                position: details.globalPosition,
+                builder: (context) => DropdownMenu(
+                  children: pdfPageLayoutMenuItems(
+                    twoPageView: document.twoPageView,
+                    onChanged: _setTwoPageView,
+                  ),
+                ),
+              );
+            },
+            child: viewer,
+          ),
         ),
       ),
     );

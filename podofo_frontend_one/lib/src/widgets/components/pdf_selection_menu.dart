@@ -9,16 +9,36 @@ import '../../providers/document_provider.dart';
 import '../../services/document_actions.dart';
 import 'highlight_palette.dart';
 
-/// The original compact selection menu, backed by pdfrx's current delegate.
+List<MenuItem> pdfPageLayoutMenuItems({
+  required bool twoPageView,
+  required ValueChanged<bool> onChanged,
+}) => [
+  MenuCheckbox(
+    value: !twoPageView,
+    onChanged: (_, _) => onChanged(false),
+    child: const Text('Single page'),
+  ),
+  MenuCheckbox(
+    value: twoPageView,
+    onChanged: (_, _) => onChanged(true),
+    child: const Text('Two pages'),
+  ),
+];
+
+/// Reader context menu, including selection actions and page layout.
 class PdfSelectionMenu extends ConsumerWidget {
   const PdfSelectionMenu({
     super.key,
     required this.params,
     required this.onHighlight,
+    required this.twoPageView,
+    required this.onTwoPageViewChanged,
   });
 
   final PdfViewerContextMenuBuilderParams params;
   final ValueChanged<String> onHighlight;
+  final bool twoPageView;
+  final ValueChanged<bool> onTwoPageViewChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,7 +51,6 @@ class PdfSelectionMenu extends ConsumerWidget {
         document.pdfDocument.permissions?.allowsModifyAnnotations != false;
     final selectAll =
         params.isTextSelectionEnabled && !selection.isSelectingAllText;
-    if (!copy && !highlight && !selectAll) return const SizedBox.shrink();
 
     SingleActivator shortcut(LogicalKeyboardKey key) => SingleActivator(
       key,
@@ -86,6 +105,14 @@ class PdfSelectionMenu extends ConsumerWidget {
                 ),
               ),
             ],
+            if (copy || highlight || selectAll) const MenuDivider(),
+            ...pdfPageLayoutMenuItems(
+              twoPageView: twoPageView,
+              onChanged: (enabled) {
+                params.dismissContextMenu();
+                onTwoPageViewChanged(enabled);
+              },
+            ),
           ],
         ),
       ),
