@@ -63,8 +63,9 @@ The LRU stores at most 128 thumbnails / 8 MiB and keys entries by content hash,
 edit revision, page, and raster size. There is no persistent thumbnail cache to
 become stale or grow indefinitely.
 
-The original proportional cards, spacing, focus navigation, and dark-mode
-inversion are restored without visible page captions. The initial viewport uses
+The original card styling, spacing, focus navigation, and dark-mode inversion
+are restored without visible page captions. Card heights follow each PDF page's
+dimensions rather than a fixed portrait ratio. The initial viewport uses
 one pane-level loading indicator; later pages still load on demand. See
 [thumbnail-restoration.md](thumbnail-restoration.md) for the before/after table.
 

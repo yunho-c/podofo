@@ -297,19 +297,25 @@ void main() {
       await waitForNative(
         tester,
         () =>
-            find
-                .descendant(
-                  of: find.byType(ThumbnailPane),
-                  matching: find.byType(Image),
+            tester
+                .widgetList<RawImage>(
+                  find.descendant(
+                    of: find.byType(ThumbnailPane),
+                    matching: find.byType(RawImage),
+                  ),
                 )
-                .evaluate()
+                .where((image) => image.image != null)
                 .length ==
             3,
       );
       expect(find.text('Page 1'), findsNothing);
       final firstThumbnail = find.byKey(const ValueKey('thumbnail-1'));
       final cardSize = tester.getSize(firstThumbnail);
-      expect(cardSize.height / cardSize.width, closeTo(1.38, 0.001));
+      final landscapeSize = tester.getSize(
+        find.byKey(const ValueKey('thumbnail-2')),
+      );
+      expect(landscapeSize.width, cardSize.width);
+      expect(landscapeSize.height, lessThan(cardSize.height));
       expect(find.byType(ThumbnailCard), findsNWidgets(3));
       await tester.pump(const Duration(milliseconds: 400));
       await captureReader(tester, 'thumbnails-light');
