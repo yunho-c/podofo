@@ -87,6 +87,15 @@ cards use the original proportions and spacing, visible page captions are absent
 and the dark preview images use the original inversion effect. The test renderer
 still uses fallback glyphs for some unrelated UI text/icons.
 
+## Page-based thumbnail sizing
+
+The focused reader regression passes with Impeller enabled and confirms that
+landscape cards are shorter than portrait cards at the same width. Light/dark
+captures were inspected after image decoding completed. Static analysis reports
+no issues, and the Windows x64 release build passed (144.9 seconds). Logs are
+`thumbnail-sizing-tests.log`, `thumbnail-sizing-analysis.log`, and
+`thumbnail-sizing-build.log`.
+
 ## Non-blocking upstream warnings
 
 ObjectBox's generator uses an analyzer supporting Dart 3.12 language features;

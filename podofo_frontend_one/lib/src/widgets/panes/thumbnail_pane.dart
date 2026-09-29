@@ -1,4 +1,3 @@
-import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart' show Scaffold;
@@ -26,26 +25,30 @@ class ThumbnailPane extends ConsumerWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             if (constraints.maxWidth <= 0) return const SizedBox.shrink();
-            final tileHeight = constraints.maxWidth * 1.38;
+            final pages = document.pdfDocument.pages;
+            double tileHeight(int index) =>
+                constraints.maxWidth * pages[index].height / pages[index].width;
             // Bucket raster sizes to avoid rerendering for every resize pixel.
             final pixelWidth =
                 ((constraints.maxWidth * pixelRatio / 64).ceil() * 64).clamp(
                   64,
                   1024,
                 );
-            final pixelHeight = ((tileHeight * pixelRatio / 64).ceil() * 64)
-                .clamp(64, 1536);
             ThumbnailRequest request(int index) => (
               session: document.session,
               revision: document.session.revision,
               page: index + 1,
               pixelWidth: pixelWidth,
-              pixelHeight: pixelHeight,
+              pixelHeight: ((tileHeight(index) * pixelRatio / 64).ceil() * 64)
+                  .clamp(64, 1536),
             );
-            final initialCount = math.min(
-              document.pdfDocument.pages.length,
-              (constraints.maxHeight / (tileHeight + 8)).ceil(),
-            );
+            var initialCount = 0;
+            var initialHeight = 0.0;
+            while (initialCount < pages.length &&
+                initialHeight < constraints.maxHeight) {
+              initialHeight += tileHeight(initialCount) + 8;
+              initialCount++;
+            }
             return Consumer(
               builder: (context, ref, _) {
                 var loading = false;
@@ -55,21 +58,19 @@ class ThumbnailPane extends ConsumerWidget {
                       ref.watch(thumbnailProvider(request(index))).isLoading ||
                       loading;
                 }
-                final grid = FocusTraversalGroup(
-                  child: GridView.builder(
+                final thumbnails = FocusTraversalGroup(
+                  child: ListView.separated(
                     key: ObjectKey(document.session),
                     scrollCacheExtent: const ScrollCacheExtent.pixels(300),
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 1,
-                          crossAxisSpacing: 8,
-                          mainAxisSpacing: 8,
-                          childAspectRatio: 1 / 1.38,
-                        ),
-                    itemCount: document.pdfDocument.pages.length,
-                    itemBuilder: (context, index) => _ThumbnailTile(
-                      key: ValueKey('thumbnail-${index + 1}'),
-                      request: request(index),
+                    itemCount: pages.length,
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 8),
+                    itemBuilder: (context, index) => SizedBox(
+                      height: tileHeight(index),
+                      child: _ThumbnailTile(
+                        key: ValueKey('thumbnail-${index + 1}'),
+                        request: request(index),
+                      ),
                     ),
                   ),
                 );
@@ -80,7 +81,10 @@ class ThumbnailPane extends ConsumerWidget {
                       ignoring: loading,
                       child: ExcludeFocus(
                         excluding: loading,
-                        child: Opacity(opacity: loading ? 0 : 1, child: grid),
+                        child: Opacity(
+                          opacity: loading ? 0 : 1,
+                          child: thumbnails,
+                        ),
                       ),
                     ),
                     if (loading)

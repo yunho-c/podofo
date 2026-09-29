@@ -85,12 +85,33 @@ class TitleBar extends ConsumerWidget {
                     child: Row(
                       children: [
                         const Expanded(child: _TitleBarDragArea()),
-                        Button(
-                          style: ButtonStyle.ghost(),
-                          onPressed: () => ref
-                              .read(commandPaletteProvider.notifier)
-                              .update((value) => !value),
-                          child: const Text('PoDoFo'),
+                        SizedBox(
+                          width: 200,
+                          child: Column(
+                            children: [
+                              const Expanded(child: _TitleBarDragArea()),
+                              Semantics(
+                                label: 'Recent files',
+                                button: true,
+                                child: GestureDetector(
+                                  onTap: () => ref
+                                      .read(commandPaletteProvider.notifier)
+                                      .update((value) => !value),
+                                  child: Container(
+                                    height: 15,
+                                    width: 200,
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .accent,
+                                      borderRadius: BorderRadius.circular(5),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const Expanded(child: _TitleBarDragArea()),
+                            ],
+                          ),
                         ),
                         const Expanded(child: _TitleBarDragArea()),
                       ],

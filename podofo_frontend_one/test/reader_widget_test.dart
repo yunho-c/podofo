@@ -110,6 +110,66 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       final controller = container.read(pdfViewerControllerProvider);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      // The scroll thumb follows the visible fraction, including zoom/resize,
+      // and stays draggable at both ends instead of using a fixed height.
+      final scrollThumb = find.byType(PdfViewerScrollThumb);
+      double thumbHeight() =>
+          tester.widget<PdfViewerScrollThumb>(scrollThumb).thumbSize!.height;
+      final initialTransform = controller.value.clone();
+      final initialZoom = controller.currentZoom;
+      final initialThumbHeight = thumbHeight();
+      expect(initialThumbHeight, greaterThan(40));
+      await controller.setZoom(
+        controller.centerPosition,
+        initialZoom * 2,
+        duration: Duration.zero,
+      );
+      await tester.pump();
+      expect(thumbHeight(), closeTo(initialThumbHeight / 2, 0.5));
+
+      tester.view.physicalSize = const Size(1200, 650);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(thumbHeight(), lessThan(initialThumbHeight / 2));
+      await controller.setZoom(
+        controller.centerPosition,
+        controller.maxScale,
+        duration: Duration.zero,
+      );
+      await tester.pump();
+      expect(thumbHeight(), closeTo(40, 0.5));
+
+      tester.view.physicalSize = const Size(1200, 900);
+      await tester.pump();
+      controller.value = initialTransform;
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(thumbHeight(), closeTo(initialThumbHeight, 0.5));
+      final thumbHandle = find.descendant(
+        of: scrollThumb,
+        matching: find.byType(GestureDetector),
+      );
+      final viewport = tester.getRect(find.byType(PdfViewer));
+      await tester.dragFrom(
+        tester.getCenter(thumbHandle),
+        Offset(0, viewport.height * 2),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      expect(
+        controller.visibleRect.bottom,
+        closeTo(controller.documentSize.height, 1),
+      );
+      await tester.dragFrom(
+        tester.getCenter(thumbHandle),
+        Offset(0, -viewport.height * 2),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      expect(controller.visibleRect.top, closeTo(0, 1));
+      controller.value = initialTransform;
+      await tester.pump();
       // Mode toggles and the direct shortcut are harmless with no selection.
       await tester.tap(find.byKey(const ValueKey('highlight-mode')));
       await tester.pump(const Duration(milliseconds: 400));
@@ -297,19 +357,25 @@ void main() {
       await waitForNative(
         tester,
         () =>
-            find
-                .descendant(
-                  of: find.byType(ThumbnailPane),
-                  matching: find.byType(Image),
+            tester
+                .widgetList<RawImage>(
+                  find.descendant(
+                    of: find.byType(ThumbnailPane),
+                    matching: find.byType(RawImage),
+                  ),
                 )
-                .evaluate()
+                .where((image) => image.image != null)
                 .length ==
             3,
       );
       expect(find.text('Page 1'), findsNothing);
       final firstThumbnail = find.byKey(const ValueKey('thumbnail-1'));
       final cardSize = tester.getSize(firstThumbnail);
-      expect(cardSize.height / cardSize.width, closeTo(1.38, 0.001));
+      final landscapeSize = tester.getSize(
+        find.byKey(const ValueKey('thumbnail-2')),
+      );
+      expect(landscapeSize.width, cardSize.width);
+      expect(landscapeSize.height, lessThan(cardSize.height));
       expect(find.byType(ThumbnailCard), findsNWidgets(3));
       await tester.pump(const Duration(milliseconds: 400));
       await captureReader(tester, 'thumbnails-light');

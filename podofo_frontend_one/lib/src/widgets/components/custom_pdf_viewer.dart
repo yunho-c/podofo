@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/services.dart';
@@ -128,21 +129,36 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
             }
           },
         ),
-        viewerOverlayBuilder: (context, size, handleLinkTap) => [
-          PdfViewerScrollThumb(
-            controller: controller,
-            orientation: ScrollbarOrientation.right,
-            thumbSize: const Size(10, 60),
-            thumbBuilder: (context, size, page, controller) => Container(
-              width: size.width,
-              height: size.height,
-              decoration: BoxDecoration(
-                color: Colors.gray.shade600.withAlpha(100),
-                borderRadius: BorderRadius.circular(10),
+        viewerOverlayBuilder: (context, size, handleLinkTap) {
+          final margin = controller.params.boundaryMargin;
+          final documentHeight =
+              controller.documentSize.height +
+              (margin == null || margin.vertical.isInfinite
+                  ? 0
+                  : margin.vertical);
+          // visibleRect is in document coordinates, so its fraction accounts
+          // for zoom. Match the scroll range used by PdfViewerScrollThumb.
+          final minimumHeight = math.min(40.0, size.height);
+          final thumbHeight = documentHeight > 0
+              ? (size.height * controller.visibleRect.height / documentHeight)
+                    .clamp(minimumHeight, size.height)
+              : minimumHeight;
+          return [
+            PdfViewerScrollThumb(
+              controller: controller,
+              orientation: ScrollbarOrientation.right,
+              thumbSize: Size(10, thumbHeight),
+              thumbBuilder: (context, size, page, controller) => Container(
+                width: size.width,
+                height: size.height,
+                decoration: BoxDecoration(
+                  color: Colors.gray.shade600.withAlpha(100),
+                  borderRadius: BorderRadius.circular(10),
+                ),
               ),
             ),
-          ),
-        ],
+          ];
+        },
         backgroundColor: brightness == Brightness.dark
             ? const Color(0xffe6e6e6)
             : const Color(0xfffafafa),

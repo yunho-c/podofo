@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -112,7 +114,7 @@ void main() {
     await mouse.up();
     await tester.pumpAndSettle();
     expect(calls, ['popUpWindowMenu']);
-  });
+  }, skip: !Platform.isWindows);
 
   testWidgets(
     'title bar still drags and interactive content keeps its clicks',
@@ -122,7 +124,9 @@ void main() {
       await tester.pumpAndSettle();
       expect(calls, contains('startDragging'));
       calls.clear();
-      await tester.tap(find.text('PoDoFo'));
+      final recentFiles = find.bySemanticsLabel('Recent files');
+      expect(tester.getSize(recentFiles), const Size(200, 15));
+      await tester.tap(recentFiles);
       await tester.pumpAndSettle();
       final context = tester.element(find.byType(app.TitleBar));
       expect(
