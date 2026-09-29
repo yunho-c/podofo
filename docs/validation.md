@@ -70,6 +70,23 @@ All 18 regressions pass, static analysis reports no issues, and the Windows x64
 release build passed (82.9 seconds). Logs are `highlight-selection-tests.log`,
 `highlight-selection-analysis.log`, and `highlight-selection-build.log`.
 
+## Thumbnail presentation restoration
+
+All 19 regressions pass with Impeller enabled, including the restored thumbnail
+shader, keyboard focus navigation, and preservation of thumbnail scroll position
+and viewer page across theme changes. Native tests also check distinct cache
+entries for different display resolutions and bounded raster dimensions. Static
+analysis reports no issues. Logs are `thumbnail-tests.log` and
+`thumbnail-analysis.log`.
+
+The Windows x64 release build passed (140.8 seconds); its log is
+`thumbnail-build.log`.
+
+The light/dark captures in `build/test-artifacts/thumbnails-*.png` were inspected:
+cards use the original proportions and spacing, visible page captions are absent,
+and the dark preview images use the original inversion effect. The test renderer
+still uses fallback glyphs for some unrelated UI text/icons.
+
 ## Non-blocking upstream warnings
 
 ObjectBox's generator uses an analyzer supporting Dart 3.12 language features;

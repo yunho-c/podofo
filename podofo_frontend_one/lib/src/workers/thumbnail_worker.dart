@@ -35,12 +35,20 @@ class ThumbnailCache {
 
 final thumbnailCacheProvider = Provider((ref) => ThumbnailCache());
 final _renderQueueProvider = Provider((ref) => Lock());
-typedef ThumbnailRequest = ({PdfSession session, int revision, int page});
+typedef ThumbnailRequest = ({
+  PdfSession session,
+  int revision,
+  int page,
+  int pixelWidth,
+  int pixelHeight,
+});
 
 final thumbnailProvider = FutureProvider.autoDispose
     .family<Uint8List?, ThumbnailRequest>((ref, request) async {
       final cache = ref.read(thumbnailCacheProvider);
-      final key = '${request.session.cacheKey}:${request.page}';
+      final key =
+          '${request.session.cacheKey}:${request.page}:'
+          '${request.pixelWidth}x${request.pixelHeight}';
       final cached = cache.get(key);
       if (cached != null) return cached;
       var cancelled = false;
@@ -56,7 +64,10 @@ final thumbnailProvider = FutureProvider.autoDispose
             return null;
           }
           final page = pdf.pages[request.page - 1];
-          final scale = math.min(256 / page.width, 384 / page.height);
+          final scale = math.min(
+            request.pixelWidth.clamp(64, 1024) / page.width,
+            request.pixelHeight.clamp(64, 1536) / page.height,
+          );
           token = page.createCancellationToken();
           final image = await page.render(
             fullWidth: page.width * scale,

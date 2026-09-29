@@ -16,10 +16,12 @@ import 'package:podofo_one/src/data/objectbox.dart';
 import 'package:podofo_one/src/providers/data_provider.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
-import 'package:podofo_one/src/workers/thumbnail_worker.dart';
+import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/services/pdf_highlights.dart';
 import 'package:podofo_one/src/widgets/components/highlight_palette.dart';
 import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
+import 'package:podofo_one/src/widgets/components/thumbnail_card.dart';
+import 'package:podofo_one/src/widgets/panes/thumbnail_pane.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import 'fixtures/pdf_fixture.dart';
@@ -294,9 +296,72 @@ void main() {
       await tester.tap(find.byTooltip('Thumbnails'));
       await waitForNative(
         tester,
-        () => container.read(thumbnailCacheProvider).length == 3,
+        () =>
+            find
+                .descendant(
+                  of: find.byType(ThumbnailPane),
+                  matching: find.byType(Image),
+                )
+                .evaluate()
+                .length ==
+            3,
       );
-      expect(find.text('Page 1'), findsOneWidget);
+      expect(find.text('Page 1'), findsNothing);
+      final firstThumbnail = find.byKey(const ValueKey('thumbnail-1'));
+      final cardSize = tester.getSize(firstThumbnail);
+      expect(cardSize.height / cardSize.width, closeTo(1.38, 0.001));
+      expect(find.byType(ThumbnailCard), findsNWidgets(3));
+      await tester.pump(const Duration(milliseconds: 400));
+      await captureReader(tester, 'thumbnails-light');
+
+      // Restore focus-to-page navigation, including traversal between cards.
+      final secondThumbnail = find.byKey(const ValueKey('thumbnail-2'));
+      final secondButton = tester.widget<shadcn.Button>(
+        find.descendant(
+          of: secondThumbnail,
+          matching: find.byType(shadcn.Button),
+        ),
+      );
+      secondButton.focusNode!.requestFocus();
+      await waitForNative(tester, () => controller.pageNumber == 2);
+      await tester.sendKeyEvent(LogicalKeyboardKey.tab);
+      await waitForNative(tester, () => controller.pageNumber == 3);
+
+      // A theme change must retain the thumbnail scroll position and PDF viewport.
+      final thumbnailScrollable = tester.state<ScrollableState>(
+        find.descendant(
+          of: find.byType(ThumbnailPane),
+          matching: find.byType(Scrollable),
+        ),
+      );
+      final thumbnailOffset = thumbnailScrollable.position.pixels;
+      final preferences = container.read(userPreferenceProvider.notifier);
+      await tester.runAsync(
+        () => preferences.setThemeMode(shadcn.ThemeMode.dark),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      if (ui.ImageFilter.isShaderFilterSupported) {
+        await tester.runAsync(() => preferences.setShaderPreference(true));
+        await waitForNative(
+          tester,
+          () => container.read(shaderProvider) != null,
+        );
+        expect(
+          find.descendant(
+            of: firstThumbnail,
+            matching: find.byType(ImageFiltered),
+          ),
+          findsOneWidget,
+        );
+      }
+      await captureReader(tester, 'thumbnails-dark');
+      expect(thumbnailScrollable.position.pixels, thumbnailOffset);
+      expect(controller.pageNumber, 3);
+      await tester.runAsync(() => preferences.setShaderPreference(false));
+      await tester.runAsync(
+        () => preferences.setThemeMode(shadcn.ThemeMode.light),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
       expect(tester.takeException(), isNull);
 
       await tester.tap(find.text('File'));
