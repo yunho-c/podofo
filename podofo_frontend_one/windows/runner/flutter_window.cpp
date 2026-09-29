@@ -7,7 +7,12 @@
 FlutterWindow::FlutterWindow(const flutter::DartProject& project)
     : project_(project) {}
 
-FlutterWindow::~FlutterWindow() {}
+FlutterWindow::~FlutterWindow() {
+  // window_manager can exit the message loop without first destroying the HWND.
+  // Reset the members before their destructors dispatch more window messages;
+  // those messages must not re-enter a partially destroyed Flutter controller.
+  OnDestroy();
+}
 
 bool FlutterWindow::OnCreate() {
   if (!Win32Window::OnCreate()) {
@@ -26,6 +31,9 @@ bool FlutterWindow::OnCreate() {
   }
   RegisterPlugins(flutter_controller_->engine());
   SetChildContent(flutter_controller_->view()->GetNativeWindow());
+  native_title_bar_ = std::make_unique<NativeTitleBar>(
+      GetHandle(), flutter_controller_->view()->GetNativeWindow(),
+      flutter_controller_->engine()->messenger());
 
   flutter_controller_->engine()->SetNextFrameCallback([&]() {
     this->Show();
@@ -40,6 +48,7 @@ bool FlutterWindow::OnCreate() {
 }
 
 void FlutterWindow::OnDestroy() {
+  native_title_bar_.reset();
   if (flutter_controller_) {
     flutter_controller_ = nullptr;
   }
@@ -61,11 +70,22 @@ FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
     }
   }
 
+  if (native_title_bar_) {
+    auto result = native_title_bar_->HandleMessage(message, wparam, lparam);
+    if (result) return *result;
+  }
+
   switch (message) {
     case WM_FONTCHANGE:
       flutter_controller_->engine()->ReloadSystemFonts();
       break;
   }
 
-  return Win32Window::MessageHandler(hwnd, message, wparam, lparam);
+  const LRESULT result = Win32Window::MessageHandler(hwnd, message, wparam, lparam);
+  if (native_title_bar_ &&
+      (message == WM_SIZE || message == WM_WINDOWPOSCHANGED ||
+       message == WM_DPICHANGED || message == WM_DWMCOMPOSITIONCHANGED)) {
+    native_title_bar_->UpdateLayout();
+  }
+  return result;
 }

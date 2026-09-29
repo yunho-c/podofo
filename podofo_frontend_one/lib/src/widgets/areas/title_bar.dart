@@ -8,6 +8,7 @@ import 'package:window_manager/window_manager.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/ui_provider.dart';
 import '../../services/document_actions.dart';
+import '../../services/windows_title_bar.dart';
 
 class TitleBar extends ConsumerWidget {
   const TitleBar({super.key, required this.child});
@@ -15,90 +16,98 @@ class TitleBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final document = ref.watch(currentDocumentProvider);
-    final content = Column(
-      children: [
-        SizedBox(
-          height: 32,
-          child: Row(
-            children: [
-              SizedBox(
-                width: 80,
-                child: m.PopupMenuButton<String>(
-                  tooltip: 'File menu',
-                  child: const Center(child: Text('File')),
-                  itemBuilder: (context) => [
-                    const m.PopupMenuItem(
-                      value: 'open',
-                      child: Text('Open PDF…'),
-                    ),
-                    m.PopupMenuItem(
-                      value: 'save',
-                      enabled: document != null,
-                      child: const Text('Save'),
-                    ),
-                    m.PopupMenuItem(
-                      value: 'saveAs',
-                      enabled: document != null,
-                      child: const Text('Save As…'),
-                    ),
-                    m.PopupMenuItem(
-                      value: 'close',
-                      enabled: document != null,
-                      child: const Text('Close tab'),
-                    ),
-                    const m.PopupMenuItem(enabled: false, child: Text('Print')),
-                    const m.PopupMenuItem(
-                      enabled: false,
-                      child: Text('Export'),
-                    ),
-                  ],
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'open':
-                        ref.read(filePathProvider.notifier).pickFile();
-                      case 'save':
-                        DocumentActions.save(context, ref, document!);
-                      case 'saveAs':
-                        DocumentActions.save(
-                          context,
-                          ref,
-                          document!,
-                          saveAs: true,
-                        );
-                      case 'close':
-                        DocumentActions.close(context, ref, document!);
-                    }
-                  },
-                ),
-              ),
-              Expanded(
-                child: Row(
-                  children: [
-                    const Expanded(child: _TitleBarDragArea()),
-                    Button(
-                      style: ButtonStyle.ghost(),
-                      onPressed: () => ref
-                          .read(commandPaletteProvider.notifier)
-                          .update((value) => !value),
-                      child: const Text('PoDoFo'),
-                    ),
-                    const Expanded(child: _TitleBarDragArea()),
-                  ],
-                ),
-              ),
-              if (!Platform.isMacOS)
+    final content = ValueListenableBuilder<WindowsTitleBarMetrics>(
+      valueListenable: WindowsTitleBar.instance,
+      builder: (context, metrics, _) => Column(
+        children: [
+          SizedBox(
+            height: metrics.height,
+            child: Row(
+              children: [
                 SizedBox(
-                  width: 138,
-                  child: WindowCaption(
-                    brightness: Theme.of(context).colorScheme.brightness,
-                    backgroundColor: Colors.transparent,
+                  width: 80,
+                  child: m.PopupMenuButton<String>(
+                    tooltip: 'File menu',
+                    child: const Center(child: Text('File')),
+                    itemBuilder: (context) => [
+                      const m.PopupMenuItem(
+                        value: 'open',
+                        child: Text('Open PDF…'),
+                      ),
+                      m.PopupMenuItem(
+                        value: 'save',
+                        enabled: document != null,
+                        child: const Text('Save'),
+                      ),
+                      m.PopupMenuItem(
+                        value: 'saveAs',
+                        enabled: document != null,
+                        child: const Text('Save As…'),
+                      ),
+                      m.PopupMenuItem(
+                        value: 'close',
+                        enabled: document != null,
+                        child: const Text('Close tab'),
+                      ),
+                      const m.PopupMenuItem(
+                        enabled: false,
+                        child: Text('Print'),
+                      ),
+                      const m.PopupMenuItem(
+                        enabled: false,
+                        child: Text('Export'),
+                      ),
+                    ],
+                    onSelected: (value) {
+                      switch (value) {
+                        case 'open':
+                          ref.read(filePathProvider.notifier).pickFile();
+                        case 'save':
+                          DocumentActions.save(context, ref, document!);
+                        case 'saveAs':
+                          DocumentActions.save(
+                            context,
+                            ref,
+                            document!,
+                            saveAs: true,
+                          );
+                        case 'close':
+                          DocumentActions.close(context, ref, document!);
+                      }
+                    },
                   ),
                 ),
-            ],
+                Expanded(
+                  child: Row(
+                    children: [
+                      const Expanded(child: _TitleBarDragArea()),
+                      Button(
+                        style: ButtonStyle.ghost(),
+                        onPressed: () => ref
+                            .read(commandPaletteProvider.notifier)
+                            .update((value) => !value),
+                        child: const Text('PoDoFo'),
+                      ),
+                      const Expanded(child: _TitleBarDragArea()),
+                    ],
+                  ),
+                ),
+                if (metrics.native)
+                  SizedBox(width: metrics.buttonsWidth)
+                else if (!Platform.isMacOS)
+                  SizedBox(
+                    width: 138,
+                    child: WindowCaption(
+                      brightness: Theme.of(context).colorScheme.brightness,
+                      backgroundColor: Colors.transparent,
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-        Expanded(child: child),
-      ],
+          Expanded(child: child),
+        ],
+      ),
     );
     if (!Platform.isMacOS) return content;
     return PlatformMenuBar(

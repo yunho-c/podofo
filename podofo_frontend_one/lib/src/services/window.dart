@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -5,6 +7,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../providers/document_provider.dart';
 import 'document_actions.dart';
+import 'windows_title_bar.dart';
 
 final desktopWindowProvider = Provider<bool>((ref) => false);
 
@@ -12,7 +15,11 @@ Future<void> configureWindowManager() async {
   await windowManager.ensureInitialized();
   await windowManager.setPreventClose(true);
   await windowManager.setMinimumSize(const Size(760, 520));
-  const options = WindowOptions(titleBarStyle: TitleBarStyle.hidden);
+  final options = WindowOptions(
+    titleBarStyle: Platform.isWindows
+        ? TitleBarStyle.normal
+        : TitleBarStyle.hidden,
+  );
   await windowManager.waitUntilReadyToShow(options, () async {
     final prefs = await SharedPreferences.getInstance();
     final width = prefs.getDouble('window_width') ?? 1100;
@@ -22,6 +29,7 @@ Future<void> configureWindowManager() async {
     );
     // Center on an available display rather than restoring an off-screen position.
     await windowManager.center();
+    await WindowsTitleBar.instance.initialize();
     await windowManager.show();
     await windowManager.focus();
   });

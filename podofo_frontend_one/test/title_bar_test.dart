@@ -5,8 +5,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/ui_provider.dart';
+import 'package:podofo_one/src/services/windows_title_bar.dart';
 import 'package:podofo_one/src/widgets/areas/title_bar.dart' as app;
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
+import 'package:window_manager/window_manager.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -17,6 +19,7 @@ void main() {
   setUp(() {
     calls.clear();
     maximized = false;
+    WindowsTitleBar.instance.value = const WindowsTitleBarMetrics();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
           calls.add(call.method);
@@ -24,6 +27,10 @@ void main() {
           if (call.method == 'isFullScreen') return false;
           return null;
         });
+  });
+
+  tearDown(() {
+    WindowsTitleBar.instance.value = const WindowsTitleBarMetrics();
   });
 
   Future<void> pumpTitleBar(WidgetTester tester) async {
@@ -59,6 +66,33 @@ void main() {
       expect(calls, isNot(contains('startDragging')));
       await tester.pump(const Duration(milliseconds: 500));
     }
+  });
+
+  testWidgets('native caption bounds replace the simulated buttons', (
+    tester,
+  ) async {
+    WindowsTitleBar.instance.value = const WindowsTitleBarMetrics(
+      native: true,
+      height: 35,
+      buttonsWidth: 142,
+    );
+    await pumpTitleBar(tester);
+    expect(find.byType(WindowCaption), findsNothing);
+    expect(find.byType(WindowCaptionButton), findsNothing);
+    expect(tester.getTopLeft(find.text('File')).dy, greaterThanOrEqualTo(0));
+    final captionSpace = find.byWidgetPredicate(
+      (widget) => widget is SizedBox && widget.width == 142,
+    );
+    expect(captionSpace, findsOneWidget);
+    expect(tester.getBottomRight(captionSpace).dx, 800);
+    WindowsTitleBar.instance.value = const WindowsTitleBarMetrics(
+      native: true,
+      height: 32,
+      buttonsWidth: 138,
+    );
+    await tester.pumpAndSettle();
+    expect(captionSpace, findsNothing);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('right clicking blank title bar opens the Windows system menu', (
