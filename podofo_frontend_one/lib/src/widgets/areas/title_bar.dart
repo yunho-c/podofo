@@ -72,18 +72,18 @@ class TitleBar extends ConsumerWidget {
                 ),
               ),
               Expanded(
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onPanStart: (_) => windowManager.startDragging(),
-                  child: Center(
-                    child: Button(
+                child: Row(
+                  children: [
+                    const Expanded(child: _TitleBarDragArea()),
+                    Button(
                       style: ButtonStyle.ghost(),
                       onPressed: () => ref
                           .read(commandPaletteProvider.notifier)
                           .update((value) => !value),
                       child: const Text('PoDoFo'),
                     ),
-                  ),
+                    const Expanded(child: _TitleBarDragArea()),
+                  ],
                 ),
               ),
               if (!Platform.isMacOS)
@@ -137,4 +137,27 @@ class TitleBar extends ConsumerWidget {
       child: content,
     );
   }
+}
+
+// Keep title bar gestures off interactive controls so double-click recognition
+// does not delay the File menu or command palette's ordinary clicks.
+class _TitleBarDragArea extends StatelessWidget {
+  const _TitleBarDragArea();
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    behavior: HitTestBehavior.opaque,
+    onPanStart: (_) => windowManager.startDragging(),
+    onDoubleTap: () async {
+      if (await windowManager.isMaximized()) {
+        await windowManager.unmaximize();
+      } else {
+        await windowManager.maximize();
+      }
+    },
+    onSecondaryTapUp: Platform.isWindows
+        ? (_) => windowManager.popUpWindowMenu()
+        : null,
+    child: const SizedBox.expand(),
+  );
 }

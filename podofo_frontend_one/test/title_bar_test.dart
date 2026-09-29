@@ -1,0 +1,100 @@
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
+import 'package:podofo_one/src/providers/ui_provider.dart';
+import 'package:podofo_one/src/widgets/areas/title_bar.dart' as app;
+import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  const channel = MethodChannel('window_manager');
+  final calls = <String>[];
+  var maximized = false;
+
+  setUp(() {
+    calls.clear();
+    maximized = false;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (call) async {
+          calls.add(call.method);
+          if (call.method == 'isMaximized') return maximized;
+          if (call.method == 'isFullScreen') return false;
+          return null;
+        });
+  });
+
+  Future<void> pumpTitleBar(WidgetTester tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [currentDocumentProvider.overrideWithValue(null)],
+        child: shadcn.ShadcnApp(
+          localizationsDelegates: const [DefaultMaterialLocalizations.delegate],
+          builder: (context, child) => Theme(
+            data: ThemeData(),
+            child: Material(child: child),
+          ),
+          home: const app.TitleBar(child: SizedBox()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    calls.clear();
+  }
+
+  testWidgets('double clicking blank title bar maximizes and restores', (
+    tester,
+  ) async {
+    await pumpTitleBar(tester);
+    for (final wasMaximized in [false, true]) {
+      maximized = wasMaximized;
+      calls.clear();
+      await tester.tapAt(const Offset(200, 16));
+      await tester.pump(const Duration(milliseconds: 60));
+      await tester.tapAt(const Offset(200, 16));
+      await tester.pumpAndSettle();
+      expect(calls, contains(wasMaximized ? 'unmaximize' : 'maximize'));
+      expect(calls, isNot(contains('startDragging')));
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+  });
+
+  testWidgets('right clicking blank title bar opens the Windows system menu', (
+    tester,
+  ) async {
+    await pumpTitleBar(tester);
+    final mouse = await tester.createGesture(
+      kind: PointerDeviceKind.mouse,
+      buttons: kSecondaryMouseButton,
+    );
+    await mouse.down(const Offset(200, 16));
+    await mouse.up();
+    await tester.pumpAndSettle();
+    expect(calls, ['popUpWindowMenu']);
+  });
+
+  testWidgets(
+    'title bar still drags and interactive content keeps its clicks',
+    (tester) async {
+      await pumpTitleBar(tester);
+      await tester.dragFrom(const Offset(200, 16), const Offset(80, 0));
+      await tester.pumpAndSettle();
+      expect(calls, contains('startDragging'));
+      calls.clear();
+      await tester.tap(find.text('PoDoFo'));
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(app.TitleBar));
+      expect(
+        ProviderScope.containerOf(context).read(commandPaletteProvider),
+        isTrue,
+      );
+      expect(calls, isEmpty);
+      await tester.tap(find.text('File'));
+      await tester.pumpAndSettle();
+      expect(find.text('Open PDF…'), findsOneWidget);
+      expect(calls, isEmpty);
+    },
+  );
+}
