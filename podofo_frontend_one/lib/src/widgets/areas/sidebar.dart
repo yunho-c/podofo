@@ -57,7 +57,7 @@ class SideBar extends ConsumerWidget {
   Widget _buildIcon(WidgetRef ref, SideBarItem item, SideBarItem? activeItem) {
     final bool isSelected = item == activeItem;
     return m.Tooltip(
-      message: item.enabled ? item.name : '${item.name} — not available yet',
+      message: item.name,
       child: IconButton(
         icon: item.icon,
         onPressed: !item.enabled

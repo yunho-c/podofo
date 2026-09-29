@@ -46,13 +46,10 @@ class TitleBar extends ConsumerWidget {
                       enabled: document != null,
                       child: const Text('Close tab'),
                     ),
+                    const m.PopupMenuItem(enabled: false, child: Text('Print')),
                     const m.PopupMenuItem(
                       enabled: false,
-                      child: Text('Print — not available yet'),
-                    ),
-                    const m.PopupMenuItem(
-                      enabled: false,
-                      child: Text('Export — not available yet'),
+                      child: Text('Export'),
                     ),
                   ],
                   onSelected: (value) {
@@ -84,7 +81,7 @@ class TitleBar extends ConsumerWidget {
                       onPressed: () => ref
                           .read(commandPaletteProvider.notifier)
                           .update((value) => !value),
-                      child: const Text('PoDoFo · Recent files'),
+                      child: const Text('PoDoFo'),
                     ),
                   ),
                 ),

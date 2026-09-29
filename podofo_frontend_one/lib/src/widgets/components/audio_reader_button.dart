@@ -6,7 +6,7 @@ class AudioReaderButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-    message: 'Audio reader is not available yet',
+    message: 'Audio reader',
     child: IconButton(
       icon: const Icon(Icons.volume_up_outlined),
       enabled: false,

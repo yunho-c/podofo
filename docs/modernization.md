@@ -80,9 +80,9 @@ text where copying is permitted. Cropped-page offsets and page rotation are
 covered by native tests.
 
 The annotation pane lists highlights page by page and can remove highlights
-saved in earlier sessions. “Undo last highlight” removes a newly added batch
-during the current session. Arbitrary deletion clears that batch undo history;
-general document undo/redo is not advertised.
+saved in earlier sessions. The session API supports undoing a newly added batch,
+but the added Undo menu entry was removed during UI cleanup. Arbitrary deletion
+clears that batch undo history; general document undo/redo is not advertised.
 
 Save, Save As, and auto-save use the same serialized session operations. A dot
 on the tab identifies unsaved changes. Auto-save failures preserve edits and

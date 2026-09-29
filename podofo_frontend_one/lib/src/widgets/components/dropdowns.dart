@@ -40,26 +40,13 @@ class MoreOptionsDropdown extends ConsumerWidget {
           child: const Text('Save As…'),
         ),
         MenuButton(
-          enabled: document?.session.canUndo ?? false,
-          onPressed: (_) async {
-            try {
-              await ownerRef
-                  .read(loadedDocumentsProvider.notifier)
-                  .undoHighlight(document!);
-            } catch (e) {
-              if (ownerContext.mounted) DocumentActions.error(ownerRef, e);
-            }
-          },
-          child: const Text('Undo last highlight'),
-        ),
-        MenuButton(
           trailing: Switch(
             value: state.autoSaveEnabled,
             onChanged: (value) => ref
                 .read(userStateNotifierProvider.notifier)
                 .setAutoSaveEnabled(value),
           ),
-          child: const Text('Auto-save new highlights'),
+          child: const Text('Auto-save'),
         ),
         const MenuDivider(),
         MenuButton(
@@ -73,14 +60,9 @@ class MoreOptionsDropdown extends ConsumerWidget {
           'AI tools',
           'Study tools',
         ])
-          MenuButton(enabled: false, child: Text('$label — not available yet')),
+          MenuButton(enabled: false, child: Text(label)),
         const MenuDivider(),
         const MenuLabel(child: Text('PoDoFo 1.0.0')),
-        const MenuLabel(
-          child: Text(
-            'Link previews show destinations without network requests.',
-          ),
-        ),
       ],
     );
   }

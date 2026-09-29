@@ -79,7 +79,7 @@ the analyzer constraint merely to silence an SDK language-version warning.
 - Ctrl/Command+W closes the tab; Ctrl/Command+Q requests a safe quit.
 - Ctrl+Tab / Ctrl+Shift+Tab switches tabs; Ctrl/Command+1–9 selects a tab and
   Ctrl/Command+0 selects the last tab.
-- The More menu controls auto-save and undoing the last newly added highlight.
+- The More menu controls auto-save.
 - The Annotations pane lists and removes existing highlights.
 
 Bare letter/number hotkeys no longer intercept typing in text fields.
