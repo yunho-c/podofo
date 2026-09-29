@@ -88,3 +88,5 @@ Bare letter/number hotkeys no longer intercept typing in text fields.
 Disabled controls identify features that are not available yet.
 
 See [modernization.md](modernization.md) for design decisions and limitations.
+See [windows-titlebar.md](windows-titlebar.md) for native caption behavior,
+Microsoft guidance, and the isolated Windows title bar verification script.

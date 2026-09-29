@@ -9,8 +9,20 @@ New-Item -ItemType Directory -Path $artifacts -Force | Out-Null
 Push-Location $projectRoot
 try {
     if (!$SkipBuild) {
-        & $Flutter build windows --release --no-pub -t tool/title_bar_smoke.dart
-        if ($LASTEXITCODE -ne 0) { throw 'Native fixture build failed.' }
+        try {
+            # CMake development warnings on stderr are not build failures.
+            $ErrorActionPreference = 'Continue'
+            & $Flutter build windows --release --no-pub -t tool/title_bar_smoke.dart
+            $buildExitCode = $LASTEXITCODE
+        } finally { $ErrorActionPreference = 'Stop' }
+        if ($buildExitCode -ne 0) { throw 'Native fixture build failed.' }
+    }
+    # Reject the normal app before launching anything: it opens the user's data.
+    $configPath = Join-Path $projectRoot 'windows/flutter/ephemeral/generated_config.cmake'
+    if (!(Test-Path -LiteralPath $configPath) -or
+        ([IO.File]::ReadAllText($configPath).Replace('\', '/') -notmatch
+            '"FLUTTER_TARGET=tool/+title_bar_smoke\.dart"')) {
+        throw 'The current build is not the isolated title bar fixture. Run without -SkipBuild.'
     }
     Add-Type -AssemblyName Accessibility
     Add-Type -AssemblyName System.Drawing

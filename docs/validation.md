@@ -96,6 +96,27 @@ no issues, and the Windows x64 release build passed (144.9 seconds). Logs are
 `thumbnail-sizing-tests.log`, `thumbnail-sizing-analysis.log`, and
 `thumbnail-sizing-build.log`.
 
+## Windows native title bar follow-up
+
+The isolated Windows 11 fixture passes in light and dark modes: real caption
+hit tests (`HTMINBUTTON`, `HTMAXBUTTON`, `HTCLOSE`), Flutter window clipping,
+native accessible names/roles/states, maximize/restore/minimize actions,
+rendered caption backgrounds, and native Close reaching the Dart lifecycle
+before a zero-exit shutdown. Restored and maximized app captures were inspected.
+The fixture does not open user PDFs or the installed database.
+
+The implementation and repeatable checks are described in
+[windows-titlebar.md](windows-titlebar.md), including the scope of automated
+evidence and the Windows-owned hover, tooltip, Snap Layout and contrast behavior.
+Global Windows theme/accessibility settings were not changed for these checks.
+
+Final `tool/verify.ps1` passed on 2026-09-29: 67 Dart files formatted, regenerated
+ObjectBox model/bindings unchanged after canonical formatting, clean analysis,
+Windows x64 release build (101.9 seconds), and **27 regression tests passed**.
+The normal application entry point was restored by that final build. The log is
+`podofo_frontend_one/build/titlebar-review/verification.log`. The native verifier
+also rejects a normal application build before launch when `-SkipBuild` is used.
+
 ## Non-blocking upstream warnings
 
 ObjectBox's generator uses an analyzer supporting Dart 3.12 language features;
