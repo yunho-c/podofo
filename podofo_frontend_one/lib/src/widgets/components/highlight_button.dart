@@ -1,173 +1,98 @@
+import 'package:flutter/material.dart' as m;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' hide colorToHex;
 
-import 'package:podofo_one/src/providers/user_state_provider.dart';
-import 'package:podofo_one/src/utils/color_utils.dart';
+import '../../providers/document_provider.dart';
+import '../../providers/user_state_provider.dart';
+import '../../services/document_actions.dart';
+import '../../utils/color_utils.dart';
 
 class HighlightButton extends ConsumerWidget {
   const HighlightButton({super.key});
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userState = ref.watch(userStateNotifierProvider);
-    final selectedColor = userState.highlightColor != null
-        ? colorFromHex(userState.highlightColor!)
-        : Colors.yellow;
-    final highlightColors = userState.highlightColorPalette
-        .map((hex) => colorFromHex(hex))
-        .cast<Color>()
-        .toList();
-
-    Widget icon;
-    if (userState.highlightModeEnabled) {
-      final color = selectedColor;
-      icon = ColorFiltered(
-        colorFilter: ColorFilter.mode(color, BlendMode.srcIn),
-        child: FaIcon(
-          FontAwesomeIcons.highlighter,
-          color: Theme.of(context).colorScheme.foreground,
+    final state = ref.watch(userStateNotifierProvider);
+    final document = ref.watch(currentDocumentProvider);
+    final color = colorFromHex(state.highlightColor ?? '#66ffeb3b');
+    final allowed =
+        document != null &&
+        document.pdfDocument.permissions?.allowsModifyAnnotations != false;
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        m.Tooltip(
+          message: 'Highlight selected text',
+          child: IconButton(
+            icon: Icon(m.Icons.border_color, color: color.withAlpha(255)),
+            onPressed: allowed ? () => DocumentActions.highlight(ref) : null,
+            variance: ButtonStyle.ghostIcon(),
+          ),
         ),
-      );
-    } else {
-      icon = FaIcon(
-        FontAwesomeIcons.highlighter,
-        color: Theme.of(context).colorScheme.mutedForeground.withAlpha(200),
-      );
-    }
-
-    return GestureDetector(
-      onSecondaryTapUp: (details) {
-        showDropdown(
-          context: context,
-          position: details.globalPosition,
-          builder: (context) {
-            return DropdownMenu(
-              children: [
-                MenuButton(
-                  enabled: false,
-                  child: const Text('Colors').xSmall.medium.muted,
-                ),
-                MenuButton(
-                  enabled: false,
-                  child: Text(
-                    'Right-click to customize',
-                    style: TextStyle(fontSize: 10),
-                  ).muted,
-                ),
-                MenuButton(
-                  enabled: false,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: Row(
-                      children: [
-                        ...highlightColors.asMap().entries.map((entry) {
-                          final index = entry.key;
-                          final color = entry.value;
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 8.0),
-                            child: _HighlightColorButton(
-                              color: color,
-                              isSelected:
-                                  userState.highlightActiveColorIndex == index,
-                              onPressed: () {
-                                ref
-                                    .read(userStateNotifierProvider.notifier)
-                                    .setHighlightActiveColorIndex(index);
-                              },
-                            ),
-                          );
-                        }),
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: ColorInput(
-                            color: ColorDerivative.fromColor(selectedColor),
-                            mode: PromptMode.popover,
-                            onChanged: (value) {
-                              ref
-                                  .read(userStateNotifierProvider.notifier)
-                                  .setHighlightColor(
-                                    colorToHex(value.toColor()),
-                                  );
-                            },
-                            storage: ColorHistoryStorage.of(context),
-                          ),
-                        ),
-                      ],
+        m.PopupMenuButton<int>(
+          tooltip: 'Highlight color',
+          icon: const Icon(m.Icons.arrow_drop_down, size: 16),
+          onSelected: (index) async {
+            if (index >= 0) {
+              ref
+                  .read(userStateNotifierProvider.notifier)
+                  .setHighlightActiveColorIndex(index);
+              return;
+            }
+            var selected = ColorDerivative.fromColor(color);
+            final chosen = await m.showDialog<Color>(
+              context: context,
+              builder: (context) => StatefulBuilder(
+                builder: (context, setState) => m.AlertDialog(
+                  title: const Text('Highlight color'),
+                  content: SizedBox(
+                    width: 240,
+                    child: ColorInput(
+                      value: selected,
+                      promptMode: PromptMode.popover,
+                      onChanged: (value) => setState(() => selected = value),
                     ),
                   ),
-                ),
-                MenuDivider(),
-                MenuButton(
-                  subMenu: [
-                    MenuButton(
-                      child: Text('Use H key to toggle on/off'),
-                      trailing: Switch(value: false, onChanged: (value) {}),
+                  actions: [
+                    m.TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text('Cancel'),
                     ),
-                    MenuButton(
-                      child: Text('Use number keys to change colors'),
-                      trailing: Switch(value: false, onChanged: (value) {}),
-                    ),
-                    MenuButton(
-                      child: Text('Use number keys to highlight'),
-                      trailing: Switch(value: false, onChanged: (value) {}),
-                    ),
-                    MenuButton(
-                      child: Text('Show highlight options in context menu'),
-                      trailing: Switch(value: false, onChanged: (value) {}),
+                    m.FilledButton(
+                      onPressed: () =>
+                          Navigator.pop(context, selected.toColor()),
+                      child: const Text('Apply'),
                     ),
                   ],
-                  child: Text('Settings'),
                 ),
-              ],
+              ),
             );
+            if (chosen != null && context.mounted) {
+              ref
+                  .read(userStateNotifierProvider.notifier)
+                  .setHighlightColor(colorToHex(chosen));
+            }
           },
-        );
-      },
-      child: IconButton(
-        icon: icon,
-        onPressed: () {
-          ref
-              .read(userStateNotifierProvider.notifier)
-              .setHighlightModeEnabled(!userState.highlightModeEnabled);
-        },
-        variance: ButtonStyle.ghostIcon(),
-      ),
-    );
-  }
-}
-
-class _HighlightColorButton extends StatelessWidget {
-  final Color color;
-  final bool isSelected;
-  final VoidCallback onPressed;
-
-  const _HighlightColorButton({
-    required this.color,
-    required this.isSelected,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: 16,
-        height: 16,
-        decoration: BoxDecoration(
-          color: color,
-          shape: BoxShape.circle,
-          border: isSelected
-              ? Border.all(
-                  color: Theme.of(context).colorScheme.muted,
-                  width: 5,
-                  strokeAlign: BorderSide.strokeAlignOutside,
-                )
-              : null,
+          itemBuilder: (context) => [
+            for (final entry in state.highlightColorPalette.asMap().entries)
+              m.PopupMenuItem(
+                value: entry.key,
+                child: Row(
+                  children: [
+                    Icon(
+                      m.Icons.circle,
+                      color: colorFromHex(entry.value).withAlpha(255),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Color ${entry.key + 1}${entry.value == state.highlightColor ? ' (selected)' : ''}',
+                    ),
+                  ],
+                ),
+              ),
+            const m.PopupMenuItem(value: -1, child: Text('Custom color…')),
+          ],
         ),
-      ),
+      ],
     );
   }
 }

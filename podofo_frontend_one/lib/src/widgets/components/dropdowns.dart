@@ -1,98 +1,87 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-import 'package:podofo_one/src/providers/user_state_provider.dart';
-import 'package:podofo_one/src/widgets/components/hotkey_editor.dart';
+import '../../providers/user_state_provider.dart';
+import '../../providers/document_provider.dart';
+import '../../services/document_actions.dart';
+import 'hotkey_editor.dart';
 
 class MoreOptionsDropdown extends ConsumerWidget {
-  const MoreOptionsDropdown({super.key});
-
+  const MoreOptionsDropdown({
+    super.key,
+    required this.ownerContext,
+    required this.ownerRef,
+  });
+  final BuildContext ownerContext;
+  final WidgetRef ownerRef;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final userState = ref.watch(userStateNotifierProvider);
-    final userStateNotifier = ref.read(userStateNotifierProvider.notifier);
+    final state = ref.watch(userStateNotifierProvider);
+    final document = ref.watch(currentDocumentProvider);
     return DropdownMenu(
       children: [
         MenuButton(
-          child: const Text('Auto-Save'),
+          onPressed: document == null
+              ? null
+              : (_) => DocumentActions.save(ownerContext, ownerRef, document),
+          enabled: document != null,
+          child: const Text('Save'),
+        ),
+        MenuButton(
+          onPressed: document == null
+              ? null
+              : (_) => DocumentActions.save(
+                  ownerContext,
+                  ownerRef,
+                  document,
+                  saveAs: true,
+                ),
+          enabled: document != null,
+          child: const Text('Save As…'),
+        ),
+        MenuButton(
+          enabled: document?.session.canUndo ?? false,
+          onPressed: (_) async {
+            try {
+              await ownerRef
+                  .read(loadedDocumentsProvider.notifier)
+                  .undoHighlight(document!);
+            } catch (e) {
+              if (ownerContext.mounted) DocumentActions.error(ownerRef, e);
+            }
+          },
+          child: const Text('Undo last highlight'),
+        ),
+        MenuButton(
           trailing: Switch(
-            value: userState.autoSaveEnabled,
-            onChanged: (value) {
-              userStateNotifier.setAutoSaveEnabled(value);
-            },
+            value: state.autoSaveEnabled,
+            onChanged: (value) => ref
+                .read(userStateNotifierProvider.notifier)
+                .setAutoSaveEnabled(value),
+          ),
+          child: const Text('Auto-save new highlights'),
+        ),
+        const MenuDivider(),
+        MenuButton(
+          onPressed: (_) => HotkeyEditor.show(ownerContext),
+          child: const Text('Keyboard shortcuts'),
+        ),
+        for (final label in [
+          'Utilities',
+          'Extensions',
+          'Audio reader',
+          'AI tools',
+          'Study tools',
+        ])
+          MenuButton(enabled: false, child: Text('$label — not available yet')),
+        const MenuDivider(),
+        const MenuLabel(child: Text('PoDoFo 1.0.0')),
+        const MenuLabel(
+          child: Text(
+            'Link previews show destinations without network requests.',
           ),
         ),
-        const MenuDivider(),
-        MenuButton(
-          child: const Text('Utilities'),
-          // trailing: const Text('⌘⌥U').xSmall.muted,
-          trailing: const MenuShortcut(
-            activator: SingleActivator(
-              LogicalKeyboardKey.keyU,
-              meta: true,
-              alt: true,
-            ),
-          ),
-          subMenu: [
-            const MenuButton(child: Text('Smart Rename')),
-            const MenuButton(child: Text('Optimize File Size')),
-            const MenuButton(child: Text('Re-Draw Text Boundaries')),
-            const MenuButton(child: Text('Generate outlines')),
-            MenuButton(
-              enabled: false,
-              child: const Text('Translate').xSmall.medium.muted,
-            ),
-            MenuButton(
-              child: const Text('Static'),
-              trailing: Switch(value: false, onChanged: (value) {}),
-            ),
-            MenuButton(
-              child: const Text('Dynamic'),
-              trailing: Switch(value: false, onChanged: (value) {}),
-            ),
-          ],
-        ),
-        MenuButton(
-          child: Text('Extensions'),
-          trailing: Text('⌘⌥E').xSmall.muted,
-        ),
-        MenuButton(
-          child: const Text('Hotkeys'),
-          trailing: const Text('⌘⌥H').xSmall.muted,
-          onPressed: (context) => {HotkeyEditor.show(context)},
-        ),
-        MenuButton(child: Text('Settings'), trailing: Text('⌘⌥S').xSmall.muted),
-        const MenuDivider(),
-        // MenuButton(
-        //   subMenu: [
-        MenuButton(
-          enabled: false,
-          child: const Text('Community').xSmall.medium.muted,
-        ),
-        const MenuButton(child: Text('Bug Tracker')),
-        const MenuButton(child: Text('Discord')),
-        //   ],
-        //   child: Text('Community'),
-        // ),
-        const MenuButton(child: Text('GitHub')),
-        const MenuButton(child: Text('Blog')),
-        const MenuDivider(),
-        // MenuButton(
-        //   enabled: false,
-        //   child: Text(
-        //     'Thank you for using PoDoFo!',
-        //   ).xSmall.medium.muted,
-        // ),
-        const MenuLabel(child: Text('PoDoFo')),
-        MenuLabel(child: Text('Version X.X.X').xSmall.muted),
-        const MenuButton(child: Text('Donate')),
-        const MenuButton(child: Text('Contributors')),
-        const MenuButton(child: Text('Open-Source')),
       ],
     );
   }
 }
-
-const moreOptionsDropdown = MoreOptionsDropdown();

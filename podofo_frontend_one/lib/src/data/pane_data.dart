@@ -57,6 +57,7 @@ final leftPaneData = () {
       ),
       SideBarItem(
         name: 'AI Search',
+        enabled: false,
         icon: const ResponsiveIcon(
           lightThemeIcon: Icon(Icons.android_outlined),
           darkThemeIcon: Icon(Icons.android_outlined, color: Colors.white),
@@ -71,6 +72,7 @@ final rightPaneData = PaneData(
   items: [
     SideBarItem(
       name: 'AI Chat',
+      enabled: false,
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.star_border_outlined),
         darkThemeIcon: Icon(Icons.star_border_outlined, color: Colors.white),
@@ -79,6 +81,7 @@ final rightPaneData = PaneData(
     ),
     SideBarItem(
       name: 'Timeline',
+      enabled: false,
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.area_chart_outlined),
         darkThemeIcon: Icon(Icons.area_chart_outlined, color: Colors.white),
@@ -87,6 +90,7 @@ final rightPaneData = PaneData(
     ),
     SideBarItem(
       name: 'Study',
+      enabled: false,
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.school_outlined),
         darkThemeIcon: Icon(Icons.school_outlined, color: Colors.white),
@@ -95,6 +99,7 @@ final rightPaneData = PaneData(
     ),
     SideBarItem(
       name: 'Extensions',
+      enabled: false,
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.extension_outlined),
         darkThemeIcon: Icon(Icons.extension_outlined, color: Colors.white),
@@ -103,6 +108,7 @@ final rightPaneData = PaneData(
     ),
     SideBarItem(
       name: 'Debug',
+      enabled: false,
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.pest_control_outlined),
         darkThemeIcon: Icon(Icons.pest_control_outlined, color: Colors.white),

@@ -1,14 +1,22 @@
 // import 'package:flutter/material.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/material.dart' as m;
+import 'package:flutter_riverpod/legacy.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 class SideBarItem {
   final Widget icon;
   final dynamic pane;
   final String name;
+  final bool enabled;
 
-  SideBarItem({required this.icon, required this.pane, required this.name});
+  SideBarItem({
+    required this.icon,
+    required this.pane,
+    required this.name,
+    this.enabled = true,
+  });
 }
 
 class SideBar extends ConsumerWidget {
@@ -48,16 +56,21 @@ class SideBar extends ConsumerWidget {
 
   Widget _buildIcon(WidgetRef ref, SideBarItem item, SideBarItem? activeItem) {
     final bool isSelected = item == activeItem;
-    return IconButton(
-      icon: item.icon,
-      onPressed: () {
-        if (isSelected) {
-          ref.read(provider.notifier).state = null;
-        } else {
-          ref.read(provider.notifier).state = item;
-        }
-      },
-      variance: ButtonStyle.ghostIcon(),
+    return m.Tooltip(
+      message: item.enabled ? item.name : '${item.name} — not available yet',
+      child: IconButton(
+        icon: item.icon,
+        onPressed: !item.enabled
+            ? null
+            : () {
+                if (isSelected) {
+                  ref.read(provider.notifier).state = null;
+                } else {
+                  ref.read(provider.notifier).state = item;
+                }
+              },
+        variance: ButtonStyle.ghostIcon(),
+      ),
     );
   }
 }

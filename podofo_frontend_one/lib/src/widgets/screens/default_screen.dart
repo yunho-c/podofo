@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
-import 'package:window_manager/window_manager.dart';
 
 import 'package:podofo_one/src/providers/ui_provider.dart';
 import 'package:podofo_one/src/widgets/components/command_palette.dart';
@@ -10,6 +9,8 @@ import 'package:podofo_one/src/widgets/areas/title_bar.dart';
 import 'package:podofo_one/src/widgets/areas/sidebar.dart';
 import 'package:podofo_one/src/widgets/panes/pane_widget.dart';
 import 'package:podofo_one/src/data/pane_data.dart';
+
+import '../components/document_notices.dart';
 
 class DefaultScreen extends ConsumerWidget {
   const DefaultScreen({super.key});
@@ -24,6 +25,7 @@ class DefaultScreen extends ConsumerWidget {
           child: Column(
             children: [
               Header(),
+              const DocumentNotices(),
               Expanded(
                 child: Row(
                   children: [

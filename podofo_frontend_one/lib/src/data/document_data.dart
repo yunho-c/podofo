@@ -1,26 +1,18 @@
 import 'package:path/path.dart' as p;
 import 'package:pdfrx/pdfrx.dart';
 
-class Document {
-  Document({
-    required this.filePath,
-    required this.pdfDocument,
-    this.lastOpenedPage,
-  }) : title = p.basename(filePath);
-  final String filePath;
-  final PdfDocument pdfDocument;
-  final String title;
-  final int? lastOpenedPage;
+import '../services/pdf_session.dart';
 
-  Document copyWith({
-    String? filePath,
-    PdfDocument? pdfDocument,
-    int? lastOpenedPage,
-  }) {
-    return Document(
-      filePath: filePath ?? this.filePath,
-      pdfDocument: pdfDocument ?? this.pdfDocument,
-      lastOpenedPage: lastOpenedPage ?? this.lastOpenedPage,
-    );
-  }
+class Document {
+  Document({required this.session, this.lastOpenedPage});
+  final PdfSession session;
+  final int? lastOpenedPage;
+  String get filePath => session.path;
+  PdfDocument get pdfDocument => session.lease.document;
+  String get title => p.basename(filePath);
+  bool get dirty => session.dirty;
+  Document copyWith({int? lastOpenedPage}) => Document(
+    session: session,
+    lastOpenedPage: lastOpenedPage ?? this.lastOpenedPage,
+  );
 }

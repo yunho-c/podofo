@@ -55,6 +55,14 @@ add_subdirectory("runner")
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
+# Some binary plugins (including ObjectBox 5.3.2) use CMAKE_SYSTEM_PROCESSOR
+# to choose a download. Visual Studio otherwise reports the ARM64 host even
+# when Flutter targets x64, producing a bundle that builds but cannot run.
+if(CMAKE_GENERATOR_PLATFORM STREQUAL "x64")
+  set(CMAKE_SYSTEM_PROCESSOR "AMD64")
+elseif(CMAKE_GENERATOR_PLATFORM STREQUAL "ARM64")
+  set(CMAKE_SYSTEM_PROCESSOR "ARM64")
+endif()
 include(flutter/generated_plugins.cmake)
 
 

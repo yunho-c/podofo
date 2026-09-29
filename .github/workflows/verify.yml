@@ -1,0 +1,36 @@
+name: Verify desktop reader
+on:
+  push:
+    paths: ['podofo_frontend_one/**', '.fvmrc', '.github/workflows/verify.yml']
+  pull_request:
+    paths: ['podofo_frontend_one/**', '.fvmrc', '.github/workflows/verify.yml']
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: podofo_frontend_one
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install pinned Flutter
+        run: |
+          $version = (Get-Content ../.fvmrc | ConvertFrom-Json).flutter
+          $sdk = Join-Path $env:RUNNER_TEMP flutter
+          git clone --depth 1 --branch $version https://github.com/flutter/flutter.git $sdk
+          if ($LASTEXITCODE -ne 0) { throw 'Flutter checkout failed' }
+          (Join-Path $sdk bin) | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      - name: Resolve locked packages
+        run: flutter pub get --enforce-lockfile
+      - name: Verify generation, analysis, build, and regressions
+        run: ./tool/verify.ps1
+      - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: podofo-windows
+          path: podofo_frontend_one/build/windows/x64/runner/Release/
+          retention-days: 7

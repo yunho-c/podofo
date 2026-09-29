@@ -1,10 +1,114 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' as m;
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AnnotationPane extends StatelessWidget {
+import '../../providers/document_provider.dart';
+import '../../services/pdf_highlights.dart';
+import '../../services/pdf_session.dart';
+import '../../services/document_actions.dart';
+
+typedef _PageRequest = ({PdfSession session, int revision, int page});
+final _pageHighlights = FutureProvider.autoDispose
+    .family<List<SavedHighlight>, _PageRequest>((ref, request) {
+      return request.session.lease.use(
+        (pdf) => PdfHighlights.listPage(pdf, request.page),
+      );
+    });
+
+class AnnotationPane extends ConsumerWidget {
   const AnnotationPane({super.key});
-
   @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text('Annotation'));
+  m.Widget build(m.BuildContext context, WidgetRef ref) {
+    final document = ref.watch(currentDocumentProvider);
+    if (document == null) {
+      return const m.Center(child: m.Text('No document loaded'));
+    }
+    final revision = document.session.revision;
+    return m.Material(
+      type: m.MaterialType.transparency,
+      child: m.ListView.builder(
+        key: m.ObjectKey(document.session),
+        itemCount: document.pdfDocument.pages.length,
+        itemBuilder: (context, index) => Consumer(
+          builder: (context, ref, _) {
+            final highlights = ref.watch(
+              _pageHighlights((
+                session: document.session,
+                revision: revision,
+                page: index + 1,
+              )),
+            );
+            return m.Padding(
+              padding: const m.EdgeInsets.all(8),
+              child: m.Column(
+                crossAxisAlignment: m.CrossAxisAlignment.stretch,
+                children: [
+                  m.Text(
+                    'Page ${index + 1}',
+                    style: const m.TextStyle(fontWeight: m.FontWeight.bold),
+                  ),
+                  highlights.when(
+                    loading: () => const m.Text('Loading highlights…'),
+                    error: (e, s) => const m.Text('Could not read highlights'),
+                    data: (items) => items.isEmpty
+                        ? const m.Text('No highlights')
+                        : m.Column(
+                            children: [
+                              for (final item in items)
+                                m.ListTile(
+                                  dense: true,
+                                  contentPadding: m.EdgeInsets.zero,
+                                  title: m.Text(
+                                    item.text.isEmpty ? 'Highlight' : item.text,
+                                    maxLines: 3,
+                                    overflow: m.TextOverflow.ellipsis,
+                                  ),
+                                  onTap: () {
+                                    final controller = ref.read(
+                                      pdfViewerControllerProvider,
+                                    );
+                                    if (controller.isReady) {
+                                      controller.goToPage(
+                                        pageNumber: index + 1,
+                                      );
+                                    }
+                                  },
+                                  trailing: m.IconButton(
+                                    tooltip: 'Remove highlight',
+                                    icon: const m.Icon(m.Icons.delete_outline),
+                                    onPressed:
+                                        document
+                                                .pdfDocument
+                                                .permissions
+                                                ?.allowsModifyAnnotations ==
+                                            false
+                                        ? null
+                                        : () async {
+                                            final notifier = ref.read(
+                                              loadedDocumentsProvider.notifier,
+                                            );
+                                            try {
+                                              await notifier.removeHighlight(
+                                                document,
+                                                item,
+                                                revision,
+                                              );
+                                            } catch (e) {
+                                              if (context.mounted) {
+                                                DocumentActions.error(ref, e);
+                                              }
+                                            }
+                                          },
+                                  ),
+                                ),
+                            ],
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }

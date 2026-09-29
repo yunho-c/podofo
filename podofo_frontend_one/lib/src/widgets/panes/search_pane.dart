@@ -1,417 +1,169 @@
+import 'dart:async';
+import 'dart:math' as math;
+
+import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/services.dart' show TextInputAction;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
-import 'package:synchronized/extension.dart';
 
 import 'package:podofo_one/src/providers/document_provider.dart';
 
-class SearchPane extends ConsumerStatefulWidget {
+class SearchPane extends ConsumerWidget {
   const SearchPane({super.key});
-
   @override
-  ConsumerState<SearchPane> createState() => _SearchPaneState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final searcher = ref.watch(pdfTextSearcherProvider);
+    if (searcher == null) {
+      return const Center(child: Text('Open a document to search'));
+    }
+    return _SearchResults(key: ObjectKey(searcher), searcher: searcher);
+  }
 }
 
-class _SearchPaneState extends ConsumerState<SearchPane> {
-  final _searchTextController = TextEditingController();
-  late final PdfTextSearcher _textSearcher;
+class _SearchResults extends ConsumerStatefulWidget {
+  const _SearchResults({super.key, required this.searcher});
+  final PdfTextSearcher searcher;
+
+  @override
+  ConsumerState<_SearchResults> createState() => _SearchPaneState();
+}
+
+class _SearchPaneState extends ConsumerState<_SearchResults> {
+  final _query = TextEditingController();
+  final _scroll = ScrollController();
+  Timer? _debounce;
+  late final PdfTextSearcher _searcher;
 
   @override
   void initState() {
     super.initState();
-    _textSearcher = ref.read(pdfTextSearcherProvider);
-    _textSearcher.addListener(_searchResultUpdated);
-    _searchTextController.addListener(_searchTextUpdated);
+    _searcher = widget.searcher;
+    _query.addListener(_search);
+  }
+
+  void _search() {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 180), () {
+      if (mounted) _searcher.startTextSearch(_query.text);
+    });
+    setState(() {});
   }
 
   @override
   void dispose() {
-    _textSearcher.removeListener(_searchResultUpdated);
-    _searchTextController.removeListener(_searchTextUpdated);
-    _searchTextController.dispose();
+    _debounce?.cancel();
+    _query.removeListener(_search);
+    _query.dispose();
+    _scroll.dispose();
     super.dispose();
   }
 
-  void _searchTextUpdated() {
-    _textSearcher.startTextSearch(_searchTextController.text);
-  }
-
-  void _searchResultUpdated() {
-    if (mounted) {
-      setState(() {});
+  Future<void> _navigate(bool forward) async {
+    if (forward) {
+      await _searcher.goToNextMatch();
+    } else {
+      await _searcher.goToPrevMatch();
+    }
+    if (!mounted || !_scroll.hasClients) return;
+    final index = _searcher.currentIndex;
+    if (index != null) {
+      await _scroll.animateTo(
+        (index * 76.0).clamp(0.0, _scroll.position.maxScrollExtent),
+        duration: const Duration(milliseconds: 150),
+        curve: Curves.easeOut,
+      );
     }
   }
 
   @override
-  Widget build(BuildContext context) {
-    return TextSearchView(
-      textSearcher: _textSearcher,
-      searchTextController: _searchTextController,
-    );
-  }
-}
-
-class TextSearchView extends StatefulWidget {
-  const TextSearchView({
-    required this.textSearcher,
-    required this.searchTextController,
-    super.key,
-  });
-
-  final PdfTextSearcher textSearcher;
-  final TextEditingController searchTextController;
-
-  @override
-  State<TextSearchView> createState() => _TextSearchViewState();
-}
-
-class _TextSearchViewState extends State<TextSearchView> {
-  final focusNode = FocusNode();
-  late final pageTextStore = PdfPageTextCache(
-    textSearcher: widget.textSearcher,
-  );
-  final scrollController = ScrollController();
-  int? _currentSearchSession;
-  final _matchIndexToListIndex = <int>[];
-  final _listIndexToMatchIndex = <int>[];
-
-  @override
-  void initState() {
-    super.initState();
-    widget.textSearcher.addListener(_searchResultUpdated);
-    _searchResultUpdated();
-  }
-
-  @override
-  void dispose() {
-    scrollController.dispose();
-    widget.textSearcher.removeListener(_searchResultUpdated);
-    focusNode.dispose();
-    super.dispose();
-  }
-
-  void _searchResultUpdated() {
-    if (_currentSearchSession != widget.textSearcher.searchSession) {
-      _currentSearchSession = widget.textSearcher.searchSession;
-      _matchIndexToListIndex.clear();
-      _listIndexToMatchIndex.clear();
-    }
-    for (
-      int i = _matchIndexToListIndex.length;
-      i < widget.textSearcher.matches.length;
-      i++
-    ) {
-      if (i == 0 ||
-          widget.textSearcher.matches[i - 1].pageNumber !=
-              widget.textSearcher.matches[i].pageNumber) {
-        _listIndexToMatchIndex.add(-widget.textSearcher.matches[i].pageNumber);
-      }
-      _matchIndexToListIndex.add(_listIndexToMatchIndex.length);
-      _listIndexToMatchIndex.add(i);
-    }
-
-    if (mounted) setState(() {});
-  }
-
-  static const double itemHeight = 60;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(8.0),
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: _searcher,
+    builder: (context, _) => Padding(
+      padding: const EdgeInsets.all(8),
       child: Column(
         children: [
-          widget.textSearcher.isSearching
-              ? LinearProgressIndicator(
-                  value: widget.textSearcher.searchProgress,
-                  minHeight: 4,
-                )
-              : const SizedBox(height: 4),
+          TextField(
+            controller: _query,
+            autofocus: true,
+            placeholder: const Text('Search this document'),
+            textInputAction: TextInputAction.search,
+          ),
           Row(
             children: [
-              Expanded(
-                child: TextField(
-                  autofocus: true,
-                  focusNode: focusNode,
-                  controller: widget.searchTextController,
-                  textInputAction: TextInputAction.search,
-                ),
+              Expanded(child: Text('${_searcher.matches.length} matches')),
+              IconButton(
+                icon: const Icon(Icons.arrow_upward),
+                variance: ButtonStyle.ghostIcon(),
+                onPressed: _searcher.hasMatches ? () => _navigate(false) : null,
               ),
               IconButton(
                 icon: const Icon(Icons.arrow_downward),
-                onPressed: widget.textSearcher.hasMatches
-                    ? () async {
-                        await widget.textSearcher.goToNextMatch();
-                        _conditionScrollPosition();
-                      }
-                    : null,
-                variance: ButtonVariance.ghost,
-                size: ButtonSize.small,
-              ),
-              IconButton(
-                icon: const Icon(Icons.arrow_upward),
-                onPressed: widget.textSearcher.hasMatches
-                    ? () async {
-                        await widget.textSearcher.goToPrevMatch();
-                        _conditionScrollPosition();
-                      }
-                    : null,
-                variance: ButtonVariance.ghost,
-                size: ButtonSize.small,
+                variance: ButtonStyle.ghostIcon(),
+                onPressed: _searcher.hasMatches ? () => _navigate(true) : null,
               ),
               IconButton(
                 icon: const Icon(Icons.close),
-                onPressed: widget.searchTextController.text.isNotEmpty
-                    ? () {
-                        widget.searchTextController.text = '';
-                        widget.textSearcher.resetTextSearch();
-                        focusNode.requestFocus();
-                      }
-                    : null,
-                variance: ButtonVariance.ghost,
-                size: ButtonSize.small,
+                variance: ButtonStyle.ghostIcon(),
+                onPressed: _query.text.isEmpty
+                    ? null
+                    : () {
+                        _query.clear();
+                        _debounce?.cancel();
+                        _searcher.resetTextSearch();
+                      },
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          if (_searcher.isSearching)
+            LinearProgressIndicator(value: _searcher.searchProgress),
           Expanded(
             child: ListView.builder(
-              key: Key(widget.searchTextController.text),
-              controller: scrollController,
-              itemCount: _listIndexToMatchIndex.length,
+              controller: _scroll,
+              itemExtent: 76,
+              itemCount: _searcher.matches.length,
               itemBuilder: (context, index) {
-                final matchIndex = _listIndexToMatchIndex[index];
-                if (matchIndex >= 0 &&
-                    matchIndex < widget.textSearcher.matches.length) {
-                  final match = widget.textSearcher.matches[matchIndex];
-                  return SearchResultTile(
-                    key: ValueKey(index),
-                    match: match,
-                    onTap: () async {
-                      await widget.textSearcher.goToMatchOfIndex(matchIndex);
-                      if (mounted) setState(() {});
-                    },
-                    pageTextStore: pageTextStore,
-                    height: itemHeight,
-                    isCurrent: matchIndex == widget.textSearcher.currentIndex,
-                  );
-                } else {
-                  return Container(
-                    height: 20,
-                    alignment: Alignment.bottomLeft,
-                    margin: EdgeInsets.only(bottom: 6.0),
-                    child: Text(
-                      'Page ${-matchIndex}',
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                final match = _searcher.matches[index];
+                final fullText = match.pageText.fullText;
+                final start = math.max(0, match.start - 35);
+                final end = math.min(fullText.length, match.end + 60);
+                return Button(
+                  style: index == _searcher.currentIndex
+                      ? ButtonStyle.secondary()
+                      : ButtonStyle.ghost(),
+                  alignment: Alignment.centerLeft,
+                  onPressed: () => _searcher.goToMatchOfIndex(index),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text('Page ${match.pageNumber}').small(),
+                      Text.rich(
+                        TextSpan(
+                          children: [
+                            TextSpan(
+                              text: fullText.substring(start, match.start),
+                            ),
+                            TextSpan(
+                              text: match.text,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(text: fullText.substring(match.end, end)),
+                          ],
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
-                  );
-                }
+                    ],
+                  ),
+                );
               },
             ),
           ),
         ],
       ),
-    );
-  }
-
-  void _conditionScrollPosition() {
-    if (widget.textSearcher.currentIndex == null) return;
-    final pos = scrollController.position;
-    final newPos =
-        itemHeight * _matchIndexToListIndex[widget.textSearcher.currentIndex!];
-    if (newPos + itemHeight > pos.pixels + pos.viewportDimension) {
-      scrollController.animateTo(
-        newPos + itemHeight - pos.viewportDimension,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.decelerate,
-      );
-    } else if (newPos < pos.pixels) {
-      scrollController.animateTo(
-        newPos,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.decelerate,
-      );
-    }
-    if (mounted) setState(() {});
-  }
-}
-
-class SearchResultTile extends StatefulWidget {
-  const SearchResultTile({
-    required this.match,
-    required this.onTap,
-    required this.pageTextStore,
-    required this.height,
-    required this.isCurrent,
-    super.key,
-  });
-
-  final PdfTextRangeWithFragments match;
-  final void Function() onTap;
-  final PdfPageTextCache pageTextStore;
-  final double height;
-  final bool isCurrent;
-
-  @override
-  State<SearchResultTile> createState() => _SearchResultTileState();
-}
-
-class _SearchResultTileState extends State<SearchResultTile> {
-  PdfPageText? pageText;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  @override
-  void didUpdateWidget(covariant SearchResultTile oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.match.pageNumber != widget.match.pageNumber) {
-      _load();
-    }
-  }
-
-  void _release() {
-    if (pageText != null) {
-      widget.pageTextStore.releaseText(pageText!.pageNumber);
-    }
-  }
-
-  Future<void> _load() async {
-    _release();
-    pageText = await widget.pageTextStore.loadText(widget.match.pageNumber);
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-  @override
-  void dispose() {
-    _release();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final text = Text.rich(createTextSpanForMatch(pageText, widget.match));
-
-    return SizedBox(
-      height: widget.height,
-      // child: Material(
-      // color: widget.isCurrent ? Theme.of(context).hoverColor : null,
-      child: Button(
-        style: ButtonVariance.ghost,
-        onPressed: () => widget.onTap(),
-        child: Container(
-          decoration: const BoxDecoration(
-            // border: Border(bottom: BorderSide(color: Colors.black, width: 0.5)),
-          ),
-          padding: const EdgeInsets.all(3),
-          child: text,
-          // ),
-        ),
-      ),
-    );
-  }
-
-  TextSpan createTextSpanForMatch(
-    PdfPageText? pageText,
-    PdfTextRangeWithFragments match, {
-    TextStyle? style,
-  }) {
-    style ??= const TextStyle(fontSize: 14);
-    if (pageText == null) {
-      return TextSpan(
-        text: match.fragments.map((f) => f.text).join(),
-        style: style,
-      );
-    }
-    final fullText = pageText.fullText;
-    int first = 0;
-    for (int i = match.fragments.first.index - 1; i >= 0;) {
-      if (fullText[i] == '\n') {
-        first = i + 1;
-        break;
-      }
-      i--;
-    }
-    int last = fullText.length;
-    for (int i = match.fragments.last.end; i < fullText.length; i++) {
-      if (fullText[i] == '\n') {
-        last = i;
-        break;
-      }
-    }
-
-    final header = fullText.substring(
-      first,
-      match.fragments.first.index + match.start,
-    );
-    final body = fullText.substring(
-      match.fragments.first.index + match.start,
-      match.fragments.last.index + match.end,
-    );
-    final footer = fullText.substring(
-      match.fragments.last.index + match.end,
-      last,
-    );
-
-    return TextSpan(
-      children: [
-        TextSpan(text: header),
-        TextSpan(
-          text: body,
-          // style: const TextStyle(backgroundColor: Colors.yellow),
-          style: const TextStyle(fontWeight: FontWeight.w600),
-        ),
-        TextSpan(text: footer),
-      ],
-      style: style,
-    );
-  }
-}
-
-class PdfPageTextCache {
-  final PdfTextSearcher textSearcher;
-  PdfPageTextCache({required this.textSearcher});
-
-  final _pageTextRefs = <int, _PdfPageTextRefCount>{};
-
-  Future<PdfPageText> loadText(int pageNumber) async {
-    final ref = _pageTextRefs[pageNumber];
-    if (ref != null) {
-      ref.refCount++;
-      return ref.pageText;
-    }
-    return await synchronized(() async {
-      var ref = _pageTextRefs[pageNumber];
-      if (ref == null) {
-        final pageText = await textSearcher.loadText(pageNumber: pageNumber);
-        ref = _pageTextRefs[pageNumber] = _PdfPageTextRefCount(pageText!);
-      }
-      ref.refCount++;
-      return ref.pageText;
-    });
-  }
-
-  void releaseText(int pageNumber) {
-    final ref = _pageTextRefs[pageNumber];
-    if (ref != null) {
-      ref.refCount--;
-      if (ref.refCount == 0) {
-        _pageTextRefs.remove(pageNumber);
-      }
-    }
-  }
-}
-
-class _PdfPageTextRefCount {
-  _PdfPageTextRefCount(this.pageText);
-  final PdfPageText pageText;
-  int refCount = 0;
+    ),
+  );
 }

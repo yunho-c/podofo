@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Icons;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -26,19 +27,19 @@ class DarkModeButton extends ConsumerWidget {
                   return DropdownMenu(
                     children: [
                       MenuButton(
-                        child: const Text('Invert PDF Colors'),
                         trailing: Switch(
                           value: shaderPreference,
                           onChanged: (value) {
                             userPreferenceNotifier.setShaderPreference(value);
                           },
                         ),
+                        child: const Text('Invert PDF Colors'),
                       ),
                       MenuLabel(
+                        trailing: Text(shaderStrength.toStringAsFixed(2))
+                            .small
+                            .semiBold,
                         child: Text('Inversion Strength:').small.normal,
-                        trailing: Text(
-                          shaderStrength.toStringAsFixed(2),
-                        ).small.semiBold,
                       ),
                       MenuButton(
                         child: Slider(

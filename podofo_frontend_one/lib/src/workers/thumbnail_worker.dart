@@ -1,113 +1,94 @@
+import 'dart:math' as math;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image/image.dart' as img;
 import 'package:pdfrx/pdfrx.dart';
+import 'package:synchronized/synchronized.dart';
 
-import 'package:podofo_one/objectbox.g.dart';
-import 'package:podofo_one/src/data/objectbox.dart';
-import 'package:podofo_one/src/data/thumbnail_entity.dart';
+import '../services/pdf_session.dart';
 
-@immutable
-class ThumbnailsState {
-  const ThumbnailsState({
-    this.thumbnails = const {},
-    this.isGenerating = const {},
-  });
+/// A bounded LRU. Thumbnails are disposable; no stale path-keyed disk records.
+class ThumbnailCache {
+  ThumbnailCache({this.maxBytes = 8 * 1024 * 1024, this.maxEntries = 128});
+  final int maxBytes, maxEntries;
+  final _items = <String, Uint8List>{};
+  int bytes = 0;
+  int get length => _items.length;
+  Uint8List? get(String key) {
+    final value = _items.remove(key);
+    if (value != null) _items[key] = value;
+    return value;
+  }
 
-  final Map<String, Map<int, Uint8List>> thumbnails;
-  final Map<String, bool> isGenerating;
-
-  ThumbnailsState copyWith({
-    Map<String, Map<int, Uint8List>>? thumbnails,
-    Map<String, bool>? isGenerating,
-  }) {
-    return ThumbnailsState(
-      thumbnails: thumbnails ?? this.thumbnails,
-      isGenerating: isGenerating ?? this.isGenerating,
-    );
+  void put(String key, Uint8List value) {
+    final previous = _items.remove(key);
+    if (previous != null) bytes -= previous.length;
+    if (value.length > maxBytes) return;
+    _items[key] = value;
+    bytes += value.length;
+    while (bytes > maxBytes || _items.length > maxEntries) {
+      bytes -= _items.remove(_items.keys.first)!.length;
+    }
   }
 }
 
-class ThumbnailsNotifier extends StateNotifier<ThumbnailsState> {
-  final ObjectBox objectbox;
+final thumbnailCacheProvider = Provider((ref) => ThumbnailCache());
+final _renderQueueProvider = Provider((ref) => Lock());
+typedef ThumbnailRequest = ({PdfSession session, int revision, int page});
 
-  ThumbnailsNotifier(this.objectbox) : super(const ThumbnailsState());
+final thumbnailProvider = FutureProvider.autoDispose
+    .family<Uint8List?, ThumbnailRequest>((ref, request) async {
+      final cache = ref.read(thumbnailCacheProvider);
+      final key = '${request.session.cacheKey}:${request.page}';
+      final cached = cache.get(key);
+      if (cached != null) return cached;
+      var cancelled = false;
+      PdfPageRenderCancellationToken? token;
+      ref.onDispose(() {
+        cancelled = true;
+        token?.cancel();
+      });
+      return ref.read(_renderQueueProvider).synchronized(() async {
+        if (cancelled || request.session.lease.isClosed) return null;
+        return request.session.lease.use((pdf) async {
+          if (cancelled || request.revision != request.session.revision) {
+            return null;
+          }
+          final page = pdf.pages[request.page - 1];
+          final scale = math.min(256 / page.width, 384 / page.height);
+          token = page.createCancellationToken();
+          final image = await page.render(
+            fullWidth: page.width * scale,
+            fullHeight: page.height * scale,
+            cancellationToken: token,
+          );
+          if (image == null) return null;
+          try {
+            if (cancelled) return null;
+            final bytes = await compute(_encodeThumbnail, (
+              width: image.width,
+              height: image.height,
+              pixels: Uint8List.fromList(image.pixels),
+            ));
+            if (cancelled || request.revision != request.session.revision) {
+              return null;
+            }
+            cache.put(key, bytes);
+            return bytes;
+          } finally {
+            image.dispose();
+          }
+        });
+      });
+    });
 
-  Future<void> retrieveThumbnails(PdfDocument document) async {
-    final filePath = document.sourceName;
-    if (state.isGenerating[filePath] == true) return;
-
-    state = state.copyWith(
-      isGenerating: {...state.isGenerating, filePath: true},
-    );
-
-    try {
-      final loaded = await _loadFromDatabase(filePath);
-      if (!loaded) {
-        await _generateAndSave(document);
-      }
-    } catch (e, s) {
-      if (kDebugMode) {
-        print('Error ensuring thumbnails for $filePath: $e\n$s');
-      }
-    } finally {
-      state = state.copyWith(
-        isGenerating: {...state.isGenerating, filePath: false},
-      );
-    }
-  }
-
-  Future<bool> _loadFromDatabase(String filePath) async {
-    final box = objectbox.store.box<ThumbnailEntity>();
-    final query = box.query(ThumbnailEntity_.filePath.equals(filePath)).build();
-    final existingThumbnails = query.find();
-    query.close();
-
-    if (existingThumbnails.isNotEmpty) {
-      final newThumbnailsForPdf = <int, Uint8List>{};
-      for (final thumbnail in existingThumbnails) {
-        newThumbnailsForPdf[thumbnail.pageNumber!] = thumbnail.thumbnailData!;
-      }
-      state = state.copyWith(
-        thumbnails: {...state.thumbnails, filePath: newThumbnailsForPdf},
-      );
-      return true;
-    }
-    return false;
-  }
-
-  Future<void> _generateAndSave(PdfDocument document) async {
-    final filePath = document.sourceName;
-    final newThumbnailsForPdf = <int, Uint8List>{};
-    final newEntities = <ThumbnailEntity>[];
-
-    for (int i = 1; i <= document.pages.length; i++) {
-      final page = document.pages[i - 1];
-      final pdfImage = await page.render();
-      if (pdfImage == null) continue;
-
-      final image = img.Image.fromBytes(
-        width: pdfImage.width,
-        height: pdfImage.height,
-        bytes: pdfImage.pixels.buffer,
-        order: img.ChannelOrder.bgra,
-      );
-      final thumbnailData = img.encodeJpg(image, quality: 50);
-
-      newEntities.add(
-        ThumbnailEntity(
-          filePath: filePath,
-          pageNumber: i,
-          thumbnailData: thumbnailData,
-        ),
-      );
-      newThumbnailsForPdf[i] = thumbnailData;
-    }
-
-    objectbox.store.box<ThumbnailEntity>().putMany(newEntities);
-
-    state = state.copyWith(
-      thumbnails: {...state.thumbnails, filePath: newThumbnailsForPdf},
-    );
-  }
+Uint8List _encodeThumbnail(({int width, int height, Uint8List pixels}) data) {
+  final image = img.Image.fromBytes(
+    width: data.width,
+    height: data.height,
+    bytes: data.pixels.buffer,
+    order: img.ChannelOrder.bgra,
+  );
+  return img.encodeJpg(image, quality: 70);
 }

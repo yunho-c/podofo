@@ -1,4 +1,7 @@
-import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart' show Icons;
+
+import '../../services/document_actions.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -26,7 +29,7 @@ class Header extends ConsumerWidget {
             padding: EdgeInsets.fromLTRB(7.5, 2, 7.5, 2),
             child: IconButton(
               icon: const Icon(Icons.home_outlined),
-              onPressed: () => {},
+              onPressed: null,
               variance: ButtonStyle.ghostIcon(),
               size: ButtonSize.normal,
             ),
@@ -42,7 +45,7 @@ class Header extends ConsumerWidget {
                   return Container(
                     padding: EdgeInsets.all(2),
                     child: IconButton(
-                      icon: const Icon(BootstrapIcons.plus),
+                      icon: const Icon(Icons.folder_open),
                       onPressed: () => {
                         ref.read(filePathProvider.notifier).pickFile(),
                       },
@@ -57,25 +60,7 @@ class Header extends ConsumerWidget {
                   isSelected: isSelected,
                   onTap: () =>
                       ref.read(currentTabIndexProvider.notifier).state = index,
-                  onClose: () {
-                    final oldTabsCount = tabs.length;
-                    final oldTabIndex = currentTabIndex;
-
-                    if (oldTabsCount == 1) {
-                      ref.read(currentTabIndexProvider.notifier).state = 0;
-                    } else if (index < oldTabIndex) {
-                      ref.read(currentTabIndexProvider.notifier).state =
-                          oldTabIndex - 1;
-                    } else if (index == oldTabIndex &&
-                        oldTabIndex == oldTabsCount - 1) {
-                      ref.read(currentTabIndexProvider.notifier).state =
-                          oldTabIndex - 1;
-                    }
-
-                    ref
-                        .read(loadedDocumentsProvider.notifier)
-                        .removeDocument(tab.filePath);
-                  },
+                  onClose: () => DocumentActions.close(context, ref, tab),
                 );
               },
             ),
@@ -95,12 +80,13 @@ class Header extends ConsumerWidget {
                   showDropdown(
                     context: context,
                     position: offset,
-                    builder: (context) {
-                      return moreOptionsDropdown;
+                    builder: (_) {
+                      return MoreOptionsDropdown(
+                        ownerContext: context,
+                        ownerRef: ref,
+                      );
                     },
-                  ).future.then((_) {
-                    print('Closed');
-                  });
+                  ).future.then((_) {});
                 },
               );
             },

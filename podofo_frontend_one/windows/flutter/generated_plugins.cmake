@@ -3,7 +3,7 @@
 #
 
 list(APPEND FLUTTER_PLUGIN_LIST
-  hotkey_manager_windows
+  file_selector_windows
   objectbox_flutter_libs
   screen_retriever_windows
   url_launcher_windows
@@ -11,7 +11,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
 )
 
 list(APPEND FLUTTER_FFI_PLUGIN_LIST
-  pdfrx
+  jni
 )
 
 set(PLUGIN_BUNDLED_LIBRARIES)

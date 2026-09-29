@@ -24,9 +24,8 @@ class DebugPane extends ConsumerWidget {
                   child: Column(
                     children: [
                       for (final doc in loadedDocuments.values)
-                        Text(
-                          '${doc.title}: ${doc.lastOpenedPage ?? 'Not set'}',
-                        ).small(),
+                        Text('${doc.title}: ${doc.lastOpenedPage ?? 'Not set'}')
+                            .small(),
                     ],
                   ).withPadding(horizontal: 16, vertical: 8),
                 ).withPadding(top: 8),
@@ -39,9 +38,8 @@ class DebugPane extends ConsumerWidget {
               const CollapsibleTrigger(child: Text('Dark Mode')),
               CollapsibleContent(
                 child: OutlinedContainer(
-                  child: Column(
-                    children: [],
-                  ).withPadding(horizontal: 16, vertical: 8),
+                  child: Column(children: [])
+                      .withPadding(horizontal: 16, vertical: 8),
                 ).withPadding(top: 8),
               ),
             ],
@@ -66,14 +64,14 @@ class DebugPane extends ConsumerWidget {
                       Text('Highlight Active Color Index').small(),
                       Text('${userState.highlightActiveColorIndex}'),
                       Text('Appearance').small(),
-                      Text('${userState.appearance}'),
+                      Text(userState.appearance),
                       const SizedBox(height: 10),
                       Button(
-                        child: const Text('Nuke User State'),
                         style: ButtonStyle.ghost(),
                         onPressed: () {
                           ref.read(userStateNotifierProvider.notifier).nuke();
                         },
+                        child: const Text('Nuke User State'),
                       ),
                     ],
                   ).withPadding(horizontal: 16, vertical: 8),

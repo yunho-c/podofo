@@ -98,14 +98,14 @@ final brightnessProvider = Provider<Brightness>((ref) {
 // HACK: This is copy-pasted from `main.dart` and does not properly implement
 //       state reactivity.
 Typography typography = const Typography.geist().copyWith(
-  sans: const TextStyle(fontFamily: 'Urbanist'),
+  sans: () => const TextStyle(fontFamily: 'Urbanist'),
 );
 
 final themeDataProvider = Provider<ThemeData>((ref) {
   final brightness = ref.watch(brightnessProvider);
   final colorScheme = brightness == Brightness.dark
-      ? ColorSchemes.darkZinc()
-      : ColorSchemes.lightZinc();
+      ? ColorSchemes.darkZinc
+      : ColorSchemes.lightZinc;
   return ThemeData(
     typography: typography,
     colorScheme: colorScheme,
@@ -113,48 +113,20 @@ final themeDataProvider = Provider<ThemeData>((ref) {
   );
 });
 
-final shaderProvider = NotifierProvider<ShaderNotifier, FragmentShader?>(
-  ShaderNotifier.new,
-);
+final fragmentProgramProvider = FutureProvider<FragmentProgram>((ref) {
+  return FragmentProgram.fromAsset('shaders/invert.frag');
+});
 
-class ShaderNotifier extends Notifier<FragmentShader?> {
-  FragmentProgram? _program;
-
-  @override
-  FragmentShader? build() {
-    _loadProgram();
-
-    final userPreference = ref.watch(userPreferenceProvider).value;
-    final preference = userPreference?.shaderPreference ?? false;
-    final strength = userPreference?.shaderStrength ?? 1.0;
-
-    if (_program == null) {
-      return null;
-    }
-
-    if (preference) {
-      // return _program!.fragmentShader()..setFloat(2, strength);
-      ref.read(userPreferenceProvider.notifier).setShaderPreference(true);
-    } else {
-      // return _program!.fragmentShader()..setFloat(2, 0.0);
-      ref.read(userPreferenceProvider.notifier).setShaderPreference(false);
-    }
-
-    return _program!.fragmentShader()..setFloat(2, strength);
-  }
-
-  Future<void> _loadProgram() async {
-    if (_program != null) return;
-    try {
-      _program = await FragmentProgram.fromAsset('shaders/invert.frag');
-      ref.invalidateSelf();
-    } catch (e, s) {
-      print('Failed to load shader: $e');
-      print(s);
-    }
-  }
-}
-
+final shaderProvider = Provider<FragmentShader?>((ref) {
+  final preferences = ref.watch(userPreferenceProvider).value;
+  if (!(preferences?.shaderPreference ?? false)) return null;
+  final program = ref.watch(fragmentProgramProvider).value;
+  if (program == null) return null;
+  final shader = program.fragmentShader()
+    ..setFloat(2, (preferences?.shaderStrength ?? 1.0).clamp(0.0, 1.0));
+  ref.onDispose(shader.dispose);
+  return shader;
+});
 final shaderStrengthProvider = Provider<double>((ref) {
   return ref.watch(userPreferenceProvider).value?.shaderStrength ?? 1.0;
 });

@@ -46,8 +46,6 @@ class _ThumbnailCardState extends State<ThumbnailCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Button(
       focusNode: _focusNode,
       style: ButtonVariance.menu,

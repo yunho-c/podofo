@@ -1,0 +1,185 @@
+{
+  "_note1": "KEEP THIS FILE! Check it into a version control system (VCS) like git.",
+  "_note2": "ObjectBox manages crucial IDs for your object model. See docs for details.",
+  "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
+  "entities": [
+    {
+      "id": "1:892949797226551813",
+      "lastPropertyId": "3:4052886656905752128",
+      "name": "DocumentEntity",
+      "properties": [
+        {
+          "id": "1:2723093166415911532",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:288813176142781929",
+          "name": "filePath",
+          "type": 9
+        },
+        {
+          "id": "3:4052886656905752128",
+          "name": "lastOpenedPage",
+          "type": 6
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "2:3363719076893792824",
+      "lastPropertyId": "4:1073596380333381628",
+      "name": "ThumbnailEntity",
+      "properties": [
+        {
+          "id": "1:6586970717967998531",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:1112441783418710889",
+          "name": "filePath",
+          "type": 9,
+          "flags": 8,
+          "indexId": "1:4434960590162131309"
+        },
+        {
+          "id": "3:8686004414725114554",
+          "name": "pageNumber",
+          "type": 6
+        },
+        {
+          "id": "4:1073596380333381628",
+          "name": "thumbnailData",
+          "type": 23
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "3:6978279246222423302",
+      "lastPropertyId": "16:8031658732022810243",
+      "name": "UserState",
+      "properties": [
+        {
+          "id": "1:188818795431092893",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7702284734605549523",
+          "name": "appearance",
+          "type": 9
+        },
+        {
+          "id": "4:6531013531422759696",
+          "name": "highlightColor",
+          "type": 9
+        },
+        {
+          "id": "5:4220086204996451028",
+          "name": "previousPosition",
+          "type": 9
+        },
+        {
+          "id": "6:6758838385841374197",
+          "name": "audioReader",
+          "type": 1
+        },
+        {
+          "id": "7:2323057399509311853",
+          "name": "useKeyboardShortcutsToPlayPause",
+          "type": 1
+        },
+        {
+          "id": "8:6255649704887032057",
+          "name": "commandClickToReadSentence",
+          "type": 1
+        },
+        {
+          "id": "9:773281826864018078",
+          "name": "audioBackend",
+          "type": 9
+        },
+        {
+          "id": "10:3428914027084164101",
+          "name": "audioVoice",
+          "type": 9
+        },
+        {
+          "id": "11:8695437590385941028",
+          "name": "audioSpeed",
+          "type": 8
+        },
+        {
+          "id": "12:6500702086585218178",
+          "name": "selectedText",
+          "type": 9
+        },
+        {
+          "id": "13:663375219767776082",
+          "name": "highlightColorPalette",
+          "type": 30
+        },
+        {
+          "id": "14:1230831264076461843",
+          "name": "highlightModeEnabled",
+          "type": 1
+        },
+        {
+          "id": "15:3751037921321467436",
+          "name": "highlightActiveColorIndex",
+          "type": 6
+        },
+        {
+          "id": "16:8031658732022810243",
+          "name": "enableAutoSave",
+          "type": 1
+        }
+      ],
+      "relations": []
+    },
+    {
+      "id": "4:7745109291682401919",
+      "lastPropertyId": "3:8929686710101065399",
+      "name": "DocumentHistoryEntity",
+      "properties": [
+        {
+          "id": "1:2470666268863648139",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:7366747146599426737",
+          "name": "filePath",
+          "type": 9,
+          "flags": 34848,
+          "indexId": "2:2348996881805291555"
+        },
+        {
+          "id": "3:8929686710101065399",
+          "name": "lastOpened",
+          "type": 10
+        }
+      ],
+      "relations": []
+    }
+  ],
+  "lastEntityId": "4:7745109291682401919",
+  "lastIndexId": "2:2348996881805291555",
+  "lastRelationId": "0:0",
+  "lastSequenceId": "0:0",
+  "modelVersion": 5,
+  "modelVersionParserMinimum": 5,
+  "retiredEntityUids": [],
+  "retiredIndexUids": [],
+  "retiredPropertyUids": [
+    6722573925179636413
+  ],
+  "retiredRelationUids": [],
+  "version": 1
+}

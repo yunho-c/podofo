@@ -253,6 +253,11 @@ Future<obx.Store> openStore({
 /// [obx.Store.new].
 obx_int.ModelDefinition getObjectBoxModel() {
   final model = obx_int.ModelInfo(
+    // If this version is not found, it means that this file was generated
+    // with an older version of the ObjectBox Dart generator.
+    // Please regenerate this file with the current generator version.
+    // Typically, this is done with `dart run build_runner build`.
+    generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
     lastEntityId: const obx_int.IdUid(4, 7745109291682401919),
     lastIndexId: const obx_int.IdUid(2, 2348996881805291555),
@@ -294,9 +299,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
           4,
           0,
         );
-        final filePathParam = const fb.StringReader(
-          asciiOptimization: true,
-        ).vTableGet(buffer, rootOffset, 6, '');
+        final filePathParam = const fb.StringReader(asciiOptimization: true)
+            .vTableGet(buffer, rootOffset, 6, '');
         final lastOpenedPageParam = const fb.Int64Reader().vTableGetNullable(
           buffer,
           rootOffset,
@@ -337,19 +341,16 @@ obx_int.ModelDefinition getObjectBoxModel() {
       objectFromFB: (obx.Store store, ByteData fbData) {
         final buffer = fb.BufferContext(fbData);
         final rootOffset = buffer.derefObject(0);
-        final filePathParam = const fb.StringReader(
-          asciiOptimization: true,
-        ).vTableGetNullable(buffer, rootOffset, 6);
+        final filePathParam = const fb.StringReader(asciiOptimization: true)
+            .vTableGetNullable(buffer, rootOffset, 6);
         final pageNumberParam = const fb.Int64Reader().vTableGetNullable(
           buffer,
           rootOffset,
           8,
         );
-        final thumbnailDataParam =
-            const fb.Uint8ListReader(
-                  lazy: false,
-                ).vTableGetNullable(buffer, rootOffset, 10)
-                as Uint8List?;
+        final thumbnailDataParam = const fb.Uint8ListReader(
+          lazy: false,
+        ).vTableGetNullable(buffer, rootOffset, 10) as Uint8List?;
         final object = ThumbnailEntity(
           filePath: filePathParam,
           pageNumber: pageNumberParam,
@@ -412,15 +413,12 @@ obx_int.ModelDefinition getObjectBoxModel() {
 
         final object = UserState()
           ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
-          ..appearance = const fb.StringReader(
-            asciiOptimization: true,
-          ).vTableGet(buffer, rootOffset, 6, '')
-          ..highlightColor = const fb.StringReader(
-            asciiOptimization: true,
-          ).vTableGetNullable(buffer, rootOffset, 10)
-          ..previousPosition = const fb.StringReader(
-            asciiOptimization: true,
-          ).vTableGetNullable(buffer, rootOffset, 12)
+          ..appearance = const fb.StringReader(asciiOptimization: true)
+              .vTableGet(buffer, rootOffset, 6, '')
+          ..highlightColor = const fb.StringReader(asciiOptimization: true)
+              .vTableGetNullable(buffer, rootOffset, 10)
+          ..previousPosition = const fb.StringReader(asciiOptimization: true)
+              .vTableGetNullable(buffer, rootOffset, 12)
           ..audioReader = const fb.BoolReader().vTableGet(
             buffer,
             rootOffset,
@@ -439,21 +437,18 @@ obx_int.ModelDefinition getObjectBoxModel() {
             18,
             false,
           )
-          ..audioBackend = const fb.StringReader(
-            asciiOptimization: true,
-          ).vTableGet(buffer, rootOffset, 20, '')
-          ..audioVoice = const fb.StringReader(
-            asciiOptimization: true,
-          ).vTableGetNullable(buffer, rootOffset, 22)
+          ..audioBackend = const fb.StringReader(asciiOptimization: true)
+              .vTableGet(buffer, rootOffset, 20, '')
+          ..audioVoice = const fb.StringReader(asciiOptimization: true)
+              .vTableGetNullable(buffer, rootOffset, 22)
           ..audioSpeed = const fb.Float64Reader().vTableGet(
             buffer,
             rootOffset,
             24,
             0,
           )
-          ..selectedText = const fb.StringReader(
-            asciiOptimization: true,
-          ).vTableGetNullable(buffer, rootOffset, 26)
+          ..selectedText = const fb.StringReader(asciiOptimization: true)
+              .vTableGetNullable(buffer, rootOffset, 26)
           ..highlightColorPalette = const fb.ListReader<String>(
             fb.StringReader(asciiOptimization: true),
             lazy: false,
@@ -506,9 +501,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
           4,
           0,
         );
-        final filePathParam = const fb.StringReader(
-          asciiOptimization: true,
-        ).vTableGet(buffer, rootOffset, 6, '');
+        final filePathParam = const fb.StringReader(asciiOptimization: true)
+            .vTableGet(buffer, rootOffset, 6, '');
         final lastOpenedParam = DateTime.fromMillisecondsSinceEpoch(
           const fb.Int64Reader().vTableGet(buffer, rootOffset, 8, 0),
         );

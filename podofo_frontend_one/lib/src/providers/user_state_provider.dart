@@ -1,44 +1,35 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:objectbox/objectbox.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
-import 'package:podofo_one/src/providers/data_provider.dart';
-import 'package:podofo_one/src/utils/color_utils.dart';
-
-part 'user_state_provider.g.dart';
+import 'data_provider.dart';
 
 @Entity()
 class UserState {
   @Id()
   int id = 0;
-
   String appearance = 'light';
   bool highlightModeEnabled = false;
   String? highlightColor;
   int highlightActiveColorIndex = 0;
   List<String> highlightColorPalette = [];
   String? previousPosition;
-
   String? selectedText;
-
   bool audioReader = false;
   bool useKeyboardShortcutsToPlayPause = false;
   bool commandClickToReadSentence = false;
   String audioBackend = 'system';
   String? audioVoice;
   double audioSpeed = 1.0;
-
+  @Property(uid: 8031658732022810243)
   bool autoSaveEnabled = true;
-
   UserState();
-
   UserState.from(UserState other)
     : id = other.id,
       appearance = other.appearance,
       highlightModeEnabled = other.highlightModeEnabled,
       highlightColor = other.highlightColor,
       highlightActiveColorIndex = other.highlightActiveColorIndex,
-      highlightColorPalette = other.highlightColorPalette,
+      highlightColorPalette = List.of(other.highlightColorPalette),
       previousPosition = other.previousPosition,
       selectedText = other.selectedText,
       audioReader = other.audioReader,
@@ -50,124 +41,94 @@ class UserState {
       autoSaveEnabled = other.autoSaveEnabled;
 }
 
-@Riverpod(keepAlive: true)
-class UserStateNotifier extends _$UserStateNotifier {
-  late final Box<UserState> _box;
+final userStateNotifierProvider =
+    NotifierProvider<UserStateNotifier, UserState>(UserStateNotifier.new);
 
+class UserStateNotifier extends Notifier<UserState> {
+  late Box<UserState> _box;
   @override
   UserState build() {
-    final objectbox = ref.watch(objectboxProvider);
-    _box = objectbox.store.box<UserState>();
-    final userState = _box.get(1);
-    if (userState == null) {
-      final newUserState = UserState();
-      newUserState.highlightColorPalette = [
-        '#22f44336',
-        '#22ff9800',
-        '#22ffeb3b',
-        '#224caf50',
-        '#2200bcd4',
-        '#223f51b5',
-      ];
-      _box.put(newUserState, mode: PutMode.put);
-      return newUserState;
+    _box = ref.watch(objectboxProvider).store.box<UserState>();
+    final result = _box.get(1) ?? _box.getAll().firstOrNull ?? UserState();
+    final valid = result.highlightColorPalette
+        .where((color) => RegExp(r'^#[0-9a-fA-F]{8}$').hasMatch(color))
+        .toList();
+    result.highlightColorPalette = valid.isEmpty
+        ? [
+            '#66f44336',
+            '#66ff9800',
+            '#66ffeb3b',
+            '#664caf50',
+            '#6600bcd4',
+            '#663f51b5',
+          ]
+        : valid;
+    result.highlightActiveColorIndex = result.highlightActiveColorIndex.clamp(
+      0,
+      result.highlightColorPalette.length - 1,
+    );
+    if (result.highlightColor == null ||
+        !RegExp(r'^#[0-9a-fA-F]{8}$').hasMatch(result.highlightColor!)) {
+      result.highlightColor =
+          result.highlightColorPalette[result.highlightActiveColorIndex];
     }
-    if (userState.highlightColorPalette.isEmpty) {
-      userState.highlightColorPalette = [
-        '#22f44336',
-        '#22ff9800',
-        '#22ffeb3b',
-        '#224caf50',
-        '#2200bcd4',
-        '#223f51b5',
-      ];
-      _box.put(userState);
-    }
-    if (userState.highlightColor == null) {
-      userState.highlightColor = userState.highlightColorPalette[0];
-      _box.put(userState);
-    }
-    return userState;
+    result.selectedText = null;
+    _box.put(result);
+    return result;
+  }
+
+  void _update(void Function(UserState) change) {
+    final next = UserState.from(state);
+    change(next);
+    _box.put(next);
+    state = next;
   }
 
   void updateSelectedText(String? text) {
     state = UserState.from(state)..selectedText = text;
   }
 
-  void setAppearance(String appearance) {
-    state = UserState.from(state)..appearance = appearance;
-    _box.put(state, mode: PutMode.put);
-  }
-
-  void setHighlightModeEnabled(bool highlightModeEnabled) {
-    state = UserState.from(state)..highlightModeEnabled = highlightModeEnabled;
-    _box.put(state, mode: PutMode.put);
-  }
-
-  void setHighlightColor(String? highlightColor) {
-    state = UserState.from(state)..highlightColor = highlightColor;
-    _box.put(state, mode: PutMode.put);
-  }
-
   void setHighlightActiveColorIndex(int index) {
-    state = UserState.from(state)
-      ..highlightActiveColorIndex = index
-      ..highlightColor = state.highlightColorPalette[index];
-    _box.put(state, mode: PutMode.put);
+    if (index < 0 || index >= state.highlightColorPalette.length) return;
+    _update(
+      (s) => s
+        ..highlightActiveColorIndex = index
+        ..highlightColor = s.highlightColorPalette[index],
+    );
   }
 
-  void setPreviousPosition(String? previousPosition) {
-    state = UserState.from(state)..previousPosition = previousPosition;
-    _box.put(state, mode: PutMode.put);
+  void setHighlightColorPalette(List<String> colors) {
+    if (colors.isEmpty ||
+        colors.any((c) => !RegExp(r'^#[0-9a-fA-F]{8}$').hasMatch(c))) {
+      return;
+    }
+    _update(
+      (s) => s
+        ..highlightColorPalette = List.of(colors)
+        ..highlightActiveColorIndex = 0
+        ..highlightColor = colors.first,
+    );
   }
 
-  void setAudioReader(bool audioReader) {
-    state = UserState.from(state)..audioReader = audioReader;
-    _box.put(state, mode: PutMode.put);
-  }
-
-  void setUseKeyboardShortcutsToPlayPause(
-    bool useKeyboardShortcutsToPlayPause,
-  ) {
-    state = UserState.from(state)
-      ..useKeyboardShortcutsToPlayPause = useKeyboardShortcutsToPlayPause;
-    _box.put(state, mode: PutMode.put);
-  }
-
-  void setCommandClickToReadSentence(bool commandClickToReadSentence) {
-    state = UserState.from(state)
-      ..commandClickToReadSentence = commandClickToReadSentence;
-    _box.put(state, mode: PutMode.put);
-  }
-
-  void setAudioBackend(String audioBackend) {
-    state = UserState.from(state)..audioBackend = audioBackend;
-    _box.put(state, mode: PutMode.put);
-  }
-
-  void setAudioVoice(String? audioVoice) {
-    state = UserState.from(state)..audioVoice = audioVoice;
-    _box.put(state, mode: PutMode.put);
-  }
-
-  void setAudioSpeed(double audioSpeed) {
-    state = UserState.from(state)..audioSpeed = audioSpeed;
-    _box.put(state, mode: PutMode.put);
-  }
-
-  void setHighlightColorPalette(List<String> highlightColorPalette) {
-    state = UserState.from(state)
-      ..highlightColorPalette = highlightColorPalette;
-    _box.put(state, mode: PutMode.put);
-  }
-
-  void setAutoSaveEnabled(bool autoSaveEnabled) {
-    state = UserState.from(state)..autoSaveEnabled = autoSaveEnabled;
-    _box.put(state, mode: PutMode.put);
-  }
-
+  void setAppearance(String value) => _update((s) => s.appearance = value);
+  void setHighlightModeEnabled(bool value) =>
+      _update((s) => s.highlightModeEnabled = value);
+  void setHighlightColor(String? value) =>
+      _update((s) => s.highlightColor = value);
+  void setPreviousPosition(String? value) =>
+      _update((s) => s.previousPosition = value);
+  void setAudioReader(bool value) => _update((s) => s.audioReader = value);
+  void setUseKeyboardShortcutsToPlayPause(bool value) =>
+      _update((s) => s.useKeyboardShortcutsToPlayPause = value);
+  void setCommandClickToReadSentence(bool value) =>
+      _update((s) => s.commandClickToReadSentence = value);
+  void setAudioBackend(String value) => _update((s) => s.audioBackend = value);
+  void setAudioVoice(String? value) => _update((s) => s.audioVoice = value);
+  void setAudioSpeed(double value) => _update((s) => s.audioSpeed = value);
+  void setAutoSaveEnabled(bool value) =>
+      _update((s) => s.autoSaveEnabled = value);
   void nuke() {
-    _box.remove(1);
+    _box.remove(state.id);
     ref.invalidateSelf();
   }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart' show Icons;
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import 'package:podofo_one/src/data/document_data.dart';
@@ -68,7 +69,7 @@ class _TabWidgetState extends State<TabWidget> {
           children: [
             Expanded(
               child: Text(
-                removePdfExtension(widget.document.title),
+                '${widget.document.dirty ? '● ' : ''}${removePdfExtension(widget.document.title)}',
                 overflow: TextOverflow.ellipsis,
               ),
             ),

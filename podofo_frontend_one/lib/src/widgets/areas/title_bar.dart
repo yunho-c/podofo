@@ -1,174 +1,143 @@
-import 'dart:io' show Platform;
+import 'dart:io';
 
+import 'package:flutter/material.dart' as m;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter/material.dart' show SubmenuButton, MenuItemButton;
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:window_manager/window_manager.dart';
 
-import 'package:podofo_one/src/providers/document_provider.dart';
-import 'package:podofo_one/src/providers/ui_provider.dart';
+import '../../providers/document_provider.dart';
+import '../../providers/ui_provider.dart';
+import '../../services/document_actions.dart';
 
 class TitleBar extends ConsumerWidget {
-  final Widget child;
   const TitleBar({super.key, required this.child});
-
+  final Widget child;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (Platform.isMacOS) {
-      return PlatformMenuBar(
-        menus: <PlatformMenuItem>[
-          PlatformMenu(
-            label: 'PoDoFo',
-            menus: <PlatformMenuItem>[
-              PlatformMenuItem(
-                label: '?1',
-                onSelected: () {
-                  ref.read(filePathProvider.notifier).pickFile();
-                },
-              ),
-            ],
-          ),
-          PlatformMenu(
-            label: 'File',
-            menus: <PlatformMenuItem>[
-              PlatformMenuItem(
-                label: 'Open File',
-                onSelected: () {
-                  ref.read(filePathProvider.notifier).pickFile();
-                },
-              ),
-              PlatformMenuItem(
-                label: 'Save',
-                onSelected: () {
-                  ref.read(filePathProvider.notifier).pickFile();
-                },
-              ),
-              PlatformMenuItem(
-                label: 'Save as...',
-                onSelected: () {
-                  ref.read(filePathProvider.notifier).pickFile();
-                },
-              ),
-              PlatformMenuItem(
-                label: 'Export',
-                onSelected: () {
-                  ref.read(filePathProvider.notifier).pickFile();
-                },
-              ),
-              PlatformMenuItem(
-                label: 'Print',
-                onSelected: () {
-                  ref.read(filePathProvider.notifier).pickFile();
-                },
-              ),
-            ],
-          ),
-          PlatformMenu(
-            label: 'Edit',
-            menus: <PlatformMenuItem>[
-              PlatformMenuItem(label: 'Undo', onSelected: () {}),
-              PlatformMenuItem(label: 'Redo', onSelected: () {}),
-            ],
-          ),
-          PlatformMenu(
-            label: 'View',
-            menus: <PlatformMenuItem>[
-              PlatformMenuItem(label: 'Reset zoom', onSelected: () {}),
-            ],
-          ),
-          PlatformMenu(
-            label: 'Window',
-            menus: <PlatformMenuItem>[
-              PlatformMenuItem(label: 'umm', onSelected: () {}),
-            ],
-          ),
-          PlatformMenu(
-            label: 'Help',
-            menus: <PlatformMenuItem>[
-              PlatformMenuItem(label: 'jun', onSelected: () {}),
-            ],
-          ),
-        ],
-        child: Column(
-          children: [
-            GestureDetector(
-              onPanStart: (details) => windowManager.startDragging(),
-              child: SizedBox(
-                height: 30,
-                child: GestureDetector(
-                  onTap: () {
-                    ref
-                        .read(commandPaletteProvider.notifier)
-                        .update((state) => !state);
+    final document = ref.watch(currentDocumentProvider);
+    final content = Column(
+      children: [
+        SizedBox(
+          height: 32,
+          child: Row(
+            children: [
+              SizedBox(
+                width: 80,
+                child: m.PopupMenuButton<String>(
+                  tooltip: 'File menu',
+                  child: const Center(child: Text('File')),
+                  itemBuilder: (context) => [
+                    const m.PopupMenuItem(
+                      value: 'open',
+                      child: Text('Open PDF…'),
+                    ),
+                    m.PopupMenuItem(
+                      value: 'save',
+                      enabled: document != null,
+                      child: const Text('Save'),
+                    ),
+                    m.PopupMenuItem(
+                      value: 'saveAs',
+                      enabled: document != null,
+                      child: const Text('Save As…'),
+                    ),
+                    m.PopupMenuItem(
+                      value: 'close',
+                      enabled: document != null,
+                      child: const Text('Close tab'),
+                    ),
+                    const m.PopupMenuItem(
+                      enabled: false,
+                      child: Text('Print — not available yet'),
+                    ),
+                    const m.PopupMenuItem(
+                      enabled: false,
+                      child: Text('Export — not available yet'),
+                    ),
+                  ],
+                  onSelected: (value) {
+                    switch (value) {
+                      case 'open':
+                        ref.read(filePathProvider.notifier).pickFile();
+                      case 'save':
+                        DocumentActions.save(context, ref, document!);
+                      case 'saveAs':
+                        DocumentActions.save(
+                          context,
+                          ref,
+                          document!,
+                          saveAs: true,
+                        );
+                      case 'close':
+                        DocumentActions.close(context, ref, document!);
+                    }
                   },
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onPanStart: (_) => windowManager.startDragging(),
                   child: Center(
-                    child: Container(
-                      width: 200,
-                      height: 15,
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.accent,
-                        borderRadius: BorderRadius.circular(5),
-                      ),
+                    child: Button(
+                      style: ButtonStyle.ghost(),
+                      onPressed: () => ref
+                          .read(commandPaletteProvider.notifier)
+                          .update((value) => !value),
+                      child: const Text('PoDoFo · Recent files'),
                     ),
                   ),
                 ),
               ),
+              if (!Platform.isMacOS)
+                SizedBox(
+                  width: 138,
+                  child: WindowCaption(
+                    brightness: Theme.of(context).colorScheme.brightness,
+                    backgroundColor: Colors.transparent,
+                  ),
+                ),
+            ],
+          ),
+        ),
+        Expanded(child: child),
+      ],
+    );
+    if (!Platform.isMacOS) return content;
+    return PlatformMenuBar(
+      menus: [
+        PlatformMenu(
+          label: 'File',
+          menus: [
+            PlatformMenuItem(
+              label: 'Open PDF',
+              onSelected: () => ref.read(filePathProvider.notifier).pickFile(),
             ),
-            Expanded(child: child),
+            PlatformMenuItem(
+              label: 'Save',
+              onSelected: document == null
+                  ? null
+                  : () => DocumentActions.save(context, ref, document),
+            ),
+            PlatformMenuItem(
+              label: 'Save As…',
+              onSelected: document == null
+                  ? null
+                  : () => DocumentActions.save(
+                      context,
+                      ref,
+                      document,
+                      saveAs: true,
+                    ),
+            ),
+            PlatformMenuItem(
+              label: 'Quit',
+              onSelected: () => windowManager.close(),
+            ),
           ],
         ),
-      );
-    } else {
-      final menu = SubmenuButton(
-        menuChildren: <Widget>[
-          MenuItemButton(
-            onPressed: () {
-              ref.read(filePathProvider.notifier).pickFile();
-            },
-            child: const Text('Open File'),
-          ),
-        ],
-        child: const Text('File'),
-      );
-
-      return Column(
-        children: [
-          GestureDetector(
-            onPanStart: (details) => windowManager.startDragging(),
-            child: Container(
-              height: 30,
-              child: Row(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: menu,
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          ref
-                              .read(commandPaletteProvider.notifier)
-                              .update((state) => !state);
-                        },
-                        child: Container(
-                          width: 200,
-                          height: 15,
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.accent,
-                            borderRadius: BorderRadius.circular(5),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          Expanded(child: child),
-        ],
-      );
-    }
+      ],
+      child: content,
+    );
   }
 }

@@ -1,213 +1,100 @@
-import 'dart:io' show Platform;
+import 'dart:io';
+
 import 'package:flutter/services.dart';
-
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
+import 'package:window_manager/window_manager.dart';
 
-import 'package:podofo_one/src/data/pane_data.dart';
-import 'package:podofo_one/src/providers/document_provider.dart';
-import 'package:podofo_one/src/providers/ui_provider.dart';
-import 'package:podofo_one/src/providers/tab_provider.dart';
-import 'package:podofo_one/src/providers/user_state_provider.dart';
+import '../data/pane_data.dart';
+import '../services/document_actions.dart';
+import 'document_provider.dart';
+import 'tab_provider.dart';
+import 'ui_provider.dart';
 
-// TODO: Data-ify this, instead of hard-coding.
-// TODO: Persistence (serialization), editor visualization, editing
-// TODO: Real-time visualization for the entire app (toggleable via 'More')
-final hotkeyProvider = Provider<void>((ref) {
-  final Map<int, LogicalKeyboardKey> topRowNumberKeys = {
-    1: LogicalKeyboardKey.digit1,
-    2: LogicalKeyboardKey.digit2,
-    3: LogicalKeyboardKey.digit3,
-    4: LogicalKeyboardKey.digit4,
-    5: LogicalKeyboardKey.digit5,
-    6: LogicalKeyboardKey.digit6,
-    7: LogicalKeyboardKey.digit7,
-    8: LogicalKeyboardKey.digit8,
-    9: LogicalKeyboardKey.digit9,
-    0: LogicalKeyboardKey.digit0,
-  };
-
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.keyP,
-      modifiers: [
-        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
-      ],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      ref.read(commandPaletteProvider.notifier).update((state) => !state);
-    },
-  );
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.keyH,
-      modifiers: [],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      final highlightMode = ref
-          .read(userStateNotifierProvider)
-          .highlightModeEnabled;
-      ref
-          .read(userStateNotifierProvider.notifier)
-          .setHighlightModeEnabled(!highlightMode);
-    },
-  );
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.keyB,
-      modifiers: [
-        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
-      ],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      ref.read(leftPaneProvider.notifier).update((state) {
-        return state == leftPaneData.items[0] ? null : leftPaneData.items[0];
-      });
-    },
-  );
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.keyO,
-      modifiers: [
-        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
-      ],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      ref.read(leftPaneProvider.notifier).update((state) {
-        return state == leftPaneData.items[1] ? null : leftPaneData.items[1];
-      });
-    },
-  );
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.keyF,
-      modifiers: [
-        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
-      ],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      ref.read(leftPaneProvider.notifier).update((state) {
-        return state == leftPaneData.items[3] ? null : leftPaneData.items[3];
-      });
-    },
-  );
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.keyF,
-      modifiers: [
-        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
-        HotKeyModifier.shift,
-      ],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      ref.read(leftPaneProvider.notifier).update((state) {
-        return state == leftPaneData.items[4] ? null : leftPaneData.items[4];
-      });
-    },
-  );
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.tab,
-      modifiers: [HotKeyModifier.control],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      final notifier = ref.read(currentTabIndexProvider.notifier);
-      final loadedDocuments = ref.read(loadedDocumentsProvider);
-      if (loadedDocuments.length > 1) {
-        notifier.state = (notifier.state + 1) % loadedDocuments.length;
+/// Flutter shortcuts respect text-field focus and disappear with the app widget.
+class AppShortcuts extends ConsumerWidget {
+  const AppShortcuts({super.key, required this.child});
+  final Widget child;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    SingleActivator chord(LogicalKeyboardKey key, {bool shift = false}) =>
+        SingleActivator(
+          key,
+          control: !Platform.isMacOS,
+          meta: Platform.isMacOS,
+          shift: shift,
+        );
+    void save({bool as = false}) {
+      final document = ref.read(currentDocumentProvider);
+      if (document != null) {
+        DocumentActions.save(context, ref, document, saveAs: as);
       }
-    },
-  );
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.tab,
-      modifiers: [HotKeyModifier.control, HotKeyModifier.shift],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      final notifier = ref.read(currentTabIndexProvider.notifier);
-      final loadedDocuments = ref.read(loadedDocumentsProvider);
-      if (loadedDocuments.length > 1) {
-        notifier.state =
-            (notifier.state - 1 + loadedDocuments.length) %
-            loadedDocuments.length;
-      }
-    },
-  );
+    }
 
-  topRowNumberKeys.forEach((number, key) {
-    hotKeyManager.register(
-      HotKey(
-        key: key,
-        modifiers: [
-          Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
-        ],
-        scope: HotKeyScope.inapp,
-      ),
-      keyDownHandler: (_) {
-        final loadedDocuments = ref.read(loadedDocumentsProvider);
-        if (number <= loadedDocuments.length) {
-          ref.read(currentTabIndexProvider.notifier).state = number - 1;
-        }
-      },
-    );
-  });
-
-  topRowNumberKeys.forEach((number, key) {
-    hotKeyManager.register(
-      HotKey(key: key, scope: HotKeyScope.inapp),
-      keyDownHandler: (_) {
-        final userState = ref.read(userStateNotifierProvider);
-        final paletteSize = userState.highlightColorPalette.length;
-        final index = number == 0 ? 9 : number - 1;
-        if (index < paletteSize) {
-          ref
-              .read(userStateNotifierProvider.notifier)
-              .setHighlightActiveColorIndex(index);
-        }
-      },
-    );
-  });
-
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.digit0,
-      modifiers: [
-        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
-      ],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      final loadedDocuments = ref.read(loadedDocumentsProvider);
-      if (loadedDocuments.isNotEmpty) {
+    void next(int delta) {
+      final count = ref.read(loadedDocumentsProvider).length;
+      if (count > 0) {
+        final index = ref.read(currentTabIndexProvider);
         ref.read(currentTabIndexProvider.notifier).state =
-            loadedDocuments.length - 1;
+            (index + delta) % count;
       }
-    },
-  );
+    }
 
-  hotKeyManager.register(
-    HotKey(
-      key: PhysicalKeyboardKey.keyW,
-      modifiers: [
-        Platform.isMacOS ? HotKeyModifier.meta : HotKeyModifier.control,
-      ],
-      scope: HotKeyScope.inapp,
-    ),
-    keyDownHandler: (_) {
-      final currentDocument = ref.read(currentDocumentProvider);
-      if (currentDocument != null) {
-        ref
-            .read(loadedDocumentsProvider.notifier)
-            .removeDocument(currentDocument.filePath);
-      }
-    },
-  );
-});
+    return CallbackShortcuts(
+      bindings: {
+        chord(LogicalKeyboardKey.keyO): () =>
+            ref.read(filePathProvider.notifier).pickFile(),
+        chord(LogicalKeyboardKey.keyS): () => save(),
+        chord(LogicalKeyboardKey.keyS, shift: true): () => save(as: true),
+        chord(LogicalKeyboardKey.keyW): () {
+          final document = ref.read(currentDocumentProvider);
+          if (document != null) DocumentActions.close(context, ref, document);
+        },
+        chord(LogicalKeyboardKey.keyQ): () => windowManager.close(),
+        chord(LogicalKeyboardKey.keyH, shift: true): () =>
+            DocumentActions.highlight(ref),
+        chord(LogicalKeyboardKey.keyF): () =>
+            ref.read(leftPaneProvider.notifier).state = leftPaneData.items[3],
+        chord(LogicalKeyboardKey.keyB): () =>
+            ref.read(leftPaneProvider.notifier).state = leftPaneData.items[0],
+        chord(LogicalKeyboardKey.keyP): () =>
+            ref.read(commandPaletteProvider.notifier).update((v) => !v),
+        const SingleActivator(LogicalKeyboardKey.tab, control: true): () =>
+            next(1),
+        const SingleActivator(
+          LogicalKeyboardKey.tab,
+          control: true,
+          shift: true,
+        ): () =>
+            next(-1),
+        const SingleActivator(LogicalKeyboardKey.escape): () =>
+            ref.read(commandPaletteProvider.notifier).state = false,
+        for (var n = 1; n <= 9; n++)
+          chord(
+            [
+              LogicalKeyboardKey.digit1,
+              LogicalKeyboardKey.digit2,
+              LogicalKeyboardKey.digit3,
+              LogicalKeyboardKey.digit4,
+              LogicalKeyboardKey.digit5,
+              LogicalKeyboardKey.digit6,
+              LogicalKeyboardKey.digit7,
+              LogicalKeyboardKey.digit8,
+              LogicalKeyboardKey.digit9,
+            ][n - 1],
+          ): () {
+            if (n <= ref.read(loadedDocumentsProvider).length) {
+              ref.read(currentTabIndexProvider.notifier).state = n - 1;
+            }
+          },
+        chord(LogicalKeyboardKey.digit0): () {
+          final count = ref.read(loadedDocumentsProvider).length;
+          if (count > 0) {
+            ref.read(currentTabIndexProvider.notifier).state = count - 1;
+          }
+        },
+      },
+      child: Focus(autofocus: true, child: child),
+    );
+  }
+}
