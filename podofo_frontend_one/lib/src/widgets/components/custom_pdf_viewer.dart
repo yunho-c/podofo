@@ -71,6 +71,11 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
       controller: controller,
       initialPageNumber: document.lastOpenedPage ?? 1,
       params: PdfViewerParams(
+        pageDropShadow: const BoxShadow(
+          color: Color(0x0C000000),
+          blurRadius: 8,
+          offset: Offset(0, 0.5),
+        ),
         onViewerReady: (pdf, readyController) {
           Future.microtask(() {
             if (mounted) {
