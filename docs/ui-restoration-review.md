@@ -1,13 +1,34 @@
 # UI comparison with the pre-stabilization reader
 
 Reviewed on 2026-09-29 against `9594008`, the last commit before stabilization.
-The comparison includes the follow-up restorations through `f0b3de8`, the
-proportional scrollbar change documented here, and the separate outline
-restoration present in the working tree during this review. It covers application
-code, current package behavior relevant to that code, and focused Windows widget
-checks. It is not a pixel comparison against a rebuilt old executable.
+The comparison includes the follow-up restorations through `a349560` and the
+outline restoration documented here. It covers application code, current package
+behavior relevant to that code, and focused Windows widget checks. It is not a
+pixel comparison against a rebuilt old executable.
 
-## Scrollbar restored in this change
+## Outline restored with the current shadcn API
+
+The outline again uses shadcn's tree components, replacing the hand-built rows
+introduced during stabilization. The API migration maps `TreeView` to `Tree`,
+the old data `TreeItem` to `TreeItemNode`, and `TreeItemView` to `TreeItem`.
+The implementation retains the original tree layout, branch guides, expansion
+controls, primary-colored labels, and single-line ellipsis.
+
+Group headings without destinations remain focusable so keyboard expansion and
+navigation work. Arrow keys expand, collapse, and move between entries; Enter
+and mouse clicks navigate destinations. Expansion survives unrelated rebuilds
+and resets when the outline is replaced. The current document lease/provider
+lifecycle is preserved, and navigation checks controller readiness and reports
+asynchronous failures through the existing document-error channel.
+
+Three focused widget tests pass, covering keyboard and mouse navigation,
+destination-less groups, text overflow, expansion state, document replacement,
+empty outlines, unavailable controllers, and navigation errors. A rendered
+250-pixel-wide fixture with Urbanist and the package icon font was inspected.
+It validates the isolated tree presentation; the global typography issue below
+still affects inherited text styling in the running app.
+
+## Scrollbar restored in `a349560`
 
 The vertical thumb again represents the visible fraction of the PDF. Its height
 is the viewport height multiplied by the visible document fraction, with the
@@ -27,8 +48,8 @@ restoring the original viewport, and dragging to both ends of a real PDF.
 
 ## Outstanding functional and presentation regressions
 
-These remain after the scrollbar restoration. They are review findings, not
-additional changes made by this patch.
+These remain after the outline and scrollbar restorations. They are review
+findings, not additional changes made by these patches.
 
 | Area | Before stabilization | Current difference and impact | Source |
 | --- | --- | --- | --- |
@@ -60,13 +81,8 @@ the earlier interface.
 ## Restored or intentionally retained changes
 
 - The recent-files title-bar control is back to the original unlabeled pill.
-- The separate outline restoration replaces the temporary button rows with the
-  tree widget again, restoring compact single-line labels, enabled group headings,
-  and keyboard expansion/navigation. Its source and test changes were already
-  in progress during this review; they are not part of the scrollbar patch.
-  Its navigation and styling checks pass. At review time, its third test for
-  reporting a failed destination did not observe the expected error, so that
-  change still needs final verification.
+- The outline uses shadcn's tree again, with the migration and validation
+  described above.
 - The highlighter icon, highlighting mode, compact palette, and selection-menu
   swatches are restored, with actual persistent editing behind them.
 - Thumbnail styling, spacing, focus navigation, dark inversion, and absence of
@@ -98,12 +114,15 @@ listener registration. Its scratch harness and logs are in the ignored `build/`
 and application log paths. The scrollbar checks are part of the committed reader
 regression rather than that scratch harness.
 
-For this scrollbar change, static analysis passed with no issues and the complete
+For the scrollbar change, static analysis passed with no issues and the complete
 reader widget regression passed, including zoom, resizing, the minimum thumb
 height, dragging to both ends, and the existing editing/saving workflow.
 The Windows release build also passed. It emitted the existing ObjectBox CMake
 deprecation warning about `FetchContent_Populate`.
-The separate outline test run recorded two passes and one failure, as noted above.
+For the outline change, all three tests in `test/outline_pane_test.dart` pass,
+and static analysis reports no issues. The inspected capture is generated at
+`build/test-artifacts/restored-outline.png`.
+No new native release build was made for this outline-only change.
 
 No user documents or installed database were used for these checks. macOS/Linux
 native windowing, platform menus, file dialogs, and system-theme transitions have
