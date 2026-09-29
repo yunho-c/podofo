@@ -22,6 +22,8 @@ class CustomPdfViewer extends ConsumerStatefulWidget {
 }
 
 class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
+  static final _disabledFilter = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
+
   OverlayEntry? _overlay;
   Timer? _hoverTimer;
   int _generation = 0;
@@ -66,7 +68,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     final searcher = ref.watch(pdfTextSearcherProvider);
     final brightness = ref.watch(brightnessProvider);
     final shader = ref.watch(shaderProvider);
-    Widget viewer = PdfViewer(
+    final viewer = PdfViewer(
       document.session.lease.reference,
       controller: controller,
       initialPageNumber: document.lastOpenedPage ?? 1,
@@ -146,30 +148,30 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
             : const Color(0xfffafafa),
       ),
     );
-    if (brightness == Brightness.dark && shader != null) {
-      viewer = ImageFiltered(
-        imageFilter: ImageFilter.shader(shader),
-        child: viewer,
-      );
-    }
+    final invert = brightness == Brightness.dark && shader != null;
     return MouseRegion(
       onHover: _onHover,
       onExit: (_) => _clearHover(),
-      child: Listener(
-        onPointerDown: (event) {
-          if (event.buttons == kPrimaryButton) {
-            _selectionPointers.add(event.pointer);
-          }
-        },
-        onPointerUp: (event) {
-          _selectionPointers.remove(event.pointer);
-          Future.microtask(_applyHighlightMode);
-        },
-        onPointerCancel: (event) {
-          _selectionPointers.remove(event.pointer);
-          _selectionChanged = false;
-        },
-        child: viewer,
+      // Keep the viewer mounted so theme/inversion changes preserve its viewport.
+      child: ImageFiltered(
+        enabled: invert,
+        imageFilter: invert ? ImageFilter.shader(shader) : _disabledFilter,
+        child: Listener(
+          onPointerDown: (event) {
+            if (event.buttons == kPrimaryButton) {
+              _selectionPointers.add(event.pointer);
+            }
+          },
+          onPointerUp: (event) {
+            _selectionPointers.remove(event.pointer);
+            Future.microtask(_applyHighlightMode);
+          },
+          onPointerCancel: (event) {
+            _selectionPointers.remove(event.pointer);
+            _selectionChanged = false;
+          },
+          child: viewer,
+        ),
       ),
     );
   }
