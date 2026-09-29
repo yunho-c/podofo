@@ -108,6 +108,22 @@ void main() {
       );
       expect(tester.takeException(), isNull);
       final controller = container.read(pdfViewerControllerProvider);
+      // Mode toggles and the direct shortcut are harmless with no selection.
+      await tester.tap(find.byKey(const ValueKey('highlight-mode')));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        container.read(userStateNotifierProvider).highlightModeEnabled,
+        true,
+      );
+      await tester.tap(find.byKey(const ValueKey('highlight-mode')));
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.pump();
+      expect(container.read(documentErrorProvider), isNull);
+      expect(container.read(currentDocumentProvider)!.dirty, false);
       final searcher = container.read(pdfTextSearcherProvider)!;
       searcher.startTextSearch('Hello', searchImmediately: true);
       await waitForNative(

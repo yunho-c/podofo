@@ -80,6 +80,8 @@ Right-click or long-press the highlighter for the compact color palette and
 inline custom-color picker. The selection context menu includes color swatches
 that apply a highlight directly, even when highlighting mode is off.
 Ctrl/Command+Shift+H also highlights the current selection. Color choices persist.
+Empty selections quietly do nothing. Empty pages and text fragments without
+usable bounds are skipped, so they do not prevent valid text from being highlighted.
 Concurrent requests for the same selection are coalesced, and switching documents
 during selection extraction cancels the pending action. Highlights are native PDF highlight
 annotations with text attachment points, color, printable flags, and selected

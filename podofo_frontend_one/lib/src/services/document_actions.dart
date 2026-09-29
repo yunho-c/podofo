@@ -128,6 +128,7 @@ class DocumentActions {
     final controller = ref.read(pdfViewerControllerProvider);
     if (document == null || !controller.isReady) return;
     final selection = controller.textSelectionDelegate;
+    if (!selection.hasSelectedText) return;
     if (_highlighting[selection] == true) return;
     _highlighting[selection] = true;
     final selectedColor =
@@ -141,19 +142,11 @@ class DocumentActions {
           document.session.lease.isClosed) {
         return;
       }
-      final regions = ranges
-          .map(
-            (range) => HighlightRegion(
-              range.pageNumber,
-              range
-                  .enumerateFragmentBoundingRects()
-                  .map((f) => f.bounds)
-                  .toList(),
-              text: selection.isCopyAllowed ? range.text : '',
-            ),
-          )
-          .toList();
-      if (regions.isEmpty) throw StateError('Select text in the PDF first.');
+      final regions = HighlightRegion.fromTextRanges(
+        ranges,
+        includeText: selection.isCopyAllowed,
+      );
+      if (regions.isEmpty) return;
       await selection.clearTextSelection();
       await ref
           .read(loadedDocumentsProvider.notifier)

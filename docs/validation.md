@@ -57,6 +57,19 @@ release rebuild passed (112.7 seconds). Logs are `highlight-ui-analysis.log`,
 `build/test-artifacts/highlight-*.png` were checked for palette and picker layout;
 the test engine uses fallback glyphs for some application text and icons.
 
+## Empty highlight selection follow-up
+
+Highlight requests now ignore selections without drawable text bounds and keep
+valid fragments when a selection crosses empty pages or separator glyphs.
+Three selection-conversion regressions cover mixed and empty geometry and
+text-copy restrictions. The real-reader test also checks that toggling the mode
+and invoking the shortcut without a selection leave the document clean and show
+no error.
+
+All 18 regressions pass, static analysis reports no issues, and the Windows x64
+release build passed (82.9 seconds). Logs are `highlight-selection-tests.log`,
+`highlight-selection-analysis.log`, and `highlight-selection-build.log`.
+
 ## Non-blocking upstream warnings
 
 ObjectBox's generator uses an analyzer supporting Dart 3.12 language features;

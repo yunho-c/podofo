@@ -11,7 +11,39 @@ class HighlightRegion {
   final int pageNumber;
   final List<PdfRect> rects;
   final String text;
+
+  /// Selection ranges may include empty pages and zero-area separator glyphs.
+  static List<HighlightRegion> fromTextRanges(
+    Iterable<PdfPageTextRange> ranges, {
+    required bool includeText,
+  }) {
+    final result = <HighlightRegion>[];
+    for (final range in ranges) {
+      if (range.start >= range.end || range.pageText.fragments.isEmpty) {
+        continue;
+      }
+      final rects = range
+          .enumerateFragmentBoundingRects()
+          .map((fragment) => fragment.bounds)
+          .where(_hasUsableBounds)
+          .toList();
+      if (rects.isEmpty) continue;
+      result.add(
+        HighlightRegion(
+          range.pageNumber,
+          rects,
+          text: includeText ? range.text : '',
+        ),
+      );
+    }
+    return result;
+  }
 }
+
+bool _hasUsableBounds(PdfRect rect) =>
+    [rect.left, rect.top, rect.right, rect.bottom].every((v) => v.isFinite) &&
+    rect.width > 0 &&
+    rect.height > 0;
 
 typedef AddedHighlight = ({int pageNumber, int index});
 typedef SavedHighlight = ({int pageNumber, int index, String text});
@@ -79,19 +111,9 @@ class PdfHighlights {
               r.rects.isEmpty ||
               r.pageNumber < 1 ||
               r.pageNumber > document.pages.length ||
-              r.rects.any(
-                (b) =>
-                    ![
-                      b.left,
-                      b.top,
-                      b.right,
-                      b.bottom,
-                    ].every((v) => v.isFinite) ||
-                    b.width <= 0 ||
-                    b.height <= 0,
-              ),
+              r.rects.any((rect) => !_hasUsableBounds(rect)),
         )) {
-      throw ArgumentError('Select text before highlighting.');
+      throw ArgumentError('Invalid highlight bounds.');
     }
     final added = <AddedHighlight>[];
     await document.useNativeDocumentHandle((handle) {
