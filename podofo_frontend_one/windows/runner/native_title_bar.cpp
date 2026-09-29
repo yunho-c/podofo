@@ -36,6 +36,16 @@ NativeTitleBar::NativeTitleBar(HWND window, HWND flutter_view,
                            SWP_NOACTIVATE | SWP_FRAMECHANGED);
           UpdateLayout();
           result->Success(flutter::EncodableValue(Metrics()));
+        } else if (call.method_name() == "setBrightness") {
+          const auto* dark = call.arguments()
+              ? std::get_if<bool>(call.arguments()) : nullptr;
+          if (!dark) {
+            result->Error("invalid_argument", "Expected a dark-mode boolean.");
+            return;
+          }
+          dark_ = *dark;
+          UpdateAppearance();
+          result->Success();
         } else {
           result->NotImplemented();
         }
@@ -75,6 +85,24 @@ void NativeTitleBar::ExtendFrame() {
   const double scale = GetDpiForWindow(window_) / 96.0;
   const MARGINS margins = {0, 0, static_cast<int>(std::ceil(height_ * scale)), 0};
   DwmExtendFrameIntoClientArea(window_, &margins);
+}
+
+void NativeTitleBar::UpdateAppearance() {
+  HIGHCONTRAST contrast{sizeof(contrast)};
+  const bool high_contrast =
+      SystemParametersInfo(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0) &&
+      (contrast.dwFlags & HCF_HIGHCONTRASTON);
+  const BOOL dark = dark_ && !high_contrast;
+  // Use numeric attributes so builds with older Windows SDKs remain supported.
+  // Older Windows versions ignore unsupported DWM attributes. Keep text colors,
+  // inactive visuals, hover/pressed effects and animations under system control.
+  DwmSetWindowAttribute(window_, 20 /* DWMWA_USE_IMMERSIVE_DARK_MODE */,
+                        &dark, sizeof(dark));
+  const COLORREF color = high_contrast ? 0xffffffff /* DWMWA_COLOR_DEFAULT */
+                                      : (dark_ ? RGB(0, 0, 0) : RGB(255, 255, 255));
+  DwmSetWindowAttribute(window_, 35 /* DWMWA_CAPTION_COLOR */,
+                        &color, sizeof(color));
+  RedrawWindow(window_, nullptr, nullptr, RDW_INVALIDATE | RDW_FRAME);
 }
 
 void NativeTitleBar::UpdateLayout() {
@@ -127,6 +155,13 @@ void NativeTitleBar::UpdateLayout() {
 std::optional<LRESULT> NativeTitleBar::HandleMessage(UINT message, WPARAM wparam,
                                                     LPARAM lparam) {
   if (!enabled_) return std::nullopt;
+  if (message == WM_THEMECHANGED || message == WM_SYSCOLORCHANGE ||
+      message == WM_SETTINGCHANGE || message == WM_DWMCOLORIZATIONCOLORCHANGED) {
+    UpdateAppearance();
+    // The base Flutter runner would replace the app's preference with the
+    // system dark-mode preference for this message.
+    if (message == WM_DWMCOLORIZATIONCOLORCHANGED) return 0;
+  }
   if (message == WM_ACTIVATE || message == WM_DWMCOMPOSITIONCHANGED) {
     ExtendFrame();
   }

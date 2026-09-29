@@ -23,6 +23,7 @@ using Accessibility;
 public static class NativeCaptionTest {
     [StructLayout(LayoutKind.Sequential)] public struct Rect { public int left, top, right, bottom; }
     [StructLayout(LayoutKind.Sequential)] public struct Point { public int x,y; }
+    [StructLayout(LayoutKind.Sequential)] public struct HighContrast { public uint size, flags; public IntPtr scheme; }
     [StructLayout(LayoutKind.Sequential)] public struct TitleInfo {
         public int size; public Rect bounds;
         [MarshalAs(UnmanagedType.ByValArray,SizeConst=6)] public int[] states;
@@ -32,6 +33,7 @@ public static class NativeCaptionTest {
     [DllImport("user32.dll")] public static extern bool IsZoomed(IntPtr hwnd);
     [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr hwnd);
     [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr hwnd,uint msg,IntPtr wp,IntPtr lp);
+    [DllImport("user32.dll")] static extern bool SystemParametersInfo(uint action,uint size,ref HighContrast value,uint flags);
     [DllImport("user32.dll")] static extern IntPtr SendMessage(IntPtr hwnd,uint msg,IntPtr wp,IntPtr lp);
     [DllImport("user32.dll",EntryPoint="SendMessageW")] static extern IntPtr GetTitleInfo(IntPtr hwnd,uint msg,IntPtr wp,ref TitleInfo info);
     [DllImport("user32.dll")] static extern bool GetWindowRect(IntPtr hwnd,out Rect rect);
@@ -52,6 +54,24 @@ public static class NativeCaptionTest {
         var accessible = Accessible(hwnd);
         try { accessible.accDoDefaultAction(child); }
         finally { Marshal.ReleaseComObject(accessible); }
+    }
+    public static void VerifyAppearance(IntPtr hwnd,bool dark) {
+        var contrast = new HighContrast { size=(uint)Marshal.SizeOf(typeof(HighContrast)) };
+        if(!SystemParametersInfo(0x42,contrast.size,ref contrast,0)) throw new Exception("Cannot read high-contrast preference.");
+        // High contrast deliberately uses system colors, not app light/dark.
+        if((contrast.flags & 1) != 0) return;
+        var info = new TitleInfo { size=Marshal.SizeOf(typeof(TitleInfo)) };
+        GetTitleInfo(hwnd,0x33f,IntPtr.Zero,ref info);
+        Rect window; GetWindowRect(hwnd,out window);
+        var button = info.rects[2];
+        using(var bitmap = Render(hwnd)) {
+            // Sample inside Minimize's backplate, away from its glyph and border.
+            var color = bitmap.GetPixel(button.left+(button.right-button.left)/4-window.left,
+                                        (button.top+button.bottom)/2-window.top);
+            int expected = dark ? 0 : 255;
+            if(Math.Abs(color.R-expected)>8 || Math.Abs(color.G-expected)>8 || Math.Abs(color.B-expected)>8)
+                throw new Exception("Native caption color differs from app preference: " + color);
+        }
     }
     public static string Verify(IntPtr hwnd) {
         var info = new TitleInfo { size = Marshal.SizeOf(typeof(TitleInfo)) };
@@ -78,16 +98,20 @@ public static class NativeCaptionTest {
             return String.Join(", ",names);
         } finally { DeleteObject(region); Marshal.ReleaseComObject(accessible); }
     }
-    public static void Capture(IntPtr hwnd,string path) {
+    static Bitmap Render(IntPtr hwnd) {
         Rect rect; GetWindowRect(hwnd,out rect);
-        using(var bitmap = new Bitmap(rect.right-rect.left,rect.bottom-rect.top)) {
+        var bitmap = new Bitmap(rect.right-rect.left,rect.bottom-rect.top);
+        try {
             using(var graphics = Graphics.FromImage(bitmap)) {
                 var dc = graphics.GetHdc();
                 try { if(!PrintWindow(hwnd,dc,2)) throw new Exception("Window capture failed."); }
                 finally { graphics.ReleaseHdc(dc); }
             }
-            bitmap.Save(path,ImageFormat.Png);
-        }
+            return bitmap;
+        } catch { bitmap.Dispose(); throw; }
+    }
+    public static void Capture(IntPtr hwnd,string path) {
+        using(var bitmap = Render(hwnd)) bitmap.Save(path,ImageFormat.Png);
     }
 }
 '@
@@ -111,38 +135,51 @@ public static class NativeCaptionTest {
         } while ([DateTime]::UtcNow -lt $deadline)
         throw $lastCaptionError
     }
-    $events = Join-Path $artifacts ('close-' + [Guid]::NewGuid().ToString('N') + '.txt')
-    $exe = Join-Path $projectRoot 'build/windows/x64/runner/Release/PoDoFo.exe'
-    # SkipBuild is only for a binary previously built with title_bar_smoke.dart.
-    $fixture = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -ArgumentList ('"' + $events + '"') -WindowStyle Hidden -PassThru
-    try {
-        Wait-Until { $fixture.Refresh(); $fixture.MainWindowHandle -ne 0 } 'Fixture did not create a window.'
-        $window = $fixture.MainWindowHandle
-        Wait-Until { $fixture.Refresh(); $fixture.MainWindowTitle -eq 'PoDoFo caption test' } 'The executable is not the isolated title bar fixture.'
-        Write-Output ('Restored: ' + (Wait-Captions $window))
-        [NativeCaptionTest]::Capture($window,(Join-Path $artifacts 'restored.png'))
-        [NativeCaptionTest]::Invoke($window,3)
-        Wait-Until { [NativeCaptionTest]::IsZoomed($window) } 'Native Maximize action failed.'
-        Write-Output ('Maximized: ' + (Wait-Captions $window))
-        Start-Sleep -Milliseconds 1000
-        [NativeCaptionTest]::Capture($window,(Join-Path $artifacts 'maximized.png'))
-        [NativeCaptionTest]::Invoke($window,3)
-        Wait-Until { ![NativeCaptionTest]::IsZoomed($window) } 'Native Restore action failed.'
-        Write-Output ('Restored again: ' + (Wait-Captions $window))
-        [NativeCaptionTest]::Invoke($window,2)
-        Wait-Until { [NativeCaptionTest]::IsIconic($window) } 'Native Minimize action failed.'
-        [NativeCaptionTest]::PostMessage($window,0x112,[IntPtr]0xf120,[IntPtr]::Zero) | Out-Null
-        Wait-Until { ![NativeCaptionTest]::IsIconic($window) } 'Restore from minimized failed.'
-        [NativeCaptionTest]::Invoke($window,5)
-        Wait-Until { Test-Path -LiteralPath $events } 'Close bypassed the Dart window lifecycle.'
-        if (!$fixture.WaitForExit(15000)) { throw 'Guarded close did not finish.' }
-        if ($fixture.ExitCode -ne 0) { throw "Fixture exited with $($fixture.ExitCode)." }
-        Write-Output 'Native hit testing, clipping, accessibility, window actions, and guarded close passed.'
-    } finally {
-        $fixture.Refresh()
-        if (!$fixture.HasExited) {
-            $fixture.CloseMainWindow() | Out-Null
-            if (!$fixture.WaitForExit(15000)) { $fixture.Kill() }
+    foreach ($theme in @('dark', 'light')) {
+        $events = Join-Path $artifacts ('close-' + [Guid]::NewGuid().ToString('N') + '.txt')
+        $exe = Join-Path $projectRoot 'build/windows/x64/runner/Release/PoDoFo.exe'
+        # SkipBuild is only for a binary previously built with title_bar_smoke.dart.
+        $fixture = Start-Process -FilePath $exe -WorkingDirectory (Split-Path $exe) -ArgumentList ('"' + $events + '" ' + $theme) -WindowStyle Hidden -PassThru
+        $null = $fixture.Handle
+        try {
+            Wait-Until { $fixture.Refresh(); $fixture.MainWindowHandle -ne 0 } 'Fixture did not create a window.'
+            $window = $fixture.MainWindowHandle
+            Wait-Until { $fixture.Refresh(); $fixture.MainWindowTitle -eq 'PoDoFo caption test' } 'The executable is not the isolated title bar fixture.'
+            Wait-Until {
+                try { [NativeCaptionTest]::VerifyAppearance($window, $theme -eq 'dark'); return $true }
+                catch { return $false }
+            } 'Native caption appearance did not follow the app theme.'
+            Write-Output ('Theme: ' + $theme)
+            Write-Output ('Restored: ' + (Wait-Captions $window))
+            # Caption bounds settle before Flutter presents its resized frame.
+            Start-Sleep -Milliseconds 1000
+            [NativeCaptionTest]::Capture($window,(Join-Path $artifacts ($theme + '-restored.png')))
+            [NativeCaptionTest]::Invoke($window,3)
+            Wait-Until { [NativeCaptionTest]::IsZoomed($window) } 'Native Maximize action failed.'
+            Write-Output ('Maximized: ' + (Wait-Captions $window))
+            Start-Sleep -Milliseconds 1000
+            [NativeCaptionTest]::Capture($window,(Join-Path $artifacts ($theme + '-maximized.png')))
+            [NativeCaptionTest]::Invoke($window,3)
+            Wait-Until { ![NativeCaptionTest]::IsZoomed($window) } 'Native Restore action failed.'
+            Write-Output ('Restored again: ' + (Wait-Captions $window))
+            [NativeCaptionTest]::Invoke($window,2)
+            Wait-Until { [NativeCaptionTest]::IsIconic($window) } 'Native Minimize action failed.'
+            [NativeCaptionTest]::PostMessage($window,0x112,[IntPtr]0xf120,[IntPtr]::Zero) | Out-Null
+            Wait-Until { ![NativeCaptionTest]::IsIconic($window) } 'Restore from minimized failed.'
+            [NativeCaptionTest]::PostMessage($window,0x31e,[IntPtr]::Zero,[IntPtr]::Zero) | Out-Null
+            Start-Sleep -Milliseconds 100
+            [NativeCaptionTest]::VerifyAppearance($window, $theme -eq 'dark')
+            [NativeCaptionTest]::Invoke($window,5)
+            Wait-Until { Test-Path -LiteralPath $events } 'Close bypassed the Dart window lifecycle.'
+            if (!$fixture.WaitForExit(15000)) { throw 'Guarded close did not finish.' }
+            if ($fixture.ExitCode -ne 0) { throw "Fixture exited with $($fixture.ExitCode)." }
+            Write-Output 'Native hit testing, clipping, accessibility, window actions, and guarded close passed.'
+        } finally {
+            $fixture.Refresh()
+            if (!$fixture.HasExited) {
+                $fixture.CloseMainWindow() | Out-Null
+                if (!$fixture.WaitForExit(15000)) { $fixture.Kill() }
+            }
         }
     }
 } finally { Pop-Location }

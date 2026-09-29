@@ -6,6 +6,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:podofo_one/main.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
+import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/services/window.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -28,10 +29,14 @@ class _CloseWitness with WindowListener {
 
 Future<void> main(List<String> arguments) async {
   WidgetsFlutterBinding.ensureInitialized();
-  SharedPreferences.setMockInitialValues({});
+  // This executable is a test fixture; keep user preferences untouched.
+  // ignore: invalid_use_of_visible_for_testing_member
+  SharedPreferences.setMockInitialValues({
+    if (arguments.length > 1) 'themeMode': arguments[1],
+  });
   await configureWindowManager();
   if (arguments.isNotEmpty) {
-    windowManager.addListener(_CloseWitness(arguments.single));
+    windowManager.addListener(_CloseWitness(arguments.first));
   }
   final container = ProviderContainer(
     overrides: [
@@ -41,6 +46,7 @@ Future<void> main(List<String> arguments) async {
     ],
   );
   await container.read(initialDocumentsProvider.future);
+  await container.read(userPreferenceProvider.future);
   runApp(UncontrolledProviderScope(container: container, child: const MyApp()));
   WidgetsBinding.instance.addPostFrameCallback((_) {
     windowManager.setTitle('PoDoFo caption test');

@@ -21,6 +21,11 @@ void main() {
     maximized = false;
     WindowsTitleBar.instance.value = const WindowsTitleBarMetrics();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(
+          const MethodChannel('podofo/windows_title_bar'),
+          (call) async => null,
+        );
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
           calls.add(call.method);
           if (call.method == 'isMaximized') return maximized;

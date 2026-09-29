@@ -24,6 +24,7 @@ class NativeTitleBar {
  private:
   flutter::EncodableMap Metrics() const;
   void ExtendFrame();
+  void UpdateAppearance();
   static LRESULT CALLBACK ViewSubclassProc(HWND window, UINT message,
                                           WPARAM wparam, LPARAM lparam,
                                           UINT_PTR id, DWORD_PTR data);
@@ -32,6 +33,7 @@ class NativeTitleBar {
   HWND flutter_view_;
   bool enabled_ = false;
   bool updating_ = false;
+  bool dark_ = false;
   double height_ = 32;
   double buttons_width_ = 138;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;

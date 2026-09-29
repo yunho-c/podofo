@@ -29,9 +29,22 @@ class WindowsTitleBar extends ValueNotifier<WindowsTitleBarMetrics> {
 
   static final instance = WindowsTitleBar();
   static const _channel = MethodChannel('podofo/windows_title_bar');
+  Brightness? _brightness;
+
+  Future<void> setBrightness(Brightness brightness) async {
+    if (!Platform.isWindows || !value.native || _brightness == brightness) {
+      return;
+    }
+    _brightness = brightness;
+    await _channel.invokeMethod<void>(
+      'setBrightness',
+      brightness == Brightness.dark,
+    );
+  }
 
   Future<void> initialize() async {
     if (!Platform.isWindows) return;
+    _brightness = null;
     _channel.setMethodCallHandler((call) async {
       if (call.method == 'metricsChanged') {
         value = WindowsTitleBarMetrics.fromMap(
