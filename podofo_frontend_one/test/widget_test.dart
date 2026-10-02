@@ -40,7 +40,7 @@ void main() {
         const Duration(seconds: 5),
       );
       expect(
-        find.text('Press the folder icon to pick a PDF file.'),
+        find.text('Press the plus icon to pick a PDF file.'),
         findsOneWidget,
       );
       expect(find.text('File'), findsOneWidget);

@@ -45,7 +45,7 @@ class Header extends ConsumerWidget {
                   return Container(
                     padding: EdgeInsets.all(2),
                     child: IconButton(
-                      icon: const Icon(Icons.folder_open),
+                      icon: const Icon(BootstrapIcons.plus),
                       onPressed: () => {
                         ref.read(filePathProvider.notifier).pickFile(),
                       },

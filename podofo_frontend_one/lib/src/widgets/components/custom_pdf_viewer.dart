@@ -62,7 +62,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     final document = ref.watch(currentDocumentProvider);
     if (document == null) {
       return const Center(
-        child: Text('Press the folder icon to pick a PDF file.'),
+        child: Text('Press the plus icon to pick a PDF file.'),
       );
     }
     final controller = ref.watch(pdfViewerControllerProvider);

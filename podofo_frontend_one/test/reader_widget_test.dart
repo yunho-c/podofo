@@ -453,7 +453,7 @@ void main() {
       );
       await tester.pumpAndSettle();
       expect(
-        find.text('Press the folder icon to pick a PDF file.'),
+        find.text('Press the plus icon to pick a PDF file.'),
         findsOneWidget,
       );
       expect(container.read(pdfTextSearcherProvider), isNull);
