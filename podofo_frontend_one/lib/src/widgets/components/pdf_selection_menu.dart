@@ -13,6 +13,7 @@ List<MenuItem> pdfPageLayoutMenuItems({
   required bool twoPageView,
   required ValueChanged<bool> onChanged,
 }) => [
+  const MenuLabel(child: Text('View')),
   MenuButton(
     onPressed: (_) => onChanged(false),
     trailing: !twoPageView ? const Icon(RadixIcons.check).iconSmall() : null,
