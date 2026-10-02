@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/widgets.dart' as flutter;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -145,11 +146,27 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
             _applyHighlightMode();
           },
         ),
-        buildContextMenu: (context, params) => PdfSelectionMenu(
-          params: params,
-          onHighlight: (color) => DocumentActions.highlight(ref, color: color),
-          twoPageView: document.twoPageView,
-          onTwoPageViewChanged: _setTwoPageView,
+        // pdfrx only positions non-positional menus when text is selected.
+        // Return Flutter's Positioned so it recognizes our layout in both cases.
+        buildContextMenu: (context, params) => flutter.Positioned.fill(
+          key: const ValueKey('pdf-context-menu'),
+          child: CustomSingleChildLayout(
+            delegate: DesktopTextSelectionToolbarLayoutDelegate(
+              // Scrolling can move the document anchor above or left of the
+              // pane. The delegate handles overflow at the other two edges.
+              anchor: Offset(
+                params.anchorA.dx.clamp(0.0, double.infinity),
+                params.anchorA.dy.clamp(0.0, double.infinity),
+              ),
+            ),
+            child: PdfSelectionMenu(
+              params: params,
+              onHighlight: (color) =>
+                  DocumentActions.highlight(ref, color: color),
+              twoPageView: document.twoPageView,
+              onTwoPageViewChanged: _setTwoPageView,
+            ),
+          ),
         ),
         linkHandlerParams: PdfLinkHandlerParams(
           onLinkTap: (link) async {
@@ -225,6 +242,14 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
               showDropdown(
                 context: context,
                 position: details.globalPosition,
+                // Anchor to the click, without following or flipping around
+                // the viewer's full-size widget. Overflow is clamped instead.
+                follow: false,
+                alignment: Alignment.topLeft,
+                offset: Offset.zero,
+                margin: EdgeInsets.zero,
+                allowInvertHorizontal: false,
+                allowInvertVertical: false,
                 builder: (context) => DropdownMenu(
                   children: pdfPageLayoutMenuItems(
                     twoPageView: document.twoPageView,

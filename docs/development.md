@@ -88,6 +88,8 @@ the analyzer constraint merely to silence an SDK language-version warning.
   actions without the View section. Spreads pair pages 1–2, 3–4, etc.; an
   unpaired last page is centered. Switching fits the current page or spread into
   the viewer. Each open tab remembers its layout until it is closed.
+- PDF context menus open at the pointer, shifting only as needed to stay visible
+  at the edges of the pane (in-document) or window (surrounding padding).
 - The Annotations pane lists and removes existing highlights.
 
 Bare letter/number hotkeys no longer intercept typing in text fields.

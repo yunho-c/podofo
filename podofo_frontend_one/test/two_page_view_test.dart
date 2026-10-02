@@ -38,9 +38,11 @@ Future<void> _openMenu(
   bool expectView = true,
 }) async {
   await tester.pumpAndSettle();
+  final position =
+      at ?? tester.getTopLeft(find.byType(PdfViewer)) + const Offset(4, 4);
   // The background outside the page must offer layout controls too.
   await tester.tapAt(
-    at ?? tester.getTopLeft(find.byType(PdfViewer)) + const Offset(4, 4),
+    position,
     buttons: kSecondaryMouseButton,
     kind: PointerDeviceKind.mouse,
   );
@@ -54,6 +56,19 @@ Future<void> _openMenu(
   for (final label in ['View', 'Single page', 'Two pages']) {
     expect(find.text(label), expectView ? findsOneWidget : findsNothing);
   }
+  final menu = tester.getRect(find.byType(shadcn.MenuPopup));
+  final bounds = find.byType(PdfSelectionMenu).evaluate().isNotEmpty
+      ? tester.getRect(find.byType(PdfViewer))
+      : Offset.zero & (tester.view.physicalSize / tester.view.devicePixelRatio);
+  final expected = Offset(
+    position.dx.clamp(bounds.left, bounds.right - menu.width),
+    position.dy.clamp(bounds.top, bounds.bottom - menu.height),
+  );
+  expect(
+    (menu.topLeft - expected).distance,
+    lessThan(1),
+    reason: 'Menu $menu should open at $position, clamped to $bounds.',
+  );
 }
 
 Future<void> _dismissSelectionMenu(WidgetTester tester) async {
@@ -161,6 +176,26 @@ void main() {
       );
       final controller = container.read(pdfViewerControllerProvider);
       final session = container.read(currentDocumentProvider)!.session;
+      // Page background clicks must use their actual position, without a
+      // selection to make pdfrx position the menu on our behalf.
+      for (final fraction in [0.4, 0.7, 0.98]) {
+        final page = controller.layout.pageLayouts.first.intersect(
+          controller.visibleRect,
+        );
+        await _openMenu(
+          tester,
+          at: controller.documentToGlobal(
+            page.topLeft +
+                Offset(page.width * fraction, page.height * fraction),
+          ),
+        );
+        expect(find.byType(PdfSelectionMenu), findsOneWidget);
+        await tester.tapAt(
+          tester.getTopLeft(find.byType(PdfViewer)) + const Offset(4, 4),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(shadcn.MenuPopup), findsNothing);
+      }
       await _openMenu(tester);
       expect(_checked(tester, 'Single page'), isTrue);
       expect(_checked(tester, 'Two pages'), isFalse);
@@ -273,6 +308,20 @@ void main() {
         return otherController.params.layoutPages != null &&
             _fullyVisible(otherController, rects[0].expandToInclude(rects[1]));
       });
+      // A single spread leaves padding outside the transformed document.
+      // Check a free position and a corner that requires edge clamping.
+      final viewerBounds = tester.getRect(find.byType(PdfViewer));
+      for (final point in [
+        viewerBounds.topCenter + const Offset(0, 4),
+        viewerBounds.bottomRight - const Offset(2, 2),
+      ]) {
+        await _openMenu(tester, at: point);
+        expect(find.byType(shadcn.DropdownMenu), findsOneWidget);
+        await _capture(tester, 'outside-document-context-menu');
+        await tester.tap(find.text('Two pages'));
+        await tester.pumpAndSettle();
+        expect(find.byType(shadcn.MenuPopup), findsNothing);
+      }
       container.read(currentTabIndexProvider.notifier).state = 0;
       await _waitFor(
         tester,
