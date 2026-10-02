@@ -13,15 +13,15 @@ List<MenuItem> pdfPageLayoutMenuItems({
   required bool twoPageView,
   required ValueChanged<bool> onChanged,
 }) => [
-  MenuCheckbox(
-    value: !twoPageView,
-    onChanged: (_, _) => onChanged(false),
-    child: const Text('Single page'),
+  MenuButton(
+    onPressed: (_) => onChanged(false),
+    trailing: !twoPageView ? const Icon(RadixIcons.check).iconSmall() : null,
+    child: Semantics(selected: !twoPageView, child: const Text('Single page')),
   ),
-  MenuCheckbox(
-    value: twoPageView,
-    onChanged: (_, _) => onChanged(true),
-    child: const Text('Two pages'),
+  MenuButton(
+    onPressed: (_) => onChanged(true),
+    trailing: twoPageView ? const Icon(RadixIcons.check).iconSmall() : null,
+    child: Semantics(selected: twoPageView, child: const Text('Two pages')),
   ),
 ];
 

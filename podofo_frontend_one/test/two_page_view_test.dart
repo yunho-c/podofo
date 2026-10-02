@@ -61,14 +61,16 @@ Future<void> _capture(WidgetTester tester, String name) async {
   });
 }
 
-bool _checked(WidgetTester tester, String label) => tester
-    .widget<shadcn.MenuCheckbox>(
-      find.ancestor(
+bool _checked(WidgetTester tester, String label) => find
+    .descendant(
+      of: find.ancestor(
         of: find.text(label),
-        matching: find.byType(shadcn.MenuCheckbox),
+        matching: find.byType(shadcn.MenuButton),
       ),
+      matching: find.byIcon(shadcn.RadixIcons.check),
     )
-    .value;
+    .evaluate()
+    .isNotEmpty;
 
 bool _fullyVisible(PdfViewerController controller, Rect rect) {
   final visible = controller.visibleRect.inflate(0.01);
