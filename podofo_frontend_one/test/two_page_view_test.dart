@@ -32,16 +32,36 @@ Future<void> _waitFor(WidgetTester tester, bool Function() complete) async {
   fail('Reader did not reach the expected state.');
 }
 
-Future<void> _openMenu(WidgetTester tester) async {
+Future<void> _openMenu(
+  WidgetTester tester, {
+  Offset? at,
+  bool expectView = true,
+}) async {
   await tester.pumpAndSettle();
   // The background outside the page must offer layout controls too.
   await tester.tapAt(
-    tester.getTopLeft(find.byType(PdfViewer)) + const Offset(4, 4),
+    at ?? tester.getTopLeft(find.byType(PdfViewer)) + const Offset(4, 4),
     buttons: kSecondaryMouseButton,
     kind: PointerDeviceKind.mouse,
   );
-  await _waitFor(tester, () => find.text('Two pages').evaluate().isNotEmpty);
+  await _waitFor(
+    tester,
+    () => expectView
+        ? find.text('Two pages').evaluate().isNotEmpty
+        : find.byType(PdfSelectionMenu).evaluate().isNotEmpty,
+  );
   await tester.pump(const Duration(milliseconds: 300));
+  for (final label in ['View', 'Single page', 'Two pages']) {
+    expect(find.text(label), expectView ? findsOneWidget : findsNothing);
+  }
+}
+
+Future<void> _dismissSelectionMenu(WidgetTester tester) async {
+  tester
+      .widget<PdfSelectionMenu>(find.byType(PdfSelectionMenu))
+      .params
+      .dismissContextMenu();
+  await tester.pumpAndSettle();
 }
 
 Future<void> _capture(WidgetTester tester, String name) async {
@@ -165,15 +185,39 @@ void main() {
       final text = await tester.runAsync(
         () => session.lease.document.pages[1].loadStructuredText(),
       );
+      final textPosition = controller.documentToGlobal(
+        controller
+            .calcRectForRectInsidePage(
+              pageNumber: 2,
+              rect: text!.charRects.first,
+            )
+            .center,
+      )!;
+      // Text targets omit the View section even before any text is selected.
+      await _openMenu(tester, at: textPosition, expectView: false);
+      expect(find.text('Select all'), findsOneWidget);
+      await _dismissSelectionMenu(tester);
       await tester.runAsync(
         () => controller.textSelectionDelegate.setTextSelectionPointRange(
           PdfTextSelectionRange.fromPoints(
-            PdfTextSelectionPoint(text!, 0),
+            PdfTextSelectionPoint(text, 0),
             PdfTextSelectionPoint(text, 4),
           ),
         ),
       );
-      await _openMenu(tester);
+      await _openMenu(tester, at: textPosition, expectView: false);
+      expect(find.text('Copy'), findsOneWidget);
+      expect(find.text('Highlight'), findsOneWidget);
+      await _capture(tester, 'two-page-text-context-menu');
+      await _dismissSelectionMenu(tester);
+
+      // Blank space inside the page offers View even with a selection elsewhere.
+      await _openMenu(
+        tester,
+        at: controller.documentToGlobal(
+          controller.layout.pageLayouts[1].bottomRight - const Offset(20, 20),
+        ),
+      );
       expect(_checked(tester, 'Two pages'), isTrue);
       expect(find.text('Copy'), findsOneWidget);
       expect(find.text('Highlight'), findsOneWidget);

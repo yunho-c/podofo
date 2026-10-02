@@ -52,6 +52,10 @@ class PdfSelectionMenu extends ConsumerWidget {
         document.pdfDocument.permissions?.allowsModifyAnnotations != false;
     final selectAll =
         params.isTextSelectionEnabled && !selection.isSelectingAllText;
+    final showView = params.contextMenuFor == PdfViewerPart.background;
+    if (!copy && !highlight && !selectAll && !showView) {
+      return const SizedBox.shrink();
+    }
 
     SingleActivator shortcut(LogicalKeyboardKey key) => SingleActivator(
       key,
@@ -106,14 +110,16 @@ class PdfSelectionMenu extends ConsumerWidget {
                 ),
               ),
             ],
-            if (copy || highlight || selectAll) const MenuDivider(),
-            ...pdfPageLayoutMenuItems(
-              twoPageView: twoPageView,
-              onChanged: (enabled) {
-                params.dismissContextMenu();
-                onTwoPageViewChanged(enabled);
-              },
-            ),
+            if (showView) ...[
+              if (copy || highlight || selectAll) const MenuDivider(),
+              ...pdfPageLayoutMenuItems(
+                twoPageView: twoPageView,
+                onChanged: (enabled) {
+                  params.dismissContextMenu();
+                  onTwoPageViewChanged(enabled);
+                },
+              ),
+            ],
           ],
         ),
       ),

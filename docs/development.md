@@ -82,10 +82,12 @@ the analyzer constraint merely to silence an SDK language-version warning.
 - Ctrl+Tab / Ctrl+Shift+Tab switches tabs; Ctrl/Command+1–9 selects a tab and
   Ctrl/Command+0 selects the last tab.
 - The More menu controls auto-save.
-- Right-click the PDF and choose **Two pages** for side-by-side spreads, or
-  **Single page** for the standard layout. Spreads pair pages 1–2, 3–4, etc.;
-  an unpaired last page is centered. Switching fits the current page or spread
-  into the viewer. Each open tab remembers its layout until it is closed.
+- Right-click blank space in a PDF page or the surrounding viewer pane, then
+  use the **View** section: **Two pages** for side-by-side spreads, or
+  **Single page** for the standard layout. Right-clicking text offers text
+  actions without the View section. Spreads pair pages 1–2, 3–4, etc.; an
+  unpaired last page is centered. Switching fits the current page or spread into
+  the viewer. Each open tab remembers its layout until it is closed.
 - The Annotations pane lists and removes existing highlights.
 
 Bare letter/number hotkeys no longer intercept typing in text fields.
