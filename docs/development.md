@@ -90,6 +90,7 @@ the analyzer constraint merely to silence an SDK language-version warning.
   the viewer. Each open tab remembers its layout until it is closed.
 - PDF context menus open at the pointer, shifting only as needed to stay visible
   at the edges of the pane (in-document) or window (surrounding padding).
+  Their theme and highlight swatches are unaffected by PDF color inversion.
 - The Annotations pane lists and removes existing highlights.
 
 Bare letter/number hotkeys no longer intercept typing in text fields.

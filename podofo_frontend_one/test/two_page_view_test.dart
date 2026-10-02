@@ -15,6 +15,7 @@ import 'package:podofo_one/src/data/objectbox.dart';
 import 'package:podofo_one/src/providers/data_provider.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
+import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,6 +58,20 @@ Future<void> _openMenu(
     expect(find.text(label), expectView ? findsOneWidget : findsNothing);
   }
   final menu = tester.getRect(find.byType(shadcn.MenuPopup));
+  // Check the paint tree: a portal still inherits the viewer's widget context,
+  // but its menu must not be painted through the PDF's inversion filter.
+  final filters = find
+      .byType(ImageFiltered)
+      .evaluate()
+      .map((element) => element.findRenderObject())
+      .toSet();
+  for (
+    RenderObject? object = tester.renderObject(find.byType(shadcn.MenuPopup));
+    object != null;
+    object = object.parent
+  ) {
+    expect(filters.contains(object), isFalse);
+  }
   final bounds = find.byType(PdfSelectionMenu).evaluate().isNotEmpty
       ? tester.getRect(find.byType(PdfViewer))
       : Offset.zero & (tester.view.physicalSize / tester.view.devicePixelRatio);
@@ -211,6 +226,15 @@ void main() {
       expect(session.dirty, isFalse);
       await tester.pumpAndSettle();
       await _capture(tester, 'two-page-view');
+      // Text, selection, page-background and outer menus must also work after
+      // changing the theme without remounting the reader.
+      await tester.runAsync(
+        () => container
+            .read(userPreferenceProvider.notifier)
+            .setThemeMode(shadcn.ThemeMode.dark),
+      );
+      await tester.pumpAndSettle();
+      expect(container.read(pdfViewerControllerProvider), same(controller));
       expect(
         controller.layout.pageLayouts[2].top,
         greaterThan(controller.layout.pageLayouts[0].bottom),

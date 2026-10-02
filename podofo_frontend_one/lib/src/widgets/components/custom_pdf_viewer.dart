@@ -14,6 +14,7 @@ import '../../providers/theme_provider.dart';
 import '../../providers/user_state_provider.dart';
 import '../../services/document_actions.dart';
 import '../../workers/open_graph_worker.dart';
+import 'pdf_context_menu_overlay.dart';
 import 'pdf_page_layout.dart';
 import 'pdf_selection_menu.dart';
 
@@ -150,15 +151,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         // Return Flutter's Positioned so it recognizes our layout in both cases.
         buildContextMenu: (context, params) => flutter.Positioned.fill(
           key: const ValueKey('pdf-context-menu'),
-          child: CustomSingleChildLayout(
-            delegate: DesktopTextSelectionToolbarLayoutDelegate(
-              // Scrolling can move the document anchor above or left of the
-              // pane. The delegate handles overflow at the other two edges.
-              anchor: Offset(
-                params.anchorA.dx.clamp(0.0, double.infinity),
-                params.anchorA.dy.clamp(0.0, double.infinity),
-              ),
-            ),
+          child: PdfContextMenuOverlay(
+            anchor: params.anchorA,
             child: PdfSelectionMenu(
               params: params,
               onHighlight: (color) =>
