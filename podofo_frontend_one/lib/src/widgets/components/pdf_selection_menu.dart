@@ -76,7 +76,12 @@ class PdfSelectionMenu extends ConsumerWidget {
               ),
             if (highlight) ...[
               if (copy || selectAll) const MenuDivider(),
-              const MenuLabel(child: Text('Highlight')),
+              const MenuLabel(
+                child: Text(
+                  'Highlight',
+                  style: TextStyle(fontWeight: FontWeight.normal),
+                ),
+              ),
               MenuLabel(
                 child: HighlightPalette(
                   onSelected: (color) {
