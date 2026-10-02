@@ -9,6 +9,12 @@
 #include <cmath>
 
 namespace {
+// TEMPORARY: set to 0 to disable the hover color preview. White at alpha 13/255
+// over DWM's #0f0f0f hover produces approximately #1b1b1b (L* 9.77 from black),
+// the nearest 8-bit gray to the target L* 10. The extra layer is immediate;
+// it previews the settled color, not a replacement animation curve.
+constexpr BYTE kTemporaryHoverBoostAlpha = 13;
+
 int ResizeBorder(HWND window) {
   const UINT dpi = GetDpiForWindow(window);
   return GetSystemMetricsForDpi(SM_CYSIZEFRAME, dpi) +
@@ -53,6 +59,7 @@ NativeTitleBar::NativeTitleBar(HWND window, HWND flutter_view,
 }
 
 NativeTitleBar::~NativeTitleBar() {
+  if (hover_preview_) DestroyWindow(hover_preview_);
   channel_->SetMethodCallHandler(nullptr);
   if (IsWindow(flutter_view_)) {
     RemoveWindowSubclass(flutter_view_, ViewSubclassProc, 1);
@@ -93,6 +100,8 @@ void NativeTitleBar::UpdateAppearance() {
       SystemParametersInfo(SPI_GETHIGHCONTRAST, sizeof(contrast), &contrast, 0) &&
       (contrast.dwFlags & HCF_HIGHCONTRASTON);
   const BOOL dark = dark_ && !high_contrast;
+  hover_preview_allowed_ = dark && kTemporaryHoverBoostAlpha != 0;
+  HideHoverPreview();
   // Use numeric attributes so builds with older Windows SDKs remain supported.
   // Older Windows versions ignore unsupported DWM attributes. Keep text colors,
   // inactive visuals, hover/pressed effects and animations under system control.
@@ -103,6 +112,47 @@ void NativeTitleBar::UpdateAppearance() {
   DwmSetWindowAttribute(window_, 35 /* DWMWA_CAPTION_COLOR */,
                         &color, sizeof(color));
   RedrawWindow(window_, nullptr, nullptr, RDW_INVALIDATE | RDW_FRAME);
+}
+
+void NativeTitleBar::HideHoverPreview() {
+  if (hover_preview_) ShowWindow(hover_preview_, SW_HIDE);
+}
+
+void NativeTitleBar::UpdateHoverPreview(WPARAM hit) {
+  if (!hover_preview_allowed_ || IsIconic(window_) ||
+      (hit != HTMINBUTTON && hit != HTMAXBUTTON) ||
+      (GetAsyncKeyState(VK_LBUTTON) & 0x8000) || GetCapture()) {
+    HideHoverPreview();
+    return;
+  }
+
+  TITLEBARINFOEX info{};
+  info.cbSize = sizeof(info);
+  DefWindowProc(window_, WM_GETTITLEBARINFOEX, 0,
+                reinterpret_cast<LPARAM>(&info));
+  const int child = hit == HTMINBUTTON ? 2 : 3;
+  const RECT& button = info.rgrect[child];
+  if ((info.rgstate[child] & (STATE_SYSTEM_UNAVAILABLE | STATE_SYSTEM_INVISIBLE)) ||
+      IsRectEmpty(&button)) {
+    HideHoverPreview();
+    return;
+  }
+
+  if (!hover_preview_) {
+    // A layered, transparent owned window lets mouse input pass through to the
+    // native caption, including maximize hover for Windows 11 Snap Layouts.
+    hover_preview_ = CreateWindowEx(
+        WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_NOACTIVATE | WS_EX_TOOLWINDOW,
+        L"STATIC", L"PoDoFo temporary caption hover preview",
+        WS_POPUP | SS_WHITERECT, 0, 0, 0, 0, window_, nullptr,
+        GetModuleHandle(nullptr), nullptr);
+    if (!hover_preview_) return;
+    SetLayeredWindowAttributes(hover_preview_, 0, kTemporaryHoverBoostAlpha,
+                               LWA_ALPHA);
+  }
+  SetWindowPos(hover_preview_, HWND_TOP, button.left, button.top,
+               button.right - button.left, button.bottom - button.top,
+               SWP_NOACTIVATE | SWP_SHOWWINDOW);
 }
 
 void NativeTitleBar::UpdateLayout() {
@@ -155,6 +205,15 @@ void NativeTitleBar::UpdateLayout() {
 std::optional<LRESULT> NativeTitleBar::HandleMessage(UINT message, WPARAM wparam,
                                                     LPARAM lparam) {
   if (!enabled_) return std::nullopt;
+  if (message == WM_NCMOUSEMOVE) {
+    UpdateHoverPreview(wparam);
+  } else if (message == WM_NCMOUSELEAVE || message == WM_NCLBUTTONDOWN ||
+             message == WM_NCRBUTTONDOWN || message == WM_CANCELMODE ||
+             message == WM_ENTERSIZEMOVE || message == WM_WINDOWPOSCHANGING ||
+             message == WM_SIZE || message == WM_DPICHANGED ||
+             (message == WM_ACTIVATE && LOWORD(wparam) == WA_INACTIVE)) {
+    HideHoverPreview();
+  }
   if (message == WM_THEMECHANGED || message == WM_SYSCOLORCHANGE ||
       message == WM_SETTINGCHANGE || message == WM_DWMCOLORIZATIONCOLORCHANGED) {
     UpdateAppearance();

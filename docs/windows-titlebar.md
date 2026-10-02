@@ -10,7 +10,7 @@ buttons, while Flutter continues to draw the File menu and recent-files control.
 
 | Concern | Implementation |
 | --- | --- |
-| Hover, pressed, inactive states and animation timing | DWM owns the actual caption controls. No app animation duration is substituted. |
+| Hover, pressed, inactive states and animation timing | DWM owns the actual caption controls. The temporary dark-mode hover preview adds an immediate brightness boost; see below. |
 | Snap Layout menu on Windows 11 | Native non-client input, including `HTMAXBUTTON` over maximize/restore. |
 | Accessible names, button roles, default actions and tooltips | Supplied by Windows, including the Maximize/Restore state change. |
 | Light and dark app themes | Synchronize the native caption background and dark-mode attribute with Flutter. |
@@ -39,6 +39,23 @@ The suspected hover-entry problem was excluded from the requested fixes. This
 change does not add a separate workaround for it. Non-Windows caption handling
 retains the existing platform behavior.
 
+## Dark-mode hover preview
+
+The temporary preview strengthens minimize and maximize/restore hover on the
+black title bar. A mouse-transparent, non-activating white overlay at alpha
+13/255 over the observed native `#0F0F0F` hover targets approximately `#1B1B1B`.
+In CIE L*, that is a 9.77-point increase from black, the nearest 8-bit gray to
+the requested 10-point increase. The earlier `#141414` preview was about 6.32
+points and was judged too subtle.
+
+The overlay follows the actual native button bounds and leaves input with
+Windows. It is disabled in light mode and high contrast, and does not cover
+Close. It hides on mouse leave, button press, window movement, resizing,
+deactivation, and theme changes. Its extra brightness appears and disappears
+immediately; this previews the settled color rather than matching the native
+fade. Set `kTemporaryHoverBoostAlpha` to zero in `native_title_bar.cpp` and
+rebuild to disable the experiment.
+
 ## Verification
 
 From `podofo_frontend_one` on Windows 11:
@@ -62,8 +79,9 @@ tests cover title bar gestures, immediate File/recent-files clicks, dynamic nati
 metrics and theme-channel updates.
 
 The native verifier checks the Windows hit-test contract for Snap Layouts, not the
-shell flyout itself. Hover timing, native tooltips and high-contrast appearance
-are owned by Windows; the script does not change global theme, animation or
+shell flyout itself. Native hover timing, tooltips and high-contrast appearance
+are owned by Windows; the additional preview overlay has the timing limitation
+described above. The script does not change global theme, animation or
 accessibility settings. For visual acceptance, compare active/inactive captions,
 hover/press, Snap Layouts and tooltips with a standard Windows window under the
 same settings. Check high-contrast themes and movement between monitors with

@@ -25,6 +25,8 @@ class NativeTitleBar {
   flutter::EncodableMap Metrics() const;
   void ExtendFrame();
   void UpdateAppearance();
+  void UpdateHoverPreview(WPARAM hit);
+  void HideHoverPreview();
   static LRESULT CALLBACK ViewSubclassProc(HWND window, UINT message,
                                           WPARAM wparam, LPARAM lparam,
                                           UINT_PTR id, DWORD_PTR data);
@@ -34,6 +36,9 @@ class NativeTitleBar {
   bool enabled_ = false;
   bool updating_ = false;
   bool dark_ = false;
+  // Temporary color experiment; the native buttons still receive all input.
+  bool hover_preview_allowed_ = false;
+  HWND hover_preview_ = nullptr;
   double height_ = 32;
   double buttons_width_ = 138;
   std::unique_ptr<flutter::MethodChannel<flutter::EncodableValue>> channel_;
