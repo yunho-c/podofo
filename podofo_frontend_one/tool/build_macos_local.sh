@@ -6,11 +6,12 @@ app_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$app_dir"
 
 mode="${1:-debug}"
+if [[ $# -gt 0 ]]; then shift; fi
 case "$mode" in
   debug) configuration=Debug; entitlements=DebugProfile ;;
   profile) configuration=Profile; entitlements=DebugProfile ;;
   release) configuration=Release; entitlements=Release ;;
-  *) printf 'Usage: %s [debug|profile|release]\n' "$0" >&2; exit 2 ;;
+  *) printf 'Usage: %s [debug|profile|release] [flutter build arguments...]\n' "$0" >&2; exit 2 ;;
 esac
 
 if [[ -n "${FLUTTER_BIN:-}" ]]; then
@@ -25,7 +26,7 @@ mkdir -p build
 config="$app_dir/build/macos-local.xcconfig"
 printf 'ARCHS = %s\nONLY_ACTIVE_ARCH = YES\nCODE_SIGNING_ALLOWED = NO\n' \
   "$(uname -m)" > "$config"
-XCODE_XCCONFIG_FILE="$config" "$flutter_bin" build macos "--$mode" --no-pub
+XCODE_XCCONFIG_FILE="$config" "$flutter_bin" build macos "--$mode" --no-pub "$@"
 
 bundle="$app_dir/build/macos/Build/Products/$configuration/$(cat macos/Flutter/ephemeral/.app_filename)"
 # Sign nested code first, then apply the sandbox entitlements only to the app.

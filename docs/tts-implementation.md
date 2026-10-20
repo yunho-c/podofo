@@ -56,6 +56,38 @@ checking out the pinned revision. Other native desktop hosts create a model-free
 package and a portable native library; no Apple feature flags are applied there.
 Generated SDK, build outputs and weights live under ignored `.mlsr/`.
 
+Use Python 3, Rust (the SDK selects its toolchain), Flutter 3.47.5, Xcode and
+CocoaPods. From the app directory, after making the model bundle named in
+`mlsr-models.yaml` available locally:
+
+```sh
+python3 tool/prepare_mlsr.py
+# Optional offline SDK source: --sdk-source /path/to/MLSR
+../.fvm/flutter_sdk/bin/flutter pub get --enforce-lockfile
+bash tool/build_macos_local.sh release
+python3 tool/test_macos.py
+```
+
+The FVM path is optional; use the pinned `flutter` executable on PATH or set
+`FLUTTER_BIN` for the build helper. The release app is
+`build/macos/Build/Products/Release/PoDoFo.app`. It is locally ad-hoc signed and
+sandboxed, not notarized for distribution. Both the Flutter plugin and app now
+require macOS 15; older macOS build notes predate MLSR.
+
+For the full packaged check, run `python3 tool/qualify_mlsr_macos.py`. It builds a
+separate probe entrypoint, clones the bundle outside the checkout, verifies all
+asset hashes/signatures/linkage, then exercises real plugins and muted native
+playback with denied network/developer-file access. It restores and audits the
+normal Release app in a `finally` step. Logs, report and sample WAV are retained
+in a new `build/mlsr-qualification/<timestamp>/` directory, with the relocated app
+in a temporary directory named in the report. Never nest `sandbox-exec` around
+this already-sandboxed app; macOS traps before Flutter starts. See
+[qualification](tts-qualification.md) for evidence and remaining manual checks.
+
+On Windows, run `python tool/prepare_mlsr.py` before the ordinary locked package
+resolution and `tool/verify.ps1`. This produces a model-free package and portable
+native library for the host. It does not enable Windows speech.
+
 The existing local macOS modernization and unrelated icon/document edits were
 present before this work and are preserved. A baseline patch and the abandoned
 2025 Git sequencer metadata are backed up under `.git/mlsr-tts-baseline/`.
@@ -105,3 +137,9 @@ present before this work and are preserved. A baseline patch and the abandoned
   the reading stream unless selected around; literal hyphens are preserved.
   Complex tables, mixed scripts/layouts and equations can need explicit PDF order
   or selection. No whole-paper duration is fabricated from the current passage.
+- Milestone 4 automated portion: relocated sandboxed Release playback and exact
+  bundle audits pass, with repeatable tooling that restores the ordinary app.
+  Native pause/navigation, continuous drain, persisted source position, repeated
+  cancellation and engine/PCM cleanup pass. The 760×520 reader/preview checks
+  also pass. Timing/resource observations and outstanding native-window/human
+  listening gates are recorded in [qualification](tts-qualification.md).

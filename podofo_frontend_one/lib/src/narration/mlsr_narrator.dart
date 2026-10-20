@@ -12,14 +12,15 @@ String? narrationUnavailableReason() =>
     : 'Paper listening is available on macOS Apple Silicon.';
 
 class MlsrNarrator implements NarratorSession {
-  MlsrNarrator._(this._tts, this._volume);
+  /// Takes ownership of an already-open facade, also useful for release probes.
+  MlsrNarrator.fromTts(this._tts, {this._volume = 1});
   final Tts _tts;
   final double _volume;
 
   static Future<NarratorSession> open(
     void Function(String message) onProgress, {
     double volume = 1,
-  }) async => MlsrNarrator._(
+  }) async => MlsrNarrator.fromTts(
     await FlutterMlsr.openTts(
       model: AppModels.supertonic3,
       onProgress: (progress) => onProgress(switch (progress.stage) {
@@ -30,7 +31,7 @@ class MlsrNarrator implements NarratorSession {
         ModelLoadStage.loading => 'Loading voices…',
       }),
     ),
-    volume,
+    volume: volume,
   );
 
   @override

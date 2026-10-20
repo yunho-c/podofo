@@ -25,6 +25,11 @@ void main() {
   testWidgets(
     'preview explains scanned pages and requires a readable page before playback',
     (tester) async {
+      // The reading-order dialog must fit the application's minimum window.
+      tester.view.physicalSize = const Size(760, 520);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
       final directory = (await tester.runAsync(
         () => Directory.systemTemp.createTemp('podofo-preview-'),
       ))!;

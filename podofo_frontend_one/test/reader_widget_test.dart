@@ -79,6 +79,9 @@ void main() {
             ),
           ))
           .load();
+      await (FontLoader(
+        'MaterialIcons',
+      )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
       await (FontLoader('packages/font_awesome_flutter/FontAwesomeSolid')
             ..addFont(
               rootBundle.load(
@@ -392,6 +395,13 @@ void main() {
       await tester.pump();
       expect(savedSource.passage!.rectangles(1, 0, 5), isNotEmpty);
       await captureReader(tester, 'narration-selection');
+      tester.view.physicalSize = const Size(760, 520);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      await captureReader(tester, 'narration-minimum-window');
+      tester.view.physicalSize = const Size(1200, 900);
+      await tester.pump();
       // Cancelling close must keep both the tab and its unsaved annotations.
       await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
