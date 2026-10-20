@@ -597,6 +597,27 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
+  mlsr:
+    dependency: "direct main"
+    description:
+      path: ".mlsr/sdk/bindings/dart"
+      relative: true
+    source: path
+    version: "0.1.0"
+  mlsr_app_models:
+    dependency: "direct main"
+    description:
+      path: ".mlsr/model_assets"
+      relative: true
+    source: path
+    version: "0.1.0"
+  mlsr_flutter:
+    dependency: "direct main"
+    description:
+      path: ".mlsr/sdk/bindings/flutter"
+      relative: true
+    source: path
+    version: "0.1.0"
   objectbox:
     dependency: "direct main"
     description:

@@ -194,7 +194,7 @@ void main() {
     final reopened = await PdfDocument.openFile(file.path);
     try {
       await reopened.useNativeDocumentHandle((handle) {
-        final api = getPdfium();
+        final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
         final native = Pointer<fpdf_document_t__>.fromAddress(handle);
         for (var index = 0; index < 3; index++) {
           final page = api.FPDF_LoadPage(native, index);
@@ -266,7 +266,7 @@ void main() {
     await session.close();
     final undone = await PdfDocument.openFile(file.path);
     await undone.useNativeDocumentHandle((handle) {
-      final api = getPdfium();
+      final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
       final page = api.FPDF_LoadPage(
         Pointer<fpdf_document_t__>.fromAddress(handle),
         0,

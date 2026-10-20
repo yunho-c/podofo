@@ -1,84 +1,35 @@
 PODS:
-  - file_picker (0.0.1):
-    - FlutterMacOS
   - FlutterMacOS (1.0.0)
-  - HotKey (0.2.1)
-  - hotkey_manager_macos (0.0.1):
+  - mlsr_flutter (0.1.0):
     - FlutterMacOS
-    - HotKey
-  - ObjectBox (4.3.0)
+  - ObjectBox (5.3.0)
   - objectbox_flutter_libs (0.0.1):
     - FlutterMacOS
-    - ObjectBox (= 4.3.0)
-  - path_provider_foundation (0.0.1):
-    - Flutter
-    - FlutterMacOS
-  - pdfrx (0.0.6):
-    - Flutter
-    - FlutterMacOS
-  - screen_retriever_macos (0.0.1):
-    - FlutterMacOS
-  - shared_preferences_foundation (0.0.1):
-    - Flutter
-    - FlutterMacOS
-  - url_launcher_macos (0.0.1):
-    - FlutterMacOS
-  - window_manager (0.5.0):
-    - FlutterMacOS
+    - ObjectBox (= 5.3.0)
 
 DEPENDENCIES:
-  - file_picker (from `Flutter/ephemeral/.symlinks/plugins/file_picker/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
-  - hotkey_manager_macos (from `Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos`)
+  - mlsr_flutter (from `Flutter/ephemeral/.symlinks/plugins/mlsr_flutter/macos`)
   - objectbox_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/objectbox_flutter_libs/macos`)
-  - path_provider_foundation (from `Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin`)
-  - pdfrx (from `Flutter/ephemeral/.symlinks/plugins/pdfrx/darwin`)
-  - screen_retriever_macos (from `Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos`)
-  - shared_preferences_foundation (from `Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin`)
-  - url_launcher_macos (from `Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos`)
-  - window_manager (from `Flutter/ephemeral/.symlinks/plugins/window_manager/macos`)
 
 SPEC REPOS:
   trunk:
-    - HotKey
     - ObjectBox
 
 EXTERNAL SOURCES:
-  file_picker:
-    :path: Flutter/ephemeral/.symlinks/plugins/file_picker/macos
   FlutterMacOS:
     :path: Flutter/ephemeral
-  hotkey_manager_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/hotkey_manager_macos/macos
+  mlsr_flutter:
+    :path: Flutter/ephemeral/.symlinks/plugins/mlsr_flutter/macos
   objectbox_flutter_libs:
     :path: Flutter/ephemeral/.symlinks/plugins/objectbox_flutter_libs/macos
-  path_provider_foundation:
-    :path: Flutter/ephemeral/.symlinks/plugins/path_provider_foundation/darwin
-  pdfrx:
-    :path: Flutter/ephemeral/.symlinks/plugins/pdfrx/darwin
-  screen_retriever_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/screen_retriever_macos/macos
-  shared_preferences_foundation:
-    :path: Flutter/ephemeral/.symlinks/plugins/shared_preferences_foundation/darwin
-  url_launcher_macos:
-    :path: Flutter/ephemeral/.symlinks/plugins/url_launcher_macos/macos
-  window_manager:
-    :path: Flutter/ephemeral/.symlinks/plugins/window_manager/macos
 
 SPEC CHECKSUMS:
-  file_picker: 7584aae6fa07a041af2b36a2655122d42f578c1a
-  FlutterMacOS: d0db08ddef1a9af05a5ec4b724367152bb0500b1
-  HotKey: 400beb7caa29054ea8d864c96f5ba7e5b4852277
-  hotkey_manager_macos: a4317849af96d2430fa89944d3c58977ca089fbe
-  ObjectBox: 7760fa9072adcffe102a6adf4646ca84ba70ab6b
-  objectbox_flutter_libs: b5902372b56d11b523de3c6c508f3d9244b8943f
-  path_provider_foundation: 080d55be775b7414fd5a5ef3ac137b97b097e564
-  pdfrx: 310e84d01e06fd2af26e16507a0e48c27e99195c
-  screen_retriever_macos: 452e51764a9e1cdb74b3c541238795849f21557f
-  shared_preferences_foundation: 9e1978ff2562383bd5676f64ec4e9aa8fa06a6f7
-  url_launcher_macos: 0fba8ddabfc33ce0a9afe7c5fef5aab3d8d2d673
-  window_manager: b729e31d38fb04905235df9ea896128991cad99e
+  FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
+  mlsr_flutter: 44767d5d7a6e7dc0ef0031a8f483a0c0e78afa58
+  ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
+  objectbox_flutter_libs: c6ec3df598aa194da1cdf929fc9640bbc8f58be1
 
-PODFILE CHECKSUM: 54d867c82ac51cbd61b565781b9fada492027009
+PODFILE CHECKSUM: 26ee6f5033708847cf1376fbc9a71d19413c5b16
 
-COCOAPODS: 1.16.2
+COCOAPODS: 1.17.0

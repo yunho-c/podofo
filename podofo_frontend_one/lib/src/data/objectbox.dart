@@ -16,7 +16,12 @@ class ObjectBox {
     final docsDir = await getApplicationDocumentsDirectory();
     final dbDir = Directory(p.join(docsDir.path, "obx-docs"));
 
-    final store = await openStore(directory: dbDir.path);
+    final store = await openStore(
+      directory: dbDir.path,
+      // Sandboxed macOS requires an entitled prefix for ObjectBox's semaphores.
+      // Keep this in sync with macos/Runner/*.entitlements (19 characters max).
+      macosApplicationGroup: Platform.isMacOS ? 'group.podofo' : null,
+    );
     // Legacy thumbnails were keyed only by path and have no reliable freshness.
     // They are derived data; the new bounded in-memory cache regenerates on demand.
     store.box<ThumbnailEntity>().removeAll();

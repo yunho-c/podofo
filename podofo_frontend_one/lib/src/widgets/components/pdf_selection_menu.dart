@@ -7,6 +7,8 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../../providers/document_provider.dart';
 import '../../services/document_actions.dart';
+import '../../services/narration_actions.dart';
+import '../../providers/narration_provider.dart';
 import 'highlight_palette.dart';
 
 /// The original compact selection menu, backed by pdfrx's current delegate.
@@ -73,6 +75,12 @@ class PdfSelectionMenu extends ConsumerWidget {
                   activator: shortcut(LogicalKeyboardKey.keyA),
                 ),
                 child: const Text('Select all'),
+              ),
+            if (copy && ref.watch(narrationControllerProvider).available)
+              MenuButton(
+                onPressed: (_) =>
+                    run(() => NarrationActions.readSelection(ref)),
+                child: const Text('Read selection'),
               ),
             if (highlight) ...[
               if (copy || selectAll) const MenuDivider(),

@@ -17,6 +17,9 @@ import 'package:podofo_one/src/providers/data_provider.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/providers/theme_provider.dart';
+import 'package:podofo_one/src/providers/narration_provider.dart';
+import 'package:podofo_one/src/narration/narration_controller.dart';
+import 'package:podofo_one/src/narration/narrator.dart';
 import 'package:podofo_one/src/services/pdf_highlights.dart';
 import 'package:podofo_one/src/widgets/components/highlight_palette.dart';
 import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
@@ -25,6 +28,7 @@ import 'package:podofo_one/src/widgets/panes/thumbnail_pane.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import 'fixtures/pdf_fixture.dart';
+import 'support/fake_narrator.dart';
 
 Future<void> waitForNative(
   WidgetTester tester,
@@ -59,9 +63,15 @@ Future<void> captureReader(WidgetTester tester, String name) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  final platform = Platform.isMacOS
+      ? TargetPlatform.macOS
+      : TargetPlatform.windows;
   testWidgets('reader searches, highlights, saves and closes a real PDF', (
     tester,
   ) async {
+    final commandModifier = Platform.isMacOS
+        ? LogicalKeyboardKey.metaLeft
+        : LogicalKeyboardKey.controlLeft;
     await tester.runAsync(() async {
       await (FontLoader('Urbanist')..addFont(
             rootBundle.load(
@@ -91,8 +101,13 @@ void main() {
     final store = Store(getObjectBoxModel(), directory: '${temporary.path}/db');
     store.box<DocumentEntity>().put(DocumentEntity(filePath: file.path));
     store.box<UserState>().put(UserState()..autoSaveEnabled = false);
+    final speech = FakeNarratorSession();
+    final narrator = NarrationController(open: (_) async => speech);
     final container = ProviderContainer(
-      overrides: [objectboxProvider.overrideWithValue(ObjectBox(store))],
+      overrides: [
+        objectboxProvider.overrideWithValue(ObjectBox(store)),
+        narrationControllerProvider.overrideWithValue(narrator),
+      ],
     );
     try {
       await tester.pumpWidget(
@@ -178,11 +193,11 @@ void main() {
         true,
       );
       await tester.tap(find.byKey(const ValueKey('highlight-mode')));
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(commandModifier);
       await tester.pump();
       expect(container.read(documentErrorProvider), isNull);
       expect(container.read(currentDocumentProvider)!.dirty, false);
@@ -301,6 +316,29 @@ void main() {
         false,
       );
 
+      // Listening consumes the real viewer's selected text without PDF edits.
+      final narrationRevision = container
+          .read(currentDocumentProvider)!
+          .session
+          .revision;
+      await tester.runAsync(
+        () =>
+            controller.textSelectionDelegate.setTextSelectionPointRange(range),
+      );
+      await tester.tap(find.byTooltip('Read selected text'));
+      await waitForNative(tester, () => speech.texts.isNotEmpty);
+      expect(speech.texts.single, text.fullText.substring(0, 5));
+      expect(
+        container.read(currentDocumentProvider)!.session.revision,
+        narrationRevision,
+      );
+      speech.playbacks.single.emit(NarrationPhase.playing);
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('narration-play-pause')));
+      expect(speech.playbacks.single.pauses, 1);
+      expect(speech.playbacks.single.cancelled, false);
+      await tester.tap(find.byKey(const ValueKey('narration-stop')));
+      await waitForNative(tester, () => speech.playbacks.single.disposed);
       // With mode off, a selection-menu swatch applies its own chosen color.
       await tester.runAsync(
         () =>
@@ -338,9 +376,9 @@ void main() {
       expect(container.read(documentErrorProvider), isNull);
 
       // Cancelling close must keep both the tab and its unsaved annotations.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(commandModifier);
       await tester.pumpAndSettle();
       expect(find.text('Save changes to reader.pdf?'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
@@ -444,9 +482,9 @@ void main() {
       expect(container.read(documentErrorProvider), isNull);
       expect(find.textContaining('● reader'), findsNothing);
 
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(commandModifier);
       await waitForNative(
         tester,
         () => container.read(loadedDocumentsProvider).isEmpty,
@@ -460,6 +498,7 @@ void main() {
       expect(tester.takeException(), isNull);
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
+      await narrator.close();
       container.dispose();
       store.close();
       await tester.runAsync(() async {
@@ -467,5 +506,5 @@ void main() {
         await temporary.delete(recursive: true);
       });
     }
-  }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
+  }, variant: TargetPlatformVariant.only(platform));
 }
