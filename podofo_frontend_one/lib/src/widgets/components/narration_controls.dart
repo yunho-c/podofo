@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../../narration/narrator.dart';
+import '../../narration/paper_sequence.dart';
 import '../../providers/narration_provider.dart';
 import '../../providers/user_state_provider.dart';
 import '../../services/narration_actions.dart';
@@ -34,6 +35,8 @@ class NarrationControls extends ConsumerWidget {
                 .toList()
               ..sort();
         final canNavigate = controller.sentences.isNotEmpty;
+        final sequence = controller.source?.sequence;
+        final paper = sequence is PaperSequence ? sequence : null;
         Widget button(
           String name,
           IconData icon,
@@ -57,6 +60,7 @@ class NarrationControls extends ConsumerWidget {
           final preferences = ref.read(userStateNotifierProvider.notifier);
           preferences.setAudioVoice(next.voice);
           preferences.setAudioSpeed(next.speed);
+          preferences.setAudioLanguage(next.language);
           unawaited(controller.configure(next));
         }
 
@@ -104,7 +108,7 @@ class NarrationControls extends ConsumerWidget {
                   button(
                     'Previous sentence',
                     m.Icons.skip_previous_rounded,
-                    canNavigate
+                    canNavigate || sequence != null
                         ? () => controller.navigate(forward: false)
                         : null,
                     key: 'narration-previous',
@@ -122,7 +126,7 @@ class NarrationControls extends ConsumerWidget {
                   button(
                     'Next sentence',
                     m.Icons.skip_next_rounded,
-                    canNavigate
+                    canNavigate || sequence != null
                         ? () => controller.navigate(forward: true)
                         : null,
                     key: 'narration-next',
@@ -205,8 +209,56 @@ class NarrationControls extends ConsumerWidget {
                       controller.followText
                           ? m.Icons.visibility
                           : m.Icons.visibility_off,
-                      () => controller.setFollowText(!controller.followText),
+                      () {
+                        final value = !controller.followText;
+                        ref
+                            .read(userStateNotifierProvider.notifier)
+                            .setFollowSpokenText(value);
+                        controller.setFollowText(value);
+                      },
                     ),
+                  ],
+                ),
+              if (paper != null)
+                Row(
+                  children: [
+                    Text('Page ${paper.pageNumber} of ${paper.pageCount}')
+                        .small()
+                        .muted(),
+                    const Spacer(),
+                    if (paper.review != null) ...[
+                      m.TextButton(
+                        onPressed: () {
+                          NarrationActions.showSource(ref);
+                          NarrationActions.readPaper(
+                            ref,
+                            page: paper.review!.page.page,
+                            options: paper.options,
+                          );
+                        },
+                        child: const Text('Review page'),
+                      ),
+                      m.TextButton(
+                        onPressed: () {
+                          paper.skipReview();
+                          controller.movePassage(1);
+                        },
+                        child: const Text('Skip this page'),
+                      ),
+                    ] else ...[
+                      m.TextButton(
+                        onPressed: controller.preparing
+                            ? null
+                            : () => controller.movePassage(-1),
+                        child: const Text('Previous passage'),
+                      ),
+                      m.TextButton(
+                        onPressed: controller.preparing
+                            ? null
+                            : () => controller.movePassage(1),
+                        child: const Text('Next passage'),
+                      ),
+                    ],
                   ],
                 ),
               if (state != null && total != null && total > 0)

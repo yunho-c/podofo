@@ -264,6 +264,7 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
           entry.key == oldPath ? document.filePath : entry.key: entry.value,
       };
       try {
+        ref.read(narrationBookmarksProvider).copy(oldPath, document.filePath);
         ref.read(objectboxProvider).store.runInTransaction(TxMode.write, () {
           _removeRecords(oldPath);
           _removeRecords(document.filePath);

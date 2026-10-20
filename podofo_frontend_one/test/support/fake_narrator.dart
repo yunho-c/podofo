@@ -43,6 +43,7 @@ class FakeNarrationPlayback implements NarrationPlayback {
   final completion = Completer<NarrationOutcome>();
   int pauses = 0, resumes = 0;
   bool cancelled = false, disposed = false;
+  Completer<void>? disposalGate;
   List<NarrationSentence>? sentencePlan = const [
     NarrationSentence(0, 0, 6),
     NarrationSentence(1, 7, 14),
@@ -96,5 +97,6 @@ class FakeNarrationPlayback implements NarrationPlayback {
     disposed = true;
     cancel();
     await events.close();
+    await disposalGate?.future;
   }
 }

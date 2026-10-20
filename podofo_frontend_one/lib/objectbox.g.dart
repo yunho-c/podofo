@@ -16,6 +16,7 @@ import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 
 import 'src/data/document_entity.dart';
 import 'src/data/document_history_entity.dart';
+import 'src/data/narration_bookmark.dart';
 import 'src/data/thumbnail_entity.dart';
 import 'src/providers/user_state_provider.dart';
 
@@ -88,7 +89,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(3, 6978279246222423302),
     name: 'UserState',
-    lastPropertyId: const obx_int.IdUid(16, 8031658732022810243),
+    lastPropertyId: const obx_int.IdUid(18, 7945442580345823431),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -181,6 +182,18 @@ final _entities = <obx_int.ModelEntity>[
         type: 1,
         flags: 0,
       ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(17, 7820022780712836123),
+        name: 'audioLanguage',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(18, 7945442580345823431),
+        name: 'followSpokenText',
+        type: 1,
+        flags: 0,
+      ),
     ],
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
@@ -208,6 +221,53 @@ final _entities = <obx_int.ModelEntity>[
         id: const obx_int.IdUid(3, 8929686710101065399),
         name: 'lastOpened',
         type: 10,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(5, 5220693176391162839),
+    name: 'NarrationBookmark',
+    lastPropertyId: const obx_int.IdUid(6, 1288183982730596889),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 5061885903777698491),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 3478231854265134601),
+        name: 'filePath',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(3, 5234795908054042713),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 6195560197505389039),
+        name: 'page',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(4, 1594391463640326719),
+        name: 'offset',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(5, 2955232924612260557),
+        name: 'mappingVersion',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(6, 1288183982730596889),
+        name: 'textHash',
+        type: 9,
         flags: 0,
       ),
     ],
@@ -259,8 +319,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(4, 7745109291682401919),
-    lastIndexId: const obx_int.IdUid(2, 2348996881805291555),
+    lastEntityId: const obx_int.IdUid(5, 5220693176391162839),
+    lastIndexId: const obx_int.IdUid(3, 5234795908054042713),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -388,7 +448,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
               .map(fbb.writeString)
               .toList(growable: false),
         );
-        fbb.startTable(17);
+        final audioLanguageOffset = fbb.writeString(object.audioLanguage);
+        fbb.startTable(19);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, appearanceOffset);
         fbb.addOffset(3, highlightColorOffset);
@@ -404,6 +465,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addBool(13, object.highlightModeEnabled);
         fbb.addInt64(14, object.highlightActiveColorIndex);
         fbb.addBool(15, object.autoSaveEnabled);
+        fbb.addOffset(16, audioLanguageOffset);
+        fbb.addBool(17, object.followSpokenText);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -470,6 +533,14 @@ obx_int.ModelDefinition getObjectBoxModel() {
             rootOffset,
             34,
             false,
+          )
+          ..audioLanguage = const fb.StringReader(asciiOptimization: true)
+              .vTableGet(buffer, rootOffset, 36, '')
+          ..followSpokenText = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            38,
+            false,
           );
 
         return object;
@@ -510,6 +581,70 @@ obx_int.ModelDefinition getObjectBoxModel() {
           id: idParam,
           filePath: filePathParam,
           lastOpened: lastOpenedParam,
+        );
+
+        return object;
+      },
+    ),
+    NarrationBookmark: obx_int.EntityDefinition<NarrationBookmark>(
+      model: _entities[4],
+      toOneRelations: (NarrationBookmark object) => [],
+      toManyRelations: (NarrationBookmark object) => {},
+      getId: (NarrationBookmark object) => object.id,
+      setId: (NarrationBookmark object, int id) {
+        object.id = id;
+      },
+      objectToFB: (NarrationBookmark object, fb.Builder fbb) {
+        final filePathOffset = fbb.writeString(object.filePath);
+        final textHashOffset = fbb.writeString(object.textHash);
+        fbb.startTable(7);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, filePathOffset);
+        fbb.addInt64(2, object.page);
+        fbb.addInt64(3, object.offset);
+        fbb.addInt64(4, object.mappingVersion);
+        fbb.addOffset(5, textHashOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final filePathParam = const fb.StringReader(asciiOptimization: true)
+            .vTableGet(buffer, rootOffset, 6, '');
+        final pageParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          8,
+          0,
+        );
+        final offsetParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          10,
+          0,
+        );
+        final textHashParam = const fb.StringReader(asciiOptimization: true)
+            .vTableGet(buffer, rootOffset, 14, '');
+        final mappingVersionParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          12,
+          0,
+        );
+        final object = NarrationBookmark(
+          id: idParam,
+          filePath: filePathParam,
+          page: pageParam,
+          offset: offsetParam,
+          textHash: textHashParam,
+          mappingVersion: mappingVersionParam,
         );
 
         return object;
@@ -636,6 +771,16 @@ class UserState_ {
   static final autoSaveEnabled = obx.QueryBooleanProperty<UserState>(
     _entities[2].properties[14],
   );
+
+  /// See [UserState.audioLanguage].
+  static final audioLanguage = obx.QueryStringProperty<UserState>(
+    _entities[2].properties[15],
+  );
+
+  /// See [UserState.followSpokenText].
+  static final followSpokenText = obx.QueryBooleanProperty<UserState>(
+    _entities[2].properties[16],
+  );
 }
 
 /// [DocumentHistoryEntity] entity fields to define ObjectBox queries.
@@ -653,5 +798,38 @@ class DocumentHistoryEntity_ {
   /// See [DocumentHistoryEntity.lastOpened].
   static final lastOpened = obx.QueryDateProperty<DocumentHistoryEntity>(
     _entities[3].properties[2],
+  );
+}
+
+/// [NarrationBookmark] entity fields to define ObjectBox queries.
+class NarrationBookmark_ {
+  /// See [NarrationBookmark.id].
+  static final id = obx.QueryIntegerProperty<NarrationBookmark>(
+    _entities[4].properties[0],
+  );
+
+  /// See [NarrationBookmark.filePath].
+  static final filePath = obx.QueryStringProperty<NarrationBookmark>(
+    _entities[4].properties[1],
+  );
+
+  /// See [NarrationBookmark.page].
+  static final page = obx.QueryIntegerProperty<NarrationBookmark>(
+    _entities[4].properties[2],
+  );
+
+  /// See [NarrationBookmark.offset].
+  static final offset = obx.QueryIntegerProperty<NarrationBookmark>(
+    _entities[4].properties[3],
+  );
+
+  /// See [NarrationBookmark.mappingVersion].
+  static final mappingVersion = obx.QueryIntegerProperty<NarrationBookmark>(
+    _entities[4].properties[4],
+  );
+
+  /// See [NarrationBookmark.textHash].
+  static final textHash = obx.QueryStringProperty<NarrationBookmark>(
+    _entities[4].properties[5],
   );
 }

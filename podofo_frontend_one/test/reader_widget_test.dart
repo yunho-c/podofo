@@ -325,7 +325,9 @@ void main() {
         () =>
             controller.textSelectionDelegate.setTextSelectionPointRange(range),
       );
-      await tester.tap(find.byTooltip('Read selected text'));
+      await tester.tap(find.byTooltip('Listen to paper'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Read selected text'));
       await waitForNative(tester, () => speech.texts.isNotEmpty);
       expect(speech.texts.single, text.fullText.substring(0, 5));
       expect(

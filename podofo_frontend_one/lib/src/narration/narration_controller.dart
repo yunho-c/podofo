@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'narrator.dart';
 import 'source_map.dart';
+import 'narration_sequence.dart';
 
 class NarrationSource {
   const NarrationSource({
@@ -12,10 +13,12 @@ class NarrationSource {
     required this.title,
     required this.text,
     this.passage,
+    this.sequence,
   });
   final Object documentId;
   final String title, text;
   final NarrationPassage? passage;
+  final NarrationSequence? sequence;
 
   NarrationSource fromOffset(int offset) {
     final mapped = passage?.sliceFrom(offset);
@@ -24,16 +27,23 @@ class NarrationSource {
       title: title,
       text: mapped?.text ?? text.substring(offset),
       passage: mapped,
+      sequence: sequence,
     );
   }
 }
 
 /// Owns document intent and SDK handles; native states are authoritative for audio.
 class NarrationController extends ChangeNotifier {
-  NarrationController({required this.open, this.unavailableReason});
+  NarrationController({
+    required this.open,
+    this.unavailableReason,
+    this.onPosition,
+  });
 
   final NarratorFactory open;
   final String? unavailableReason;
+  final void Function(NarrationSource source, SourceAnchor anchor)? onPosition;
+  String? _savedAnchor;
   NarratorSession? _session;
   Future<void>? _opening, _closing;
   NarrationPlayback? _playback;
@@ -119,8 +129,9 @@ class NarrationController extends ChangeNotifier {
   /// another Read invalidates even a late PDF extraction or model-load result.
   Future<void> read(
     Object documentId,
-    Future<NarrationSource> Function() resolve,
-  ) async {
+    Future<NarrationSource> Function() resolve, {
+    bool keepSequence = false,
+  }) async {
     if (_closed) return;
     if (!available) {
       error = unavailableReason;
@@ -128,6 +139,12 @@ class NarrationController extends ChangeNotifier {
       return;
     }
     final generation = ++_generation;
+    _remember();
+    if (!keepSequence) {
+      source?.sequence?.close();
+    } else {
+      source?.sequence?.cancelPending();
+    }
     _pendingDocumentId = documentId;
     _retireCurrent();
     preparing = true;
@@ -140,34 +157,100 @@ class NarrationController extends ChangeNotifier {
     _notify();
     try {
       final next = await resolve();
-      if (!_current(generation)) return;
-      if (next.text.trim().isEmpty) {
-        throw StateError('Select readable text first.');
+      if (!_current(generation)) {
+        if (!identical(next.sequence, source?.sequence)) next.sequence?.close();
+        return;
       }
-      if (utf8.encode(next.text).length > 64 * 1024) {
-        throw StateError(
-          'This selection is too long. Select a shorter passage.',
-        );
-      }
-      source = next;
-      preparation = 'Loading voices…';
-      _notify();
-      await _load();
-      await _joinRetiring();
-      if (!_current(generation)) return;
-      final playback = _session!.speak(
-        next.text,
-        settings,
-        paused: _pauseWhenReady,
-      );
-      preparing = false;
-      _pendingDocumentId = null;
-      _observe(playback, generation);
+      await _start(next, generation);
     } catch (failure) {
       if (_current(generation)) {
         preparing = false;
         _pendingDocumentId = null;
         error = failure.toString();
+        _notify();
+      }
+    }
+  }
+
+  Future<void> _start(NarrationSource next, int generation) async {
+    if (next.text.trim().isEmpty) {
+      throw StateError('Select readable text first.');
+    }
+    if (utf8.encode(next.text).length > 64 * 1024) {
+      throw StateError('This selection is too long. Select a shorter passage.');
+    }
+    source = next;
+    preparation = 'Loading voices…';
+    _notify();
+    await _load();
+    await _joinRetiring();
+    if (!_current(generation)) return;
+    final playback = _session!.speak(
+      next.text,
+      settings,
+      paused: _pauseWhenReady,
+    );
+    preparing = false;
+    _pendingDocumentId = null;
+    _observe(playback, generation);
+  }
+
+  void _remember() {
+    final value = source, anchor = currentAnchor;
+    if (value == null || anchor == null || onPosition == null) return;
+    final key =
+        '${identityHashCode(value.documentId)}:${anchor.page}:${anchor.offset}:${anchor.textHash}';
+    if (key == _savedAnchor) return;
+    try {
+      onPosition!(value, anchor);
+      _savedAnchor = key;
+    } catch (failure) {
+      error = 'Could not save your reading position: $failure';
+    }
+  }
+
+  Future<void> movePassage(int direction) async {
+    final previous = source, sequence = source?.sequence;
+    if (previous == null || sequence == null || _closed || preparing) return;
+    final generation = ++_generation;
+    _remember();
+    final keepPaused = paused;
+    _pauseWhenReady = keepPaused;
+    _retireCurrent();
+    preparing = true;
+    preparation = 'Preparing the next passage…';
+    error = null;
+    _notify();
+    try {
+      final next = await sequence.move(direction);
+      if (!_current(generation)) return;
+      if (next == null) {
+        preparing = false;
+        snapshot =
+            snapshot?.withPhase(NarrationPhase.completed) ??
+            const NarrationSnapshot(phase: NarrationPhase.completed);
+        _notify();
+        return;
+      }
+      snapshot = null;
+      sentences = const [];
+      await _start(
+        NarrationSource(
+          documentId: previous.documentId,
+          title: previous.title,
+          text: next.text,
+          passage: next,
+          sequence: sequence,
+        ),
+        generation,
+      );
+    } catch (failure) {
+      if (_current(generation)) {
+        preparing = false;
+        error = failure.toString();
+        snapshot =
+            snapshot?.withPhase(NarrationPhase.failed) ??
+            const NarrationSnapshot(phase: NarrationPhase.failed);
         _notify();
       }
     }
@@ -179,6 +262,7 @@ class NarrationController extends ChangeNotifier {
       (value) {
         if (!_current(generation) || !identical(_playback, playback)) return;
         snapshot = value;
+        if (value.start != null) _remember();
         if (sentences.isEmpty && !_readingPlan) {
           unawaited(_updatePlan(playback, generation));
         }
@@ -223,9 +307,18 @@ class NarrationController extends ChangeNotifier {
 
   void navigate({required bool forward}) {
     final playback = _playback;
-    if (playback == null || sentences.isEmpty) return;
+    if (playback == null) {
+      unawaited(movePassage(forward ? 1 : -1));
+      return;
+    }
+    if (sentences.isEmpty) return;
     try {
-      _acceptNavigation(playback.navigate(forward: forward));
+      final result = playback.navigate(forward: forward);
+      if (result.boundary && source?.sequence != null) {
+        unawaited(movePassage(forward ? 1 : -1));
+      } else {
+        _acceptNavigation(result);
+      }
     } catch (failure) {
       error = failure.toString();
       _notify();
@@ -268,7 +361,11 @@ class NarrationController extends ChangeNotifier {
     if (previous != null && active) {
       final keepPaused = paused;
       final replacement = previous.fromOffset(snapshot?.start ?? 0);
-      final work = read(previous.documentId, () async => replacement);
+      final work = read(
+        previous.documentId,
+        () async => replacement,
+        keepSequence: true,
+      );
       _pauseWhenReady = keepPaused;
       await work;
     } else {
@@ -284,6 +381,10 @@ class NarrationController extends ChangeNotifier {
           ? NarrationPhase.completed
           : NarrationPhase.stopped;
       snapshot = snapshot?.withPhase(phase) ?? NarrationSnapshot(phase: phase);
+      if (result == NarrationOutcome.completed && source?.sequence != null) {
+        await movePassage(1);
+        return;
+      }
       _notify();
     } catch (failure) {
       if (_current(generation) && identical(_playback, playback)) {
@@ -296,9 +397,9 @@ class NarrationController extends ChangeNotifier {
 
   void togglePause() {
     if (_closed) return;
-    if (terminal && source != null) {
+    if (terminal && !preparing && source != null) {
       final saved = source!;
-      unawaited(read(saved.documentId, () async => saved));
+      unawaited(read(saved.documentId, () async => saved, keepSequence: true));
       return;
     }
     _pauseWhenReady = !paused;
@@ -348,6 +449,8 @@ class NarrationController extends ChangeNotifier {
   }
 
   Future<void> stop() async {
+    _remember();
+    source?.sequence?.cancelPending();
     ++_generation;
     preparing = false;
     _pendingDocumentId = null;
@@ -363,7 +466,11 @@ class NarrationController extends ChangeNotifier {
         !identical(_pendingDocumentId, documentId)) {
       return;
     }
+    final sequence = source?.sequence;
+    final generation = _generation + 1;
     await stop();
+    sequence?.close();
+    if (_generation != generation) return;
     source = null;
     snapshot = null;
     _notify();
@@ -373,6 +480,7 @@ class NarrationController extends ChangeNotifier {
   Future<void> _close() async {
     _closed = true;
     await stop();
+    source?.sequence?.close();
     try {
       await _opening;
     } catch (_) {

@@ -60,7 +60,7 @@
     },
     {
       "id": "3:6978279246222423302",
-      "lastPropertyId": "16:8031658732022810243",
+      "lastPropertyId": "18:7945442580345823431",
       "name": "UserState",
       "properties": [
         {
@@ -138,6 +138,16 @@
           "id": "16:8031658732022810243",
           "name": "autoSaveEnabled",
           "type": 1
+        },
+        {
+          "id": "17:7820022780712836123",
+          "name": "audioLanguage",
+          "type": 9
+        },
+        {
+          "id": "18:7945442580345823431",
+          "name": "followSpokenText",
+          "type": 1
         }
       ],
       "relations": []
@@ -167,10 +177,51 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "5:5220693176391162839",
+      "lastPropertyId": "6:1288183982730596889",
+      "name": "NarrationBookmark",
+      "properties": [
+        {
+          "id": "1:5061885903777698491",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:3478231854265134601",
+          "name": "filePath",
+          "indexId": "3:5234795908054042713",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:6195560197505389039",
+          "name": "page",
+          "type": 6
+        },
+        {
+          "id": "4:1594391463640326719",
+          "name": "offset",
+          "type": 6
+        },
+        {
+          "id": "5:2955232924612260557",
+          "name": "mappingVersion",
+          "type": 6
+        },
+        {
+          "id": "6:1288183982730596889",
+          "name": "textHash",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "4:7745109291682401919",
-  "lastIndexId": "2:2348996881805291555",
+  "lastEntityId": "5:5220693176391162839",
+  "lastIndexId": "3:5234795908054042713",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

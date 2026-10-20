@@ -89,3 +89,19 @@ present before this work and are preserved. A baseline patch and the abandoned
   The reader test covers active speech across another tab, cancelled dirty close,
   save and final close. Temporary paint was inspected in the generated reader
   capture; native app visual/listening review remains a release check.
+- Milestone 3: continuous bounded passages, a reading-order preview with explicit
+  single-column/two-column/PDF-order choices, references/caption options, and
+  review/skip handling for ambiguous or textless pages. Two page plans are cached;
+  passages cap raw text at 4 KiB and normally split earlier at sentence endings.
+  Only successful native playback completion advances. Per-paper bookmarks store
+  page, source offset, text hash and mapping version, and survive reopen/Save As.
+- Validation: 55 regressions pass, with the opt-in real speech test skipped;
+  analysis passes and repeated ObjectBox regeneration is byte-identical. Legacy
+  schema IDs are preserved. Tests include real two-column PDFs, 24-page traversal
+  with a scanned page, bounded page caches, changed-text resume rejection, delayed
+  close versus a new request, and pause/stop during page preparation.
+- Reading order is a conservative geometric heuristic, reviewed before starting.
+  It is not semantic PDF understanding or OCR. Marginal text/footnotes remain in
+  the reading stream unless selected around; literal hyphens are preserved.
+  Complex tables, mixed scripts/layouts and equations can need explicit PDF order
+  or selection. No whole-paper duration is fabricated from the current passage.
