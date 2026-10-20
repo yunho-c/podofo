@@ -6,6 +6,7 @@ class FakeNarratorSession implements NarratorSession {
   final texts = <String>[];
   final playbacks = <FakeNarrationPlayback>[];
   final initialPauses = <bool>[];
+  final requests = <NarrationSettings>[];
   int disposals = 0;
   Object? voiceFailure;
 
@@ -24,6 +25,7 @@ class FakeNarratorSession implements NarratorSession {
     bool paused = false,
   }) {
     texts.add(text);
+    requests.add(settings);
     initialPauses.add(paused);
     final playback = FakeNarrationPlayback();
     playbacks.add(playback);
@@ -41,6 +43,13 @@ class FakeNarrationPlayback implements NarrationPlayback {
   final completion = Completer<NarrationOutcome>();
   int pauses = 0, resumes = 0;
   bool cancelled = false, disposed = false;
+  List<NarrationSentence>? sentencePlan = const [
+    NarrationSentence(0, 0, 6),
+    NarrationSentence(1, 7, 14),
+  ];
+  NarrationNavigation navigation = const NarrationNavigation(boundary: true);
+  int? lastSeek;
+  bool? lastForward;
   void emit(NarrationPhase phase) =>
       events.add(NarrationSnapshot(phase: phase));
   @override
@@ -48,7 +57,7 @@ class FakeNarrationPlayback implements NarrationPlayback {
   @override
   Future<NarrationOutcome> get done => completion.future;
   @override
-  Future<List<NarrationSentence>?> sentences() async => [];
+  Future<List<NarrationSentence>?> sentences() async => sentencePlan;
   @override
   void pause() {
     pauses++;
@@ -68,10 +77,16 @@ class FakeNarrationPlayback implements NarrationPlayback {
   }
 
   @override
-  void seek(int frame) {}
+  void seek(int frame) {
+    lastSeek = frame;
+  }
+
   @override
-  NarrationNavigation navigate({required bool forward}) =>
-      const NarrationNavigation(boundary: true);
+  NarrationNavigation navigate({required bool forward}) {
+    lastForward = forward;
+    return navigation;
+  }
+
   @override
   NarrationNavigation navigateToSentence(int id) =>
       const NarrationNavigation(boundary: true);

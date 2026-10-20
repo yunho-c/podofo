@@ -375,6 +375,21 @@ void main() {
       expect(find.byType(PdfSelectionMenu), findsNothing);
       expect(container.read(documentErrorProvider), isNull);
 
+      final savedSource = narrator.source!;
+      await tester.runAsync(
+        () => narrator.read(savedSource.documentId, () async => savedSource),
+      );
+      final reading = speech.playbacks.last;
+      reading.events.add(
+        const NarrationSnapshot(
+          phase: NarrationPhase.playing,
+          start: 0,
+          end: 5,
+        ),
+      );
+      await tester.pump();
+      expect(savedSource.passage!.rectangles(1, 0, 5), isNotEmpty);
+      await captureReader(tester, 'narration-selection');
       // Cancelling close must keep both the tab and its unsaved annotations.
       await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
@@ -384,6 +399,7 @@ void main() {
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(container.read(currentDocumentProvider)!.dirty, true);
+      expect(reading.cancelled, false);
 
       await tester.tap(find.byTooltip('Annotations'));
       await waitForNative(
@@ -468,6 +484,35 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(tester.takeException(), isNull);
 
+      // Audio remains attached to its source when another tab is opened/closed.
+      final other = File('${temporary.path}/other.pdf')
+        ..writeAsBytesSync(pdfFixture());
+      await tester.runAsync(
+        () => container
+            .read(loadedDocumentsProvider.notifier)
+            .addDocument(other.path),
+      );
+      await tester.pump();
+      expect(
+        identical(narrator.source!.documentId, savedSource.documentId),
+        true,
+      );
+      expect(reading.cancelled, false);
+      await tester.runAsync(
+        () => container
+            .read(loadedDocumentsProvider.notifier)
+            .removeDocument(other.resolveSymbolicLinksSync()),
+      );
+      await waitForNative(
+        tester,
+        () => container.read(pdfViewerControllerProvider).isReady,
+      );
+      expect(reading.cancelled, false);
+      expect(
+        container.read(currentDocumentProvider)!.filePath,
+        file.resolveSymbolicLinksSync(),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('File'));
       await waitForNative(
         tester,
@@ -479,8 +524,12 @@ void main() {
         tester,
         () => !container.read(currentDocumentProvider)!.dirty,
       );
+      expect(reading.cancelled, false);
       expect(container.read(documentErrorProvider), isNull);
-      expect(find.textContaining('● reader'), findsNothing);
+      await waitForNative(
+        tester,
+        () => find.textContaining('● reader').evaluate().isEmpty,
+      );
 
       await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
@@ -495,10 +544,11 @@ void main() {
         findsOneWidget,
       );
       expect(container.read(pdfTextSearcherProvider), isNull);
+      expect(reading.disposed, true);
       expect(tester.takeException(), isNull);
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
-      await narrator.close();
+      await tester.runAsync(narrator.close);
       container.dispose();
       store.close();
       await tester.runAsync(() async {

@@ -78,3 +78,14 @@ present before this work and are preserved. A baseline patch and the abandoned
 - Windows CI prepares a portable native library and model-free package before
   dependency resolution. Windows build execution remains a release gate; a
   macOS build is not evidence for Windows runtime compatibility.
+- Milestone 2: detached, hashed page text and UTF-16 source maps; ligature and
+  whitespace normalization; temporary sentence paint; follow/show-location;
+  native sentence navigation and passage timeline; voice/language/synthesis-speed
+  controls. Selection and page extraction share the session's edit/save/close
+  lock. The PDFium scalar-to-UTF-16 conversion runs before page formatting.
+- Validation: 42 Flutter regressions pass with one opt-in native test skipped;
+  analysis passes. Real PDF fixtures cover emoji/ligature extraction, crop and
+  rotation paint, annotation-only save identity, and snapshot/close serialization.
+  The reader test covers active speech across another tab, cancelled dirty close,
+  save and final close. Temporary paint was inspected in the generated reader
+  capture; native app visual/listening review remains a release check.

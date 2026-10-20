@@ -210,6 +210,7 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
       _operations.synchronized(() async {
         final document = state[path];
         if (document == null) return;
+        await document.session.waitForIdle();
         // Do not stop narration for a rejected dirty close.
         if (document.dirty && !discard) {
           throw StateError('Save or discard changes before closing.');

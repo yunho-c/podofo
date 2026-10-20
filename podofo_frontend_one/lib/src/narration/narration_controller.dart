@@ -4,15 +4,28 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import 'narrator.dart';
+import 'source_map.dart';
 
 class NarrationSource {
   const NarrationSource({
     required this.documentId,
     required this.title,
     required this.text,
+    this.passage,
   });
   final Object documentId;
   final String title, text;
+  final NarrationPassage? passage;
+
+  NarrationSource fromOffset(int offset) {
+    final mapped = passage?.sliceFrom(offset);
+    return NarrationSource(
+      documentId: documentId,
+      title: title,
+      text: mapped?.text ?? text.substring(offset),
+      passage: mapped,
+    );
+  }
 }
 
 /// Owns document intent and SDK handles; native states are authoritative for audio.
@@ -36,6 +49,11 @@ class NarrationController extends ChangeNotifier {
   String? error;
   String preparation = '';
   bool preparing = false;
+  bool followText = true;
+  List<NarrationSentence> sentences = const [];
+  bool _readingPlan = false;
+  SourceAnchor? get currentAnchor =>
+      source?.passage?.anchorAt(snapshot?.start ?? 0);
 
   bool get available => unavailableReason == null;
   bool get active => preparing || (_playback != null && !terminal);
@@ -83,6 +101,13 @@ class NarrationController extends ChangeNotifier {
       if (_closed) throw StateError('Narration closed while loading');
       if (catalog.isEmpty) throw StateError('No speech voices are available.');
       voices = List.unmodifiable(catalog);
+      if (settings.voice.isNotEmpty &&
+          !voices.any((v) => v.id == settings.voice)) {
+        settings = NarrationSettings(
+          language: settings.language,
+          speed: settings.speed,
+        );
+      }
       _session = session;
     } catch (_) {
       await session.dispose();
@@ -109,6 +134,8 @@ class NarrationController extends ChangeNotifier {
     _pauseWhenReady = false;
     error = null;
     snapshot = null;
+    sentences = const [];
+    source = null;
     preparation = 'Reading selected text…';
     _notify();
     try {
@@ -152,6 +179,9 @@ class NarrationController extends ChangeNotifier {
       (value) {
         if (!_current(generation) || !identical(_playback, playback)) return;
         snapshot = value;
+        if (sentences.isEmpty && !_readingPlan) {
+          unawaited(_updatePlan(playback, generation));
+        }
         if (value.phase == NarrationPhase.playing) _pauseWhenReady = false;
         _notify();
       },
@@ -166,15 +196,94 @@ class NarrationController extends ChangeNotifier {
     _notify();
   }
 
+  Future<void> _updatePlan(NarrationPlayback playback, int generation) async {
+    _readingPlan = true;
+    try {
+      final plan = await playback.sentences();
+      if (_current(generation) &&
+          identical(_playback, playback) &&
+          plan != null) {
+        sentences = List.unmodifiable(plan);
+        _notify();
+      }
+    } catch (failure) {
+      if (_current(generation) && identical(_playback, playback)) {
+        error = 'Could not read sentence positions: $failure';
+        _notify();
+      }
+    } finally {
+      _readingPlan = false;
+    }
+  }
+
+  void setFollowText(bool value) {
+    followText = value;
+    _notify();
+  }
+
+  void navigate({required bool forward}) {
+    final playback = _playback;
+    if (playback == null || sentences.isEmpty) return;
+    try {
+      _acceptNavigation(playback.navigate(forward: forward));
+    } catch (failure) {
+      error = failure.toString();
+      _notify();
+    }
+  }
+
+  void _acceptNavigation(NarrationNavigation navigation) {
+    final replacement = navigation.replacement;
+    if (replacement != null) {
+      final generation = ++_generation;
+      _retireCurrent();
+      _pauseWhenReady = false;
+      _observe(replacement, generation);
+    }
+  }
+
+  void seek(int frame) {
+    final total = snapshot?.durationFrames ?? snapshot?.estimatedFrames;
+    if (total == null || total <= 0) return;
+    try {
+      _playback?.seek(frame.clamp(0, total - 1));
+    } catch (failure) {
+      error = failure.toString();
+      _notify();
+    }
+  }
+
+  /// Synthesis changes restart at the native sentence's source boundary.
+  Future<void> configure(NarrationSettings next) async {
+    if (!next.speed.isFinite || next.speed < 0.5 || next.speed > 2) {
+      throw ArgumentError('Speaking speed must be between 0.5 and 2.0.');
+    }
+    if (next.voice == settings.voice &&
+        next.language == settings.language &&
+        next.speed == settings.speed) {
+      return;
+    }
+    settings = next;
+    final previous = source;
+    if (previous != null && active) {
+      final keepPaused = paused;
+      final replacement = previous.fromOffset(snapshot?.start ?? 0);
+      final work = read(previous.documentId, () async => replacement);
+      _pauseWhenReady = keepPaused;
+      await work;
+    } else {
+      _notify();
+    }
+  }
+
   Future<void> _completion(NarrationPlayback playback, int generation) async {
     try {
       final result = await playback.done;
       if (!_current(generation) || !identical(_playback, playback)) return;
-      snapshot = NarrationSnapshot(
-        phase: result == NarrationOutcome.completed
-            ? NarrationPhase.completed
-            : NarrationPhase.stopped,
-      );
+      final phase = result == NarrationOutcome.completed
+          ? NarrationPhase.completed
+          : NarrationPhase.stopped;
+      snapshot = snapshot?.withPhase(phase) ?? NarrationSnapshot(phase: phase);
       _notify();
     } catch (failure) {
       if (_current(generation) && identical(_playback, playback)) {

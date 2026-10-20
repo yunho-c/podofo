@@ -12,6 +12,9 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_state_provider.dart';
+import '../../providers/narration_provider.dart';
+import '../../narration/narration_controller.dart';
+import '../../narration/narration_painter.dart';
 import '../../services/document_actions.dart';
 import '../../workers/open_graph_worker.dart';
 import 'pdf_selection_menu.dart';
@@ -30,6 +33,60 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   int _generation = 0;
   final _selectionPointers = <int>{};
   bool _selectionChanged = false;
+  late final NarrationController _narration;
+  Object? _paintedRange;
+
+  @override
+  void initState() {
+    super.initState();
+    _narration = ref.read(narrationControllerProvider);
+    _narration.addListener(_onNarrationChanged);
+  }
+
+  void _onNarrationChanged() {
+    if (!mounted) return;
+    final document = ref.read(currentDocumentProvider);
+    final viewer = ref.read(pdfViewerControllerProvider);
+    if (document == null || !viewer.isReady) return;
+    final state = _narration.snapshot;
+    final key = (
+      _narration.source,
+      state?.start,
+      state?.end,
+      _narration.terminal,
+      _narration.followText,
+    );
+    if (_paintedRange == key) return;
+    _paintedRange = key;
+    viewer.invalidate(); // Repaint a sentence change; never rebuild for audio ticks.
+    if (!_narration.followText ||
+        _narration.terminal ||
+        !identical(document.session, _narration.source?.documentId)) {
+      return;
+    }
+    final anchor = _narration.currentAnchor;
+    final passage = _narration.source?.passage;
+    if (anchor == null ||
+        passage == null ||
+        state?.start == null ||
+        state?.end == null) {
+      return;
+    }
+    final rectangles = passage.rectangles(
+      anchor.page,
+      state!.start!,
+      state.end!,
+    );
+    if (rectangles.isEmpty) return;
+    final page = document.pdfDocument.pages[anchor.page - 1];
+    final layout = viewer.layout.pageLayouts[anchor.page - 1];
+    final target = rectangles.first
+        .toRect(page: page, scaledPageSize: layout.size)
+        .translate(layout.left, layout.top);
+    if (!viewer.visibleRect.contains(target.center)) {
+      unawaited(viewer.ensureVisible(target, duration: Duration.zero));
+    }
+  }
 
   void _applyHighlightMode() {
     if (!mounted || !_selectionChanged || _selectionPointers.isNotEmpty) return;
@@ -53,6 +110,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
 
   @override
   void dispose() {
+    _narration.removeListener(_onNarrationChanged);
     _clearHover();
     super.dispose();
   }
@@ -83,6 +141,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
           Future.microtask(() {
             if (mounted) {
               ref.read(viewerReadyProvider.notifier).state = readyController;
+              _paintedRange = null;
+              _onNarrationChanged();
             }
           });
         },
@@ -95,6 +155,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         },
         pagePaintCallbacks: [
           if (searcher != null) searcher.pageTextMatchPaintCallback,
+          (canvas, rect, page) =>
+              paintNarration(canvas, rect, page, _narration, document.session),
         ],
         textSelectionParams: PdfTextSelectionParams(
           onTextSelectionChange: (selection) {

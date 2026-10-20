@@ -36,6 +36,18 @@ class NarrationSnapshot {
   final int positionFrames, sampleRate;
   final int? durationFrames, estimatedFrames;
   final bool seeking;
+
+  NarrationSnapshot withPhase(NarrationPhase next) => NarrationSnapshot(
+    phase: next,
+    start: start,
+    end: end,
+    sentenceId: sentenceId,
+    positionFrames: positionFrames,
+    durationFrames: durationFrames,
+    estimatedFrames: estimatedFrames,
+    sampleRate: sampleRate,
+    seeking: seeking,
+  );
 }
 
 class NarrationSentence {

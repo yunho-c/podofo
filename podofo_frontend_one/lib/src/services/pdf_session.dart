@@ -26,6 +26,11 @@ class PdfSession {
   Future<void> waitForIdle() => _lock.synchronized(() {});
   String get cacheKey => '$_fingerprint-$revision';
 
+  /// Short extraction/snapshot work shares the edit/save/close serialization.
+  /// Callers must return detached values and release this lock before playback.
+  Future<T> readLocked<T>(Future<T> Function(PdfDocument) read) =>
+      _lock.synchronized(() => lease.use(read));
+
   static Future<PdfSession> open(String path) async {
     path = p.normalize(p.absolute(path));
     // Resolve links so Save updates the same file Open read, not a link entry.

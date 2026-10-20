@@ -82,6 +82,12 @@ class PdfSelectionMenu extends ConsumerWidget {
                     run(() => NarrationActions.readSelection(ref)),
                 child: const Text('Read selection'),
               ),
+            if (selection.isCopyAllowed &&
+                ref.watch(narrationControllerProvider).available)
+              MenuButton(
+                onPressed: (_) => run(() => NarrationActions.readFromHere(ref)),
+                child: const Text('Read from here'),
+              ),
             if (highlight) ...[
               if (copy || selectAll) const MenuDivider(),
               const MenuLabel(
