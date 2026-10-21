@@ -118,8 +118,12 @@ abstract final class NarrationActions {
     final sequence = PaperSequence(document.session, options);
     final choice = await m.showDialog<PaperReadingChoice>(
       context: ref.context,
-      builder: (_) =>
-          PaperReadingPreview(sequence: sequence, page: start, anchor: anchor),
+      builder: (_) => PaperReadingPreview(
+        sequence: sequence,
+        page: start,
+        anchor: anchor,
+        savedPlanVersion: saved?.planVersion,
+      ),
     );
     if (!ref.context.mounted ||
         choice == null ||

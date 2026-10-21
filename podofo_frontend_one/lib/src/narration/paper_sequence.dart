@@ -1,8 +1,8 @@
-import 'package:pdfrx/pdfrx.dart';
-
 import '../services/pdf_session.dart';
 import 'narration_sequence.dart';
 import 'paper_plan.dart';
+import 'pdf_text_repository.dart';
+import 'running_matter.dart';
 import 'source_map.dart';
 
 class PaperReviewRequired implements Exception {
@@ -19,9 +19,10 @@ class PaperSequence implements NarrationSequence {
   final PdfSession session;
   PaperReadOptions options;
   final _pages = <int, PaperPagePlan>{};
+  final _pending = <int, Future<PaperPagePlan>>{};
   final _overrides = <int, PaperOrder>{};
   final _skipped = <int>{};
-  int _page = 1, _passage = -1, _epoch = 0;
+  int _page = 1, _passage = -1, _epoch = 0, _movement = 0;
   bool _closed = false;
   PaperPagePlan? review;
   int get cachedPageCount => _pages.length;
@@ -33,42 +34,89 @@ class PaperSequence implements NarrationSequence {
     PaperReadOptions? preferences,
   }) async {
     final selected = preferences ?? options;
-    return session.readLocked((pdf) async {
-      if (pdf.permissions?.allowsCopying == false) {
-        throw StateError('This PDF does not allow text extraction.');
+    final epoch = _epoch;
+    void check() {
+      if (_closed || epoch != _epoch) {
+        throw StateError('Reading was cancelled.');
       }
-      final page = pdf.pages[number - 1];
-      final text = PdfTextSnapshot.fromText(
-        await NarrationPdfPage(page).loadStructuredText(),
-      );
-      final width = page.rotation.index.isOdd ? page.height : page.width;
-      return PaperPlanner.plan(text, width, selected);
-    });
+    }
+
+    check();
+    final repository = PdfTextRepository(session);
+    final page = await repository.extract(number);
+    check();
+    // Detached text/layout analysis runs after the session's native lock exits.
+    final candidates = selected.skipRunningMatter
+        ? marginLines(page)
+        : <MarginLine>[];
+    final confirmed = <MarginLine>{};
+    if (candidates.isNotEmpty) {
+      // One neighboring snapshot at a time, including alternating odd/even
+      // running titles. No whole-paper extraction or unbounded snapshot cache.
+      for (final other in [number - 1, number + 1, number - 2, number + 2]) {
+        if (other < 1 || other > pageCount) continue;
+        final neighbor = await repository.extract(other);
+        check();
+        final lines = marginLines(neighbor);
+        confirmed.addAll(
+          candidates.where((candidate) => lines.any(candidate.matches)),
+        );
+        if (confirmed.length == candidates.length) break;
+      }
+    }
+    return PaperPlanner.plan(
+      page.text,
+      page.width,
+      selected,
+      runningMatter: confirmed.toList(),
+    );
   }
 
-  Future<PaperPagePlan> _plan(int page, int epoch) async {
+  Future<PaperPagePlan> _plan(int page, int epoch) {
+    if (_closed || epoch != _epoch) {
+      return Future.error(StateError('Reading was cancelled.'));
+    }
     final cached = _pages.remove(page);
     if (cached != null) {
       _pages[page] = cached;
-      return cached;
+      return Future.value(cached);
     }
-    final override = _overrides[page];
-    final plan = await preview(
-      page,
-      preferences: override == null
-          ? options
-          : PaperReadOptions(
-              order: override,
-              stopAtReferences: options.stopAtReferences,
-              skipCaptions: options.skipCaptions,
-            ),
-    );
-    if (_closed || epoch != _epoch) throw StateError('Reading was cancelled.');
-    _pages[page] = plan;
-    while (_pages.length > 2) {
-      _pages.remove(_pages.keys.first);
+    return _pending[page] ??= _loadPlan(page, epoch);
+  }
+
+  Future<PaperPagePlan> _loadPlan(int page, int epoch) async {
+    try {
+      final override = _overrides[page];
+      final plan = await preview(
+        page,
+        preferences: override == null
+            ? options
+            : PaperReadOptions(
+                order: override,
+                stopAtReferences: options.stopAtReferences,
+                skipCaptions: options.skipCaptions,
+                skipRunningMatter: options.skipRunningMatter,
+              ),
+      );
+      if (_closed || epoch != _epoch) {
+        throw StateError('Reading was cancelled.');
+      }
+      _pages[page] = plan;
+      while (_pages.length > 2) {
+        _pages.remove(_pages.keys.first);
+      }
+      return plan;
+    } finally {
+      if (epoch == _epoch) _pending.remove(page);
     }
-    return plan;
+  }
+
+  @override
+  Future<void> prepareNext() async {
+    if (_closed || _page >= pageCount || _pages[_page]?.endsPaper == true) {
+      return;
+    }
+    await _plan(_page + 1, _epoch);
   }
 
   Future<NarrationPassage?> start({int page = 1, SourceAnchor? anchor}) async {
@@ -79,6 +127,10 @@ class PaperSequence implements NarrationSequence {
     _passage = -1;
     final epoch = _epoch;
     final plan = await _plan(page, epoch);
+    if (plan.issue != null) {
+      review = plan;
+      throw PaperReviewRequired(plan);
+    }
     if (anchor != null) {
       if (anchor.textHash != plan.page.textHash ||
           anchor.page != page ||
@@ -109,7 +161,7 @@ class PaperSequence implements NarrationSequence {
   @override
   Future<NarrationPassage?> move(int direction) async {
     if (_closed) throw StateError('This paper was closed.');
-    final epoch = ++_epoch;
+    final epoch = _epoch, movement = ++_movement;
     var page = _page, passage = _passage + direction;
     while (page >= 1 && page <= pageCount) {
       if (_skipped.contains(page)) {
@@ -118,7 +170,7 @@ class PaperSequence implements NarrationSequence {
         continue;
       }
       final plan = await _plan(page, epoch);
-      if (_closed || epoch != _epoch) {
+      if (_closed || epoch != _epoch || movement != _movement) {
         throw StateError('Reading was cancelled.');
       }
       if (plan.issue != null) {
@@ -158,6 +210,7 @@ class PaperSequence implements NarrationSequence {
   @override
   void cancelPending() {
     _epoch++;
+    _pending.clear();
   }
 
   @override

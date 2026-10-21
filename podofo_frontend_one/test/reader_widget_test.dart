@@ -402,6 +402,31 @@ void main() {
       await captureReader(tester, 'narration-minimum-window');
       tester.view.physicalSize = const Size(1200, 900);
       await tester.pump();
+      final narrationPreferences = container.read(
+        userPreferenceProvider.notifier,
+      );
+      final narrationAnchor = narrator.currentAnchor!;
+      await tester.runAsync(() async {
+        await narrationPreferences.setThemeMode(shadcn.ThemeMode.dark);
+        if (ui.ImageFilter.isShaderFilterSupported) {
+          await narrationPreferences.setShaderPreference(true);
+        }
+      });
+      if (ui.ImageFilter.isShaderFilterSupported) {
+        await waitForNative(
+          tester,
+          () => container.read(shaderProvider) != null,
+        );
+      }
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(narrator.currentAnchor!.offset, narrationAnchor.offset);
+      expect(tester.takeException(), isNull);
+      await captureReader(tester, 'narration-dark');
+      await tester.runAsync(() async {
+        await narrationPreferences.setThemeMode(shadcn.ThemeMode.light);
+        await narrationPreferences.setShaderPreference(false);
+      });
+      await tester.pump();
       // Cancelling close must keep both the tab and its unsaved annotations.
       await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);

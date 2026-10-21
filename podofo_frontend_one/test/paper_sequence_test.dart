@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -20,6 +21,117 @@ void main() {
   tearDownAll(() async {
     await PdfrxEntryFunctions.instance.stopBackgroundWorker();
     await directory.delete(recursive: true);
+  });
+
+  test('paper corpus excludes confirmed margins, preserves scientific text and prepares ahead without advancing', () async {
+    String margins(int n) =>
+        'BT /F1 9 Tf 40 770 Td (${n.isOdd ? 'Methods for measured results' : 'A reproducible paper'}) Tj ET\n'
+        'BT /F1 9 Tf 295 65 Td ($n) Tj ET\n';
+    final file = File('${directory.path}/corpus.pdf')
+      ..writeAsBytesSync(
+        narrationPdfFixture([
+          '${margins(1)}'
+              'BT /F1 18 Tf 40 720 Td (Introduction) Tj ET\n'
+              'BT /F1 12 Tf 40 690 Td (We study inter-) Tj ET\n'
+              'BT /F1 12 Tf 40 672 Td (national data. International results agree.) Tj ET\n'
+              'BT /F1 12 Tf 40 610 Td (The next page continues this) Tj ET\n',
+          '${margins(2)}'
+              'BT /F1 12 Tf 40 700 Td (sentence without losing text.) Tj ET\n'
+              'BT /F1 12 Tf 40 650 Td (Eq. \\(1\\) and 3.14 remain literal.) Tj ET\n',
+          '${margins(3)}${[for (var i = 0; i < 5; i++) 'BT /F1 12 Tf 40 ${700 - 18 * i} Td (Left experiment $i.) Tj ET\n'
+                'BT /F1 12 Tf 340 ${700 - 18 * i} Td (Right observation $i.) Tj ET\n'].join()}',
+          '${margins(4)}BT /F1 18 Tf 40 700 Td (References) Tj ET\n'
+              'BT /F1 12 Tf 40 660 Td (Citation content.) Tj ET\n',
+        ]),
+      );
+    final session = await PdfSession.open(file.path);
+    final sequence = PaperSequence(session, const PaperReadOptions());
+    try {
+      final first = await sequence.preview(1);
+      expect(
+        first.blocks.where(
+          (b) => b.kind == PaperBlockKind.runningMatter && !b.included,
+        ),
+        hasLength(2),
+      );
+      expect(first.blocks.any((b) => b.kind == PaperBlockKind.heading), true);
+      expect(
+        first.passages.map((p) => p.text).join(' '),
+        'Introduction We study international data. International results agree. The next page continues this',
+      );
+      final included = await sequence.preview(
+        1,
+        preferences: const PaperReadOptions(skipRunningMatter: false),
+      );
+      expect(
+        included.passages.map((p) => p.text).join(' '),
+        contains('Methods for measured results'),
+      );
+      expect((await sequence.start())!.text, 'Introduction');
+      await sequence.prepareNext();
+      expect(sequence.pageNumber, 1);
+      expect(sequence.cachedPageCount, 2);
+      final text = <String>[];
+      for (
+        var passage = await sequence.move(1);
+        passage != null;
+        passage = await sequence.move(1)
+      ) {
+        text.add(passage.text);
+        await sequence.prepareNext();
+        expect(sequence.cachedPageCount, lessThanOrEqualTo(2));
+      }
+      final complete = text.join(' ');
+      expect(
+        complete,
+        contains('The next page continues this sentence without losing text.'),
+      );
+      expect(complete, contains('Eq. (1) and 3.14 remain literal.'));
+      expect(
+        complete,
+        contains(
+          '${[for (var i = 0; i < 5; i++) 'Left experiment $i.'].join(' ')} ${[for (var i = 0; i < 5; i++) 'Right observation $i.'].join(' ')}',
+        ),
+      );
+      expect(complete, isNot(contains('Citation content')));
+      expect(complete, isNot(contains('reproducible paper')));
+    } finally {
+      sequence.close();
+      await session.close();
+    }
+  });
+
+  test('cancelled preparation cannot publish stale pages or remove replacement work', () async {
+    final file = File('${directory.path}/prefetch.pdf')
+      ..writeAsBytesSync(
+        narrationPdfFixture([
+          'BT /F1 12 Tf 40 700 Td (First page.) Tj ET\n',
+          'BT /F1 12 Tf 40 700 Td (Second page.) Tj ET\n',
+        ]),
+      );
+    final session = await PdfSession.open(file.path);
+    final sequence = PaperSequence(session, const PaperReadOptions());
+    final release = Completer<void>(), entered = Completer<void>();
+    try {
+      await sequence.start();
+      final lock = session.readLocked((_) {
+        entered.complete();
+        return release.future;
+      });
+      await entered.future;
+      final stale = expectLater(sequence.prepareNext(), throwsStateError);
+      sequence.cancelPending();
+      final replacement = sequence.prepareNext();
+      release.complete();
+      await Future.wait([lock, stale, replacement]);
+      expect(sequence.pageNumber, 1);
+      expect(sequence.cachedPageCount, 2);
+      expect((await sequence.move(1))!.text, 'Second page.');
+    } finally {
+      if (!release.isCompleted) release.complete();
+      sequence.close();
+      await session.close();
+    }
   });
 
   test('real two-column PDF is ordered by geometry and retains both columns', () async {
@@ -106,6 +218,9 @@ void main() {
     try {
       final bookmarks = NarrationBookmarks(store);
       final saved = bookmarks.find(canonical)!;
+      expect(saved.contextAfter, 'Second sentence.');
+      expect(saved.contextBefore, 'First sentence. ');
+      expect(saved.planVersion, PaperPlanner.version);
       final resumed = PaperSequence(session, const PaperReadOptions());
       expect(
         (await resumed.start(anchor: saved.anchor))!.text,
@@ -114,6 +229,10 @@ void main() {
       resumed.close();
       bookmarks.copy(canonical, '$canonical.copy');
       expect(bookmarks.find('$canonical.copy')!.anchor.offset, anchor.offset);
+      expect(
+        bookmarks.find('$canonical.copy')!.contextAfter,
+        saved.contextAfter,
+      );
       expect(bookmarks.find(canonical)!.id, saved.id);
       expect(bookmarks.find('$canonical.copy')!.id, isNot(saved.id));
     } finally {

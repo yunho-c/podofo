@@ -193,6 +193,17 @@ class NarrationController extends ChangeNotifier {
     preparing = false;
     _pendingDocumentId = null;
     _observe(playback, generation);
+    final sequence = next.sequence;
+    if (sequence != null) unawaited(_prepareNext(sequence));
+  }
+
+  Future<void> _prepareNext(NarrationSequence sequence) async {
+    try {
+      await sequence.prepareNext();
+    } catch (_) {
+      // Preparation is speculative. Report an extraction/review error only if
+      // playback reaches that page; stopping or replacing it stays quiet.
+    }
   }
 
   void _remember() {

@@ -16,8 +16,10 @@ The text-selection menu also offers **Read from here**, which starts continuous
 reading at that source position after review.
 
 The preview offers detected layout, one column, two columns, and PDF text order.
-It can stop before References/Bibliography or skip figure/table caption
-paragraphs. Check the preview before reading: PDF text order and column layout
+It can stop before References/Bibliography, skip figure/table caption
+paragraphs, and exclude confirmed repeated headers, footers and page numbers.
+Expand the excluded-block list to review what was omitted, or turn the option
+off to include it. Check the preview before reading: PDF text order and column layout
 can be ambiguous. A textless or uncertain page pauses continuous reading for
 review or skipping. Image-only PDFs need OCR elsewhere first.
 
@@ -32,15 +34,21 @@ synthesis finishes; it is not a whole-paper duration. Changing voice, language o
 speed restarts from the current sentence and preserves a paused state. Stop and
 reopen resume at a saved sentence boundary, rather than an exact audio sample.
 
-Bookmarks are per local file path and validated against the source page text.
+Bookmarks are per local file path, retain nearby text for review, and are
+validated against the source page text. A changed reading-plan version is shown
+in the preview; it never silently relocates a stale text anchor.
 Saving annotations preserves them; Save As copies the bookmark to the new path.
 If a page's text changes, the app asks you to start again from that page. Closing
 the speaking document stops it after any unsaved-change decision is resolved.
 The temporary listening highlight never changes or saves the PDF.
 
-Equations, tables, footnotes, running headers and mixed layouts may need selected
-text or an explicit reading order. The current planner is geometric, with no OCR
-or semantic rewrite. Text extraction restrictions are respected. Other platforms
+Equations, tables, footnotes and mixed layouts may need selected text or an
+explicit reading order. Header/footer detection requires repetition within two
+pages and a narrow page-margin position; unconfirmed text stays in the stream.
+Wrapped compound words retain their hyphens. A line-end hyphen is removed only
+when the intact word also appears in that page, or an explicit soft-hyphen marker
+allows it. The current planner is geometric, with no OCR or semantic rewrite.
+Text extraction restrictions are respected. Other platforms
 retain the PDF reader and explain that listening is unavailable.
 
 The [qualification record](tts-qualification.md) separates automated playback,

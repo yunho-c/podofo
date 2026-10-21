@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/narration/paper_plan.dart';
+import 'package:podofo_one/src/narration/pdf_text_repository.dart';
+import 'package:podofo_one/src/narration/running_matter.dart';
 import 'package:podofo_one/src/narration/source_map.dart';
 
 PdfTextSnapshot page(List<(String, double, double)> lines) {
@@ -24,6 +26,110 @@ PdfTextSnapshot page(List<(String, double, double)> lines) {
 }
 
 void main() {
+  test(
+    'pagination advances across pages; repeated numeric chart labels do not',
+    () {
+      List<MarginLine> margins(int number, String label) {
+        final text = page([(label, 295, 70)]);
+        return marginLines(
+          ExtractedPaperPage(
+            PdfTextSnapshot(page: number, text: text.text, boxes: text.boxes),
+            612,
+            792,
+          ),
+        );
+      }
+
+      expect(margins(3, '3').single.matches(margins(4, '4').single), true);
+      expect(margins(3, '100').single.matches(margins(4, '100').single), false);
+    },
+  );
+
+  test('vertical marginal text needs review; geometric order tolerates reverse PDF emission', () {
+    final source = page([('Right', 70, 700), ('Left', 40, 700)]);
+    expect(
+      PaperPlanner.plan(
+        source,
+        600,
+        const PaperReadOptions(),
+      ).passages.single.text,
+      'Left Right',
+    );
+    final vertical = PdfTextSnapshot(
+      page: 1,
+      text: 'Vertical',
+      boxes: [
+        for (var i = 0; i < 8; i++) PdfRect(20, 500 - i * 10, 30, 490 - i * 10),
+      ],
+    );
+    expect(
+      PaperPlanner.plan(vertical, 600, const PaperReadOptions()).issue,
+      contains('vertical'),
+    );
+    expect(
+      PaperPlanner.plan(
+        vertical,
+        600,
+        const PaperReadOptions(order: PaperOrder.pdfOrder),
+      ).passages.single.text,
+      'Vertical',
+    );
+  });
+
+  test('PDFium joined words are ordered at their first visual line', () {
+    final visual = page([
+      ('Brief methods repre\u0002', 40, 700),
+      ('sent a result. We represent data.', 40, 682),
+    ]);
+    final wrap = visual.text.indexOf('\n');
+    final source = PdfTextSnapshot(
+      page: 1,
+      text: visual.text.replaceRange(wrap, wrap + 1, ''),
+      boxes: [...visual.boxes.take(wrap), ...visual.boxes.skip(wrap + 1)],
+    );
+    final plan = PaperPlanner.plan(source, 600, const PaperReadOptions());
+    expect(plan.issue, isNull);
+    final passage = plan.passages.single;
+    expect(
+      passage.text,
+      'Brief methods represent a result. We represent data.',
+    );
+    final start = passage.text.indexOf('represent');
+    expect(passage.rectangles(1, start, start + 9), hasLength(2));
+    expect(passage.anchorAt(start + 5)!.offset, source.text.indexOf('sent'));
+  });
+
+  test('line-end joining preserves compounds and maps both source lines', () {
+    final source = page([
+      ('We study inter-', 40, 700),
+      ('national data and a well-', 40, 682),
+      ('being scale. International data agree.', 40, 664),
+      ('Eq. (1), Fig. 2 and 3.14 remain literal.', 40, 610),
+    ]);
+    final plan = PaperPlanner.plan(source, 600, const PaperReadOptions());
+    final passage = plan.passages.first;
+    expect(
+      passage.text,
+      'We study international data and a well-being scale. International data agree.',
+    );
+    final start = passage.text.indexOf('international');
+    expect(
+      passage.rectangles(1, start, start + 'international'.length),
+      hasLength(2),
+    );
+    expect(
+      passage.anchorAt(start + 5)!.offset,
+      source.text.indexOf('national'),
+    );
+    expect(plan.passages.last.text, 'Eq. (1), Fig. 2 and 3.14 remain literal.');
+    final soft = PaperPlanner.plan(
+      page([('A discre\u00ad', 40, 700), ('tionary break.', 40, 682)]),
+      600,
+      const PaperReadOptions(),
+    );
+    expect(soft.passages.single.text, 'A discretionary break.');
+  });
+
   test('one-column reading preserves paragraphs and source anchors', () {
     final source = page([
       ('First paragraph.', 40, 700),
@@ -82,6 +188,19 @@ void main() {
     expect(
       PaperPlanner.plan(page([]), 600, const PaperReadOptions()).issue,
       contains('OCR'),
+    );
+    final mixed = page([('English 한국어 العربية', 40, 700)]);
+    expect(
+      PaperPlanner.plan(mixed, 600, const PaperReadOptions()).issue,
+      isNotNull,
+    );
+    expect(
+      PaperPlanner.plan(
+        mixed,
+        600,
+        const PaperReadOptions(order: PaperOrder.pdfOrder),
+      ).passages.single.text,
+      'English 한국어 العربية',
     );
   });
 

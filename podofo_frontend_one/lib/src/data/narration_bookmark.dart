@@ -11,12 +11,21 @@ class NarrationBookmark {
     required this.offset,
     required this.textHash,
     this.mappingVersion = 1,
+    this.planVersion = 2,
+    this.contextBefore = '',
+    this.contextAfter = '',
   });
   @Id()
   int id;
   @Unique()
   String filePath;
-  int page, offset, mappingVersion;
-  String textHash;
-  SourceAnchor get anchor => SourceAnchor(page, offset, textHash);
+  int page, offset, mappingVersion, planVersion;
+  String textHash, contextBefore, contextAfter;
+  SourceAnchor get anchor => SourceAnchor(
+    page,
+    offset,
+    textHash,
+    contextBefore: contextBefore,
+    contextAfter: contextAfter,
+  );
 }

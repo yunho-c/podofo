@@ -6,9 +6,32 @@ import 'package:pdfrx/pdfrx.dart';
 
 /// A durable location in extracted page text, independent of annotations/paths.
 class SourceAnchor {
-  const SourceAnchor(this.page, this.offset, this.textHash);
+  const SourceAnchor(
+    this.page,
+    this.offset,
+    this.textHash, {
+    this.contextBefore = '',
+    this.contextAfter = '',
+  });
   final int page, offset;
   final String textHash;
+  final String contextBefore, contextAfter;
+
+  SourceAnchor withContext(String text, int at) {
+    RangeError.checkValueInInterval(at, 0, text.length, 'offset');
+    bool low(int unit) => unit >= 0xdc00 && unit <= 0xdfff;
+    if (at > 0 && at < text.length && low(text.codeUnitAt(at))) at--;
+    var before = math.max(0, at - 32), after = math.min(text.length, at + 32);
+    if (before > 0 && low(text.codeUnitAt(before))) before--;
+    if (after < text.length && low(text.codeUnitAt(after))) after++;
+    return SourceAnchor(
+      page,
+      offset,
+      textHash,
+      contextBefore: text.substring(before, at),
+      contextAfter: text.substring(at, after),
+    );
+  }
 }
 
 /// No native page/document references survive extraction.
@@ -28,7 +51,29 @@ class PdfTextSnapshot {
   final int page;
   final String text, textHash;
   final List<PdfRect> boxes;
-  SourceAnchor anchor(int offset) => SourceAnchor(page, offset, textHash);
+  late final Set<String> intactWords = {
+    for (final match in RegExp(r'[A-Za-z]+').allMatches(text))
+      match.group(0)!.toLowerCase(),
+  };
+
+  String pdfiumHyphen(int offset) {
+    final left = RegExp(r'[A-Za-z]+$')
+        .firstMatch(text.substring(math.max(0, offset - 64), offset))
+        ?.group(0);
+    final right = RegExp(r'^[a-z]+')
+        .firstMatch(
+          text.substring(offset + 1, math.min(text.length, offset + 65)),
+        )
+        ?.group(0);
+    return left != null &&
+            right != null &&
+            intactWords.contains('$left$right'.toLowerCase())
+        ? ''
+        : '-';
+  }
+
+  SourceAnchor anchor(int offset) =>
+      SourceAnchor(page, offset, textHash).withContext(text, offset);
 
   /// PDFium emits one box per Unicode scalar; Dart ranges use UTF-16 units.
   /// Some engines already expand boxes, so accept both explicit representations.
@@ -116,9 +161,15 @@ class NarrationPdfPage extends PdfPage {
 }
 
 class PdfTextSlice {
-  const PdfTextSlice(this.page, this.start, this.end);
+  const PdfTextSlice(
+    this.page,
+    this.start,
+    this.end, {
+    this.joinPrevious = false,
+  });
   final PdfTextSnapshot page;
   final int start, end;
+  final bool joinPrevious;
 }
 
 class SpokenSpan {
@@ -160,7 +211,7 @@ class NarrationPassage {
         slice.end,
         slice.page.text.length,
       );
-      if (output.isNotEmpty && !previousSpace) {
+      if (output.isNotEmpty && !previousSpace && !slice.joinPrevious) {
         output.write(' ');
         previousSpace = true;
       }
@@ -170,7 +221,10 @@ class NarrationPassage {
         final original = String.fromCharCode(rune);
         final sourceEnd = offset + original.length;
         var spoken = ligatures[original] ?? original;
-        final space = spoken.trim().isEmpty;
+        // PDFium marks a joined line-end hyphen as U+0002. Keep the original
+        // source unit/geometry; remove it only with intact-word evidence.
+        if (rune == 2) spoken = slice.page.pdfiumHyphen(offset);
+        final space = original.trim().isEmpty;
         if (space) spoken = previousSpace ? '' : ' ';
         // Soft hyphens and PDF NUL markers are not words. Literal hyphens remain.
         if (rune == 0xad || rune == 0 || rune == 0x200b) spoken = '';
@@ -181,7 +235,7 @@ class NarrationPassage {
             SpokenSpan(
               start,
               output.length,
-              slice.page.anchor(offset),
+              SourceAnchor(slice.page.page, offset, slice.page.textHash),
               sourceEnd,
               List.unmodifiable(slice.page.boxes.sublist(offset, sourceEnd)),
             ),
@@ -197,20 +251,30 @@ class NarrationPassage {
 
   SourceAnchor? anchorAt(int offset) {
     for (final span in spans) {
-      if (span.end > offset) return span.source;
+      if (span.end > offset) return span.source.withContext(text, span.start);
     }
-    return spans.lastOrNull?.source;
+    return spans.lastOrNull?.source.withContext(text, spans.last.start);
   }
 
-  int? offsetOf(SourceAnchor anchor) => spans
-      .where(
-        (s) =>
-            s.source.page == anchor.page &&
-            s.source.textHash == anchor.textHash &&
-            s.sourceEnd > anchor.offset,
-      )
-      .firstOrNull
-      ?.start;
+  int? offsetOf(SourceAnchor anchor) {
+    SpokenSpan? next;
+    for (final span in spans) {
+      if (span.source.page != anchor.page ||
+          span.source.textHash != anchor.textHash) {
+        continue;
+      }
+      if (span.source.offset <= anchor.offset &&
+          span.sourceEnd > anchor.offset) {
+        return span.start;
+      }
+      // Source order can differ from spoken order in a multi-column PDF.
+      if (span.source.offset > anchor.offset &&
+          (next == null || span.source.offset < next.source.offset)) {
+        next = span;
+      }
+    }
+    return next?.start;
+  }
 
   NarrationPassage sliceFrom(int offset) {
     RangeError.checkValueInInterval(offset, 0, text.length, 'offset');

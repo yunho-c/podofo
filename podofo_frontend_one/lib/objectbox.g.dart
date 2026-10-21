@@ -230,7 +230,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(5, 5220693176391162839),
     name: 'NarrationBookmark',
-    lastPropertyId: const obx_int.IdUid(6, 1288183982730596889),
+    lastPropertyId: const obx_int.IdUid(9, 4940486927186907514),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -267,6 +267,24 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(6, 1288183982730596889),
         name: 'textHash',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(7, 6774712728051989712),
+        name: 'planVersion',
+        type: 6,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(8, 3027423915015443546),
+        name: 'contextBefore',
+        type: 9,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(9, 4940486927186907514),
+        name: 'contextAfter',
         type: 9,
         flags: 0,
       ),
@@ -597,13 +615,18 @@ obx_int.ModelDefinition getObjectBoxModel() {
       objectToFB: (NarrationBookmark object, fb.Builder fbb) {
         final filePathOffset = fbb.writeString(object.filePath);
         final textHashOffset = fbb.writeString(object.textHash);
-        fbb.startTable(7);
+        final contextBeforeOffset = fbb.writeString(object.contextBefore);
+        final contextAfterOffset = fbb.writeString(object.contextAfter);
+        fbb.startTable(10);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, filePathOffset);
         fbb.addInt64(2, object.page);
         fbb.addInt64(3, object.offset);
         fbb.addInt64(4, object.mappingVersion);
         fbb.addOffset(5, textHashOffset);
+        fbb.addInt64(6, object.planVersion);
+        fbb.addOffset(7, contextBeforeOffset);
+        fbb.addOffset(8, contextAfterOffset);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -638,6 +661,17 @@ obx_int.ModelDefinition getObjectBoxModel() {
           12,
           0,
         );
+        final planVersionParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          16,
+          0,
+        );
+        final contextBeforeParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 18, '');
+        final contextAfterParam = const fb.StringReader(asciiOptimization: true)
+            .vTableGet(buffer, rootOffset, 20, '');
         final object = NarrationBookmark(
           id: idParam,
           filePath: filePathParam,
@@ -645,6 +679,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           offset: offsetParam,
           textHash: textHashParam,
           mappingVersion: mappingVersionParam,
+          planVersion: planVersionParam,
+          contextBefore: contextBeforeParam,
+          contextAfter: contextAfterParam,
         );
 
         return object;
@@ -831,5 +868,20 @@ class NarrationBookmark_ {
   /// See [NarrationBookmark.textHash].
   static final textHash = obx.QueryStringProperty<NarrationBookmark>(
     _entities[4].properties[5],
+  );
+
+  /// See [NarrationBookmark.planVersion].
+  static final planVersion = obx.QueryIntegerProperty<NarrationBookmark>(
+    _entities[4].properties[6],
+  );
+
+  /// See [NarrationBookmark.contextBefore].
+  static final contextBefore = obx.QueryStringProperty<NarrationBookmark>(
+    _entities[4].properties[7],
+  );
+
+  /// See [NarrationBookmark.contextAfter].
+  static final contextAfter = obx.QueryStringProperty<NarrationBookmark>(
+    _entities[4].properties[8],
   );
 }

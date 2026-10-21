@@ -17,10 +17,12 @@ class PaperReadingPreview extends m.StatefulWidget {
     required this.sequence,
     required this.page,
     this.anchor,
+    this.savedPlanVersion,
   });
   final PaperSequence sequence;
   final int page;
   final SourceAnchor? anchor;
+  final int? savedPlanVersion;
   @override
   m.State<PaperReadingPreview> createState() => _PaperReadingPreviewState();
 }
@@ -34,6 +36,7 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
     PaperOrder? order,
     bool? references,
     bool? captions,
+    bool? runningMatter,
   }) {
     setState(() {
       _page = page ?? _page;
@@ -41,6 +44,7 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
         order: order ?? _options.order,
         stopAtReferences: references ?? _options.stopAtReferences,
         skipCaptions: captions ?? _options.skipCaptions,
+        skipRunningMatter: runningMatter ?? _options.skipRunningMatter,
       );
       _preview = widget.sequence.preview(_page, preferences: _options);
     });
@@ -98,6 +102,15 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
           m.CheckboxListTile(
             dense: true,
             contentPadding: m.EdgeInsets.zero,
+            title: const m.Text(
+              'Skip repeated headers, footers and page numbers',
+            ),
+            value: _options.skipRunningMatter,
+            onChanged: (value) => _refresh(runningMatter: value),
+          ),
+          m.CheckboxListTile(
+            dense: true,
+            contentPadding: m.EdgeInsets.zero,
             title: const m.Text('Skip figure and table captions'),
             value: _options.skipCaptions,
             onChanged: (value) => _refresh(captions: value),
@@ -115,6 +128,8 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
                 if (plan == null) {
                   return const m.Center(child: m.CircularProgressIndicator());
                 }
+                final prepared = plan.passages.map((p) => p.text).join('\n\n');
+                final excluded = plan.blocks.where((b) => !b.included).toList();
                 return m.SingleChildScrollView(
                   child: m.Column(
                     crossAxisAlignment: m.CrossAxisAlignment.start,
@@ -123,6 +138,15 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
                         plan.issue ?? plan.description,
                         style: const m.TextStyle(fontWeight: m.FontWeight.bold),
                       ),
+                      if (widget.savedPlanVersion != null &&
+                          widget.savedPlanVersion != PaperPlanner.version)
+                        const m.Text(
+                          'The reading plan has changed. Check this preview before resuming.',
+                        ),
+                      if (widget.anchor?.contextAfter.isNotEmpty == true)
+                        m.Text(
+                          'Last read near: ${widget.anchor!.contextAfter}…',
+                        ),
                       if (widget.anchor != null &&
                           _page == widget.anchor!.page &&
                           widget.anchor!.textHash != plan.page.textHash)
@@ -131,8 +155,34 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
                         ),
                       const m.SizedBox(height: 8),
                       m.SelectableText(
-                        plan.passages.take(3).map((p) => p.text).join('\n\n'),
+                        String.fromCharCodes(prepared.runes.take(16000)),
                       ),
+                      if (prepared.runes.length > 16000)
+                        const m.Text(
+                          'Showing the first 16,000 characters of this page.',
+                        ),
+                      if (excluded.isNotEmpty)
+                        m.ExpansionTile(
+                          title: m.Text(
+                            '${excluded.length} excluded text blocks',
+                          ),
+                          children: [
+                            for (final block in excluded.take(20))
+                              m.ListTile(
+                                dense: true,
+                                title: m.Text(block.text),
+                                subtitle: m.Text(switch (block.kind) {
+                                  PaperBlockKind.runningMatter =>
+                                    'Header or footer',
+                                  PaperBlockKind.caption =>
+                                    'Figure or table caption',
+                                  PaperBlockKind.references => 'References',
+                                  PaperBlockKind.heading => 'Heading',
+                                  PaperBlockKind.paragraph => 'Paragraph',
+                                }),
+                              ),
+                          ],
+                        ),
                     ],
                   ),
                 );

@@ -11,7 +11,13 @@ import 'support/fake_narrator.dart';
 class Sequence implements NarrationSequence {
   Completer<NarrationPassage?>? pending;
   int moves = 0, cancellations = 0;
+  int preparations = 0;
   bool closed = false;
+  @override
+  Future<void> prepareNext() async {
+    preparations++;
+  }
+
   @override
   Future<NarrationPassage?> move(int direction) async {
     moves++;
@@ -77,9 +83,11 @@ void main() {
     engine.playbacks.single.emit(NarrationPhase.completed);
     await flush();
     expect(sequence.moves, 0);
+    expect(sequence.preparations, 1);
     engine.playbacks.single.completion.complete(NarrationOutcome.completed);
     await flush();
     expect(engine.texts, ['First passage.', 'Next passage.']);
+    expect(sequence.preparations, 2);
     expect(engine.playbacks.first.disposed, true);
     await controller.stop();
     await flush();

@@ -3,6 +3,45 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/narration/source_map.dart';
 
 void main() {
+  test('PDFium discretionary markers preserve compound hyphens unless a joined word is witnessed', () {
+    const text = 'inter\u0002national well\u0002being International';
+    final page = PdfTextSnapshot(
+      page: 1,
+      text: text,
+      boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+    );
+    final passage = NarrationPassage.fromSlices([
+      PdfTextSlice(page, 0, text.length),
+    ]);
+    expect(passage.text, 'international well-being International');
+    expect(passage.offsetOf(page.anchor(text.indexOf('national'))), 5);
+    expect(passage.anchorAt(5)!.offset, text.indexOf('national'));
+  });
+
+  test(
+    'inverse anchors follow exact source ranges after reading-order changes',
+    () {
+      const text = 'Later. First.';
+      final page = PdfTextSnapshot(
+        page: 1,
+        text: text,
+        boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+      );
+      final passage = NarrationPassage.fromSlices([
+        PdfTextSlice(page, 7, text.length),
+        PdfTextSlice(page, 0, 6),
+      ]);
+      expect(passage.text, 'First. Later.');
+      expect(passage.offsetOf(page.anchor(0)), 7);
+      expect(passage.offsetOf(page.anchor(7)), 0);
+      expect(
+        passage.sliceFrom(passage.offsetOf(page.anchor(0))!).text,
+        'Later.',
+      );
+      expect(passage.anchorAt(7)!.contextAfter, 'Later.');
+    },
+  );
+
   test('ligatures, combining marks and surrogate pairs retain original source ranges', () {
     const text = 'A ﬁ 🚀 e\u0301 한글';
     final glyphs = [
