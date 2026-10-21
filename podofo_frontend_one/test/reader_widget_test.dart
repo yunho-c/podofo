@@ -459,11 +459,23 @@ void main() {
       await tester.pump();
       expect(narrator.followText, true);
       await captureReader(tester, 'narration-selection');
+      void expectRightAlignedPlayback() {
+        final controls = tester.getRect(
+          find.byKey(const ValueKey('narration-controls')),
+        );
+        final stop = tester.getRect(
+          find.byKey(const ValueKey('narration-stop')),
+        );
+        expect(stop.right, closeTo(controls.right - 16, .5));
+      }
+
+      expectRightAlignedPlayback();
       tester.view.physicalSize = const Size(760, 520);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
       await captureReader(tester, 'narration-minimum-window');
+      expectRightAlignedPlayback();
       tester.view.physicalSize = const Size(1200, 900);
       await tester.pump();
       final narrationPreferences = container.read(

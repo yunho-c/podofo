@@ -82,30 +82,89 @@ class NarrationControls extends ConsumerWidget {
             children: [
               Row(
                 children: [
-                  if (controller.preparing)
-                    const Padding(
-                      padding: EdgeInsets.only(right: 12),
-                      child: SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
                   Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+                    child: Row(
                       children: [
-                        Text(
-                          controller.source?.title ?? 'Listen to your paper',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ).small(),
-                        Text(
-                          controller.status,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                        ).small().muted(),
+                        if (controller.preparing)
+                          const Padding(
+                            padding: EdgeInsets.only(right: 12),
+                            child: SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(),
+                            ),
+                          ),
+                        Flexible(
+                          child: Text(
+                            controller.source?.title ?? 'Listen to your paper',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ).small(),
+                        ),
+                        if (controller.voices.isNotEmpty) ...[
+                          m.PopupMenuButton<String>(
+                            tooltip: 'Voice',
+                            onSelected: (value) => configure(voiceId: value),
+                            itemBuilder: (_) => [
+                              const m.PopupMenuItem(
+                                value: '',
+                                child: Text('Automatic voice'),
+                              ),
+                              for (final voice in controller.voices)
+                                m.PopupMenuItem(
+                                  value: voice.id,
+                                  child: Text(voice.name),
+                                ),
+                            ],
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: ConstrainedBox(
+                                constraints: const BoxConstraints(
+                                  maxWidth: 140,
+                                ),
+                                child: Text(
+                                  voice?.name ?? 'Automatic voice',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ).small(),
+                              ),
+                            ),
+                          ),
+                          m.PopupMenuButton<String>(
+                            tooltip: 'Speech language',
+                            onSelected: (value) => configure(language: value),
+                            itemBuilder: (_) => [
+                              for (final code in languages)
+                                m.PopupMenuItem(
+                                  value: code,
+                                  child: Text(code.toUpperCase()),
+                                ),
+                            ],
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(
+                                controller.settings.language.toUpperCase(),
+                              ).small(),
+                            ),
+                          ),
+                          m.PopupMenuButton<double>(
+                            tooltip: 'Speaking speed',
+                            onSelected: (value) => configure(speed: value),
+                            itemBuilder: (_) => [
+                              for (final speed in narrationSpeeds)
+                                m.PopupMenuItem(
+                                  value: speed,
+                                  child: Text('${speed.toStringAsFixed(1)}×'),
+                                ),
+                            ],
+                            child: Padding(
+                              padding: const EdgeInsets.all(8),
+                              child: Text(
+                                '${controller.settings.speed.toStringAsFixed(1)}×',
+                              ).small(),
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -154,6 +213,16 @@ class NarrationControls extends ConsumerWidget {
                       key: 'narration-next-passage',
                     ),
                   button(
+                    'Follow spoken text',
+                    controller.followText
+                        ? m.Icons.visibility
+                        : m.Icons.visibility_off,
+                    controller.source?.passage != null
+                        ? () => NarrationActions.showSource(ref)
+                        : null,
+                    key: 'narration-follow',
+                  ),
+                  button(
                     'Stop reading',
                     m.Icons.stop_rounded,
                     controller.active ? controller.stop : null,
@@ -161,73 +230,13 @@ class NarrationControls extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (controller.voices.isNotEmpty)
-                Row(
-                  children: [
-                    m.PopupMenuButton<String>(
-                      tooltip: 'Voice',
-                      onSelected: (value) => configure(voiceId: value),
-                      itemBuilder: (_) => [
-                        const m.PopupMenuItem(
-                          value: '',
-                          child: Text('Automatic voice'),
-                        ),
-                        for (final voice in controller.voices)
-                          m.PopupMenuItem(
-                            value: voice.id,
-                            child: Text(voice.name),
-                          ),
-                      ],
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Text(voice?.name ?? 'Automatic voice').small(),
-                      ),
-                    ),
-                    m.PopupMenuButton<String>(
-                      tooltip: 'Speech language',
-                      onSelected: (value) => configure(language: value),
-                      itemBuilder: (_) => [
-                        for (final code in languages)
-                          m.PopupMenuItem(
-                            value: code,
-                            child: Text(code.toUpperCase()),
-                          ),
-                      ],
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Text(controller.settings.language.toUpperCase())
-                            .small(),
-                      ),
-                    ),
-                    m.PopupMenuButton<double>(
-                      tooltip: 'Speaking speed',
-                      onSelected: (value) => configure(speed: value),
-                      itemBuilder: (_) => [
-                        for (final speed in narrationSpeeds)
-                          m.PopupMenuItem(
-                            value: speed,
-                            child: Text('${speed.toStringAsFixed(1)}×'),
-                          ),
-                      ],
-                      child: Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: Text(
-                          '${controller.settings.speed.toStringAsFixed(1)}×',
-                        ).small(),
-                      ),
-                    ),
-                    const Spacer(),
-                    button(
-                      'Follow spoken text',
-                      controller.followText
-                          ? m.Icons.visibility
-                          : m.Icons.visibility_off,
-                      controller.source?.passage != null
-                          ? () => NarrationActions.showSource(ref)
-                          : null,
-                      key: 'narration-follow',
-                    ),
-                  ],
+              if (controller.error != null ||
+                  state?.phase == NarrationPhase.failed)
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(controller.error ?? 'Speech interrupted')
+                      .small()
+                      .muted(),
                 ),
               if (paper != null && paper.review != null)
                 Row(
