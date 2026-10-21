@@ -7,6 +7,8 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/narration/narration_controller.dart';
 import 'package:podofo_one/src/narration/narration_painter.dart';
 import 'package:podofo_one/src/narration/narrator.dart';
+import 'package:podofo_one/src/narration/paper_sequence.dart';
+import 'package:podofo_one/src/narration/paper_plan.dart';
 import 'package:podofo_one/src/narration/source_map.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 import 'package:podofo_one/src/services/pdf_highlights.dart';
@@ -14,6 +16,7 @@ import 'package:podofo_one/src/services/pdf_highlights.dart';
 import 'fixtures/pdf_fixture.dart';
 import 'fixtures/narration_pdf_fixture.dart';
 import 'support/fake_narrator.dart';
+import 'document_seek_test.dart' as seek;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -57,6 +60,73 @@ void main() {
       }
     },
   );
+
+  test('scrub paint replaces playback and skips unavailable or other-document geometry', () async {
+    final file = File('${directory.path}/scrub.pdf')
+      ..writeAsBytesSync(pdfFixture());
+    final session = await PdfSession.open(file.path);
+    final paper = PaperSequence(
+      session,
+      const PaperReadOptions(skipRunningMatter: false),
+    );
+    final engine = seek.SeekSession();
+    final narration = await seek.reader(paper, engine);
+    try {
+      Future<bool> painted(int number, {Object? owner}) async {
+        final page = session.lease.document.pages[number - 1];
+        final recorder = ui.PictureRecorder();
+        // A transparent backing makes any painted glyph rectangle observable.
+        final targetCanvas = ui.Canvas(recorder);
+        paintNarration(
+          targetCanvas,
+          ui.Rect.fromLTWH(0, 0, page.width, page.height),
+          page,
+          narration,
+          owner ?? paper,
+        );
+        final picture = recorder.endRecording();
+        final image = await picture.toImage(
+          page.width.ceil(),
+          page.height.ceil(),
+        );
+        final data = (await image.toByteData())!.buffer.asUint8List();
+        var found = false;
+        for (var i = 3; i < data.length; i += 4) {
+          if (data[i] != 0) {
+            found = true;
+            break;
+          }
+        }
+        image.dispose();
+        picture.dispose();
+        return found;
+      }
+
+      expect(await painted(1), true);
+      // Page 2 is prefetched with rotated geometry; its preview replaces page 1.
+      narration.previewDocumentSeek(paper.timeline.targetAt(15000000));
+      expect(narration.previewHighlight, isNotNull);
+      expect(await painted(1), false);
+      expect(await painted(2), true);
+      expect(await painted(2, owner: Object()), false);
+      final extractions = paper.planner.extractionCount;
+      narration.previewDocumentSeek(paper.timeline.targetAt(25000000));
+      expect(narration.previewHighlight, isNull);
+      expect(await painted(1), false);
+      expect(await painted(3), false);
+      expect(paper.planner.extractionCount, extractions);
+      narration.clearDocumentPreview();
+      expect(await painted(1), true);
+      await narration.stop();
+      narration.previewDocumentSeek(paper.timeline.targetAt(5000000));
+      expect(await painted(1), true); // Preview also works while stopped.
+      await narration.dismiss();
+      expect(await painted(1), false);
+    } finally {
+      await narration.close();
+      await session.close();
+    }
+  });
 
   test('listening paint uses cropped/rotated transforms without annotations; save preserves anchors', () async {
     final file = File('${directory.path}/geometry.pdf')

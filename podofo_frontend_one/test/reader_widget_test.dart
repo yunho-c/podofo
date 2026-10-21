@@ -20,6 +20,8 @@ import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/providers/narration_provider.dart';
 import 'package:podofo_one/src/narration/narration_controller.dart';
 import 'package:podofo_one/src/narration/narrator.dart';
+import 'package:podofo_one/src/narration/paper_sequence.dart';
+import 'package:podofo_one/src/narration/paper_plan.dart';
 import 'package:podofo_one/src/services/pdf_highlights.dart';
 import 'package:podofo_one/src/widgets/components/highlight_palette.dart';
 import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
@@ -29,6 +31,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import 'fixtures/pdf_fixture.dart';
 import 'support/fake_narrator.dart';
+import 'paper_timeline_test.dart' as timings;
 
 Future<void> waitForNative(
   WidgetTester tester,
@@ -645,6 +648,73 @@ void main() {
         tester,
         () => find.textContaining('● reader').evaluate().isEmpty,
       );
+
+      // Scrubbing repaints only: even with follow enabled, offscreen targets
+      // and incoming audio states must not move the viewport during a drag.
+      final document = container.read(currentDocumentProvider)!;
+      final paper = PaperSequence(
+        document.session,
+        const PaperReadOptions(skipRunningMatter: false),
+      );
+      await tester.runAsync(() async {
+        final passage = (await paper.start())!;
+        await narrator.read(
+          document.session,
+          () async => NarrationSource(
+            documentId: document.session,
+            title: 'Paper',
+            text: passage.text,
+            passage: passage,
+            sequence: paper,
+          ),
+        );
+        await paper.indexDocument();
+        paper.timeline.configure(narrator.settings);
+        for (final page in paper.index.snapshot.pages) {
+          final plan = await paper.preview(page.page);
+          for (var i = 0; i < page.passages.length; i++) {
+            paper.timeline.record(
+              page.passages[i],
+              timings.timing(plan.passages[i].text, key: narrator.settings.key),
+            );
+          }
+        }
+      });
+      narrator.setFollowText(true);
+      await tester.pump();
+      final viewer = container.read(pdfViewerControllerProvider);
+      await tester.runAsync(
+        () => viewer.goToPage(pageNumber: 3, duration: Duration.zero),
+      );
+      await tester.pump();
+      final scrubViewport = viewer.visibleRect;
+      final scrubber = tester.widget<Slider>(
+        find.byKey(const ValueKey('document-narration-timeline')),
+      );
+      scrubber.onChangeStart!(5000000);
+      scrubber.onChanged!(5000000);
+      speech.playbacks.last.events.add(
+        const NarrationSnapshot(
+          phase: NarrationPhase.playing,
+          start: 0,
+          end: 5,
+        ),
+      );
+      await tester.pump();
+      expect(narrator.previewHighlight, isNotNull);
+      expect(narrator.followText, true);
+      expect(viewer.visibleRect, scrubViewport);
+      expect(paper.pageNumber, 1);
+      // Invalidating a drag during rebuild must repaint safely, without loading.
+      paper.index.reset();
+      await tester.pump();
+      await tester.pump();
+      expect(narrator.previewingDocument, false);
+      expect(tester.takeException(), isNull);
+      // Closing after cancellation leaves no deferred seek.
+      await tester.tap(find.byKey(const ValueKey('narration-close')));
+      await tester.pump();
+      expect(narrator.previewingDocument, false);
 
       await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);

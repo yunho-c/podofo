@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/scheduler.dart' show SchedulerPhase;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -74,6 +75,21 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     super.initState();
     _narration = ref.read(narrationControllerProvider);
     _narration.addListener(_onNarrationChanged);
+    _narration.scrubPreview.addListener(_onScrubPreviewChanged);
+  }
+
+  void _onScrubPreviewChanged() {
+    if (!mounted) return;
+    // A stale drag can be cleared while the timeline is rebuilding.
+    if (WidgetsBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _onScrubPreviewChanged(),
+      );
+      return;
+    }
+    final viewer = ref.read(pdfViewerControllerProvider);
+    if (viewer.isReady) viewer.invalidate();
   }
 
   void _onNarrationChanged() {
@@ -91,11 +107,13 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
       _narration.terminal,
       _narration.followText,
       _narration.followRequest,
+      _narration.documentSeekTarget,
     );
     if (_paintedRange == key) return;
     _paintedRange = key;
     viewer.invalidate(); // Repaint a sentence change; never rebuild for audio ticks.
-    if (!_narration.followText ||
+    if (_narration.previewingDocument ||
+        !_narration.followText ||
         (_scrollCheckPending && !requested) ||
         (_narration.terminal && !requested) ||
         !identical(document.session, _narration.source?.documentId)) {
@@ -155,6 +173,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   @override
   void dispose() {
     _narration.removeListener(_onNarrationChanged);
+    _narration.scrubPreview.removeListener(_onScrubPreviewChanged);
     _clearHover();
     super.dispose();
   }

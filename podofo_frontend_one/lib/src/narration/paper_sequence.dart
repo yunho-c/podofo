@@ -203,6 +203,19 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
   Future<void>? _indexing;
   PaperPagePlan? review;
   int get cachedPageCount => _pages.length;
+
+  /// Geometry already retained for playback; never extracts or promotes a page.
+  NarrationPassage? cachedSeekPassage(PaperSeekTarget target) {
+    if (!timeline.accepts(target)) return null;
+    final plan = _pages[target.passage.page];
+    if (plan == null ||
+        plan.page.textHash != target.passage.anchor.textHash ||
+        target.passage.ordinal >= plan.passages.length) {
+      return null;
+    }
+    return plan.passages[target.passage.ordinal];
+  }
+
   int get pageNumber => _page;
   int get pageCount => planner.pageCount;
 
