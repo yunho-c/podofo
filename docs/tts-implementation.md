@@ -101,6 +101,17 @@ present before this work and are preserved. A baseline patch and the abandoned
 
 ## Progress
 
+- Document-timeline prerequisite, milestone 1: Stop, close and replacement retain
+  the last native source anchor; failed initial loading can be retried through
+  Play. Backward navigation preserves the current request at the paper boundary.
+  Across passages, Previous Sentence starts the destination paused, waits for its
+  native duration/sentence plan, selects its final sentence, and restores the
+  user's pause intent. Completion and stale plan callbacks cannot race that move.
+  Validation: 79 Flutter regressions pass (the opt-in native test is separate);
+  the expanded muted native test passes backward navigation while playing and
+  paused, checks presented sentence positions, and returns handles to baseline.
+  The persisted-bookmark regression exercises Stop, close and reopen. Document
+  indexing, duration estimates and the whole-document scrubber are later work.
 - Branch created; stale sequencer metadata safely quit after backup.
 - Milestone 1: selected-text listening, native pause/resume, cancellation and
   application/document cleanup implemented. The pinned engine and 10-voice model

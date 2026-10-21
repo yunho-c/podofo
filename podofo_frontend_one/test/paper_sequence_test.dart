@@ -6,10 +6,13 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/objectbox.g.dart';
 import 'package:podofo_one/src/narration/paper_plan.dart';
 import 'package:podofo_one/src/narration/paper_sequence.dart';
+import 'package:podofo_one/src/narration/narration_controller.dart';
+import 'package:podofo_one/src/narration/narrator.dart';
 import 'package:podofo_one/src/services/narration_bookmarks.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 
 import 'fixtures/narration_pdf_fixture.dart';
+import 'support/fake_narrator.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -209,7 +212,36 @@ void main() {
     final passage = (await sequence.start())!;
     final anchor = passage.anchorAt(passage.text.indexOf('Second'))!;
     var store = Store(getObjectBoxModel(), directory: '${directory.path}/db');
-    NarrationBookmarks(store).save(canonical, anchor);
+    final engine = FakeNarratorSession();
+    final controller = NarrationController(
+      open: (_) async => engine,
+      onPosition: (_, anchor) =>
+          NarrationBookmarks(store).save(canonical, anchor),
+    );
+    try {
+      await controller.read(
+        session,
+        () async => NarrationSource(
+          documentId: session,
+          title: 'Resume fixture',
+          text: passage.text,
+          passage: passage,
+          sequence: sequence,
+        ),
+      );
+      engine.playbacks.single.events.add(
+        NarrationSnapshot(
+          phase: NarrationPhase.playing,
+          start: passage.text.indexOf('Second'),
+          end: passage.text.length,
+        ),
+      );
+      await controller.stop();
+      await controller.closeDocument(session);
+      expect(NarrationBookmarks(store).find(canonical)!.offset, anchor.offset);
+    } finally {
+      await controller.close();
+    }
     store.close();
     sequence.close();
     await session.close();

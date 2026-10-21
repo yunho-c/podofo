@@ -44,6 +44,10 @@ class FakeNarrationPlayback implements NarrationPlayback {
   int pauses = 0, resumes = 0;
   bool cancelled = false, disposed = false;
   Completer<void>? disposalGate;
+  Completer<List<NarrationSentence>?>? planGate;
+  Object? planFailure;
+  final commands = <String>[];
+  int? lastSentenceId;
   List<NarrationSentence>? sentencePlan = const [
     NarrationSentence(0, 0, 6),
     NarrationSentence(1, 7, 14),
@@ -58,15 +62,21 @@ class FakeNarrationPlayback implements NarrationPlayback {
   @override
   Future<NarrationOutcome> get done => completion.future;
   @override
-  Future<List<NarrationSentence>?> sentences() async => sentencePlan;
+  Future<List<NarrationSentence>?> sentences() async {
+    if (planFailure != null) throw planFailure!;
+    return planGate == null ? sentencePlan : await planGate!.future;
+  }
+
   @override
   void pause() {
     pauses++;
+    commands.add('pause');
   }
 
   @override
   void resume() {
     resumes++;
+    commands.add('resume');
   }
 
   @override
@@ -89,8 +99,12 @@ class FakeNarrationPlayback implements NarrationPlayback {
   }
 
   @override
-  NarrationNavigation navigateToSentence(int id) =>
-      const NarrationNavigation(boundary: true);
+  NarrationNavigation navigateToSentence(int id) {
+    lastSentenceId = id;
+    commands.add('sentence:$id');
+    return const NarrationNavigation();
+  }
+
   @override
   Future<void> dispose() async {
     if (disposed) return;

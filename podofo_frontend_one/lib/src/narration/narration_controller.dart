@@ -44,6 +44,9 @@ class NarrationController extends ChangeNotifier {
   final String? unavailableReason;
   final void Function(NarrationSource source, SourceAnchor anchor)? onPosition;
   String? _savedAnchor;
+  SourceAnchor? _lastAnchor;
+  Completer<void>? _movement;
+  NarrationPlayback? _positioning, _readingPlanFor;
   NarratorSession? _session;
   Future<void>? _opening, _closing;
   NarrationPlayback? _playback;
@@ -61,14 +64,14 @@ class NarrationController extends ChangeNotifier {
   bool preparing = false;
   bool followText = true;
   List<NarrationSentence> sentences = const [];
-  bool _readingPlan = false;
   SourceAnchor? get currentAnchor =>
-      source?.passage?.anchorAt(snapshot?.start ?? 0);
+      _lastAnchor ?? source?.passage?.anchorAt(snapshot?.start ?? 0);
 
   bool get available => unavailableReason == null;
   bool get active => preparing || (_playback != null && !terminal);
-  bool get paused =>
-      _pauseWhenReady || snapshot?.phase == NarrationPhase.paused;
+  bool get paused => preparing
+      ? _pauseWhenReady
+      : _pauseWhenReady || snapshot?.phase == NarrationPhase.paused;
   bool get terminal => switch (snapshot?.phase) {
     NarrationPhase.completed ||
     NarrationPhase.stopped ||
@@ -139,6 +142,7 @@ class NarrationController extends ChangeNotifier {
       return;
     }
     final generation = ++_generation;
+    _finishMovement();
     _remember();
     if (!keepSequence) {
       source?.sequence?.close();
@@ -153,6 +157,7 @@ class NarrationController extends ChangeNotifier {
     snapshot = null;
     sentences = const [];
     source = null;
+    _lastAnchor = null;
     preparation = 'Reading selected text…';
     _notify();
     try {
@@ -167,12 +172,18 @@ class NarrationController extends ChangeNotifier {
         preparing = false;
         _pendingDocumentId = null;
         error = failure.toString();
+        _pauseWhenReady = false;
+        snapshot = const NarrationSnapshot(phase: NarrationPhase.failed);
         _notify();
       }
     }
   }
 
-  Future<void> _start(NarrationSource next, int generation) async {
+  Future<void> _start(
+    NarrationSource next,
+    int generation, {
+    bool lastSentence = false,
+  }) async {
     if (next.text.trim().isEmpty) {
       throw StateError('Select readable text first.');
     }
@@ -180,6 +191,7 @@ class NarrationController extends ChangeNotifier {
       throw StateError('This selection is too long. Select a shorter passage.');
     }
     source = next;
+    _lastAnchor = null;
     preparation = 'Loading voices…';
     _notify();
     await _load();
@@ -188,9 +200,11 @@ class NarrationController extends ChangeNotifier {
     final playback = _session!.speak(
       next.text,
       settings,
-      paused: _pauseWhenReady,
+      paused: lastSentence || _pauseWhenReady,
     );
-    preparing = false;
+    _positioning = lastSentence ? playback : null;
+    preparing = lastSentence;
+    if (lastSentence) preparation = 'Finding the previous sentence…';
     _pendingDocumentId = null;
     _observe(playback, generation);
     final sequence = next.sequence;
@@ -207,7 +221,8 @@ class NarrationController extends ChangeNotifier {
   }
 
   void _remember() {
-    final value = source, anchor = currentAnchor;
+    // A missing native range (loading, stop or failure) is not a new position.
+    final value = source, anchor = _lastAnchor;
     if (value == null || anchor == null || onPosition == null) return;
     final key =
         '${identityHashCode(value.documentId)}:${anchor.page}:${anchor.offset}:${anchor.textHash}';
@@ -220,29 +235,50 @@ class NarrationController extends ChangeNotifier {
     }
   }
 
-  Future<void> movePassage(int direction) async {
+  void _finishMovement() {
+    final movement = _movement;
+    _movement = null;
+    movement?.complete();
+  }
+
+  Future<void> movePassage(int direction, {bool lastSentence = false}) async {
     final previous = source, sequence = source?.sequence;
     if (previous == null || sequence == null || _closed || preparing) return;
-    final generation = ++_generation;
+    var generation = _generation;
     _remember();
     final keepPaused = paused;
     _pauseWhenReady = keepPaused;
-    _retireCurrent();
+    final movement = _movement = Completer<void>();
     preparing = true;
-    preparation = 'Preparing the next passage…';
+    preparation = direction < 0
+        ? 'Preparing the previous passage…'
+        : 'Preparing the next passage…';
     error = null;
     _notify();
     try {
+      // Preserve the handle until the sequence confirms a destination. Native
+      // completion waits for this lookup so it cannot also advance the cursor.
+      if (!terminal && !keepPaused) _playback?.pause();
       final next = await sequence.move(direction);
       if (!_current(generation)) return;
       if (next == null) {
         preparing = false;
-        snapshot =
-            snapshot?.withPhase(NarrationPhase.completed) ??
-            const NarrationSnapshot(phase: NarrationPhase.completed);
+        if (direction > 0) {
+          ++_generation;
+          _retireCurrent();
+          _pauseWhenReady = false;
+          snapshot =
+              snapshot?.withPhase(NarrationPhase.completed) ??
+              const NarrationSnapshot(phase: NarrationPhase.completed);
+        } else if (!terminal && !_pauseWhenReady) {
+          _playback?.resume();
+        }
         _notify();
         return;
       }
+      generation = ++_generation;
+      _retireCurrent();
+      _finishMovement();
       snapshot = null;
       sentences = const [];
       await _start(
@@ -254,16 +290,21 @@ class NarrationController extends ChangeNotifier {
           sequence: sequence,
         ),
         generation,
+        lastSentence: lastSentence,
       );
     } catch (failure) {
       if (_current(generation)) {
         preparing = false;
+        _retireCurrent();
+        _pauseWhenReady = false;
         error = failure.toString();
         snapshot =
             snapshot?.withPhase(NarrationPhase.failed) ??
             const NarrationSnapshot(phase: NarrationPhase.failed);
         _notify();
       }
+    } finally {
+      if (identical(_movement, movement)) _finishMovement();
     }
   }
 
@@ -273,11 +314,17 @@ class NarrationController extends ChangeNotifier {
       (value) {
         if (!_current(generation) || !identical(_playback, playback)) return;
         snapshot = value;
-        if (value.start != null) _remember();
-        if (sentences.isEmpty && !_readingPlan) {
+        if (value.start != null && !identical(_positioning, playback)) {
+          _lastAnchor = source?.passage?.anchorAt(value.start!);
+          _remember();
+        }
+        if ((sentences.isEmpty || identical(_positioning, playback)) &&
+            !identical(_readingPlanFor, playback)) {
           unawaited(_updatePlan(playback, generation));
         }
-        if (value.phase == NarrationPhase.playing) _pauseWhenReady = false;
+        if (!preparing && value.phase == NarrationPhase.playing) {
+          _pauseWhenReady = false;
+        }
         _notify();
       },
       onError: (Object failure) {
@@ -292,22 +339,43 @@ class NarrationController extends ChangeNotifier {
   }
 
   Future<void> _updatePlan(NarrationPlayback playback, int generation) async {
-    _readingPlan = true;
+    _readingPlanFor = playback;
     try {
       final plan = await playback.sentences();
       if (_current(generation) &&
           identical(_playback, playback) &&
           plan != null) {
         sentences = List.unmodifiable(plan);
+        if (identical(_positioning, playback) &&
+            (snapshot?.durationFrames ?? snapshot?.estimatedFrames ?? 0) > 0) {
+          if (plan.isEmpty) {
+            throw StateError('No sentence positions available.');
+          }
+          final navigation = playback.navigateToSentence(plan.last.id);
+          if (navigation.boundary) {
+            throw StateError('The previous sentence is no longer available.');
+          }
+          _positioning = null;
+          preparing = false;
+          _acceptNavigation(navigation);
+          if (!_pauseWhenReady) _playback?.resume();
+        }
         _notify();
       }
     } catch (failure) {
       if (_current(generation) && identical(_playback, playback)) {
         error = 'Could not read sentence positions: $failure';
+        if (identical(_positioning, playback)) {
+          preparing = false;
+          ++_generation;
+          _retireCurrent();
+          _pauseWhenReady = false;
+          snapshot = const NarrationSnapshot(phase: NarrationPhase.failed);
+        }
         _notify();
       }
     } finally {
-      _readingPlan = false;
+      if (identical(_readingPlanFor, playback)) _readingPlanFor = null;
     }
   }
 
@@ -317,16 +385,17 @@ class NarrationController extends ChangeNotifier {
   }
 
   void navigate({required bool forward}) {
+    if (preparing || _closed) return;
     final playback = _playback;
     if (playback == null) {
-      unawaited(movePassage(forward ? 1 : -1));
+      unawaited(movePassage(forward ? 1 : -1, lastSentence: !forward));
       return;
     }
     if (sentences.isEmpty) return;
     try {
       final result = playback.navigate(forward: forward);
       if (result.boundary && source?.sequence != null) {
-        unawaited(movePassage(forward ? 1 : -1));
+        unawaited(movePassage(forward ? 1 : -1, lastSentence: !forward));
       } else {
         _acceptNavigation(result);
       }
@@ -387,7 +456,10 @@ class NarrationController extends ChangeNotifier {
   Future<void> _completion(NarrationPlayback playback, int generation) async {
     try {
       final result = await playback.done;
+      await _movement?.future;
       if (!_current(generation) || !identical(_playback, playback)) return;
+      preparing = false;
+      _positioning = null;
       final phase = result == NarrationOutcome.completed
           ? NarrationPhase.completed
           : NarrationPhase.stopped;
@@ -398,9 +470,14 @@ class NarrationController extends ChangeNotifier {
       }
       _notify();
     } catch (failure) {
+      await _movement?.future;
       if (_current(generation) && identical(_playback, playback)) {
+        preparing = false;
+        _positioning = null;
         error = failure.toString();
-        snapshot = const NarrationSnapshot(phase: NarrationPhase.failed);
+        snapshot =
+            snapshot?.withPhase(NarrationPhase.failed) ??
+            const NarrationSnapshot(phase: NarrationPhase.failed);
         _notify();
       }
     }
@@ -414,6 +491,10 @@ class NarrationController extends ChangeNotifier {
       return;
     }
     _pauseWhenReady = !paused;
+    if (preparing) {
+      _notify();
+      return;
+    }
     try {
       if (_pauseWhenReady) {
         _playback?.pause();
@@ -431,6 +512,7 @@ class NarrationController extends ChangeNotifier {
     final playback = _playback;
     final subscription = _subscription;
     _playback = null;
+    _positioning = null;
     _subscription = null;
     if (playback == null) return;
     try {
@@ -463,11 +545,14 @@ class NarrationController extends ChangeNotifier {
     _remember();
     source?.sequence?.cancelPending();
     ++_generation;
+    _finishMovement();
     preparing = false;
     _pendingDocumentId = null;
     _pauseWhenReady = false;
     _retireCurrent();
-    snapshot = const NarrationSnapshot(phase: NarrationPhase.stopped);
+    snapshot =
+        snapshot?.withPhase(NarrationPhase.stopped) ??
+        const NarrationSnapshot(phase: NarrationPhase.stopped);
     _notify();
     await _joinRetiring();
   }
@@ -483,6 +568,7 @@ class NarrationController extends ChangeNotifier {
     sequence?.close();
     if (_generation != generation) return;
     source = null;
+    _lastAnchor = null;
     snapshot = null;
     _notify();
   }
