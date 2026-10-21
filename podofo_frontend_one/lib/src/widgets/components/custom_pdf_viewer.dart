@@ -35,6 +35,39 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   bool _selectionChanged = false;
   late final NarrationController _narration;
   Object? _paintedRange;
+  int _followRequest = 0;
+  Offset? _followOrigin;
+  bool _scrollCheckPending = false;
+  bool _resetScrollOrigin = false;
+
+  // Inspect the resulting viewport, not pointer travel: selecting text must not
+  // suspend following. Only user input schedules this check; ensureVisible does not.
+  void _checkUserScroll({bool zooming = false}) {
+    _resetScrollOrigin = _resetScrollOrigin || zooming;
+    if (_scrollCheckPending) return;
+    _scrollCheckPending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollCheckPending = false;
+      final reset = _resetScrollOrigin;
+      _resetScrollOrigin = false;
+      if (!mounted) return;
+      final viewer = ref.read(pdfViewerControllerProvider);
+      final document = ref.read(currentDocumentProvider);
+      if (!viewer.isReady ||
+          document == null ||
+          !identical(document.session, _narration.source?.documentId)) {
+        return;
+      }
+      final center = viewer.visibleRect.center;
+      if (reset || _followOrigin == null) {
+        _followOrigin = center;
+      } else if (_narration.followText &&
+          (center - _followOrigin!).distance * viewer.currentZoom >= 32) {
+        _narration.setFollowText(false);
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
 
   @override
   void initState() {
@@ -49,18 +82,22 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     final viewer = ref.read(pdfViewerControllerProvider);
     if (document == null || !viewer.isReady) return;
     final state = _narration.snapshot;
+    final requested = _followRequest != _narration.followRequest;
+    _followRequest = _narration.followRequest;
     final key = (
       _narration.source,
       state?.start,
       state?.end,
       _narration.terminal,
       _narration.followText,
+      _narration.followRequest,
     );
     if (_paintedRange == key) return;
     _paintedRange = key;
     viewer.invalidate(); // Repaint a sentence change; never rebuild for audio ticks.
     if (!_narration.followText ||
-        _narration.terminal ||
+        (_scrollCheckPending && !requested) ||
+        (_narration.terminal && !requested) ||
         !identical(document.session, _narration.source?.documentId)) {
       return;
     }
@@ -83,8 +120,15 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
     final target = rectangles.first
         .toRect(page: page, scaledPageSize: layout.size)
         .translate(layout.left, layout.top);
+    _followOrigin = viewer.visibleRect.center;
     if (!viewer.visibleRect.contains(target.center)) {
-      unawaited(viewer.ensureVisible(target, duration: Duration.zero));
+      unawaited(
+        viewer.ensureVisible(target, duration: Duration.zero).then((_) {
+          if (mounted && viewer.isReady) {
+            _followOrigin = viewer.visibleRect.center;
+          }
+        }),
+      );
     }
   }
 
@@ -132,6 +176,27 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
       controller: controller,
       initialPageNumber: document.lastOpenedPage ?? 1,
       params: PdfViewerParams(
+        onViewSizeChanged: (_, _, _) => _checkUserScroll(zooming: true),
+        onInteractionUpdate: (details) =>
+            _checkUserScroll(zooming: (details.scale - 1).abs() > .001),
+        onKey: (params, key, isRealKeyPress) {
+          if (isRealKeyPress &&
+              identical(document.session, _narration.source?.documentId) &&
+              const [
+                LogicalKeyboardKey.pageUp,
+                LogicalKeyboardKey.pageDown,
+                LogicalKeyboardKey.home,
+                LogicalKeyboardKey.end,
+                LogicalKeyboardKey.space,
+                LogicalKeyboardKey.arrowUp,
+                LogicalKeyboardKey.arrowDown,
+                LogicalKeyboardKey.arrowLeft,
+                LogicalKeyboardKey.arrowRight,
+              ].contains(key)) {
+            _narration.setFollowText(false);
+          }
+          return null; // Retain the viewer's normal keyboard navigation.
+        },
         pageDropShadow: const BoxShadow(
           color: Color(0x0C000000),
           blurRadius: 8,
@@ -142,6 +207,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
             if (mounted) {
               ref.read(viewerReadyProvider.notifier).state = readyController;
               _paintedRange = null;
+              _followOrigin = readyController.visibleRect.center;
               _onNarrationChanged();
             }
           });
@@ -235,6 +301,16 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         enabled: invert,
         imageFilter: invert ? ImageFilter.shader(shader) : _disabledFilter,
         child: Listener(
+          onPointerSignal: (event) {
+            if (event is PointerScrollEvent) {
+              _checkUserScroll(
+                zooming: HardwareKeyboard.instance.isControlPressed,
+              );
+            } else if (event is PointerScaleEvent) {
+              _checkUserScroll(zooming: true);
+            }
+          },
+          onPointerMove: (_) => _checkUserScroll(),
           onPointerDown: (event) {
             if (event.buttons == kPrimaryButton) {
               _selectionPointers.add(event.pointer);

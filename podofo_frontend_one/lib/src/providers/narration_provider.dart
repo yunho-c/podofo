@@ -30,7 +30,6 @@ final narrationControllerProvider = Provider<NarrationController>((ref) {
     language: preferences.audioLanguage,
     speed: normalizedNarrationSpeed(preferences.audioSpeed),
   );
-  controller.followText = preferences.followSpokenText;
   ref.onDispose(controller.dispose);
   return controller;
 });

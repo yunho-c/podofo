@@ -19,7 +19,7 @@ abstract final class NarrationActions {
       (d) => identical(d.session, source?.documentId),
     );
     if (index >= 0) ref.read(currentTabIndexProvider.notifier).state = index;
-    ref.read(narrationControllerProvider).setFollowText(true);
+    ref.read(narrationControllerProvider).resumeFollowing();
   }
 
   static Future<void> readSelection(WidgetRef ref) async {

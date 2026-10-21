@@ -140,6 +140,7 @@ class NarrationController extends ChangeNotifier {
   String preparation = '';
   bool preparing = false;
   bool followText = true;
+  int followRequest = 0;
   List<NarrationSentence> sentences = const [];
   SourceAnchor? get currentAnchor =>
       _lastAnchor ?? source?.passage?.anchorAt(snapshot?.start ?? 0);
@@ -543,6 +544,13 @@ class NarrationController extends ChangeNotifier {
 
   void setFollowText(bool value) {
     followText = value;
+    _notify();
+  }
+
+  /// An action, including when already following: reveal the current sentence.
+  void resumeFollowing() {
+    followText = true;
+    followRequest++;
     _notify();
   }
 

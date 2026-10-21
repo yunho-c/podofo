@@ -394,6 +394,70 @@ void main() {
       );
       await tester.pump();
       expect(savedSource.passage!.rectangles(1, 0, 5), isNotEmpty);
+      expect(find.byTooltip('Show reading location'), findsNothing);
+      // Programmatic movement is not a user scroll. The action must still
+      // reveal this same sentence when followText was already true.
+      await tester.runAsync(
+        () => controller.goToPage(pageNumber: 3, duration: Duration.zero),
+      );
+      await tester.pump();
+      expect(narrator.followText, true);
+      await tester.tap(find.byKey(const ValueKey('narration-follow')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(controller.pageNumber, 1);
+      final viewerCenter = tester.getCenter(find.byType(PdfViewer));
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: viewerCenter,
+          scrollDelta: const Offset(0, 5),
+        ),
+      );
+      await tester.pump();
+      expect(narrator.followText, true); // Ignore incidental wheel motion.
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: viewerCenter,
+          scrollDelta: const Offset(0, 1000),
+        ),
+      );
+      await tester.pump();
+      expect(narrator.followText, false);
+      await tester.pump(); // Render the state change from the scroll check.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('narration-follow')),
+          matching: find.byIcon(Icons.visibility_off),
+        ),
+        findsOneWidget,
+      );
+      final browsedPosition = controller.visibleRect.center;
+      reading.events.add(
+        const NarrationSnapshot(
+          phase: NarrationPhase.playing,
+          start: 1,
+          end: 4,
+        ),
+      );
+      await tester.pump();
+      expect(controller.visibleRect.center, browsedPosition);
+      await tester.tap(find.byKey(const ValueKey('narration-follow')));
+      await tester.pump();
+      expect(narrator.followText, true);
+      // Clicking again is an action, never an off toggle.
+      await tester.tap(find.byKey(const ValueKey('narration-follow')));
+      await tester.pump();
+      expect(narrator.followText, true);
+      final thumb = find.descendant(
+        of: find.byType(PdfViewerScrollThumb),
+        matching: find.byType(GestureDetector),
+      );
+      await tester.drag(thumb, const Offset(0, 100));
+      await tester.pump();
+      expect(narrator.followText, false);
+      await tester.tap(find.byKey(const ValueKey('narration-follow')));
+      await tester.pump();
+      expect(narrator.followText, true);
       await captureReader(tester, 'narration-selection');
       tester.view.physicalSize = const Size(760, 520);
       await tester.pump();

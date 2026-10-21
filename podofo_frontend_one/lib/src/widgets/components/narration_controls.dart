@@ -218,26 +218,14 @@ class NarrationControls extends ConsumerWidget {
                     ),
                     const Spacer(),
                     button(
-                      'Show reading location',
-                      m.Icons.my_location,
-                      controller.source?.passage != null
-                          ? () => NarrationActions.showSource(ref)
-                          : null,
-                    ),
-                    button(
-                      controller.followText
-                          ? 'Stop following text'
-                          : 'Follow spoken text',
+                      'Follow spoken text',
                       controller.followText
                           ? m.Icons.visibility
                           : m.Icons.visibility_off,
-                      () {
-                        final value = !controller.followText;
-                        ref
-                            .read(userStateNotifierProvider.notifier)
-                            .setFollowSpokenText(value);
-                        controller.setFollowText(value);
-                      },
+                      controller.source?.passage != null
+                          ? () => NarrationActions.showSource(ref)
+                          : null,
+                      key: 'narration-follow',
                     ),
                   ],
                 ),
