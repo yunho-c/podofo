@@ -62,6 +62,7 @@ class NarrationController extends ChangeNotifier {
   PaperSequence? _timedSequence;
   _DocumentSeek? _documentSeek;
   bool get seekingDocument => _documentSeek != null;
+  PaperSeekTarget? get documentSeekTarget => _documentSeek?.target;
   bool _resumePending = false;
   NarrationTiming? _currentTiming;
   NarrationPlayback? _readingTimingFor;

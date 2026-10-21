@@ -111,6 +111,75 @@ void main() {
     },
   );
 
+  for (final destination in [5000000.0, 15000000.0]) {
+    testWidgets('thumb holds $destination until native seek confirmation', (
+      tester,
+    ) async {
+      final paper = fixture.sequence(3), session = seek.SeekSession();
+      final controller = (await tester.runAsync(
+        () => seek.reader(paper, session),
+      ))!;
+      addTearDown(controller.close);
+      session.confirmSeek = false;
+      (session.playbacks.single as seek.TimedPlayback).confirmSeek = false;
+      await mount(tester, controller);
+      final previous = controller.documentPosition!.microseconds;
+      slider(tester).onChangeStart!(destination);
+      slider(tester).onChanged!(destination);
+      await tester.pump();
+      slider(tester).onChangeEnd!(destination);
+      await tester.pump();
+      expect(slider(tester).value, destination);
+      await settle(tester);
+      expect(controller.seekingDocument, true);
+      expect(controller.documentPosition!.microseconds, previous);
+      expect(paper.pageNumber, 1);
+      expect(slider(tester).value, destination);
+
+      final playback = session.playbacks.last as seek.TimedPlayback;
+      playback.position = playback.lastSeek!;
+      playback.state(NarrationPhase.paused);
+      await settle(tester);
+      expect(controller.seekingDocument, false);
+      expect(slider(tester).value, destination);
+      expect(controller.documentPosition!.microseconds, destination.toInt());
+    });
+  }
+
+  testWidgets(
+    'pending preview follows the latest seek and clears on failure or Stop',
+    (tester) async {
+      final paper = fixture.sequence(3), session = seek.SeekSession();
+      final controller = (await tester.runAsync(
+        () => seek.reader(paper, session),
+      ))!;
+      addTearDown(controller.close);
+      session.confirmSeek = false;
+      await mount(tester, controller);
+      final previous = slider(tester).value;
+      for (final destination in [15000000.0, 25000000.0]) {
+        slider(tester).onChangeStart!(destination);
+        slider(tester).onChanged!(destination);
+        slider(tester).onChangeEnd!(destination);
+        await settle(tester);
+        expect(slider(tester).value, destination);
+        expect(controller.seekingDocument, true);
+      }
+      await tester.pump(const Duration(seconds: 31));
+      await settle(tester);
+      expect(controller.error, contains('too long'));
+      expect(slider(tester).value, previous);
+      slider(tester).onChangeStart!(15000000);
+      slider(tester).onChanged!(15000000);
+      slider(tester).onChangeEnd!(15000000);
+      await settle(tester);
+      expect(slider(tester).value, 15000000);
+      await tester.runAsync(controller.stop);
+      await settle(tester);
+      expect(slider(tester).value, previous);
+    },
+  );
+
   testWidgets(
     'partial coverage disables document seeking and shows its limits',
     (tester) async {

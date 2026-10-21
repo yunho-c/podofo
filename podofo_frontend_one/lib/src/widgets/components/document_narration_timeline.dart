@@ -26,6 +26,7 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
   PaperTimelineScale? _drag;
   PaperSequence? _dragPaper;
   double? _preview;
+  ({PaperSeekTarget target, PaperTimelineScale scale, double value})? _pending;
   int? _unavailablePage;
   String? _unavailableId;
   PaperSequence? _unavailablePaper;
@@ -44,6 +45,9 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
   @override
   void didUpdateWidget(covariant DocumentNarrationTimeline oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (!identical(_pending?.target, widget.controller.documentSeekTarget)) {
+      _pending = null;
+    }
     final paper = _paper;
     if (_unavailablePage != null &&
         (paper == null ||
@@ -100,6 +104,11 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
         : null;
     setState(() {
       _clear();
+      // Keep presentation at the requested position until this exact seek is
+      // confirmed or cancelled. The committed reading cursor stays unchanged.
+      _pending = target == null
+          ? null
+          : (target: target, scale: scale!, value: value);
       _unavailablePage = unavailable?.page;
       _unavailableId = unavailable?.id;
       _unavailablePaper = unavailable == null ? null : paper;
@@ -119,9 +128,16 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
     final controller = widget.controller, paper = _paper;
     final document = controller.documentTimeline;
     if (paper == null || document == null) return const SizedBox.shrink();
-    final total = _drag?.totalMicroseconds ?? document.totalMicroseconds;
+    final pending = identical(_pending?.target, controller.documentSeekTarget)
+        ? _pending
+        : null;
+    final total =
+        _drag?.totalMicroseconds ??
+        pending?.scale.totalMicroseconds ??
+        document.totalMicroseconds;
     final position = controller.documentPosition;
-    final value = _preview ?? position?.microseconds.toDouble() ?? 0;
+    final preview = _preview ?? pending?.value;
+    final value = preview ?? position?.microseconds.toDouble() ?? 0;
     final enabled =
         total != null &&
         total > 0 &&
@@ -130,7 +146,7 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
     final unavailablePage = _preview != null
         ? _drag?.unavailablePassageAt(value.round())?.page
         : _unavailablePage;
-    final label = _preview != null
+    final label = preview != null
         ? 'Seek to ${documentClock(value.round())}'
         : position == null
         ? '—'
