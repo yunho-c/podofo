@@ -218,7 +218,7 @@ void main() {
 
   for (final paused in [false, true]) {
     test(
-      'Previous at the first sentence preserves ${paused ? 'paused' : 'playing'} speech',
+      'Previous at the first sentence restarts it while ${paused ? 'paused' : 'playing'}',
       () async {
         final session = FakeNarratorSession(),
             document = Object(),
@@ -238,6 +238,11 @@ void main() {
         expect(controller.terminal, false);
         expect(controller.paused, paused);
         expect(playback.resumes, paused ? 0 : 1);
+        expect(playback.lastSentenceId, 0);
+        expect(
+          playback.commands,
+          paused ? ['sentence:0'] : ['pause', 'sentence:0', 'resume'],
+        );
         expect(sequence.cursor, 0);
       },
     );

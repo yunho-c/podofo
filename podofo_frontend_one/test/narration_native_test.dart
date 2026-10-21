@@ -150,6 +150,28 @@ void main() {
               final frame = controller.snapshot!.positionFrames;
               await Future<void>.delayed(const Duration(milliseconds: 200));
               expect(controller.snapshot!.positionFrames, frame);
+              // Each paused Previous moves backward; once at the document
+              // beginning, subsequent presses keep the cursor at frame zero.
+              controller.removeListener(watch);
+              controller.navigate(forward: false);
+              await until(
+                () =>
+                    controller.snapshot?.sentenceId == 0 &&
+                    controller.snapshot?.positionFrames == 0 &&
+                    controller.snapshot?.seeking == false,
+                'paused previous sentence',
+              );
+              for (var press = 0; press < 2; press++) {
+                controller.navigate(forward: false);
+                await until(
+                  () => !controller.preparing,
+                  'paused document boundary',
+                );
+                await Future<void>.delayed(const Duration(milliseconds: 150));
+                expect(controller.snapshot!.phase, NarrationPhase.paused);
+                expect(controller.snapshot!.sentenceId, 0);
+                expect(controller.snapshot!.positionFrames, 0);
+              }
             } else {
               await until(
                 () => controller.snapshot?.phase == NarrationPhase.playing,

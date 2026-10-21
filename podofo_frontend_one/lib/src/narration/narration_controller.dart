@@ -270,8 +270,13 @@ class NarrationController extends ChangeNotifier {
           snapshot =
               snapshot?.withPhase(NarrationPhase.completed) ??
               const NarrationSnapshot(phase: NarrationPhase.completed);
-        } else if (!terminal && !_pauseWhenReady) {
-          _playback?.resume();
+        } else if (!terminal) {
+          if (lastSentence && sentences.isNotEmpty) {
+            _acceptNavigation(
+              _playback!.navigateToSentence(sentences.first.id),
+            );
+          }
+          if (!_pauseWhenReady) _playback?.resume();
         }
         _notify();
         return;
@@ -396,6 +401,8 @@ class NarrationController extends ChangeNotifier {
       final result = playback.navigate(forward: forward);
       if (result.boundary && source?.sequence != null) {
         unawaited(movePassage(forward ? 1 : -1, lastSentence: !forward));
+      } else if (result.boundary && !forward) {
+        _acceptNavigation(playback.navigateToSentence(sentences.first.id));
       } else {
         _acceptNavigation(result);
       }
