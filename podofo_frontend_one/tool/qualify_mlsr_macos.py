@@ -3,6 +3,7 @@
 
 import argparse
 import datetime
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -31,12 +32,31 @@ def write_report(path, value):
     path.write_text(json.dumps(value, indent=2) + '\n')
 
 
-def qualify(output, model_manifest):
+def source_receipt():
+    """Record the actual application/probe inputs, including uncommitted work."""
+    roots = ['lib', 'macos', 'shaders', 'tool',
+             'pubspec.yaml', 'pubspec.lock', 'mlsr-models.yaml']
+    listed = subprocess.check_output(
+        ['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z',
+         '--', *roots], cwd=APP).decode().split('\0')
+    files = sorted({name for name in listed if name and (APP / name).is_file()})
+    return {
+        'commit': subprocess.check_output(
+            ['git', 'rev-parse', 'HEAD'], cwd=APP, text=True).strip(),
+        'status': subprocess.check_output(
+            ['git', 'status', '--short', '--', *roots], cwd=APP, text=True),
+        'sha256': {name: hashlib.sha256((APP / name).read_bytes()).hexdigest()
+                   for name in files},
+    }
+
+
+def qualify(output, model_manifest, stress_seconds):
     forbidden = [APP / 'pubspec.yaml', model_manifest.resolve(strict=True),
                  APP / '.mlsr/native/mlsr_ffi']
     if not all(path.is_file() for path in forbidden):
         raise ValueError('Denial checks need existing developer inputs')
     report = {'passed': False, 'platform': platform.platform(),
+              'source': source_receipt(),
               'started_at': datetime.datetime.now(datetime.timezone.utc).isoformat()}
     # Preserve the relocated bundle and logs for diagnosis; no developer inputs
     # are renamed, hidden, deleted, or granted additional permissions.
@@ -55,6 +75,7 @@ def qualify(output, model_manifest):
             listener.listen()
             env = dict(os.environ,
                        PODOFO_FORBIDDEN_FILES=json.dumps(list(map(str, forbidden))),
+                       PODOFO_STRESS_SECONDS=str(stress_seconds),
                        PODOFO_DENIED_NETWORK_PORT=str(listener.getsockname()[1]))
             started = time.monotonic()
             # The signed app's own Sandbox denies file/network access. Nesting
@@ -63,7 +84,7 @@ def qualify(output, model_manifest):
                 result = subprocess.run(
                     [str(relocated / 'Contents/MacOS/PoDoFo')],
                     cwd=relocated_root, env=env, stdout=log,
-                    stderr=subprocess.STDOUT, timeout=300)
+                    stderr=subprocess.STDOUT, timeout=300 + stress_seconds)
             report['process_seconds'] = time.monotonic() - started
         log = (output / 'runtime.log').read_text(errors='replace')
         receipts = [line.split('PODOFO_MLSR_REPORT=', 1)[1]
@@ -74,7 +95,8 @@ def qualify(output, model_manifest):
         report['runtime'] = receipt
         write_report(output / 'runtime-report.json', receipt)
         if directory := receipt.get('evidence_directory'):
-            for name in ['qualification-paper.pdf', 'listening-sample.wav']:
+            for name in ['qualification-paper.pdf', 'listening-sample.wav',
+                         'highlight-normal.png', 'highlight-inverted.png']:
                 source = Path(directory) / name
                 if source.is_file():
                     shutil.copy2(source, output / name)
@@ -103,16 +125,20 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--output', type=Path,
                         help='New evidence directory; an existing directory is never overwritten')
+    parser.add_argument('--stress-seconds', type=int, default=0,
+                        help='Minimum warm reuse duration, mixing completed and cancelled playback')
     parser.add_argument('--developer-model-manifest', type=Path,
                         default=Path.home() / '.cache/mlsr/models/supertonic3-coreml-fp16-t384-voices-v1/mlsr-bundle.yaml',
                         help='Existing local model manifest used only to verify sandbox denial')
     args = parser.parse_args()
     if platform.system() != 'Darwin' or platform.machine() != 'arm64':
         parser.error('Run this qualification on macOS Apple Silicon')
+    if not 0 <= args.stress_seconds <= 3600:
+        parser.error('--stress-seconds must be between 0 and 3600')
     output = args.output or APP / 'build/mlsr-qualification' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
     output = output.resolve()
     output.mkdir(parents=True, exist_ok=False)
-    qualify(output, args.developer_model_manifest)
+    qualify(output, args.developer_model_manifest, args.stress_seconds)
 
 
 if __name__ == '__main__':

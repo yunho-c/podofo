@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:mlsr_app_models/app_models.dart';
@@ -14,6 +15,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/objectbox.g.dart';
 import 'package:podofo_one/src/narration/mlsr_narrator.dart';
 import 'package:podofo_one/src/narration/narration_controller.dart';
+import 'package:podofo_one/src/narration/narration_painter.dart';
 import 'package:podofo_one/src/narration/narrator.dart';
 import 'package:podofo_one/src/narration/paper_plan.dart';
 import 'package:podofo_one/src/narration/paper_sequence.dart';
@@ -67,6 +69,38 @@ Future<void> main() async {
     final support = await getApplicationSupportDirectory();
     await support.create(recursive: true);
     evidence = await support.createTemp('mlsr-qualification-');
+    final cache = Directory('${(await getLibraryDirectory()).path}/Caches');
+    final temporary = await getTemporaryDirectory();
+    Future<Map<String, Object?>> storage() async {
+      final result = <String, Object?>{};
+      for (final entry in {'cache': cache, 'temporary': temporary}.entries) {
+        var files = 0, bytes = 0;
+        if (await entry.value.exists()) {
+          await for (final item in entry.value.list(
+            recursive: true,
+            followLinks: false,
+          )) {
+            if (item is! File) continue;
+            try {
+              final stat = await item.stat();
+              if (stat.type != FileSystemEntityType.file) continue;
+              bytes += stat.size;
+              files++;
+            } on FileSystemException {
+              // Core ML can replace a cache entry while it is being counted.
+            }
+          }
+        }
+        result[entry.key] = {
+          'path': entry.value.path,
+          'files': files,
+          'logical_bytes': bytes,
+        };
+      }
+      return result;
+    }
+
+    report['storage_before_engine'] = await storage();
     report['evidence_directory'] = evidence.path;
     report['handles_before'] = native.mlsr_live_handles();
     final forbidden = jsonDecode(
@@ -203,6 +237,61 @@ Future<void> main() async {
       narration.snapshot!.positionFrames == paused,
       'Paused cursor moved',
     );
+    require(
+      ui.ImageFilter.isShaderFilterSupported,
+      'Expected Impeller shader support in the macOS release',
+    );
+    final program = await ui.FragmentProgram.fromAsset('shaders/invert.frag');
+    final shader = program.fragmentShader()..setFloat(2, 1);
+    final page = document.lease.document.pages.first;
+    final pageRect = ui.Rect.fromLTWH(0, 0, page.width, page.height);
+    final bounds = narration.source!.passage!
+        .rectangles(1, narration.snapshot!.start!, narration.snapshot!.end!)
+        .first
+        .toRect(page: page, scaledPageSize: pageRect.size);
+    for (final inverted in [false, true]) {
+      final recorder = ui.PictureRecorder();
+      // Use a separate offscreen picture; this does not inspect/control a native window.
+      final drawing = ui.Canvas(recorder);
+      if (inverted) {
+        drawing.saveLayer(
+          pageRect,
+          ui.Paint()..imageFilter = ui.ImageFilter.shader(shader),
+        );
+      }
+      drawing.drawColor(const ui.Color(0xffffffff), ui.BlendMode.src);
+      paintNarration(drawing, pageRect, page, narration, document);
+      if (inverted) drawing.restore();
+      final picture = recorder.endRecording();
+      final image = await picture.toImage(
+        pageRect.width.ceil(),
+        pageRect.height.ceil(),
+      );
+      final bytes = (await image.toByteData())!.buffer.asUint8List();
+      final pixel =
+          (bounds.center.dy.floor() * image.width + bounds.center.dx.floor()) *
+          4;
+      require(
+        (bytes[pixel] - bytes[0]).abs() +
+                (bytes[pixel + 1] - bytes[1]).abs() +
+                (bytes[pixel + 2] - bytes[2]).abs() >
+            30,
+        'Listening highlight disappeared under inversion=$inverted',
+      );
+      require(
+        inverted ? bytes[0] < 20 : bytes[0] > 240,
+        'Unexpected page background under inversion=$inverted',
+      );
+      final png = await image.toByteData(format: ui.ImageByteFormat.png);
+      await File(
+        '${evidence.path}/highlight-${inverted ? 'inverted' : 'normal'}.png',
+      ).writeAsBytes(png!.buffer.asUint8List());
+      image.dispose();
+      picture.dispose();
+    }
+    shader.dispose();
+    report['offscreen_impeller_highlight'] =
+        'normal and inverted source-region pixels verified';
     narration.togglePause();
     await until(
       () => (narration.snapshot?.positionFrames ?? 0) > paused,
@@ -228,9 +317,14 @@ Future<void> main() async {
       'Source bookmark did not follow playback',
     );
     await narration.stop();
-    stage('twelve warm start-stop cycles');
+    stage('warm reuse and cancellation');
+    report['storage_after_engine'] = await storage();
+    final stressSeconds = int.parse(
+      Platform.environment['PODOFO_STRESS_SECONDS'] ?? '0',
+    );
+    final stress = Stopwatch()..start();
     final resources = <Map<String, Object?>>[], warm = <double>[];
-    for (var i = 0; i < 12; i++) {
+    for (var i = 0; i < 12 || stress.elapsed.inSeconds < stressSeconds; i++) {
       final started = Stopwatch()..start();
       await narration.read(
         document,
@@ -245,6 +339,12 @@ Future<void> main() async {
         'warm audio $i',
       );
       warm.add(started.elapsedMicroseconds / 1000);
+      if (stressSeconds > 0 && i % 8 == 7) {
+        await until(
+          () => narration.snapshot?.phase == NarrationPhase.completed,
+          'stress drain $i',
+        );
+      }
       if (i == 0) {
         await until(() => narration.sentences.length >= 2, 'sentence plan');
         final first = narration.snapshot?.sentenceId;
@@ -265,6 +365,10 @@ Future<void> main() async {
       await narration.stop();
       final retention = (await tts!.snapshot()).retention;
       require(
+        native.mlsr_live_handles() == (report['handles_before']! as int) + 1,
+        'Stopped speech leaked native handles',
+      );
+      require(
         retention.usedBytes == 0 && retention.liveStores == 0,
         'Stopped speech retained PCM',
       );
@@ -282,11 +386,18 @@ Future<void> main() async {
         'peak_retained_bytes': retention.peakBytes,
         'peak_retained_stores': retention.peakStores,
       });
+      if (i % 20 == 19) {
+        stdout.writeln(
+          'PODOFO_MLSR_STRESS=${i + 1} cycles, ${stress.elapsed.inSeconds}s',
+        );
+      }
     }
     require(opens == 1, 'The engine was loaded more than once');
     report['engine_opens'] = opens;
     report['warm_first_presented_ms'] = warm;
     report['resources_after_stop'] = resources;
+    report['stress_seconds'] = stress.elapsedMilliseconds / 1000;
+    report['storage_after_stress'] = await storage();
     stage('voice, speed and listening sample');
     await narration.configure(
       const NarrationSettings(voice: 'supertonic3:F1', speed: 1.4),

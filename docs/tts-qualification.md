@@ -16,13 +16,14 @@ this run does not establish behavior on a macOS 15 machine or a notarized app.
 
 | Check | Result |
 | --- | --- |
-| Flutter regression suite | 55 passed; one opt-in native speech test skipped |
+| Flutter regression suite | 63 passed; one opt-in native speech test skipped |
 | Additional minimum-window check | Reading preview and active reader pass at 760×520 |
 | Flutter analysis | No issues |
 | Preparation unit tests | Two passed; real preparation also succeeds twice |
 | ObjectBox | Legacy UID migration passes; repeated generation is byte-identical |
 | Real Core ML/native output | Earlier opt-in test passed with muted audio, pause/resume, replacement and cleanup |
-| Packaged runtime | Two relocated sandboxed runs passed with real plugins, no resource-path mocks |
+| Packaged runtime | Four relocated sandboxed runs passed with real plugins, including two three-minute warm stress runs; no resource-path mocks |
+| Dark inversion | Real Release Impeller offscreen pixels pass for normal and inverted source-region highlights |
 | Release packaging | Exact inventory/hash match for 50 model/notice assets, 459,351,926 bytes; arm64 MLSR, portable linkage, nested signing |
 | Native window interaction | Not verified; Computer Use denied PoDoFo access, including the requested retry |
 | Human listening | Sample exported; review pending |
@@ -33,7 +34,49 @@ deterministic UI/lifecycle behavior. It covers Unicode offsets, source geometry
 on cropped/rotated pages, temporary highlights, tab switching, cancelled dirty
 close, save/Save As, stale asynchronous work, source-hash resume validation,
 two-column order, textless-page handling, and traversal of 24 pages with a
-two-page plan cache. Test captures are not native-window screenshots.
+two-page plan cache. Additional regressions cover repeated/alternating margins,
+pagination versus numeric chart labels, wrapped PDFium words, reversed source
+emission, bookmark context and replacement versus speculative page preparation.
+Test captures are not native-window screenshots. The ordinary widget engine
+does not support Impeller image filters; inversion is exercised in the Release
+probe using the production painter and shader.
+
+## Real-paper reading order
+
+The local diagnostic `tool/inspect_paper_test.dart` renders source pages with
+PDFium and exports the complete prepared text, exclusions and source geometry.
+These artifacts were compared visually for a representative single-column body
+page and a two-column body page. This covers selected pages, not every page in
+either paper or a general reading-order guarantee.
+
+| Input | Reviewed result |
+| --- | --- |
+| [ViT, arXiv 2010.11929v2](https://arxiv.org/pdf/2010.11929v2), page 2 | Nine passages follow the single-column paragraphs; repeated publication header and page number are excluded |
+| [ResNet, arXiv 1512.03385v1](https://arxiv.org/pdf/1512.03385v1), page 3 | Twenty-four passages read down the left column, then the right; the page number is excluded |
+| ViT pages 1/3; ResNet pages 1/2/4 | Automatic order requires review for vertical margin text or complex figure/layout regions; explicit PDF-order output is available for inspection |
+
+The review caught a real ordering bug: PDFium can return a joined word whose
+character rectangles span two visual lines. Its page-wide word rectangle had
+scrambled row grouping. The planner now separates visual runs and rejoins their
+spoken slices without losing either source location. PDFium's
+[hyphen marker implementation](https://pdfium.googlesource.com/pdfium/+/03baf4f3d7e756ac5ce4bc106a862908530df105/core/fpdftext/cpdf_textpage.cpp)
+uses U+0002. PoDoFo preserves an uncertain compound hyphen unless the intact word
+also occurs on that page; explicit soft hyphens can be removed. This is
+conservative normalization, not dictionary-based pronunciation correction.
+
+Equations remain literal extracted text; footnotes stay at their geometric
+location, including before a continuation in the next column. Diagram labels,
+tables and mixed layouts can require selected text or an explicit order. The
+preview is therefore part of the reading workflow.
+
+Corpus SHA-256 values:
+
+- ViT: `8ce7b83971a14508ca711a27c875c9b6914c4f6767cf3150fb1ca6c07aa056d6`
+- ResNet: `1e0651b6810ecba34a3dbc5b5b0209226f889004607c1f203540a48d64e5a93a`
+
+The downloaded PDFs, page images and full extracted text remain local ignored
+artifacts under `build/mlsr-qualification/corpus/`; they are not copied into Git.
+Final reviews are in `vit-review-final/` and `resnet-review-final/`.
 
 ## Packaged playback
 
@@ -53,12 +96,14 @@ were renamed or removed to simulate independence.
 
 The native player completes three passages on two PDF pages, saves the source
 bookmark on page 2, freezes its presented cursor while paused, resumes, navigates
-sentences, and completes an F1/1.4× request. Twelve further start/stop cycles reuse
-one engine. After every stop, retained PCM bytes and stores return to zero; one
+sentences, and completes an F1/1.4× request. Both extended runs perform
+184 further cycles over 181.7/180.4 seconds, completing every eighth request and
+cancelling the others after audio starts. All reuse one engine. After every
+stop, retained PCM bytes and stores return to zero; one
 engine handle remains until shutdown. Shutdown returns the handle count to its
 baseline of zero. Peak retained audio during this fixture is 923,668 bytes in
 two stores, below MLSR's 128 MiB / 128-store quota. Peak observed native handles
-are four. These are short-fixture bounds, not an hours-long stress result.
+are four. These are repeated short-fixture bounds, not an hours-long paper result.
 
 An initial attempt to wrap the signed app in `sandbox-exec` trapped in
 `_libsecinit_appsandbox` before Flutter ran. The supported launch uses the app's
@@ -67,33 +112,45 @@ sandbox entitlement remains enabled throughout.
 
 ## Diagnostic measurements
 
-The final run measures request admission to the first observed **presented**
+Each run measures request admission to the first observed **presented**
 source frame, polling every 20 ms. This is not an acoustic timestamp or pure
 inference latency. Loading is included only in the cold-request figure. The
 process is newly launched, but OS/Core ML caches were not cleared. No power or
 background-process isolation was enforced beyond AC power and avoiding our own
 build/test workload during the playback measurements.
 
-| Final run | Observed |
-| --- | --- |
-| Engine open | 22.185 s |
-| First presented audio with engine load | 22.655 s |
-| Twelve warm first-audio observations | 207–296 ms; median 227 ms |
-| Two passage transitions | 221 ms and 279 ms |
-| Stop and retention-snapshot observation | 4–14 ms |
-| Peak RSS sampled every 50 ms | 334.6 MiB |
-| RSS after twelve stops | About 288.9 MiB; approximately 0.25 MiB above the first stopped sample |
+| Measurement | First extended run (`plan-v2/`) | Final source (`plan-v2-final/`) |
+| --- | --- | --- |
+| Engine open | 22.055 s | 22.138 s |
+| First presented audio with engine load | 22.490 s | 22.599 s |
+| 184 warm first-audio observations | 223–1,291 ms; median 276 ms | 227–543 ms; median 294 ms |
+| Two passage transitions | 275 ms and 325 ms | 273 ms and 319 ms |
+| Stop and retention-snapshot observation | 0.3–45 ms; median 13 ms | 0.2–59 ms; median 13 ms |
+| Peak RSS sampled every 50 ms | 322.1 MiB | 329.1 MiB |
+| RSS after warm stops | Initially 291.2 MiB, finally 257.0 MiB; range 256.8–292.5 MiB | Initially 294.7 MiB, finally 260.7 MiB; range 260.4–296.1 MiB |
+| Cache logical bytes before/after engine load | 113,539,996 → 170,309,994 | 170,309,994 → 227,079,992 |
+| Cache file count before/after engine load | 52 → 78 | 78 → 104 |
+| Cache growth during the warm loop | Zero bytes/files | Zero bytes/files |
 
-An earlier run measured 22.602 s for first audio, a 275 ms warm median
-(220–722 ms), and transitions of 223/815 ms. Keep both results: these are
-active-host diagnostics, not a throughput claim or latency guarantee. Passage
-transitions currently start the next request after native playback completion;
-there is no app-owned prefetch queue. The UI shows loading progress on first use.
+The final run includes the fixes found by the real-paper review. It returns
+native handles to zero and restores/audits the ordinary Release app.
+
+Earlier twelve-cycle runs measured cold first audio at 22.602/22.655 s, warm
+medians of 275/227 ms (ranges 220–722 / 207–296 ms), and transitions of
+223/815 ms and 221/279 ms. Keep the outliers: these are active-host diagnostics,
+not a throughput claim or latency guarantee. Passage transitions start the next
+speech request after native playback completion. Text for the next page is
+prepared ahead, but there is no audio prefetch queue. The UI shows loading
+progress on first use.
 
 Model/notice bytes are logical file sizes, not APFS private allocation or total
 installed size. RSS includes Flutter, PDFium and the native runtime; Core ML
-specialization caches and filesystem storage are separate. Handle counts and
-PCM quotas do not measure all native allocations.
+specialization caches and filesystem storage are separate. The measured cache
+contains Apple's `com.apple.e5rt.e5bundlecache` model artifacts. The temporary
+directory is nested within the cache directory on this host: do not add the two
+reported byte counts together. Each new relocated bundle can cause new cache
+artifacts; warm-loop stability does not establish a bound across upgrades or
+relocations. Handle counts and PCM quotas do not measure all native allocations.
 
 ## Evidence and reproduction
 
@@ -102,16 +159,28 @@ From `podofo_frontend_one`, after [preparation](tts-implementation.md#build-prep
 ```sh
 python3 tool/test_macos.py
 PODOFO_TEST_MLSR=1 python3 tool/test_macos.py test/narration_native_test.dart
-python3 tool/qualify_mlsr_macos.py
+python3 tool/qualify_mlsr_macos.py --stress-seconds 180
 ```
 
 The qualification command creates a new evidence directory and refuses to
 overwrite one. `qualification.json` contains the runtime receipt and relocation
-path; bundle audits retain all asset hashes, entitlements, linkage and pinned
+path; new runs also record the commit, working-tree status and SHA-256 of the
+application/probe source inputs. Bundle audits retain asset hashes, entitlements, linkage and pinned
 native provenance. `runtime.log`, both build logs, the generated PDF and
-`listening-sample.wav` are retained alongside it. The final local run is under
-`build/mlsr-qualification/final/`; the earlier run is under
-`build/mlsr-qualification/`. These ignored artifacts are not shipped in Git.
+`listening-sample.wav` are retained alongside it, as are the normal/inverted
+offscreen paint images. The final run is under
+`build/mlsr-qualification/plan-v2-final/`, and the first extended run under
+`plan-v2/`; earlier short runs are under `final/` and the qualification root.
+These ignored artifacts are not shipped in Git.
+
+For a local paper already on disk, use a new output directory:
+
+```sh
+PODOFO_PDF=/absolute/path/paper.pdf \
+PODOFO_PAPER_OUTPUT=/absolute/path/new-review-directory \
+PODOFO_PAGES=2,3 PODOFO_ORDERS=automatic,pdfOrder \
+python3 tool/test_macos.py tool/inspect_paper_test.dart
+```
 
 ## Manual acceptance still open
 

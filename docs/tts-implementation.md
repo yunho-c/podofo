@@ -36,6 +36,9 @@ gates stay explicit until exercised.
 - Prepared speech text retains a mapping to one or more original PDF ranges.
 - PDF native access uses the existing session/lease, with immutable snapshots
   released before speech; annotation-only edits do not invalidate spoken text.
+- Native extraction is serialized; layout analysis runs on detached snapshots
+  after that lock exits. Text for the next page may be prepared during playback,
+  without creating another speech handle or advancing the source cursor.
 - Native `Speech.done` completion, not synthesis completion, advances passages.
 - Cancellation/failure never advances narration. Late callbacks cannot restart it.
 - Source text anchors are durable; request IDs, sentence IDs and frame offsets
@@ -133,8 +136,10 @@ present before this work and are preserved. A baseline patch and the abandoned
   with a scanned page, bounded page caches, changed-text resume rejection, delayed
   close versus a new request, and pause/stop during page preparation.
 - Reading order is a conservative geometric heuristic, reviewed before starting.
-  It is not semantic PDF understanding or OCR. Marginal text/footnotes remain in
-  the reading stream unless selected around; literal hyphens are preserved.
+  It is not semantic PDF understanding or OCR. Footnotes and unconfirmed marginal
+  text remain in the stream. Confirmed repeated margin lines are optional;
+  ordinary compound hyphens are preserved, while witnessed line-end splits and
+  explicit soft hyphens can be joined with source mappings retained.
   Complex tables, mixed scripts/layouts and equations can need explicit PDF order
   or selection. No whole-paper duration is fabricated from the current passage.
 - Milestone 4 automated portion: relocated sandboxed Release playback and exact
@@ -143,3 +148,30 @@ present before this work and are preserved. A baseline patch and the abandoned
   cancellation and engine/PCM cleanup pass. The 760×520 reader/preview checks
   also pass. Timing/resource observations and outstanding native-window/human
   listening gates are recorded in [qualification](tts-qualification.md).
+- Completion-audit follow-up: source-to-speech lookup now finds the containing
+  source span even when extraction order differs from reading order. Page plans
+  expose paragraph/heading/caption/reference/excluded-margin blocks. Margin
+  detection uses up to four nearby pages, one temporary snapshot at a time;
+  two prepared page plans remain the persistent cache bound. Preparation shares
+  in-flight page work, and cancellation invalidates it before publication.
+  Bookmarks add bounded context and plan version without changing existing UIDs.
+  The preview exposes exclusions and labels its 16,000-character display limit.
+- The expanded 63-test suite passes, including a real four-page corpus with
+  alternating headers, page numbers, scientific notation, cross-page prose and
+  two columns; source reorder and PDFium hyphen-marker regressions; cancellation
+  versus replacement prefetch; and dark-theme reader ownership. Static analysis
+  and repeated schema generation pass. The ordinary widget engine cannot run
+  Impeller image filters; the Release probe checks inversion with offscreen
+  source-region pixels under the real renderer.
+- The real-paper review compared a single-column ViT body page and two-column
+  ResNet body page to their PDFium renderings. It caught joined-word geometry
+  spanning lines and a footer-position gap; regressions now cover those cases,
+  vertical marginal text and reversed PDF word emission. Complex pages require
+  explicit review. See the qualification record for inputs and exact scope.
+- Two extended sandboxed runs each complete 184 warm cycles over three minutes.
+  Every stop releases PCM/stores, shutdown returns native handles to zero, and
+  cache bytes/file counts stay unchanged during the warm loops. Engine loading
+  adds specialization-cache artifacts, so relocation/upgrade storage is a
+  separate boundary. The final-source probe records source hashes and restores
+  the normal signed Release app. Human listening and native-window acceptance
+  remain pending; Windows has no executed build evidence in this workspace.
