@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
 import 'package:mlsr_app_models/app_models.dart';
 import 'package:mlsr_flutter/mlsr_flutter.dart';
@@ -23,6 +24,7 @@ import 'package:podofo_one/src/services/narration_bookmarks.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 
 import '../test/fixtures/narration_pdf_fixture.dart';
+import 'document_timeline_probe.dart';
 
 void require(bool condition, String message) {
   if (!condition) throw StateError(message);
@@ -30,6 +32,7 @@ void require(bool condition, String message) {
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  stdout.writeln('PODOFO_MLSR_PID=$pid');
   runApp(
     const MaterialApp(
       home: Scaffold(
@@ -167,7 +170,11 @@ Future<void> main() async {
         report['engine_open_ms'] = loading.elapsedMicroseconds / 1000;
         return MlsrNarrator.fromTts(tts!, volume: 0);
       },
-      onPosition: (_, anchor) => bookmarks.save(pdf!.path, anchor),
+      onPosition: (owner, anchor) {
+        if (owner.documentId case final PdfSession session) {
+          bookmarks.save(session.path, anchor);
+        }
+      },
     );
     final narration = controller;
     final document = pdf;
@@ -317,6 +324,13 @@ Future<void> main() async {
       'Source bookmark did not follow playback',
     );
     await narration.stop();
+    stage('document duration and seeking');
+    report['document_timeline'] = await qualifyDocumentTimeline(
+      narration,
+      tts!,
+      bookmarks,
+      evidence,
+    );
     stage('warm reuse and cancellation');
     report['storage_after_engine'] = await storage();
     final stressSeconds = int.parse(
@@ -400,7 +414,7 @@ Future<void> main() async {
     report['storage_after_stress'] = await storage();
     stage('voice, speed and listening sample');
     await narration.configure(
-      const NarrationSettings(voice: 'supertonic3:F1', speed: 1.4),
+      const NarrationSettings(voice: 'supertonic3:F1', speed: 1.3),
     );
     await narration.read(
       document,
@@ -447,6 +461,21 @@ Future<void> main() async {
     final encoded = const JsonEncoder.withIndent('  ').convert(report);
     if (evidence != null) {
       await File('${evidence.path}/report.json').writeAsString('$encoded\n');
+      for (final name in [
+        'qualification-paper.pdf',
+        'listening-sample.wav',
+        'highlight-normal.png',
+        'highlight-inverted.png',
+        'timeline-paper.pdf',
+        'timeline-report.json',
+      ]) {
+        final file = File('${evidence.path}/$name');
+        if (!await file.exists()) continue;
+        final bytes = await file.readAsBytes();
+        stdout.writeln(
+          'PODOFO_MLSR_ARTIFACT=${jsonEncode({'name': name, 'sha256': sha256.convert(bytes).toString(), 'base64': base64Encode(bytes)})}',
+        );
+      }
     }
     stdout.writeln('PODOFO_MLSR_REPORT=${jsonEncode(report)}');
     await stdout.flush();

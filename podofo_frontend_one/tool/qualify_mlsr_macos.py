@@ -2,13 +2,14 @@
 """Build, relocate and exercise sandboxed MLSR; restore the ordinary Release app."""
 
 import argparse
+import base64
 import datetime
 import hashlib
 import json
 import os
 from pathlib import Path
 import platform
-import shutil
+import signal
 import socket
 import subprocess
 import tempfile
@@ -19,6 +20,9 @@ from audit_mlsr_macos import audit
 
 APP = Path(__file__).resolve().parents[1]
 BUNDLE = APP / 'build/macos/Build/Products/Release/PoDoFo.app'
+ARTIFACTS = {'qualification-paper.pdf', 'listening-sample.wav',
+             'highlight-normal.png', 'highlight-inverted.png',
+             'timeline-paper.pdf', 'timeline-report.json'}
 
 
 def run_logged(log, command, **kwargs):
@@ -35,7 +39,8 @@ def write_report(path, value):
 def source_receipt():
     """Record the actual application/probe inputs, including uncommitted work."""
     roots = ['lib', 'macos', 'shaders', 'tool',
-             'pubspec.yaml', 'pubspec.lock', 'mlsr-models.yaml']
+             'pubspec.yaml', 'pubspec.lock', 'mlsr-models.yaml',
+             'test/fixtures/narration_pdf_fixture.dart']
     listed = subprocess.check_output(
         ['git', 'ls-files', '--cached', '--others', '--exclude-standard', '-z',
          '--', *roots], cwd=APP).decode().split('\0')
@@ -73,18 +78,36 @@ def qualify(output, model_manifest, stress_seconds):
         with socket.socket() as listener:
             listener.bind(('127.0.0.1', 0))
             listener.listen()
-            env = dict(os.environ,
-                       PODOFO_FORBIDDEN_FILES=json.dumps(list(map(str, forbidden))),
-                       PODOFO_STRESS_SECONDS=str(stress_seconds),
-                       PODOFO_DENIED_NETWORK_PORT=str(listener.getsockname()[1]))
+            env = {
+                'PODOFO_FORBIDDEN_FILES': json.dumps(list(map(str, forbidden))),
+                'PODOFO_STRESS_SECONDS': str(stress_seconds),
+                'PODOFO_DENIED_NETWORK_PORT': str(listener.getsockname()[1]),
+            }
             started = time.monotonic()
-            # The signed app's own Sandbox denies file/network access. Nesting
-            # sandbox-exec around it traps in libsecinit before Flutter starts.
-            with (output / 'runtime.log').open('wb') as log:
-                result = subprocess.run(
-                    [str(relocated / 'Contents/MacOS/PoDoFo')],
-                    cwd=relocated_root, env=env, stdout=log,
-                    stderr=subprocess.STDOUT, timeout=300 + stress_seconds)
+            # Launch as a GUI application, matching ordinary user launches.
+            # Direct executable launches can stall paused Core ML/reader work.
+            # The signed app's own Sandbox supplies the denial boundary.
+            report['launch'] = 'macOS Launch Services (open -n -W)'
+            runtime_log = output / 'runtime.log'
+            command = ['/usr/bin/open', '-n', '-W', str(relocated),
+                       '--stdout', str(runtime_log), '--stderr', str(runtime_log)]
+            for key, value in env.items():
+                command += ['--env', f'{key}={value}']
+            try:
+                result = run_logged(output / 'launcher.log', command,
+                                    timeout=300 + stress_seconds)
+            except subprocess.TimeoutExpired:
+                # open -W is only a launcher; do not leave its probe running.
+                lines = runtime_log.read_text(errors='replace').splitlines()
+                for line in lines:
+                    if not line.startswith('PODOFO_MLSR_PID='):
+                        continue
+                    pid = int(line.split('=', 1)[1])
+                    process = subprocess.run(['ps', '-p', str(pid), '-o', 'comm='],
+                                             capture_output=True, text=True)
+                    if process.returncode == 0 and Path(process.stdout.strip()).resolve() == (relocated / 'Contents/MacOS/PoDoFo').resolve():
+                        os.kill(pid, signal.SIGTERM)
+                raise
             report['process_seconds'] = time.monotonic() - started
         log = (output / 'runtime.log').read_text(errors='replace')
         receipts = [line.split('PODOFO_MLSR_REPORT=', 1)[1]
@@ -94,12 +117,23 @@ def qualify(output, model_manifest, stress_seconds):
         receipt = json.loads(receipts[-1])
         report['runtime'] = receipt
         write_report(output / 'runtime-report.json', receipt)
-        if directory := receipt.get('evidence_directory'):
-            for name in ['qualification-paper.pdf', 'listening-sample.wav',
-                         'highlight-normal.png', 'highlight-inverted.png']:
-                source = Path(directory) / name
-                if source.is_file():
-                    shutil.copy2(source, output / name)
+        # macOS may deny the host process access to another app's container.
+        # The probe exports its own fixed evidence set over its stdout pipe.
+        exported = set()
+        for line in log.splitlines():
+            if 'PODOFO_MLSR_ARTIFACT=' not in line:
+                continue
+            artifact = json.loads(line.split('PODOFO_MLSR_ARTIFACT=', 1)[1])
+            name = artifact['name']
+            if name not in ARTIFACTS:
+                raise ValueError(f'Unexpected probe artifact: {name}')
+            payload = base64.b64decode(artifact['base64'], validate=True)
+            if hashlib.sha256(payload).hexdigest() != artifact['sha256']:
+                raise ValueError(f'Probe artifact digest differs: {name}')
+            (output / name).write_bytes(payload)
+            exported.add(name)
+        if receipt.get('passed') is True and exported != ARTIFACTS:
+            raise RuntimeError(f'Missing probe artifacts: {ARTIFACTS - exported}')
         if result.returncode != 0 or receipt.get('passed') is not True:
             raise RuntimeError(f"Runtime qualification failed: {receipt.get('error', result.returncode)}")
         report['passed'] = True

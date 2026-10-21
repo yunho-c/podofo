@@ -72,7 +72,52 @@ class TimingSession extends FakeNarratorSession
 
 Future<void> settle() => pumpEventQueue(times: 100);
 
+class _ClosingJob extends TimingJob {
+  final joined = Completer<void>();
+  @override
+  void cancel() {
+    if (disposed) throw StateError('Handle is already closed');
+    super.cancel();
+  }
+
+  @override
+  Future<void> dispose() async {
+    disposed = true;
+    await joined.future;
+  }
+}
+
+class _ClosingSession extends TimingSession {
+  final job = _ClosingJob();
+  @override
+  NarrationDurationJob planDuration(String text, NarrationSettings settings) {
+    job.completion.complete(timing(text, key: settings.key));
+    return job;
+  }
+}
+
 void main() {
+  test(
+    'cancellation cannot reach a closed duration handle while it joins',
+    () async {
+      final paper = fixture.sequence(1), session = _ClosingSession();
+      addTearDown(paper.close);
+      await paper.start();
+      paper.configureTiming(session, const NarrationSettings());
+      await settle();
+      expect(session.job.disposed, true);
+      expect(paper.timeline.snapshot.totalMicroseconds, 10000000);
+      try {
+        paper.cancelPending();
+        paper.invalidateTiming(const NarrationSettings(speed: 1.3));
+        expect(session.job.cancelled, false);
+      } finally {
+        session.job.joined.complete();
+        await paper.timingIdle;
+      }
+    },
+  );
+
   test(
     'replacement waits for old duration ownership before new admission',
     () async {

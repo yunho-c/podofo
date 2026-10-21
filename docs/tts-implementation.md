@@ -283,7 +283,7 @@ python3 tool/test_macos.py tool/benchmark_paper_index_test.dart
 
 ## Document timeline: duration and position (milestone 3)
 
-PoDoFo pins MLSR `76ae48b` and uses its public duration-planning facade across the
+PoDoFo uses the public duration-planning facade introduced in MLSR `76ae48b` across the
 existing application-owned engine. MLSR owns background admission, foreground
 preemption, cancellation and retry; no second engine or PCM consumer is created.
 The SDK change is on local branch `feat/document-duration-api`; publish that
@@ -374,3 +374,23 @@ invalidation, keyboard adjustment, a real pointer gesture, and hour formatting.
 The narrow 360-pixel partial-state capture has been inspected for wrapping and
 slider layout; it uses the bundled Urbanist font. Evidence is retained under
 `build/document-timeline-qualification/milestone5/` in the app directory.
+
+## Document timeline: qualification (milestone 6)
+
+The real-PDF/native release probe exercises complete duration coverage from a
+middle-page start, References scope, 24 cross-page seeks, bookmarks, paused and
+playing intent, endpoints, Stop cancellation and both speed limits. The regular
+suite adds timeout, asynchronous duration-disposal and narrow hour-scale checks.
+Real ViT/ResNet corpus runs preserve unsupported-text failures and review gaps;
+these cases intentionally have no complete document scale.
+
+Qualification found a cancellation race during asynchronous duration-job disposal
+and a native paused-readiness recovery deadlock. The cancellation slot now holds
+only live handles. MLSR's Apple output can restore buffers after a configuration
+notification while remaining paused; a deterministic muted test failed before
+that fix and passes afterward. The SDK pin includes both the public duration API
+and this follow-up (`c2b7408`).
+
+See [document timeline qualification](document-timeline-qualification.md) for
+reproduction, exact coverage, evidence boundaries and remaining limits. Existing
+user edits outside this implementation remain separate from its commits.

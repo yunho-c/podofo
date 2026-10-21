@@ -105,6 +105,31 @@ Future<NarrationController> reader(
 }
 
 void main() {
+  testWidgets('unconfirmed seek times out at the previous committed source', (
+    tester,
+  ) async {
+    final paper = fixture.sequence(3), session = SeekSession();
+    final controller = (await tester.runAsync(() => reader(paper, session)))!;
+    addTearDown(controller.close);
+    final position = controller.documentPosition!.microseconds;
+    session.confirmSeek = false;
+    final operation = controller.seekDocument(15000000);
+    for (var i = 0; i < 12; i++) {
+      await tester.runAsync(timings.settle);
+      await tester.pump(const Duration(milliseconds: 1));
+    }
+    expect(controller.seekingDocument, true);
+    await tester.pump(const Duration(seconds: 31));
+    await tester.runAsync(() => operation);
+    expect(controller.error, contains('too long'));
+    expect(controller.preparing, false);
+    expect(controller.snapshot!.phase, NarrationPhase.stopped);
+    expect(paper.pageNumber, 1);
+    expect(controller.currentAnchor!.page, 1);
+    expect(controller.documentPosition!.microseconds, position);
+    expect(session.playbacks.last.cancelled, true);
+  });
+
   test('pause intent changes during preparation; settings and close cancel pending destinations', () async {
     final paper = fixture.sequence(3), session = SeekSession();
     final controller = await reader(paper, session);

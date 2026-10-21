@@ -155,8 +155,11 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
           } catch (error) {
             if (valid()) timeline.fail(descriptor.id, error);
           } finally {
-            await job?.dispose();
+            // Disposal closes the public handle before its asynchronous join.
+            // Stop/settings/seek may run during that join; only live jobs may
+            // remain reachable through the cancellation slot.
             if (identical(_durationJob, job)) _durationJob = null;
+            await job?.dispose();
           }
           await Future<void>.delayed(Duration.zero);
         }

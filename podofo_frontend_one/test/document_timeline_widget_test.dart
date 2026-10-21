@@ -223,4 +223,45 @@ void main() {
     expect(documentClock(0), '0:00');
     expect(documentClock(3661000000), '1:01:01');
   });
+
+  testWidgets('complete hour-scale timeline fits at narrow width after Stop', (
+    tester,
+  ) async {
+    final paper = fixture.sequence(3), session = seek.SeekSession();
+    final controller = (await tester.runAsync(
+      () => seek.reader(paper, session),
+    ))!;
+    addTearDown(controller.close);
+    await tester.runAsync(controller.stop);
+    for (var page = 1; page <= 3; page++) {
+      final descriptor = paper.index.page(page)!.passages.single;
+      final passage = (await tester.runAsync(() => paper.preview(page)))!
+          .passages
+          .single;
+      paper.timeline.record(
+        descriptor,
+        timings.timing(passage.text, frames: 400000),
+      );
+    }
+    await mount(tester, controller, width: 360);
+    expect(slider(tester).onChanged, isNotNull);
+    expect(find.textContaining('3:20:00'), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+    final boundary = tester.renderObject<RenderRepaintBoundary>(
+      find.byKey(const ValueKey('timeline-capture')),
+    );
+    await tester.runAsync(() async {
+      final image = await boundary.toImage();
+      try {
+        final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+        final file = File(
+          'build/document-timeline-qualification/milestone6/complete-360.png',
+        );
+        await file.parent.create(recursive: true);
+        await file.writeAsBytes(bytes!.buffer.asUint8List());
+      } finally {
+        image.dispose();
+      }
+    });
+  });
 }
