@@ -102,7 +102,7 @@ void main() {
     expect(descriptor.anchor.contextAfter, isEmpty);
     final changed = page(1, text: 'Changed content.');
     paper.index.record(
-      PaperPlanner.plan(changed.text, changed.width, paper.options),
+      PaperPlanner.plan(changed.text, paper.options),
       paper.options,
     );
     expect(paper.index.snapshot.passages.single.id, isNot(descriptor.id));
@@ -282,7 +282,7 @@ void main() {
   });
 
   test(
-    'page review updates only its metadata and preserves unaffected identities',
+    'mixed-script text is indexed in PDF order without a layout override',
     () async {
       final paper = sequence(
         3,
@@ -292,11 +292,9 @@ void main() {
       await paper.start();
       await paper.indexDocument();
       final id = paper.index.page(1)!.passages.single.id;
-      expect(paper.index.page(2)!.status, PaperIndexPageStatus.reviewRequired);
-      await expectLater(paper.move(1), throwsA(isA<PaperReviewRequired>()));
-      paper.acceptReview(PaperOrder.pdfOrder);
-      await paper.indexDocument();
       expect(paper.index.snapshot.fullyResolved, true);
+      expect((await paper.move(1))!.text, 'مرحبا بالعالم.');
+      expect(paper.review, isNull);
       expect(paper.index.page(1)!.passages.single.id, id);
       expect(
         paper.index.page(2)!.passages.single.optionsKey,

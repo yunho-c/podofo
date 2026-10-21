@@ -25,10 +25,16 @@ void main() {
           .split(',')
           .map(int.parse)
           .toList();
-      final orders = (Platform.environment['PODOFO_ORDERS'] ?? 'automatic')
-          .split(',')
-          .map((name) => PaperOrder.values.byName(name))
-          .toList();
+      if (Platform.environment['PODOFO_ORDERS'] case final legacyOrder?) {
+        if (legacyOrder != 'pdfOrder') {
+          fail(
+            'Layout overrides have been removed. Reading uses PDF text order.',
+          );
+        }
+      }
+      final options = PaperReadOptions(
+        skipCaptions: Platform.environment['PODOFO_SKIP_CAPTIONS'] == '1',
+      );
       final destination = Directory(output);
       if (await destination.exists()) {
         fail('Evidence directory already exists: $output');
@@ -58,51 +64,50 @@ void main() {
             image.dispose();
             rendered.dispose();
           }
-          for (final order in orders) {
-            final plan = await sequence.preview(
-              number,
-              preferences: PaperReadOptions(order: order),
-            );
-            if (order == orders.first) {
-              await File('$output/source-$number.json').writeAsString(
-                jsonEncode({
-                  'text': plan.page.text,
-                  'boxes': [
-                    for (final r in plan.page.boxes)
-                      [r.left, r.top, r.right, r.bottom],
-                  ],
-                }),
-              );
-            }
-            receipt.add({
-              'page': number,
-              'order': order.name,
-              'description': plan.description,
-              'issue': plan.issue,
-              'text_hash': plan.page.textHash,
-              'ends_paper': plan.endsPaper,
-              'excluded': [
-                for (final block in plan.blocks.where((b) => !b.included))
-                  {'kind': block.kind.name, 'text': block.text},
+          final plan = await sequence.preview(number, preferences: options);
+          await File('$output/source-$number.json').writeAsString(
+            jsonEncode({
+              'text': plan.page.text,
+              'boxes': [
+                for (final r in plan.page.boxes)
+                  [r.left, r.top, r.right, r.bottom],
               ],
-              'passages': [
-                for (final passage in plan.passages)
-                  {
-                    'text': passage.text,
-                    'bytes': utf8.encode(passage.text).length,
-                    'source_start': passage.anchorAt(0)?.offset,
-                    'source_end': passage.spans.lastOrNull?.sourceEnd,
-                  },
-              ],
-            });
-            expect(
-              plan.passages.every(
-                (p) =>
-                    utf8.encode(p.text).length <= PaperPlanner.maxPassageBytes,
-              ),
-              true,
-            );
-          }
+            }),
+          );
+          receipt.add({
+            'page': number,
+            'order': 'pdfOrder',
+            'plan_version': PaperPlanner.version,
+            'options': options.key,
+            'description': plan.description,
+            'issue': plan.issue,
+            'text_hash': plan.page.textHash,
+            'ends_paper': plan.endsPaper,
+            'excluded': [
+              for (final block in plan.blocks.where((b) => !b.included))
+                {'kind': block.kind.name, 'text': block.text},
+            ],
+            'passages': [
+              for (final passage in plan.passages)
+                {
+                  'text': passage.text,
+                  'bytes': utf8.encode(passage.text).length,
+                  'source_start': passage.anchorAt(0)?.offset,
+                  'source_end': passage.spans.lastOrNull?.sourceEnd,
+                },
+            ],
+          });
+          final offsets = [
+            for (final passage in plan.passages)
+              for (final span in passage.spans) span.source.offset,
+          ];
+          expect(offsets, orderedEquals([...offsets]..sort()));
+          expect(
+            plan.passages.every(
+              (p) => utf8.encode(p.text).length <= PaperPlanner.maxPassageBytes,
+            ),
+            true,
+          );
         }
         await File('$output/reading-order.json')
             .writeAsString(const JsonEncoder.withIndent('  ').convert(receipt));

@@ -55,8 +55,11 @@ void main() {
                   onPressed: () async {
                     choice = await showDialog<PaperReadingChoice>(
                       context: context,
-                      builder: (_) =>
-                          PaperReadingPreview(sequence: sequence, page: 1),
+                      builder: (_) => PaperReadingPreview(
+                        sequence: sequence,
+                        page: 1,
+                        savedPlanVersion: 2,
+                      ),
                     );
                   },
                   child: const Text('Listen'),
@@ -79,10 +82,18 @@ void main() {
           tester,
           () => find.text('A readable paper.').evaluate().isNotEmpty,
         );
+        expect(find.text('PDF text order'), findsOneWidget);
+        expect(find.text('Detect layout'), findsNothing);
+        expect(find.text('One column'), findsNothing);
+        expect(find.text('Two columns'), findsNothing);
+        expect(
+          find.textContaining('The reading plan has changed.'),
+          findsOneWidget,
+        );
         await tester.tap(find.text('Read from this page'));
         await tester.pumpAndSettle();
         expect(choice!.page, 2);
-        expect(choice!.options.order, PaperOrder.automatic);
+        expect(choice!.options.key, const PaperReadOptions().key);
         expect(tester.takeException(), isNull);
       } finally {
         await tester.pumpWidget(const SizedBox.shrink());

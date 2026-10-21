@@ -41,7 +41,43 @@ Test captures are not native-window screenshots. The ordinary widget engine
 does not support Impeller image filters; inversion is exercised in the Release
 probe using the production painter and shader.
 
-## Real-paper reading order
+## Reading plan version 3 — 2026-10-21
+
+The current planner preserves PDF text order and removes the automatic,
+one-column and two-column choices. This supersedes the geometric reading-order
+qualification below; historical native playback/build results remain historical.
+The version-3 checks exercise extraction, prepared text and source mapping, not
+new human listening or native playback acceptance.
+
+The local input was MathReader, `2501.07088v2.pdf`, SHA-256
+`d0c540675b15df8495a7cc817e6a3f3b82dd2e5cc929d1003256720a60e0182f`.
+All five pages were extracted through the production PDFium/pdfrx pipeline with
+captions included and excluded. Prepared passage source offsets remain monotonic;
+page 2 finishes the left-column prose before the right-column Method section.
+Skipping captions removes its figure caption while preserving all eight body
+and heading passages, rather than excluding the entire page. Reference stopping
+remains on page 4. With captions included, each page matches the previous explicit
+PDF-order text after ignoring whitespace and hyphens; this comparison is not an
+audio-quality or pronunciation measurement.
+
+The full Flutter regression suite passes 131 tests; three opt-in native cases
+were skipped. The real-PDF inspector is an additional passing test. Analysis is
+clean. The ordinary arm64 macOS Release app builds and passes deep/strict local
+code-signature verification (`build-final.log` in the evidence directory). Regressions cover narrow columns, reversed/interleaved source sequences,
+multi-line and small-caps captions, body sentences mentioning tables/figures,
+source anchors, byte limits, mixed scripts, scanned pages, and the version-2
+bookmark warning in the 760×520 preview. Native synthesis and audible quality
+were not requalified for this planner change.
+
+Retained ignored evidence is under
+`podofo_frontend_one/build/reading-order-v3-review/`: `verified-included/` and
+`verified-filtered/` contain rendered pages, source snapshots and complete prepared
+passages/exclusions. The inspector checks source-order monotonicity and passage
+byte limits. Run it with `PODOFO_PDF`, `PODOFO_PAGES=1,2,3,4,5`, and a new
+`PODOFO_PAPER_OUTPUT` directory; set `PODOFO_SKIP_CAPTIONS=1` for exclusions.
+`PODOFO_ORDERS` is obsolete; non-PDF-order values are rejected.
+
+## Real-paper reading order (version 2, historical)
 
 The local diagnostic `tool/inspect_paper_test.dart` renders source pages with
 PDFium and exports the complete prepared text, exclusions and source geometry.

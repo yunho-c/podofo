@@ -109,7 +109,6 @@ class PaperPagePlanner {
     _check(work);
     return PaperPlanner.plan(
       page.text,
-      page.width,
       work.options,
       runningMatter: confirmed.toList(),
     );

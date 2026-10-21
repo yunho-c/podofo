@@ -117,7 +117,10 @@ void main() {
       expect(
         complete,
         contains(
-          '${[for (var i = 0; i < 5; i++) 'Left experiment $i.'].join(' ')} ${[for (var i = 0; i < 5; i++) 'Right observation $i.'].join(' ')}',
+          [
+            for (var i = 0; i < 5; i++)
+              'Left experiment $i. Right observation $i.',
+          ].join(' '),
         ),
       );
       expect(complete, isNot(contains('Citation content')));
@@ -201,12 +204,12 @@ void main() {
     }
   });
 
-  test('real two-column PDF is ordered by geometry and retains both columns', () async {
+  test('real narrow two-column PDF retains extracted order and both columns', () async {
     final stream = [
-      for (var i = 0; i < 5; i++) ...[
-        'BT /F1 12 Tf 40 ${700 - i * 18} Td (Left sentence $i.) Tj ET\n',
-        'BT /F1 12 Tf 340 ${700 - i * 18} Td (Right sentence $i.) Tj ET\n',
-      ],
+      for (var i = 0; i < 5; i++)
+        'BT /F1 12 Tf 200 ${700 - i * 18} Td (Left sentence $i.) Tj ET\n',
+      for (var i = 0; i < 5; i++)
+        'BT /F1 12 Tf 298 ${700 - i * 18} Td (Right sentence $i.) Tj ET\n',
     ].join();
     final file = File('${directory.path}/columns.pdf')
       ..writeAsBytesSync(narrationPdfFixture([stream]));
@@ -215,7 +218,7 @@ void main() {
     try {
       final plan = await sequence.preview(1);
       expect(plan.issue, isNull);
-      expect(plan.description, contains('Two columns'));
+      expect(plan.description, 'PDF text order');
       expect(
         plan.passages.map((p) => p.text).join(' '),
         '${[for (var i = 0; i < 5; i++) 'Left sentence $i.'].join(' ')} ${[for (var i = 0; i < 5; i++) 'Right sentence $i.'].join(' ')}',

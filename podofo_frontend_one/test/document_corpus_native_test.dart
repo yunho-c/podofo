@@ -71,88 +71,77 @@ void main() {
           final file = File(path);
           final document = await PdfSession.open(file.path);
           try {
-            for (final order in [PaperOrder.automatic, PaperOrder.pdfOrder]) {
-              final paper = PaperSequence(
-                document,
-                PaperReadOptions(order: order),
+            final paper = PaperSequence(document, const PaperReadOptions());
+            try {
+              final timer = Stopwatch()..start();
+              paper.configureTiming(
+                session as NarrationDurationSession,
+                const NarrationSettings(),
               );
-              try {
-                final timer = Stopwatch()..start();
-                paper.configureTiming(
-                  session as NarrationDurationSession,
-                  const NarrationSettings(),
-                );
-                await paper.timingIdle;
-                final timeline = paper.timeline.snapshot;
-                final index = paper.index.snapshot;
-                expect(timeline.planning, false);
-                expect(index.scanFinished, true);
-                expect(
-                  timeline.plannedPassages + timeline.failedPassages,
-                  timeline.passageCount,
-                );
-                if (timeline.unresolvedPages > 0) {
-                  expect(timeline.totalMicroseconds, isNull);
-                  expect(paper.timeline.freeze(), isNull);
-                } else if (timeline.passageCount > 0) {
-                  final scale = paper.timeline.freeze()!;
-                  expect(timeline.fallbackPassages, timeline.failedPassages);
-                  for (final passage in index.passages) {
-                    final prefix = paper.timeline.prefixMicroseconds(
-                      passage.id,
-                    )!;
-                    final target = scale.targetAt(prefix);
-                    if (paper.timeline.timing(passage.id) == null) {
-                      expect(target, isNull);
-                      expect(
-                        scale.unavailablePassageAt(prefix)?.id,
-                        passage.id,
-                      );
-                    } else {
-                      expect(target?.passage.id, passage.id);
-                    }
+              await paper.timingIdle;
+              final timeline = paper.timeline.snapshot;
+              final index = paper.index.snapshot;
+              expect(timeline.planning, false);
+              expect(index.scanFinished, true);
+              expect(
+                timeline.plannedPassages + timeline.failedPassages,
+                timeline.passageCount,
+              );
+              if (timeline.unresolvedPages > 0) {
+                expect(timeline.totalMicroseconds, isNull);
+                expect(paper.timeline.freeze(), isNull);
+              } else if (timeline.passageCount > 0) {
+                final scale = paper.timeline.freeze()!;
+                expect(timeline.fallbackPassages, timeline.failedPassages);
+                for (final passage in index.passages) {
+                  final prefix = paper.timeline.prefixMicroseconds(passage.id)!;
+                  final target = scale.targetAt(prefix);
+                  if (paper.timeline.timing(passage.id) == null) {
+                    expect(target, isNull);
+                    expect(scale.unavailablePassageAt(prefix)?.id, passage.id);
+                  } else {
+                    expect(target?.passage.id, passage.id);
                   }
                 }
-                expect(paper.cachedPageCount, 0);
-                expect(native.mlsr_live_handles(), baseline + 1);
-                (report['cases'] as List).add({
-                  'path': file.absolute.path,
-                  'pdf_sha256': sha256
-                      .convert(file.readAsBytesSync())
-                      .toString(),
-                  'order': order.name,
-                  'settings': const NarrationSettings().key,
-                  'elapsed_ms': timer.elapsedMicroseconds / 1000,
-                  'scope_end_page': index.scopeEndPage,
-                  'physical_pages': index.pageCount,
-                  'planned_passages': timeline.plannedPassages,
-                  'passages': timeline.passageCount,
-                  'known_duration_us': timeline.knownMicroseconds,
-                  'total_duration_us': timeline.totalMicroseconds,
-                  'fallback_passages': timeline.fallbackPassages,
-                  'unresolved_pages': [
-                    for (final page in index.unresolvedPages)
-                      {'page': page.page, 'issue': page.issue},
-                  ],
-                  'failed_passages': [
-                    for (final p in index.passages)
-                      if (paper.timeline.failure(p.id) case final error?)
-                        {
-                          'page': p.page,
-                          'ordinal': p.ordinal,
-                          'text_sha256': p.spokenTextHash,
-                          'error': error,
-                        },
-                  ],
-                  'retained_timing_count': paper.timeline.retainedTimingCount,
-                  'cached_pages': paper.cachedPageCount,
-                  'live_handles': native.mlsr_live_handles(),
-                  'rss_bytes': ProcessInfo.currentRss,
-                });
-              } finally {
-                paper.close();
-                await paper.timingIdle;
               }
+              expect(paper.cachedPageCount, 0);
+              expect(native.mlsr_live_handles(), baseline + 1);
+              (report['cases'] as List).add({
+                'path': file.absolute.path,
+                'pdf_sha256': sha256.convert(file.readAsBytesSync()).toString(),
+                'order': 'pdfOrder',
+                'plan_version': PaperPlanner.version,
+                'settings': const NarrationSettings().key,
+                'elapsed_ms': timer.elapsedMicroseconds / 1000,
+                'scope_end_page': index.scopeEndPage,
+                'physical_pages': index.pageCount,
+                'planned_passages': timeline.plannedPassages,
+                'passages': timeline.passageCount,
+                'known_duration_us': timeline.knownMicroseconds,
+                'total_duration_us': timeline.totalMicroseconds,
+                'fallback_passages': timeline.fallbackPassages,
+                'unresolved_pages': [
+                  for (final page in index.unresolvedPages)
+                    {'page': page.page, 'issue': page.issue},
+                ],
+                'failed_passages': [
+                  for (final p in index.passages)
+                    if (paper.timeline.failure(p.id) case final error?)
+                      {
+                        'page': p.page,
+                        'ordinal': p.ordinal,
+                        'text_sha256': p.spokenTextHash,
+                        'error': error,
+                      },
+                ],
+                'retained_timing_count': paper.timeline.retainedTimingCount,
+                'cached_pages': paper.cachedPageCount,
+                'live_handles': native.mlsr_live_handles(),
+                'rss_bytes': ProcessInfo.currentRss,
+              });
+            } finally {
+              paper.close();
+              await paper.timingIdle;
             }
           } finally {
             await document.close(discard: true);

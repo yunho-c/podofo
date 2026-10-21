@@ -121,7 +121,7 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
               _pages[page.page] ??
               await planner.plan(
                 page.page,
-                _preferences(page.page),
+                options,
                 priority: PaperPlanPriority.background,
               );
         } on PaperPlanningCancelled {
@@ -135,7 +135,7 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
           continue;
         }
         if (!valid()) return;
-        index.record(plan, _preferences(page.page));
+        index.record(plan, options);
         if (plan.issue != null) continue;
         final descriptors = index.page(page.page)!.passages;
         for (var i = 0; i < descriptors.length; i++) {
@@ -186,7 +186,6 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     cancelPending();
     _options = value;
     _pages.clear();
-    _overrides.clear();
     _skipped.clear();
     review = null;
     index.reset();
@@ -198,7 +197,6 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
   }
 
   final _pages = <int, PaperPagePlan>{};
-  final _overrides = <int, PaperOrder>{};
   final _skipped = <int>{};
   int _page = 1, _passage = -1, _epoch = 0, _movement = 0;
   bool _closed = false, _indexStarted = false;
@@ -207,18 +205,6 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
   int get cachedPageCount => _pages.length;
   int get pageNumber => _page;
   int get pageCount => planner.pageCount;
-
-  PaperReadOptions _preferences(int page) {
-    final order = _overrides[page];
-    return order == null
-        ? options
-        : PaperReadOptions(
-            order: order,
-            stopAtReferences: options.stopAtReferences,
-            skipCaptions: options.skipCaptions,
-            skipRunningMatter: options.skipRunningMatter,
-          );
-  }
 
   /// Preview has no index/cursor side effects and never starts a document scan.
   Future<PaperPagePlan> preview(int number, {PaperReadOptions? preferences}) =>
@@ -235,7 +221,7 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
       _pages[page] = cached;
       return cached;
     }
-    final preferences = _preferences(page);
+    final preferences = options;
     final plan = await planner.plan(page, preferences, priority: priority);
     if (_closed || epoch != _epoch) throw PaperPlanningCancelled();
     _pages[page] = plan;
@@ -287,7 +273,7 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
         continue;
       }
       if (index.page(page) != null) continue;
-      final preferences = _preferences(page);
+      final preferences = options;
       try {
         // Matching playback/prefetch work is shared by the planner. Background
         // results never enter or evict the two-page detailed playback cache.
@@ -319,13 +305,13 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     // Re-extract even if cached: validate the frozen text identity at admission.
     final plan = await planner.plan(
       page,
-      _preferences(page),
+      options,
       priority: PaperPlanPriority.playback,
     );
     if (_closed || epoch != _epoch || !timeline.accepts(target)) {
       throw PaperPlanningCancelled();
     }
-    index.record(plan, _preferences(page));
+    index.record(plan, options);
     if (plan.issue != null) throw PaperReviewRequired(plan);
     if (!timeline.accepts(target)) {
       throw StateError('This passage changed. Review the page before seeking.');
@@ -430,22 +416,6 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     return null;
   }
 
-  void acceptReview(PaperOrder order) {
-    final page = review?.page.page;
-    if (page == null) return;
-    final restart = _indexStarted;
-    cancelPending();
-    _overrides[page] = order;
-    _pages.remove(page);
-    index.invalidate(page);
-    review = null;
-    if (restart) {
-      unawaited(indexDocument());
-      _durationRequested = _durationSession != null;
-      _ensureTiming();
-    }
-  }
-
   void skipReview() {
     final page = review?.page.page;
     if (page == null) return;
@@ -480,7 +450,6 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     _closed = true;
     cancelPending();
     _pages.clear();
-    _overrides.clear();
     _skipped.clear();
     review = null;
     planner.close();

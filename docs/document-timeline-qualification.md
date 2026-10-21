@@ -7,11 +7,17 @@ counts. Presented native frames determine playback position; retained PCM only
 describes readiness. [Implementation details](tts-implementation.md) cover the
 index, timing, source-navigation transaction, and frozen drag mapping.
 
-The final regression suite passes 117 tests with three opt-in native cases
+The version-2 qualification regression suite passed 117 tests with three opt-in native cases
 skipped; those three cases also pass separately against the prepared real model.
 Flutter analysis is clean. The narrow 360-pixel partial and hour-scale complete
 captures were inspected. The timeout regression confirms that an unconfirmed
 seek keeps the previous source position and cancels the pending playback.
+
+The historical corpus results below compare the former automatic and explicit
+PDF-order modes. Reading-plan version 3 removes those alternatives and changes
+paragraph boundaries; the old passage counts and duration coverage are not
+measurements of the current planner. See [reading-plan changes](tts-implementation.md#reading-plan-version-3)
+and [current extraction checks](tts-qualification.md#reading-plan-version-3--2026-10-21).
 
 ## Reproduce
 
@@ -28,8 +34,8 @@ python3 tool/qualify_mlsr_macos.py --stress-seconds 30
 
 The corpus check defaults to the saved ViT and ResNet PDFs under
 `build/mlsr-qualification/corpus`. `PODOFO_TIMELINE_CORPUS` accepts a JSON array
-of local PDF paths; `PODOFO_TIMELINE_REPORT` selects the output JSON. It exercises
-automatic and explicit PDF order separately and records hashes, coverage,
+of local PDF paths; `PODOFO_TIMELINE_REPORT` selects the output JSON. It now uses
+PDF text order only and records the reading-plan version, hashes, coverage,
 native errors, timing and handle counts. Only resource-path discovery is mocked
 in the Flutter test runner; PDFium extraction and Core ML inference are real.
 

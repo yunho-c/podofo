@@ -15,13 +15,17 @@ Open a PDF and use the **Listen to paper** menu in the toolbar:
 The text-selection menu also offers **Read from here**, which starts continuous
 reading at that source position after review.
 
-The preview offers detected layout, one column, two columns, and PDF text order.
-It can stop before References/Bibliography, skip figure/table caption
-paragraphs, and exclude confirmed repeated headers, footers and page numbers.
-Expand the excluded-block list to review what was omitted, or turn the option
-off to include it. Check the preview before reading: PDF text order and column layout
-can be ambiguous. A textless or uncertain page pauses continuous reading for
-review or skipping. Image-only PDFs need OCR elsewhere first.
+Reading follows the PDF extractor's text order. PoDoFo does not rearrange words
+into inferred columns. Check the preview before reading: some PDFs contain text
+in the wrong order, and selected-text reading can help with individual passages.
+
+The preview can stop before References/Bibliography, skip recognized figure/table
+caption paragraphs, and exclude confirmed repeated headers, footers and page
+numbers. Caption detection uses labels and paragraph boundaries; ambiguous text
+stays included. Expand the excluded-block list to review what was omitted, or
+turn the option off to include it. A textless or otherwise unreadable page pauses
+continuous reading for review or skipping. Image-only PDFs need OCR elsewhere
+first.
 
 The bottom controls provide native pause/resume, stop, previous/next sentence,
 previous/next passage, voice, language and speaking speed. A temporary highlight
@@ -42,12 +46,13 @@ If a page's text changes, the app asks you to start again from that page. Closin
 the speaking document stops it after any unsaved-change decision is resolved.
 The temporary listening highlight never changes or saves the PDF.
 
-Equations, tables, footnotes and mixed layouts may need selected text or an
-explicit reading order. Header/footer detection requires repetition within two
+Equations, tables, footnotes and PDFs with incorrect extracted order may need
+selected-text reading. Header/footer detection requires repetition within two
 pages and a narrow page-margin position; unconfirmed text stays in the stream.
 Wrapped compound words retain their hyphens. A line-end hyphen is removed only
 when the intact word also appears in that page, or an explicit soft-hyphen marker
-allows it. The current planner is geometric, with no OCR or semantic rewrite.
+allows it. Geometry helps separate paragraphs and captions without changing
+text order. There is no OCR or semantic rewrite.
 Text extraction restrictions are respected. Other platforms
 retain the PDF reader and explain that listening is unavailable.
 

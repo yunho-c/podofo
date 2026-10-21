@@ -23,7 +23,7 @@ serves one active narration session independently of the visible tab.
    source-anchor starts. Verify Unicode, ligatures, cropped/rotated geometry,
    switching tabs, save/close races and safe shutdown.
 3. **Continuous papers.** Bounded paragraph passages across pages, reviewed
-   single-/two-column reading order, explicit uncertain/scanned content, and
+   PDF text order, explicit unreadable/scanned content, and
    per-paper source bookmarks. Preserve ObjectBox UIDs. Verify long-input and
    cleanup bounds and resume behavior.
 4. **Release qualification.** Sandboxed relocated offline release; real listening
@@ -40,7 +40,7 @@ gates stay explicit until exercised.
 - Prepared speech text retains a mapping to one or more original PDF ranges.
 - PDF native access uses the existing session/lease, with immutable snapshots
   released before speech; annotation-only edits do not invalidate spoken text.
-- Native extraction is serialized; layout analysis runs on detached snapshots
+- Native extraction is serialized; paragraph segmentation runs on detached snapshots
   after that lock exits. Text for the next page may be prepared during playback,
   without creating another speech handle or advancing the source cursor.
 - Native `Speech.done` completion, not synthesis completion, advances passages.
@@ -51,6 +51,30 @@ gates stay explicit until exercised.
 - Voice and synthesis speed replace from the current source sentence. Playback
   rate stays 1.0. Native pause/resume preserves the live cursor.
 - Timeline scale is final duration or whole-request estimate, never buffered PCM.
+
+## Reading plan version 3
+
+The planner preserves PDFium/pdfrx's extracted sequence. The preview has no
+layout selector: geometric one-column, two-column and automatic ordering were
+removed after they interleaved narrow columns in an otherwise correctly ordered
+PDF. Source positions remain monotonic through included passages. Paragraph
+segmentation uses adjacent source lines, blank lines, spacing and position
+changes; it never sorts words or estimates a column split.
+
+Recognized caption labels start caption blocks. A new paragraph, a column
+transition, or a change in caption alignment or text size ends the block, so a
+centered caption cannot absorb a following body column. Label separators avoid
+mistaking prose such as "Table 4 lists the results" for a caption. Arabic and
+Roman-numbered headings are recognized. Caption exclusion remains optional and
+its results are visible in the preview.
+
+Header/footer exclusion, reference stopping, Unicode/source mapping, bounded
+passages, document indexing and seeking share this same plan. The options key
+includes version 3; bookmarks retain their original source identity and plan
+version. The existing preview warns when resuming a version-2 bookmark. There
+is no ObjectBox schema or source-offset migration. Unreadable pages still support
+review/skip; a bad extracted sequence requires selected text rather than a layout
+override.
 
 ## Build preparation
 
@@ -220,8 +244,9 @@ python3 tool/test_macos.py tool/benchmark_paper_index_test.dart
   The reader test covers active speech across another tab, cancelled dirty close,
   save and final close. Temporary paint was inspected in the generated reader
   capture; native app visual/listening review was a separate release check.
-- Milestone 3: continuous bounded passages, a reading-order preview with explicit
-  single-column/two-column/PDF-order choices, references/caption options, and
+- Milestone 3 originally shipped continuous bounded passages and explicit
+  single-column/two-column/PDF-order choices (superseded by version 3 above),
+  references/caption options, and
   review/skip handling for ambiguous or textless pages. Two page plans are cached;
   passages cap raw text at 4 KiB and normally split earlier at sentence endings.
   Only successful native playback completion advances. Per-paper bookmarks store
@@ -231,13 +256,13 @@ python3 tool/test_macos.py tool/benchmark_paper_index_test.dart
   schema IDs are preserved. Tests include real two-column PDFs, 24-page traversal
   with a scanned page, bounded page caches, changed-text resume rejection, delayed
   close versus a new request, and pause/stop during page preparation.
-- Reading order is a conservative geometric heuristic, reviewed before starting.
+- Reading now preserves PDF text order, reviewed before starting.
   It is not semantic PDF understanding or OCR. Footnotes and unconfirmed marginal
   text remain in the stream. Confirmed repeated margin lines are optional;
   ordinary compound hyphens are preserved, while witnessed line-end splits and
   explicit soft hyphens can be joined with source mappings retained.
-  Complex tables, mixed scripts/layouts and equations can need explicit PDF order
-  or selection. No whole-paper duration is fabricated from the current passage.
+  Complex tables, incorrectly ordered source text and equations can need
+  selected-text reading. No whole-paper duration is fabricated from the current passage.
 - Milestone 4 automated portion: relocated sandboxed Release playback and exact
   bundle audits pass, with repeatable tooling that restores the ordinary app.
   Native pause/navigation, continuous drain, persisted source position, repeated

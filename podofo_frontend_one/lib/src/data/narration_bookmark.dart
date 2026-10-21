@@ -1,6 +1,7 @@
 import 'package:objectbox/objectbox.dart';
 
 import '../narration/source_map.dart';
+import '../narration/paper_plan.dart';
 
 @Entity()
 class NarrationBookmark {
@@ -11,7 +12,7 @@ class NarrationBookmark {
     required this.offset,
     required this.textHash,
     this.mappingVersion = 1,
-    this.planVersion = 2,
+    this.planVersion = PaperPlanner.version,
     this.contextBefore = '',
     this.contextAfter = '',
   });

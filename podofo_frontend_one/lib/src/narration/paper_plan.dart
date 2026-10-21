@@ -6,21 +6,17 @@ import 'package:pdfrx/pdfrx.dart';
 import 'source_map.dart';
 import 'running_matter.dart';
 
-enum PaperOrder { automatic, singleColumn, twoColumns, pdfOrder }
-
 class PaperReadOptions {
   const PaperReadOptions({
-    this.order = PaperOrder.automatic,
     this.stopAtReferences = true,
     this.skipCaptions = false,
     this.skipRunningMatter = true,
   });
-  final PaperOrder order;
   final bool stopAtReferences, skipCaptions, skipRunningMatter;
 
   /// Value identity for shared page work and compact passage descriptors.
   String get key =>
-      '${PaperPlanner.version}:${order.name}:$stopAtReferences:$skipCaptions:$skipRunningMatter';
+      '${PaperPlanner.version}:pdfOrder:$stopAtReferences:$skipCaptions:$skipRunningMatter';
 }
 
 enum PaperBlockKind { paragraph, heading, caption, references, runningMatter }
@@ -62,23 +58,25 @@ class _Word {
 }
 
 class _Line {
-  _Line(this.words, this.column);
+  _Line(this.words);
   final List<_Word> words;
-  final int column;
-  PdfRect get bounds => words.map((w) => w.bounds).toList().boundingRect();
+  late final PdfRect bounds = words
+      .map((w) => w.bounds)
+      .toList()
+      .boundingRect();
   String text(PdfTextSnapshot page) =>
       words.map((w) => page.text.substring(w.start, w.end)).join(' ');
 }
 
-/// Conservative geometric ordering. Unsupported layouts remain explicit.
+/// Preserve the extracted PDF sequence. Geometry only separates paragraphs;
+/// it never sorts words, infers columns, or changes reading order.
 abstract final class PaperPlanner {
-  static const version = 2;
+  static const version = 3;
   static const maxPageUnits = 200000;
   static const maxPassageBytes = 4096;
 
   static PaperPagePlan plan(
     PdfTextSnapshot page,
-    double width,
     PaperReadOptions options, {
     List<MarginLine> runningMatter = const [],
   }) {
@@ -113,18 +111,9 @@ abstract final class PaperPlanner {
           .where(usable)
           .toList();
       if (boxes.isEmpty) continue;
-      final whole = boxes.boundingRect();
-      if (options.order == PaperOrder.automatic &&
-          match.end - match.start >= 3 &&
-          whole.height > boxes.first.height * 2.5 &&
-          whole.width < whole.height * .75) {
-        return issue(
-          'Page ${page.page} contains vertical or overlapping text. Review its PDF order or select the body text.',
-        );
-      }
-      // PDFium can join a wrapped word with U+0002 and no newline. Split its
-      // geometry into visual runs before ordering, then join the spoken slices
-      // again. A page-wide bounding rectangle would scramble both rows.
+      // PDFium can join a wrapped word with U+0002 and no newline. Keep
+      // separate visual runs for paragraph boundaries and source mapping,
+      // while retaining their source order and joining the spoken slices.
       var begin = match.start;
       var run = <PdfRect>[];
       void appendRun(int end) {
@@ -163,126 +152,20 @@ abstract final class PaperPlanner {
     }
     final heights = words.map((w) => w.bounds.height).toList()..sort();
     final height = heights[heights.length ~/ 2];
-    final rows = <List<_Word>>[];
-    for (final word in [
-      ...words,
-    ]..sort((a, b) => b.bounds.top.compareTo(a.bounds.top))) {
-      final row = rows.lastOrNull;
-      if (row == null ||
-          (row.first.bounds.center.y - word.bounds.center.y).abs() >
-              height * .55) {
-        rows.add([word]);
-      } else {
-        row.add(word);
+    final ordered = <_Line>[];
+    var sourceLine = <_Word>[];
+    for (final word in words) {
+      if (sourceLine.isNotEmpty &&
+          page.text.substring(sourceLine.last.end, word.start).contains('\n')) {
+        ordered.add(_Line(sourceLine));
+        sourceLine = [];
       }
+      sourceLine.add(word);
     }
-    final lines = <_Line>[], gutters = <double>[];
-    var complexRows = 0;
-    for (final row in rows) {
-      row.sort((a, b) => a.bounds.left.compareTo(b.bounds.left));
-      final runs = <List<_Word>>[[]];
-      for (final word in row) {
-        final previous = runs.last.lastOrNull;
-        if (previous != null &&
-            word.bounds.left - previous.bounds.right >
-                math.max(18, height * 2.5)) {
-          if (previous.bounds.right < width * .7 &&
-              word.bounds.left > width * .3) {
-            gutters.add((previous.bounds.right + word.bounds.left) / 2);
-          }
-          runs.add([]);
-        }
-        runs.last.add(word);
-      }
-      if (runs.length > 2) complexRows++;
-      lines.addAll(runs.map((run) => _Line(run, 0)));
-    }
-    if (options.order == PaperOrder.automatic &&
-        (complexRows >= 2 || RegExp(r'[\u0590-\u08ff]').hasMatch(page.text))) {
-      return issue(
-        'Page ${page.page} needs a reading-order choice. Use PDF order or select the text to read.',
-      );
-    }
-    gutters.sort();
-    final split = gutters.isEmpty ? width / 2 : gutters[gutters.length ~/ 2];
-    final left = lines.where((l) => l.bounds.right <= split).length;
-    final right = lines.where((l) => l.bounds.left >= split).length;
-    final two =
-        options.order == PaperOrder.twoColumns ||
-        (options.order == PaperOrder.automatic &&
-            gutters.length >= 3 &&
-            left >= 3 &&
-            right >= 3);
-    if (two &&
-        options.order == PaperOrder.automatic &&
-        lines.where((line) => line.words.length >= 3).length <
-            lines.length * .6) {
-      return issue(
-        'Page ${page.page} may contain a table or equations. Review its reading order.',
-      );
-    }
-    List<_Line> ordered;
-    if (options.order == PaperOrder.pdfOrder) {
-      // The producer's sequence is an explicit escape hatch, never called inferred order.
-      ordered = [];
-      var sourceLine = <_Word>[];
-      for (final word in words) {
-        if (sourceLine.isNotEmpty &&
-            page.text
-                .substring(sourceLine.last.end, word.start)
-                .contains('\n')) {
-          ordered.add(_Line(sourceLine, 0));
-          sourceLine = [];
-        }
-        sourceLine.add(word);
-      }
-      if (sourceLine.isNotEmpty) ordered.add(_Line(sourceLine, 0));
-    } else if (two) {
-      final spanning =
-          lines
-              .where((l) => l.bounds.left < split && l.bounds.right > split)
-              .toList()
-            ..sort((a, b) => b.bounds.top.compareTo(a.bounds.top));
-      if (spanning.length > 64) {
-        return issue(
-          'Page ${page.page} mixes too many layout regions. Review its PDF order.',
-        );
-      }
-      ordered = [];
-      var top = double.infinity;
-      for (final divider in [...spanning, null]) {
-        final bottom = divider?.bounds.top ?? double.negativeInfinity;
-        for (var column = 0; column < 2; column++) {
-          final band =
-              lines
-                  .where(
-                    (l) =>
-                        !spanning.contains(l) &&
-                        l.bounds.top <= top &&
-                        l.bounds.top > bottom &&
-                        (column == 0
-                            ? l.bounds.right <= split
-                            : l.bounds.left >= split),
-                  )
-                  .toList()
-                ..sort((a, b) => b.bounds.top.compareTo(a.bounds.top));
-          ordered.addAll(band.map((line) => _Line(line.words, column)));
-        }
-        if (divider != null) {
-          ordered.add(divider);
-          top = divider.bounds.top;
-        }
-      }
-    } else {
-      ordered = lines; // Rows already run top-to-bottom and left-to-right.
-    }
-    if (ordered.fold<int>(0, (n, l) => n + l.words.length) != words.length) {
-      return issue(
-        'Page ${page.page} has overlapping columns. Review its PDF order.',
-      );
-    }
+    if (sourceLine.isNotEmpty) ordered.add(_Line(sourceLine));
 
     final paragraphs = <List<_Word>>[];
+    final captionStarts = <int>{};
     final blocks = <PaperReadingBlock>[
       if (options.skipRunningMatter)
         for (final line in runningMatter)
@@ -292,39 +175,36 @@ abstract final class PaperPlanner {
     ];
     var current = <_Word>[];
     _Line? previous;
-    var endsPaper = false;
+    var endsPaper = false, captionBody = false;
     final caption = RegExp(
-      r'^(?:fig(?:ure)?\.?|table)\s+\d',
+      // Require a label separator or a standalone label. Body sentences such
+      // as 'Table 4 lists the results' must stay readable.
+      r'^(?:fig(?:ure)?\.?|table)\s+(?:\d+|[IVXLCDM]+)(?:[.:](?:\s|$)|\s*$)',
       caseSensitive: false,
     );
     final heading = RegExp(
-      r'^(?:\d+(?:\.\d+)*[.\s]+)?(?:abstract|introduction|background|methods?|materials and methods|results?|discussion|conclusions?|acknowledg(?:e)?ments?)\s*$',
+      r'^(?:(?:\d+(?:\.\d+)*|[IVXLCDM]+)[.\s]+)?(?:abstract|introduction|background|methods?|materials and methods|results?|discussion|conclusions?|acknowledg(?:e)?ments?)\s*$',
       caseSensitive: false,
     );
     final references = RegExp(
-      r'^(?:\d+[.\s]+)?(?:references|bibliography)\s*$',
+      r'^(?:(?:\d+|[IVXLCDM]+)[.\s]+)?(?:references|bibliography)\s*$',
       caseSensitive: false,
     );
     for (final line in ordered) {
       final text = line.text(page);
-      final originalLine = options.order != PaperOrder.pdfOrder
-          ? text
-          : page.text
-                .substring(
-                  page.text.lastIndexOf(
-                        '\n',
-                        math.max(0, line.words.first.start - 1),
-                      ) +
-                      1,
-                  page.text.indexOf('\n', line.words.last.end) < 0
-                      ? page.text.length
-                      : page.text.indexOf('\n', line.words.last.end),
-                )
-                .trim();
-      if (options.stopAtReferences &&
-          references.hasMatch(
-            options.order == PaperOrder.pdfOrder ? originalLine : text,
-          )) {
+      final originalLine = page.text
+          .substring(
+            page.text.lastIndexOf(
+                  '\n',
+                  math.max(0, line.words.first.start - 1),
+                ) +
+                1,
+            page.text.indexOf('\n', line.words.last.end) < 0
+                ? page.text.length
+                : page.text.indexOf('\n', line.words.last.end),
+          )
+          .trim();
+      if (options.stopAtReferences && references.hasMatch(originalLine)) {
         endsPaper = true;
         blocks.add(
           PaperReadingBlock(PaperBlockKind.references, [
@@ -334,21 +214,46 @@ abstract final class PaperPlanner {
         );
         break;
       }
+      // Segment adjacent source lines without moving them. A return upwards
+      // or a move to a disjoint horizontal region can be a column transition.
+      // End captions at a larger body-text size or a change in alignment.
+      // Smaller glyph boxes can just be an all-small-caps continuation.
+      // Centered continuation lines may have different left edges.
+      final before = previous;
       final newParagraph =
-          previous != null &&
+          before != null &&
+          !line.words.first.joinPrevious &&
           (caption.hasMatch(text) ||
               heading.hasMatch(text) ||
-              heading.hasMatch(previous.text(page)) ||
+              heading.hasMatch(before.text(page)) ||
               references.hasMatch(text) ||
-              references.hasMatch(previous.text(page)) ||
-              (options.order != PaperOrder.pdfOrder &&
-                  (previous.column != line.column ||
-                      previous.bounds.bottom - line.bounds.top > height * .75 ||
-                      line.bounds.left - previous.bounds.left > height * 1.2 ||
-                      line.bounds.height > height * 1.4)));
+              references.hasMatch(before.text(page)) ||
+              RegExp(r'\n[ \t\r]*\n').hasMatch(
+                page.text.substring(
+                  before.words.last.end,
+                  line.words.first.start,
+                ),
+              ) ||
+              line.bounds.top > before.bounds.top + height * .55 ||
+              before.bounds.bottom - line.bounds.top > height * .75 ||
+              line.bounds.left >= before.bounds.right ||
+              line.bounds.right <= before.bounds.left ||
+              (!captionBody &&
+                  line.bounds.left - before.bounds.left > height * 1.2) ||
+              (captionBody &&
+                  (((line.bounds.left - before.bounds.left).abs() >
+                              height * 1.2 &&
+                          (line.bounds.center.x - before.bounds.center.x)
+                                  .abs() >
+                              height * 1.2) ||
+                      line.bounds.height > before.bounds.height * 1.2)));
       if (newParagraph && current.isNotEmpty) {
         paragraphs.add(current);
         current = [];
+      }
+      if (current.isEmpty) {
+        captionBody = caption.hasMatch(text);
+        if (captionBody) captionStarts.add(line.words.first.start);
       }
       current.addAll(line.words);
       previous = line;
@@ -359,7 +264,7 @@ abstract final class PaperPlanner {
       final literal = paragraph
           .map((word) => page.text.substring(word.start, word.end))
           .join(' ');
-      final isCaption = caption.hasMatch(literal);
+      final isCaption = captionStarts.contains(paragraph.first.start);
       final joined = <int>{
             for (var i = 1; i < paragraph.length; i++)
               if (paragraph[i].joinPrevious &&
@@ -465,11 +370,7 @@ abstract final class PaperPlanner {
     return PaperPagePlan(
       page: page,
       passages: List.unmodifiable(passages.where((p) => p.text.isNotEmpty)),
-      description: options.order == PaperOrder.pdfOrder
-          ? 'PDF text order'
-          : two
-          ? 'Two columns, left then right'
-          : 'Single column, top to bottom',
+      description: 'PDF text order',
       endsPaper: endsPaper,
       blocks: List.unmodifiable(blocks),
     );

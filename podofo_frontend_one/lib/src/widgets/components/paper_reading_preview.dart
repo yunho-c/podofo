@@ -33,7 +33,6 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
   late Future<PaperPagePlan> _preview = widget.sequence.preview(_page);
   void _refresh({
     int? page,
-    PaperOrder? order,
     bool? references,
     bool? captions,
     bool? runningMatter,
@@ -41,7 +40,6 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
     setState(() {
       _page = page ?? _page;
       _options = PaperReadOptions(
-        order: order ?? _options.order,
         stopAtReferences: references ?? _options.stopAtReferences,
         skipCaptions: captions ?? _options.skipCaptions,
         skipRunningMatter: runningMatter ?? _options.skipRunningMatter,
@@ -73,23 +71,6 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
                     : null,
                 icon: const m.Icon(m.Icons.chevron_right),
               ),
-              const m.Spacer(),
-              m.DropdownButton<PaperOrder>(
-                value: _options.order,
-                onChanged: (value) => _refresh(order: value),
-                items: [
-                  for (final order in PaperOrder.values)
-                    m.DropdownMenuItem(
-                      value: order,
-                      child: m.Text(switch (order) {
-                        PaperOrder.automatic => 'Detect layout',
-                        PaperOrder.singleColumn => 'One column',
-                        PaperOrder.twoColumns => 'Two columns',
-                        PaperOrder.pdfOrder => 'PDF text order',
-                      }),
-                    ),
-                ],
-              ),
             ],
           ),
           m.CheckboxListTile(
@@ -116,7 +97,7 @@ class _PaperReadingPreviewState extends m.State<PaperReadingPreview> {
             onChanged: (value) => _refresh(captions: value),
           ),
           const m.Text(
-            'Check that the text below follows the paper. Equations and tables may need a selected passage.',
+            'Reading follows PDF text order. Check the preview; equations, tables, or an incorrect PDF order may need selected text.',
           ),
           const m.SizedBox(height: 12),
           m.Expanded(
