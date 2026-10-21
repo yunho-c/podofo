@@ -10,8 +10,13 @@ import '../../narration/paper_timeline.dart';
 
 /// Dragging previews one frozen scale; only release submits source navigation.
 class DocumentNarrationTimeline extends StatefulWidget {
-  const DocumentNarrationTimeline({super.key, required this.controller});
+  const DocumentNarrationTimeline({
+    super.key,
+    required this.controller,
+    this.developerMode = false,
+  });
   final NarrationController controller;
+  final bool developerMode;
   @override
   State<DocumentNarrationTimeline> createState() =>
       _DocumentNarrationTimelineState();
@@ -178,30 +183,40 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
               '${document.unresolvedPages + document.failedPassages > 0 ? " ${document.unresolvedPages} unresolved ${document.unresolvedPages == 1 ? "page" : "pages"}, ${document.failedPassages} failed ${document.failedPassages == 1 ? "passage" : "passages"}." : ""}',
               key: const ValueKey('document-timeline-coverage'),
             ).small().muted(),
-          if (total != null && document.fallbackPassages > 0)
-            Text(
-              '${document.fallbackPassages} ${document.fallbackPassages == 1 ? "passage uses" : "passages use"} rough timing. '
-              'You can seek within the other passages.',
-              key: const ValueKey('document-timeline-fallback'),
-            ).small().muted(),
+          if (widget.developerMode &&
+              (document.fallbackPassages > 0 || document.failedPassages > 0))
+            Row(
+              key: const ValueKey('document-timeline-diagnostics'),
+              children: [
+                Expanded(
+                  child: Text(
+                    document.fallbackPassages > 0
+                        ? '${document.fallbackPassages} ${document.fallbackPassages == 1 ? "passage uses" : "passages use"} rough timing. '
+                              'You can seek within the other passages.'
+                        : '${document.failedPassages} failed ${document.failedPassages == 1 ? "passage" : "passages"}.',
+                    key: const ValueKey('document-timeline-fallback'),
+                  ).small().muted(),
+                ),
+                if (document.failedPassages > 0 && !document.planning) ...[
+                  const SizedBox(width: 8),
+                  m.TextButton(
+                    onPressed: paper.retryTiming,
+                    child: const Text('Retry duration planning'),
+                  ),
+                ],
+              ],
+            ),
           if (unavailablePage != null)
             Semantics(
               liveRegion: true,
               child: Text(
-                'Timing unavailable on page $unavailablePage. Choose another position or retry duration planning.',
+                'Timing unavailable on page $unavailablePage. '
+                '${widget.developerMode ? "Choose another position or retry duration planning." : "Choose another position."}',
                 key: const ValueKey('document-timeline-unavailable'),
               ).small().muted(),
             ),
           if (controller.seekingDocument)
             const Text('Preparing reading position…').small().muted(),
-          if (document.failedPassages > 0 && !document.planning)
-            Align(
-              alignment: Alignment.centerLeft,
-              child: m.TextButton(
-                onPressed: paper.retryTiming,
-                child: const Text('Retry duration planning'),
-              ),
-            ),
         ],
       ),
     );

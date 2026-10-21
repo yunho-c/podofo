@@ -17,6 +17,9 @@ class NarrationControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final controller = ref.watch(narrationControllerProvider);
+    final developerMode = ref.watch(
+      userStateNotifierProvider.select((state) => state.developerMode),
+    );
     return ListenableBuilder(
       listenable: controller,
       builder: (context, _) {
@@ -263,7 +266,10 @@ class NarrationControls extends ConsumerWidget {
                   ],
                 ),
               if (paper != null)
-                DocumentNarrationTimeline(controller: controller),
+                DocumentNarrationTimeline(
+                  controller: controller,
+                  developerMode: developerMode,
+                ),
               if ((paper == null ||
                       controller.documentTimeline?.totalMicroseconds == null) &&
                   state != null &&

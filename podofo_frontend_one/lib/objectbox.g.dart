@@ -89,7 +89,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
     id: const obx_int.IdUid(3, 6978279246222423302),
     name: 'UserState',
-    lastPropertyId: const obx_int.IdUid(18, 7945442580345823431),
+    lastPropertyId: const obx_int.IdUid(19, 7523165504065643575),
     flags: 0,
     properties: <obx_int.ModelProperty>[
       obx_int.ModelProperty(
@@ -191,6 +191,12 @@ final _entities = <obx_int.ModelEntity>[
       obx_int.ModelProperty(
         id: const obx_int.IdUid(18, 7945442580345823431),
         name: 'followSpokenText',
+        type: 1,
+        flags: 0,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(19, 7523165504065643575),
+        name: 'developerMode',
         type: 1,
         flags: 0,
       ),
@@ -377,8 +383,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           4,
           0,
         );
-        final filePathParam = const fb.StringReader(asciiOptimization: true)
-            .vTableGet(buffer, rootOffset, 6, '');
+        final filePathParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
         final lastOpenedPageParam = const fb.Int64Reader().vTableGetNullable(
           buffer,
           rootOffset,
@@ -419,16 +426,19 @@ obx_int.ModelDefinition getObjectBoxModel() {
       objectFromFB: (obx.Store store, ByteData fbData) {
         final buffer = fb.BufferContext(fbData);
         final rootOffset = buffer.derefObject(0);
-        final filePathParam = const fb.StringReader(asciiOptimization: true)
-            .vTableGetNullable(buffer, rootOffset, 6);
+        final filePathParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGetNullable(buffer, rootOffset, 6);
         final pageNumberParam = const fb.Int64Reader().vTableGetNullable(
           buffer,
           rootOffset,
           8,
         );
-        final thumbnailDataParam = const fb.Uint8ListReader(
-          lazy: false,
-        ).vTableGetNullable(buffer, rootOffset, 10) as Uint8List?;
+        final thumbnailDataParam =
+            const fb.Uint8ListReader(
+                  lazy: false,
+                ).vTableGetNullable(buffer, rootOffset, 10)
+                as Uint8List?;
         final object = ThumbnailEntity(
           filePath: filePathParam,
           pageNumber: pageNumberParam,
@@ -467,7 +477,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
               .toList(growable: false),
         );
         final audioLanguageOffset = fbb.writeString(object.audioLanguage);
-        fbb.startTable(19);
+        fbb.startTable(20);
         fbb.addInt64(0, object.id);
         fbb.addOffset(1, appearanceOffset);
         fbb.addOffset(3, highlightColorOffset);
@@ -485,6 +495,7 @@ obx_int.ModelDefinition getObjectBoxModel() {
         fbb.addBool(15, object.autoSaveEnabled);
         fbb.addOffset(16, audioLanguageOffset);
         fbb.addBool(17, object.followSpokenText);
+        fbb.addBool(18, object.developerMode);
         fbb.finish(fbb.endTable());
         return object.id;
       },
@@ -494,12 +505,15 @@ obx_int.ModelDefinition getObjectBoxModel() {
 
         final object = UserState()
           ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0)
-          ..appearance = const fb.StringReader(asciiOptimization: true)
-              .vTableGet(buffer, rootOffset, 6, '')
-          ..highlightColor = const fb.StringReader(asciiOptimization: true)
-              .vTableGetNullable(buffer, rootOffset, 10)
-          ..previousPosition = const fb.StringReader(asciiOptimization: true)
-              .vTableGetNullable(buffer, rootOffset, 12)
+          ..appearance = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGet(buffer, rootOffset, 6, '')
+          ..highlightColor = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 10)
+          ..previousPosition = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 12)
           ..audioReader = const fb.BoolReader().vTableGet(
             buffer,
             rootOffset,
@@ -518,18 +532,21 @@ obx_int.ModelDefinition getObjectBoxModel() {
             18,
             false,
           )
-          ..audioBackend = const fb.StringReader(asciiOptimization: true)
-              .vTableGet(buffer, rootOffset, 20, '')
-          ..audioVoice = const fb.StringReader(asciiOptimization: true)
-              .vTableGetNullable(buffer, rootOffset, 22)
+          ..audioBackend = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGet(buffer, rootOffset, 20, '')
+          ..audioVoice = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 22)
           ..audioSpeed = const fb.Float64Reader().vTableGet(
             buffer,
             rootOffset,
             24,
             0,
           )
-          ..selectedText = const fb.StringReader(asciiOptimization: true)
-              .vTableGetNullable(buffer, rootOffset, 26)
+          ..selectedText = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGetNullable(buffer, rootOffset, 26)
           ..highlightColorPalette = const fb.ListReader<String>(
             fb.StringReader(asciiOptimization: true),
             lazy: false,
@@ -552,12 +569,19 @@ obx_int.ModelDefinition getObjectBoxModel() {
             34,
             false,
           )
-          ..audioLanguage = const fb.StringReader(asciiOptimization: true)
-              .vTableGet(buffer, rootOffset, 36, '')
+          ..audioLanguage = const fb.StringReader(
+            asciiOptimization: true,
+          ).vTableGet(buffer, rootOffset, 36, '')
           ..followSpokenText = const fb.BoolReader().vTableGet(
             buffer,
             rootOffset,
             38,
+            false,
+          )
+          ..developerMode = const fb.BoolReader().vTableGet(
+            buffer,
+            rootOffset,
+            40,
             false,
           );
 
@@ -590,8 +614,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           4,
           0,
         );
-        final filePathParam = const fb.StringReader(asciiOptimization: true)
-            .vTableGet(buffer, rootOffset, 6, '');
+        final filePathParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
         final lastOpenedParam = DateTime.fromMillisecondsSinceEpoch(
           const fb.Int64Reader().vTableGet(buffer, rootOffset, 8, 0),
         );
@@ -639,8 +664,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           4,
           0,
         );
-        final filePathParam = const fb.StringReader(asciiOptimization: true)
-            .vTableGet(buffer, rootOffset, 6, '');
+        final filePathParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
         final pageParam = const fb.Int64Reader().vTableGet(
           buffer,
           rootOffset,
@@ -653,8 +679,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
           10,
           0,
         );
-        final textHashParam = const fb.StringReader(asciiOptimization: true)
-            .vTableGet(buffer, rootOffset, 14, '');
+        final textHashParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 14, '');
         final mappingVersionParam = const fb.Int64Reader().vTableGet(
           buffer,
           rootOffset,
@@ -670,8 +697,9 @@ obx_int.ModelDefinition getObjectBoxModel() {
         final contextBeforeParam = const fb.StringReader(
           asciiOptimization: true,
         ).vTableGet(buffer, rootOffset, 18, '');
-        final contextAfterParam = const fb.StringReader(asciiOptimization: true)
-            .vTableGet(buffer, rootOffset, 20, '');
+        final contextAfterParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 20, '');
         final object = NarrationBookmark(
           id: idParam,
           filePath: filePathParam,
@@ -817,6 +845,11 @@ class UserState_ {
   /// See [UserState.followSpokenText].
   static final followSpokenText = obx.QueryBooleanProperty<UserState>(
     _entities[2].properties[16],
+  );
+
+  /// See [UserState.developerMode].
+  static final developerMode = obx.QueryBooleanProperty<UserState>(
+    _entities[2].properties[17],
   );
 }
 

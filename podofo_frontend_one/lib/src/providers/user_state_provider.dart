@@ -22,6 +22,7 @@ class UserState {
   double audioSpeed = 1.0;
   String audioLanguage = 'en';
   bool followSpokenText = true;
+  bool developerMode = false;
   @Property(uid: 8031658732022810243)
   bool autoSaveEnabled = true;
   UserState();
@@ -42,6 +43,7 @@ class UserState {
       audioSpeed = other.audioSpeed,
       audioLanguage = other.audioLanguage,
       followSpokenText = other.followSpokenText,
+      developerMode = other.developerMode,
       autoSaveEnabled = other.autoSaveEnabled;
 }
 
@@ -134,6 +136,7 @@ class UserStateNotifier extends Notifier<UserState> {
       _update((s) => s.audioLanguage = value);
   void setFollowSpokenText(bool value) =>
       _update((s) => s.followSpokenText = value);
+  void setDeveloperMode(bool value) => _update((s) => s.developerMode = value);
   void setAutoSaveEnabled(bool value) =>
       _update((s) => s.autoSaveEnabled = value);
   void nuke() {

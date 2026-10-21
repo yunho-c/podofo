@@ -106,6 +106,7 @@ void main() {
     try {
       final current = store.box<UserState>().get(preferences.id)!;
       expect(current.autoSaveEnabled, false);
+      expect(current.developerMode, false);
       expect(current.highlightColor, '#66aabbcc');
       expect(current.highlightColorPalette, ['#66aabbcc']);
       expect(store.box<DocumentEntity>().getAll().single.lastOpenedPage, 23);
@@ -119,12 +120,15 @@ void main() {
         3,
       ]);
       current.autoSaveEnabled = true;
+      current.developerMode = true;
+      expect(UserState.from(current).developerMode, true);
       store.box<UserState>().put(current);
     } finally {
       store.close();
     }
     store = Store(getObjectBoxModel(), directory: path);
     expect(store.box<UserState>().get(preferences.id)!.autoSaveEnabled, true);
+    expect(store.box<UserState>().get(preferences.id)!.developerMode, true);
     store.close();
   });
 

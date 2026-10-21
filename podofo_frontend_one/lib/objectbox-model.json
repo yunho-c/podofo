@@ -60,7 +60,7 @@
     },
     {
       "id": "3:6978279246222423302",
-      "lastPropertyId": "18:7945442580345823431",
+      "lastPropertyId": "19:7523165504065643575",
       "name": "UserState",
       "properties": [
         {
@@ -147,6 +147,11 @@
         {
           "id": "18:7945442580345823431",
           "name": "followSpokenText",
+          "type": 1
+        },
+        {
+          "id": "19:7523165504065643575",
+          "name": "developerMode",
           "type": 1
         }
       ],

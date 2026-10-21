@@ -18,6 +18,7 @@ Future<void> mount(
   WidgetTester tester,
   NarrationController controller, {
   double width = 600,
+  bool developerMode = false,
 }) async {
   await tester.pumpWidget(
     ShadcnApp(
@@ -42,8 +43,10 @@ Future<void> mount(
               width: width,
               child: ListenableBuilder(
                 listenable: controller,
-                builder: (_, _) =>
-                    DocumentNarrationTimeline(controller: controller),
+                builder: (_, _) => DocumentNarrationTimeline(
+                  controller: controller,
+                  developerMode: developerMode,
+                ),
               ),
             ),
           ),
@@ -153,7 +156,8 @@ void main() {
     await mount(tester, controller, width: 360);
     expect(slider(tester).onChanged, isNotNull);
     expect(slider(tester).max, 30000000);
-    expect(find.textContaining('1 passage uses rough timing'), findsOneWidget);
+    expect(find.textContaining('rough timing'), findsNothing);
+    expect(find.text('Retry duration planning'), findsNothing);
     slider(tester).onChangeStart!(15000000);
     slider(tester).onChanged!(15000000);
     await tester.pump();
@@ -175,6 +179,44 @@ void main() {
     expect(find.textContaining('Timing unavailable on page 2'), findsNothing);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'developer mode reveals the diagnostic row with retry on the right',
+    (tester) async {
+      final paper = fixture.sequence(3), session = seek.SeekSession();
+      session.failText = fixture.page(2).text.text;
+      final controller = (await tester.runAsync(
+        () => seek.reader(paper, session),
+      ))!;
+      addTearDown(controller.close);
+      await mount(tester, controller, width: 360, developerMode: true);
+      final message = find.byKey(const ValueKey('document-timeline-fallback'));
+      final retry = find.text('Retry duration planning');
+      expect(message, findsOneWidget);
+      expect(retry, findsOneWidget);
+      expect(
+        tester.getRect(retry).left,
+        greaterThan(tester.getRect(message).right),
+      );
+      expect(tester.takeException(), isNull);
+      await mount(tester, controller, width: 360);
+      expect(
+        find.byKey(const ValueKey('document-timeline-diagnostics')),
+        findsNothing,
+      );
+      expect(retry, findsNothing);
+      expect(slider(tester).onChanged, isNotNull);
+      await mount(tester, controller, width: 360, developerMode: true);
+      session.failText = null;
+      await tester.tap(retry);
+      await settle(tester);
+      expect(paper.timeline.snapshot.failedPassages, 0);
+      expect(
+        find.byKey(const ValueKey('document-timeline-diagnostics')),
+        findsNothing,
+      );
+    },
+  );
 
   testWidgets('settings invalidate an ongoing drag; keyboard remains usable', (
     tester,
