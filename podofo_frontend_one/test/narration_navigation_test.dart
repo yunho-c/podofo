@@ -67,9 +67,9 @@ void main() {
           end: 14,
         ),
       );
-      await controller.configure(const NarrationSettings(speed: 1.4));
+      await controller.configure(const NarrationSettings(speed: 1.3));
       expect(session.texts, ['First. Second.', 'Second.']);
-      expect(session.requests.last.speed, 1.4);
+      expect(session.requests.last.speed, 1.3);
       expect(session.initialPauses.last, true);
       expect(session.playbacks.first.disposed, true);
       await controller.close();

@@ -1,6 +1,9 @@
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+
+import 'paper_index_test.dart' as fixture;
+
 import 'package:flutter_test/flutter_test.dart';
 // Test-only registry accounting. It does not measure native memory usage.
 // ignore: implementation_imports
@@ -96,6 +99,41 @@ void main() {
           'replacement drain',
         );
         expect(opens, 1);
+        final paper = fixture.sequence(3);
+        final passage = (await paper.start())!;
+        await controller.read(
+          owner,
+          () async => NarrationSource(
+            documentId: owner,
+            title: 'Document timing',
+            text: passage.text,
+            passage: passage,
+            sequence: paper,
+          ),
+        );
+        await until(
+          () => controller.documentTimeline?.totalMicroseconds != null,
+          'background document timing',
+        );
+        expect(controller.documentTimeline!.plannedPassages, 3);
+        expect(controller.documentTimeline!.failedPassages, 0);
+        await until(
+          () =>
+              controller.documentPosition != null &&
+              controller.documentPosition!.microseconds > 0,
+          'document position',
+        );
+        controller.togglePause();
+        await until(
+          () => controller.snapshot?.phase == NarrationPhase.paused,
+          'document pause',
+        );
+        final documentPosition = controller.documentPosition!.microseconds;
+        await Future<void>.delayed(const Duration(milliseconds: 150));
+        expect(controller.documentPosition!.microseconds, documentPosition);
+        await controller.stop();
+        expect(controller.documentPosition!.microseconds, documentPosition);
+        expect(paper.timeline.retainedTimingCount, 3);
         // Cross-passage Previous starts paused and selects the final native
         // sentence before any presented audio can begin at the passage start.
         for (final paused in [true, false]) {

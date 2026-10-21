@@ -11,7 +11,7 @@ String? narrationUnavailableReason() =>
     ? null
     : 'Paper listening is available on macOS Apple Silicon.';
 
-class MlsrNarrator implements NarratorSession {
+class MlsrNarrator implements NarratorSession, NarrationDurationSession {
   /// Takes ownership of an already-open facade, also useful for release probes.
   MlsrNarrator.fromTts(this._tts, {this._volume = 1});
   final Tts _tts;
@@ -63,12 +63,31 @@ class MlsrNarrator implements NarratorSession {
   );
 
   @override
+  NarrationDurationJob planDuration(String text, NarrationSettings settings) =>
+      _MlsrDurationJob(
+        _tts.planDuration(
+          text,
+          options: RequestOptions(
+            voice: settings.voice,
+            locale: settings.language,
+            fallback: VoiceFallback.sameLanguage,
+            speakingRate: settings.speed,
+          ),
+        ),
+      );
+
+  @override
   Future<void> dispose() => _tts.dispose();
 }
 
-class _MlsrPlayback implements NarrationPlayback {
+class _MlsrPlayback implements NarrationPlayback, NarrationTimedPlayback {
   _MlsrPlayback(this._speech);
   final Speech _speech;
+  @override
+  Future<NarrationTiming?> timing() async {
+    final value = await _speech.timeline();
+    return value == null ? null : _timing(value);
+  }
 
   @override
   Stream<NarrationSnapshot> get states => _speech.states.map(
@@ -136,4 +155,39 @@ class _MlsrPlayback implements NarrationPlayback {
       _navigation(_speech.navigateToSentence(id));
   @override
   Future<void> dispose() => _speech.dispose();
+}
+
+NarrationTiming _timing(DurationPlan plan) => NarrationTiming(
+  textHash: plan.textSha256,
+  settingsKey:
+      '${plan.manifestSha256}:${plan.voice}:${plan.language}:${plan.speakingRate}:${plan.backend.steps}:${plan.backend.seed}',
+  sampleRate: plan.format.sampleRate,
+  estimatedFrames: plan.estimatedFrames,
+  durationFrames: plan.durationFrames,
+  segments: [
+    for (final s in plan.segments)
+      NarrationTimingSegment(
+        start: s.utf16.start,
+        end: s.utf16.end,
+        startFrame: s.startFrame,
+        predictedFrames: s.estimatedFrames,
+        actualFrames: s.actualFrames,
+      ),
+  ],
+);
+
+class _MlsrDurationJob implements NarrationDurationJob {
+  _MlsrDurationJob(this.job);
+  final DurationPlanningJob job;
+  @override
+  Future<NarrationTiming?> get result async {
+    if ((await job.done).kind != OutcomeKind.completed) return null;
+    final plan = await job.timeline();
+    return plan == null ? null : _timing(plan);
+  }
+
+  @override
+  void cancel() => job.cancel();
+  @override
+  Future<void> dispose() => job.dispose();
 }

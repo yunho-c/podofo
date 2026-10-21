@@ -280,3 +280,42 @@ python3 tool/test_macos.py tool/benchmark_paper_index_test.dart
   listening sample, confirmed actual app playback, and reported satisfactory
   results after completing the native UI checklist. This closes milestone 4 and
   the implementation goal for macOS Apple Silicon.
+
+## Document timeline: duration and position (milestone 3)
+
+PoDoFo pins MLSR `76ae48b` and uses its public duration-planning facade across the
+existing application-owned engine. MLSR owns background admission, foreground
+preemption, cancellation and retry; no second engine or PCM consumer is created.
+The SDK change is on local branch `feat/document-duration-api`; publish that
+revision before a fresh remote checkout can resolve the updated pin. Local
+preparation supports `--sdk-source /Users/yunhocho/GitHub/MLSR-document-duration`.
+
+`PaperTimeline` retains compact native segment durations and source offsets beside
+`PaperIndex`. After speech admission, indexing completes and a serial background
+pass reconstructs missing page text through the shared planner. One temporary
+page and one native planning job are retained; neither enters the two-page
+playback cache. Stop cancels and keeps valid timing, Play resumes, pause permits
+planning, and close discards it. Changed settings invalidate timing; changed
+reading options/text/review or References scope follow index identity.
+
+The document row is read-only in this milestone. It shows native estimates,
+planning counts or explicitly partial coverage, without word-rate heuristics.
+Unresolved pages and unsupported passages never count as zero. Retry duration
+planning retries retained failures. Selected-text playback and the passage
+scrubber keep their existing behavior. The speed menu offers 0.9–1.3x in 0.1 steps;
+legacy preferences are normalized on load and native playback rate remains 1.0.
+
+Position uses presented native frames plus a known document prefix. Source
+passages retain their original index identity and cumulative UTF-16 offset through
+resume/slicing. Suffix playback is mapped through source segment ranges and
+marked approximate, since slicing may change segmentation. A suffix cannot replace
+its parent's full duration. Full-request generated segment lengths supersede
+matching predictions. Model loading, buffering and pauses are not media duration.
+No timing cache is persisted and ObjectBox schema/UIDs are unchanged.
+
+Validation: the 100-test Flutter suite passed (one opt-in native test skipped),
+then the expanded 8-case timeline suite passed after adding coverage-boundary
+checks and a document-replacement quiescence barrier; analysis passes. The separate real-model, muted native-output test passes
+background planning, nonzero document position, paused/Stopped cursor retention,
+existing backward-navigation behavior and native handle return to baseline.
+Speaker naturalness and complete document scrubbing remain later qualification.

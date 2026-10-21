@@ -6,6 +6,8 @@ import 'package:flutter/foundation.dart';
 import 'narrator.dart';
 import 'source_map.dart';
 import 'narration_sequence.dart';
+import 'paper_sequence.dart';
+import 'paper_timeline.dart';
 
 class NarrationSource {
   const NarrationSource({
@@ -57,6 +59,59 @@ class NarrationController extends ChangeNotifier {
   bool _closed = false, _pauseWhenReady = false;
   NarrationSource? source;
   NarrationSnapshot? snapshot;
+  PaperSequence? _timedSequence;
+  NarrationTiming? _currentTiming;
+  NarrationPlayback? _readingTimingFor;
+  (int?, int?, int?)? _timingKey;
+  PaperTimelineSnapshot? get documentTimeline =>
+      _timedSequence?.timeline.snapshot;
+  DocumentPosition? get documentPosition {
+    final passage = source?.passage;
+    return passage == null
+        ? null
+        : _timedSequence?.timeline.position(passage, _currentTiming, snapshot);
+  }
+
+  void _listenDocument(NarrationSequence? sequence) {
+    final paper = sequence is PaperSequence ? sequence : null;
+    if (identical(paper, _timedSequence)) return;
+    _timedSequence?.timeline.removeListener(_notify);
+    _timedSequence = paper;
+    paper?.timeline.addListener(_notify);
+  }
+
+  Future<void> _captureTiming(
+    NarrationPlayback playback,
+    int generation,
+  ) async {
+    if (playback is! NarrationTimedPlayback || _readingTimingFor != null) {
+      return;
+    }
+    _readingTimingFor = playback;
+    try {
+      final value = await (playback as NarrationTimedPlayback).timing();
+      if (!_current(generation) ||
+          !identical(playback, _playback) ||
+          value == null) {
+        return;
+      }
+      _currentTiming = value;
+      final passage = source?.passage, paper = _timedSequence;
+      if (passage != null && paper != null && passage.originalOffset == 0) {
+        final descriptor = paper.index.snapshot.passages
+            .where((p) => p.id == passage.indexedPassageId)
+            .firstOrNull;
+        if (descriptor != null) paper.timeline.record(descriptor, value);
+      }
+      _notify();
+    } catch (_) {
+      // Timing observation cannot interrupt speech. Background planning retains
+      // typed failures and coverage independently.
+    } finally {
+      if (identical(_readingTimingFor, playback)) _readingTimingFor = null;
+    }
+  }
+
   List<NarrationVoice> voices = const [];
   NarrationSettings settings = const NarrationSettings();
   String? error;
@@ -149,6 +204,7 @@ class NarrationController extends ChangeNotifier {
     } else {
       source?.sequence?.cancelPending();
     }
+    _retireTiming();
     _pendingDocumentId = documentId;
     _retireCurrent();
     preparing = true;
@@ -157,6 +213,7 @@ class NarrationController extends ChangeNotifier {
     snapshot = null;
     sentences = const [];
     source = null;
+    _listenDocument(null);
     _lastAnchor = null;
     preparation = 'Reading selected text…';
     _notify();
@@ -191,6 +248,7 @@ class NarrationController extends ChangeNotifier {
       throw StateError('This selection is too long. Select a shorter passage.');
     }
     source = next;
+    _listenDocument(next.sequence);
     _lastAnchor = null;
     preparation = 'Loading voices…';
     _notify();
@@ -208,6 +266,10 @@ class NarrationController extends ChangeNotifier {
     _pendingDocumentId = null;
     _observe(playback, generation);
     final sequence = next.sequence;
+    final session = _session;
+    if (sequence is PaperSequence && session is NarrationDurationSession) {
+      sequence.configureTiming(session as NarrationDurationSession, settings);
+    }
     if (sequence != null) unawaited(_prepareNext(sequence));
     if (sequence is DocumentIndexingSequence) {
       unawaited(_indexDocument(sequence as DocumentIndexingSequence));
@@ -326,10 +388,20 @@ class NarrationController extends ChangeNotifier {
 
   void _observe(NarrationPlayback playback, int generation) {
     _playback = playback;
+    _currentTiming = null;
+    _readingTimingFor = null;
+    _timingKey = null;
     _subscription = playback.states.listen(
       (value) {
         if (!_current(generation) || !identical(_playback, playback)) return;
         snapshot = value;
+        final key = (value.start, value.estimatedFrames, value.durationFrames);
+        if (value.estimatedFrames != null &&
+            key != _timingKey &&
+            _readingTimingFor == null) {
+          _timingKey = key;
+          unawaited(_captureTiming(playback, generation));
+        }
         if (value.start != null && !identical(_positioning, playback)) {
           _lastAnchor = source?.passage?.anchorAt(value.start!);
           _remember();
@@ -446,8 +518,8 @@ class NarrationController extends ChangeNotifier {
 
   /// Synthesis changes restart at the native sentence's source boundary.
   Future<void> configure(NarrationSettings next) async {
-    if (!next.speed.isFinite || next.speed < 0.5 || next.speed > 2) {
-      throw ArgumentError('Speaking speed must be between 0.5 and 2.0.');
+    if (!narrationSpeeds.contains(next.speed)) {
+      throw ArgumentError('Speaking speed must be 0.9–1.3 in steps of 0.1.');
     }
     if (next.voice == settings.voice &&
         next.language == settings.language &&
@@ -455,6 +527,8 @@ class NarrationController extends ChangeNotifier {
       return;
     }
     settings = next;
+    _timedSequence?.invalidateTiming(next);
+    _currentTiming = null;
     final previous = source;
     if (previous != null && active) {
       final keepPaused = paused;
@@ -555,6 +629,14 @@ class NarrationController extends ChangeNotifier {
     _retiring.add(work);
   }
 
+  void _retireTiming() {
+    final sequence = source?.sequence;
+    if (sequence is! PaperSequence) return;
+    late final Future<void> work;
+    work = sequence.timingIdle.whenComplete(() => _retiring.remove(work));
+    _retiring.add(work);
+  }
+
   Future<void> _joinRetiring() async {
     await Future.wait(_retiring.toList());
   }
@@ -562,6 +644,7 @@ class NarrationController extends ChangeNotifier {
   Future<void> stop() async {
     _remember();
     source?.sequence?.cancelPending();
+    _retireTiming();
     ++_generation;
     _finishMovement();
     preparing = false;
@@ -586,6 +669,7 @@ class NarrationController extends ChangeNotifier {
     sequence?.close();
     if (_generation != generation) return;
     source = null;
+    _listenDocument(null);
     _lastAnchor = null;
     snapshot = null;
     _notify();
@@ -595,6 +679,7 @@ class NarrationController extends ChangeNotifier {
   Future<void> _close() async {
     _closed = true;
     await stop();
+    _listenDocument(null);
     source?.sequence?.close();
     try {
       await _opening;

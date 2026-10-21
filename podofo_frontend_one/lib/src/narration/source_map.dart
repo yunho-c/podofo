@@ -187,10 +187,16 @@ class SpokenSpan {
 
 /// Request text and its many-to-many mapping to the original PDF text.
 class NarrationPassage {
-  NarrationPassage(this.text, Iterable<SpokenSpan> spans)
-    : spans = List.unmodifiable(spans);
+  NarrationPassage(
+    this.text,
+    Iterable<SpokenSpan> spans, {
+    this.indexedPassageId,
+    this.originalOffset = 0,
+  }) : spans = List.unmodifiable(spans);
   final String text;
   final List<SpokenSpan> spans;
+  final String? indexedPassageId;
+  final int originalOffset;
 
   factory NarrationPassage.fromSlices(Iterable<PdfTextSlice> slices) {
     final output = StringBuffer();
@@ -284,17 +290,22 @@ class NarrationPassage {
         text.codeUnitAt(offset) <= 0xdfff) {
       offset--; // Never split a surrogate pair.
     }
-    return NarrationPassage(text.substring(offset), [
-      for (final span in spans)
-        if (span.end > offset)
-          SpokenSpan(
-            math.max(0, span.start - offset),
-            span.end - offset,
-            span.source,
-            span.sourceEnd,
-            span.boxes,
-          ),
-    ]);
+    return NarrationPassage(
+      text.substring(offset),
+      [
+        for (final span in spans)
+          if (span.end > offset)
+            SpokenSpan(
+              math.max(0, span.start - offset),
+              span.end - offset,
+              span.source,
+              span.sourceEnd,
+              span.boxes,
+            ),
+      ],
+      indexedPassageId: indexedPassageId,
+      originalOffset: originalOffset + offset,
+    );
   }
 
   List<PdfRect> rectangles(int page, int start, int end) {

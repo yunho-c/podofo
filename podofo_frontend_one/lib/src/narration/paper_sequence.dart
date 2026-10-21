@@ -2,6 +2,8 @@ import 'dart:async';
 
 import '../services/pdf_session.dart';
 import 'narration_sequence.dart';
+import 'narrator.dart';
+import 'paper_timeline.dart';
 import 'paper_index.dart';
 import 'paper_page_planner.dart';
 import 'paper_plan.dart';
@@ -32,6 +34,147 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     : index = PaperIndex(planner.pageCount);
   final PaperPagePlanner planner;
   final PaperIndex index;
+  late final PaperTimeline timeline = PaperTimeline(index);
+  NarrationDurationSession? _durationSession;
+  NarrationSettings? _durationSettings;
+  NarrationDurationJob? _durationJob;
+  Future<void>? _durationWork;
+
+  /// Quiescence barrier used before another document admits a planning job.
+  Future<void> get timingIdle => _durationWork ?? Future<void>.value();
+  bool _durationRequested = false;
+
+  void configureTiming(
+    NarrationDurationSession session,
+    NarrationSettings settings,
+  ) {
+    if (_durationSettings?.key != settings.key) {
+      _durationJob?.cancel();
+      timeline.configure(settings);
+    }
+    _durationSession = session;
+    _durationSettings = settings;
+    _durationRequested = true;
+    _ensureTiming();
+  }
+
+  void invalidateTiming(NarrationSettings settings) {
+    _durationRequested = false;
+    _durationJob?.cancel();
+    _durationSettings = settings;
+    timeline.configure(settings);
+  }
+
+  void retryTiming() {
+    timeline.retryFailures();
+    _durationRequested = true;
+    unawaited(indexDocument(retryFailures: true));
+    _ensureTiming();
+  }
+
+  void _ensureTiming() {
+    if (_closed ||
+        !_durationRequested ||
+        _durationSession == null ||
+        _durationWork != null) {
+      return;
+    }
+    final epoch = _epoch, settings = _durationSettings!;
+    final session = _durationSession!;
+    _durationRequested = false;
+    late final Future<void> work;
+    work = Future<void>(() => _timeDocument(epoch, session, settings))
+        .whenComplete(() {
+          if (identical(_durationWork, work)) _durationWork = null;
+          _ensureTiming();
+        });
+    _durationWork = work;
+  }
+
+  Future<void> _timeDocument(
+    int epoch,
+    NarrationDurationSession session,
+    NarrationSettings settings,
+  ) async {
+    bool valid() =>
+        !_closed && epoch == _epoch && settings.key == _durationSettings?.key;
+    if (!valid()) return;
+    timeline.setPlanning(true);
+    try {
+      await indexDocument();
+      if (!valid()) return;
+      for (final page in index.snapshot.pages) {
+        if (!valid()) return;
+        if (page.page > index.scopeEndPage) break;
+        if (page.unresolved ||
+            page.status == PaperIndexPageStatus.skipped ||
+            page.passages.every(
+              (p) =>
+                  timeline.timing(p.id) != null ||
+                  timeline.failure(p.id) != null,
+            )) {
+          continue;
+        }
+        final PaperPagePlan plan;
+        try {
+          plan =
+              _pages[page.page] ??
+              await planner.plan(
+                page.page,
+                _preferences(page.page),
+                priority: PaperPlanPriority.background,
+              );
+        } on PaperPlanningCancelled {
+          return;
+        } catch (error) {
+          if (valid()) {
+            for (final passage in page.passages) {
+              timeline.fail(passage.id, error);
+            }
+          }
+          continue;
+        }
+        if (!valid()) return;
+        index.record(plan, _preferences(page.page));
+        if (plan.issue != null) continue;
+        final descriptors = index.page(page.page)!.passages;
+        for (var i = 0; i < descriptors.length; i++) {
+          if (!valid()) return;
+          final descriptor = descriptors[i];
+          if (timeline.timing(descriptor.id) != null ||
+              timeline.failure(descriptor.id) != null) {
+            continue;
+          }
+          NarrationDurationJob? job;
+          try {
+            job = session.planDuration(plan.passages[i].text, settings);
+            _durationJob = job;
+            final result = await job.result;
+            if (!valid()) return;
+            if (result != null) timeline.record(descriptor, result);
+          } catch (error) {
+            if (valid()) timeline.fail(descriptor.id, error);
+          } finally {
+            await job?.dispose();
+            if (identical(_durationJob, job)) _durationJob = null;
+          }
+          await Future<void>.delayed(Duration.zero);
+        }
+      }
+    } finally {
+      if (!_closed) timeline.setPlanning(false);
+    }
+  }
+
+  NarrationPassage _passageAt(PaperPagePlan plan, int ordinal) {
+    final passage = plan.passages[ordinal];
+    return NarrationPassage(
+      passage.text,
+      passage.spans,
+      indexedPassageId: index.page(plan.page.page)!.passages[ordinal].id,
+    );
+  }
+
   PaperReadOptions _options;
   PaperReadOptions get options => _options;
   set options(PaperReadOptions value) {
@@ -44,7 +187,11 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     _skipped.clear();
     review = null;
     index.reset();
-    if (restart) unawaited(indexDocument());
+    if (restart) {
+      unawaited(indexDocument());
+      _durationRequested = _durationSession != null;
+      _ensureTiming();
+    }
   }
 
   final _pages = <int, PaperPagePlan>{};
@@ -188,7 +335,7 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
         );
         if (contains) {
           _passage = i;
-          return passage.sliceFrom(passage.offsetOf(anchor)!);
+          return _passageAt(plan, i).sliceFrom(passage.offsetOf(anchor)!);
         }
       }
       throw StateError(
@@ -224,7 +371,7 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
         _page = page;
         _passage = passage;
         review = null;
-        return plan.passages[passage];
+        return _passageAt(plan, passage);
       }
       if (direction > 0 && plan.endsPaper) return null;
       page += direction;
@@ -242,7 +389,11 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     _pages.remove(page);
     index.invalidate(page);
     review = null;
-    if (restart) unawaited(indexDocument());
+    if (restart) {
+      unawaited(indexDocument());
+      _durationRequested = _durationSession != null;
+      _ensureTiming();
+    }
   }
 
   void skipReview() {
@@ -254,11 +405,18 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     _pages.remove(page);
     index.skip(page);
     review = null;
-    if (restart) unawaited(indexDocument());
+    if (restart) {
+      unawaited(indexDocument());
+      _durationRequested = _durationSession != null;
+      _ensureTiming();
+    }
   }
 
   @override
   void cancelPending() {
+    _durationRequested = false;
+    _durationJob?.cancel();
+    timeline.setPlanning(false);
     _epoch++;
     _indexStarted = false;
     _indexing = null;
@@ -276,6 +434,7 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     _skipped.clear();
     review = null;
     planner.close();
+    timeline.dispose();
     index.close();
   }
 }

@@ -28,9 +28,7 @@ final narrationControllerProvider = Provider<NarrationController>((ref) {
   controller.settings = NarrationSettings(
     voice: preferences.audioVoice ?? '',
     language: preferences.audioLanguage,
-    speed: preferences.audioSpeed.isFinite
-        ? preferences.audioSpeed.clamp(0.5, 2.0)
-        : 1,
+    speed: normalizedNarrationSpeed(preferences.audioSpeed),
   );
   controller.followText = preferences.followSpokenText;
   ref.onDispose(controller.dispose);

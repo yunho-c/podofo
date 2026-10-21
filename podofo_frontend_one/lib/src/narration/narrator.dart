@@ -17,6 +17,7 @@ class NarrationSettings {
   });
   final String voice, language;
   final double speed;
+  String get key => '$voice:$language:$speed';
 }
 
 class NarrationSnapshot {
@@ -87,3 +88,63 @@ abstract interface class NarratorSession {
 typedef NarratorFactory = Future<NarratorSession> Function(
   void Function(String message) onProgress,
 );
+
+/// Optional metadata-only capabilities. Audio scheduling remains in MLSR.
+abstract interface class NarrationDurationSession {
+  NarrationDurationJob planDuration(String text, NarrationSettings settings);
+}
+
+abstract interface class NarrationDurationJob {
+  Future<NarrationTiming?> get result;
+  void cancel();
+  Future<void> dispose();
+}
+
+abstract interface class NarrationTimedPlayback {
+  Future<NarrationTiming?> timing();
+}
+
+class NarrationTimingSegment {
+  const NarrationTimingSegment({
+    required this.start,
+    required this.end,
+    required this.startFrame,
+    required this.predictedFrames,
+    this.actualFrames,
+  });
+  final int start, end, startFrame, predictedFrames;
+  final int? actualFrames;
+  int get frames => actualFrames ?? predictedFrames;
+}
+
+class NarrationTiming {
+  NarrationTiming({
+    required this.textHash,
+    required this.settingsKey,
+    required this.sampleRate,
+    required this.estimatedFrames,
+    this.durationFrames,
+    required Iterable<NarrationTimingSegment> segments,
+  }) : segments = List.unmodifiable(segments);
+  final String textHash, settingsKey;
+  final int sampleRate, estimatedFrames;
+  final int? durationFrames;
+  final List<NarrationTimingSegment> segments;
+  int get frames => durationFrames ?? estimatedFrames;
+  bool get measured => durationFrames != null;
+
+  /// Approximate source alignment only within a model segment, never word timing.
+  double frameAtOffset(int offset) {
+    for (final s in segments) {
+      if (offset <= s.start) return s.startFrame.toDouble();
+      if (offset < s.end) {
+        return s.startFrame + s.frames * (offset - s.start) / (s.end - s.start);
+      }
+    }
+    return frames.toDouble();
+  }
+}
+
+const narrationSpeeds = [0.9, 1.0, 1.1, 1.2, 1.3];
+double normalizedNarrationSpeed(double value) =>
+    !value.isFinite ? 1.0 : (value.clamp(0.9, 1.3) * 10).round() / 10;
