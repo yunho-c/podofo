@@ -109,9 +109,18 @@ class NarrationControls extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  if (paper != null)
+                    button(
+                      'Previous passage',
+                      m.Icons.skip_previous_rounded,
+                      controller.preparing || paper.review != null
+                          ? null
+                          : () => controller.movePassage(-1),
+                      key: 'narration-previous-passage',
+                    ),
                   button(
                     'Previous sentence',
-                    m.Icons.skip_previous_rounded,
+                    m.Icons.chevron_left_rounded,
                     canNavigate || sequence != null
                         ? () => controller.navigate(forward: false)
                         : null,
@@ -129,12 +138,21 @@ class NarrationControls extends ConsumerWidget {
                   ),
                   button(
                     'Next sentence',
-                    m.Icons.skip_next_rounded,
+                    m.Icons.chevron_right_rounded,
                     canNavigate || sequence != null
                         ? () => controller.navigate(forward: true)
                         : null,
                     key: 'narration-next',
                   ),
+                  if (paper != null)
+                    button(
+                      'Next passage',
+                      m.Icons.skip_next_rounded,
+                      controller.preparing || paper.review != null
+                          ? null
+                          : () => controller.movePassage(1),
+                      key: 'narration-next-passage',
+                    ),
                   button(
                     'Stop reading',
                     m.Icons.stop_rounded,
@@ -223,46 +241,28 @@ class NarrationControls extends ConsumerWidget {
                     ),
                   ],
                 ),
-              if (paper != null)
+              if (paper != null && paper.review != null)
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Text('Page ${paper.pageNumber} of ${paper.pageCount}')
-                        .small()
-                        .muted(),
-                    const Spacer(),
-                    if (paper.review != null) ...[
-                      m.TextButton(
-                        onPressed: () {
-                          NarrationActions.showSource(ref);
-                          NarrationActions.readPaper(
-                            ref,
-                            page: paper.review!.page.page,
-                            options: paper.options,
-                          );
-                        },
-                        child: const Text('Review page'),
-                      ),
-                      m.TextButton(
-                        onPressed: () {
-                          paper.skipReview();
-                          controller.movePassage(1);
-                        },
-                        child: const Text('Skip this page'),
-                      ),
-                    ] else ...[
-                      m.TextButton(
-                        onPressed: controller.preparing
-                            ? null
-                            : () => controller.movePassage(-1),
-                        child: const Text('Previous passage'),
-                      ),
-                      m.TextButton(
-                        onPressed: controller.preparing
-                            ? null
-                            : () => controller.movePassage(1),
-                        child: const Text('Next passage'),
-                      ),
-                    ],
+                    m.TextButton(
+                      onPressed: () {
+                        NarrationActions.showSource(ref);
+                        NarrationActions.readPaper(
+                          ref,
+                          page: paper.review!.page.page,
+                          options: paper.options,
+                        );
+                      },
+                      child: const Text('Review page'),
+                    ),
+                    m.TextButton(
+                      onPressed: () {
+                        paper.skipReview();
+                        controller.movePassage(1);
+                      },
+                      child: const Text('Skip this page'),
+                    ),
                   ],
                 ),
               if (paper != null)
