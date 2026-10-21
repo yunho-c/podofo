@@ -215,8 +215,6 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
                 key: const ValueKey('document-timeline-unavailable'),
               ).small().muted(),
             ),
-          if (controller.seekingDocument)
-            const Text('Preparing reading position…').small().muted(),
         ],
       ),
     );
