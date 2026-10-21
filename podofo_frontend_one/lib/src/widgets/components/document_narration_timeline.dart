@@ -21,6 +21,9 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
   PaperTimelineScale? _drag;
   PaperSequence? _dragPaper;
   double? _preview;
+  int? _unavailablePage;
+  String? _unavailableId;
+  PaperSequence? _unavailablePaper;
   bool _beganStopped = false, _invalidatedDrag = false;
   final _focus = FocusNode();
   PaperSequence? get _paper => switch (widget.controller.source?.sequence) {
@@ -37,6 +40,15 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
   void didUpdateWidget(covariant DocumentNarrationTimeline oldWidget) {
     super.didUpdateWidget(oldWidget);
     final paper = _paper;
+    if (_unavailablePage != null &&
+        (paper == null ||
+            !identical(paper, _unavailablePaper) ||
+            paper.timeline.timing(_unavailableId!) != null ||
+            !paper.index.snapshot.passages.any(
+              (p) => p.id == _unavailableId,
+            ))) {
+      _unavailablePage = null;
+    }
     if (_drag != null &&
         (paper == null ||
             !identical(paper, _dragPaper) ||
@@ -44,6 +56,7 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
             (!_beganStopped &&
                 widget.controller.snapshot?.phase == NarrationPhase.stopped))) {
       _clear();
+      _unavailablePage = null;
       _invalidatedDrag = true;
     }
   }
@@ -54,6 +67,7 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
     if (scale == null) return;
     setState(() {
       _invalidatedDrag = false;
+      _unavailablePage = null;
       _drag = scale;
       _dragPaper = paper;
       _preview = value;
@@ -70,15 +84,20 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
 
   void _end(double value) {
     final scale = _drag, paper = _paper;
-    final target =
+    final valid =
         scale != null &&
-            paper != null &&
-            identical(paper, _dragPaper) &&
-            scale.isCurrent(paper.timeline)
-        ? scale.targetAt(value.round())
+        paper != null &&
+        identical(paper, _dragPaper) &&
+        scale.isCurrent(paper.timeline);
+    final target = valid ? scale.targetAt(value.round()) : null;
+    final unavailable = valid
+        ? scale.unavailablePassageAt(value.round())
         : null;
     setState(() {
       _clear();
+      _unavailablePage = unavailable?.page;
+      _unavailableId = unavailable?.id;
+      _unavailablePaper = unavailable == null ? null : paper;
       _invalidatedDrag = false;
     });
     if (target != null) unawaited(widget.controller.seekToTarget(target));
@@ -103,6 +122,9 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
         total > 0 &&
         (!controller.preparing || controller.seekingDocument);
     final estimated = !document.measured || position?.approximate == true;
+    final unavailablePage = _preview != null
+        ? _drag?.unavailablePassageAt(value.round())?.page
+        : _unavailablePage;
     final label = _preview != null
         ? 'Seek to ${documentClock(value.round())}'
         : position == null
@@ -137,7 +159,9 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
                   ? 0
                   : value.clamp(0, total).toDouble(),
               max: total == null || total <= 0 ? 1 : total.toDouble(),
-              label: 'Document ${documentClock(value.round())}',
+              label: unavailablePage == null
+                  ? 'Document ${documentClock(value.round())}'
+                  : 'Page $unavailablePage: timing unavailable',
               semanticFormatterCallback: (value) =>
                   '${documentClock(value.round())} of ${total == null ? "unknown duration" : documentClock(total)}',
               onChangeStart: enabled ? _begin : null,
@@ -150,10 +174,24 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
               '${document.planning ? "Estimating document duration…" : "Partial document duration"} '
               '${documentClock(document.knownMicroseconds)} planned · ${document.processedPages}/${document.pageCount} pages · '
               '${document.plannedPassages}/${document.passageCount} passages. '
-              'Document seeking becomes available when all included text is planned.'
+              'Document seeking becomes available when reading order is resolved and timing estimates are ready.'
               '${document.unresolvedPages + document.failedPassages > 0 ? " ${document.unresolvedPages} unresolved ${document.unresolvedPages == 1 ? "page" : "pages"}, ${document.failedPassages} failed ${document.failedPassages == 1 ? "passage" : "passages"}." : ""}',
               key: const ValueKey('document-timeline-coverage'),
             ).small().muted(),
+          if (total != null && document.fallbackPassages > 0)
+            Text(
+              '${document.fallbackPassages} ${document.fallbackPassages == 1 ? "passage uses" : "passages use"} rough timing. '
+              'You can seek within the other passages.',
+              key: const ValueKey('document-timeline-fallback'),
+            ).small().muted(),
+          if (unavailablePage != null)
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                'Timing unavailable on page $unavailablePage. Choose another position or retry duration planning.',
+                key: const ValueKey('document-timeline-unavailable'),
+              ).small().muted(),
+            ),
           if (controller.seekingDocument)
             const Text('Preparing reading position…').small().muted(),
           if (document.failedPassages > 0 && !document.planning)

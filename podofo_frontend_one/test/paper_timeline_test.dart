@@ -256,12 +256,61 @@ void main() {
       paper.configureTiming(session, const NarrationSettings());
       await settle();
       expect(paper.timeline.snapshot.failedPassages, 1);
-      expect(paper.timeline.snapshot.totalMicroseconds, isNull);
+      expect(paper.timeline.snapshot.totalMicroseconds, 30000000);
+      expect(paper.timeline.snapshot.fallbackPassages, 1);
       expect(paper.timeline.snapshot.knownMicroseconds, 20000000);
+      final position = paper.timeline.position(current, null, null)!;
+      expect(position.microseconds, 10000000);
+      expect(position.approximate, true);
+      final scale = paper.timeline.freeze()!;
+      expect(scale.targetAt(5000000), isNull);
+      expect(scale.unavailablePassageAt(5000000)!.page, 1);
+      final target = scale.targetAt(15000000)!;
+      expect(target.passage.page, 2);
+      expect(target.frameIn(timing(current.text)), 500);
+      paper.timeline.retryFailures();
+      expect(paper.timeline.snapshot.totalMicroseconds, 30000000);
+      expect(paper.timeline.snapshot.fallbackPassages, 1);
       session.failText = null;
       paper.retryTiming();
       await settle();
       expect(paper.timeline.snapshot.totalMicroseconds, 30000000);
+      expect(paper.timeline.snapshot.fallbackPassages, 0);
+      expect(scale.isCurrent(paper.timeline), true);
+      expect(scale.targetAt(5000000), isNull);
+      expect(paper.timeline.targetAt(5000000)!.passage.page, 1);
+      paper.timeline.record(
+        paper.index.page(1)!.passages.single,
+        timing(fixture.page(1).text.text, frames: 2000, actual: true),
+      );
+      expect(scale.isCurrent(paper.timeline), true);
+      expect(scale.targetAt(15000000)!.passage.id, target.passage.id);
+      expect(paper.timeline.prefixMicroseconds(entry.id), 20000000);
+      paper.timeline.configure(const NarrationSettings(speed: 1.3));
+      expect(paper.timeline.snapshot.fallbackPassages, 0);
+      expect(paper.timeline.snapshot.totalMicroseconds, isNull);
+      expect(scale.isCurrent(paper.timeline), false);
+    },
+  );
+
+  test(
+    'all failed passages have rough display timing but no seek target',
+    () async {
+      final paper = fixture.sequence(1), session = TimingSession();
+      addTearDown(paper.close);
+      session.failText = fixture.page(1).text.text;
+      await paper.start();
+      paper.configureTiming(session, const NarrationSettings());
+      await settle();
+      final snapshot = paper.timeline.snapshot;
+      expect(snapshot.totalMicroseconds, greaterThan(0));
+      expect(snapshot.knownMicroseconds, 0);
+      expect(snapshot.fallbackPassages, 1);
+      expect(snapshot.measured, false);
+      expect(paper.timeline.targetAt(0), isNull);
+      paper.index.skip(1);
+      expect(paper.timeline.snapshot.fallbackPassages, 0);
+      expect(paper.timeline.snapshot.failedPassages, 0);
     },
   );
 

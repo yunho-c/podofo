@@ -141,6 +141,41 @@ void main() {
     },
   );
 
+  testWidgets('failed interval preserves playback; seeking beyond it works', (
+    tester,
+  ) async {
+    final paper = fixture.sequence(3), session = seek.SeekSession();
+    session.failText = fixture.page(2).text.text;
+    final controller = (await tester.runAsync(
+      () => seek.reader(paper, session),
+    ))!;
+    addTearDown(controller.close);
+    await mount(tester, controller, width: 360);
+    expect(slider(tester).onChanged, isNotNull);
+    expect(slider(tester).max, 30000000);
+    expect(find.textContaining('1 passage uses rough timing'), findsOneWidget);
+    slider(tester).onChangeStart!(15000000);
+    slider(tester).onChanged!(15000000);
+    await tester.pump();
+    expect(find.textContaining('Timing unavailable on page 2'), findsOneWidget);
+    slider(tester).onChangeEnd!(15000000);
+    await settle(tester);
+    expect(session.playbacks.length, 1);
+    expect(session.playbacks.single.disposed, false);
+    expect(paper.pageNumber, 1);
+    expect(find.textContaining('Timing unavailable on page 2'), findsOneWidget);
+    slider(tester).onChangeStart!(25000000);
+    slider(tester).onChanged!(25000000);
+    slider(tester).onChangeEnd!(25000000);
+    await settle(tester);
+    expect(paper.pageNumber, 3);
+    expect(session.playbacks.last.lastSeek, 500);
+    expect(controller.documentPosition!.microseconds, 25000000);
+    expect(controller.documentPosition!.approximate, true);
+    expect(find.textContaining('Timing unavailable on page 2'), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('settings invalidate an ongoing drag; keyboard remains usable', (
     tester,
   ) async {

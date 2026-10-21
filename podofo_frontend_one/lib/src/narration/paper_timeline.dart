@@ -12,6 +12,9 @@ class PaperTimeline extends ChangeNotifier {
   final PaperIndex index;
   final _timings = <String, NarrationTiming>{};
   final _failures = <String, String>{};
+  // Keep fallback coverage during retries, until real timing replaces it.
+  final _fallbacks = <String>{};
+  double _defaultMicrosPerScalar = 80000;
   String? _settingsKey;
   bool planning = false, _closed = false;
   NarrationTiming? timing(String id) => _timings[id];
@@ -25,6 +28,7 @@ class PaperTimeline extends ChangeNotifier {
     final ids = index.snapshot.passages.map((p) => p.id).toSet();
     _timings.removeWhere((id, _) => !ids.contains(id));
     _failures.removeWhere((id, _) => !ids.contains(id));
+    _fallbacks.removeWhere((id) => !ids.contains(id));
     _publish();
   }
 
@@ -33,6 +37,8 @@ class PaperTimeline extends ChangeNotifier {
     _settingsKey = settings.key;
     _timings.clear();
     _failures.clear();
+    _fallbacks.clear();
+    _defaultMicrosPerScalar = 80000 / settings.speed;
     _publish();
   }
 
@@ -82,6 +88,7 @@ class PaperTimeline extends ChangeNotifier {
     }
     _timings[passage.id] = value;
     _failures.remove(passage.id);
+    _fallbacks.remove(passage.id);
     _publish();
   }
 
@@ -89,6 +96,7 @@ class PaperTimeline extends ChangeNotifier {
     if (_closed || !index.snapshot.passages.any((p) => p.id == id)) return;
     final message = error.toString();
     _failures[id] = message.length > 512 ? message.substring(0, 512) : message;
+    _fallbacks.add(id);
     _publish();
   }
 
@@ -97,9 +105,35 @@ class PaperTimeline extends ChangeNotifier {
     _publish();
   }
 
+  /// Display estimates only: never manufacture native segment/frame metadata.
+  Map<String, int> _durations() {
+    final passages = index.snapshot.passages.toList();
+    var micros = 0, scalars = 0;
+    final result = <String, int>{};
+    for (final passage in passages) {
+      final value = timing(passage.id);
+      if (value == null) continue;
+      final duration = _micros(value.frames, value.sampleRate);
+      result[passage.id] = duration;
+      micros += duration;
+      scalars += passage.scalarCount;
+    }
+    final rate = scalars > 0 && micros > 0
+        ? micros / scalars
+        : _defaultMicrosPerScalar;
+    for (final passage in passages) {
+      if (!result.containsKey(passage.id) && _fallbacks.contains(passage.id)) {
+        final estimate = (passage.scalarCount * rate).round();
+        result[passage.id] = estimate < 1000000 ? 1000000 : estimate;
+      }
+    }
+    return result;
+  }
+
   PaperTimelineSnapshot get snapshot {
     final coverage = index.snapshot;
     final passages = coverage.passages.toList();
+    final durations = _durations();
     var micros = 0, count = 0;
     var measured = true;
     for (final passage in passages) {
@@ -112,10 +146,14 @@ class PaperTimeline extends ChangeNotifier {
       count++;
       measured = measured && t.measured;
     }
-    final complete = coverage.fullyResolved && count == passages.length;
+    final complete =
+        coverage.fullyResolved && durations.length == passages.length;
     return PaperTimelineSnapshot(
       knownMicroseconds: micros,
-      totalMicroseconds: complete ? micros : null,
+      totalMicroseconds: complete
+          ? durations.values.fold<int>(0, (sum, value) => sum + value)
+          : null,
+      fallbackPassages: durations.length - count,
       plannedPassages: count,
       passageCount: passages.length,
       failedPassages: _failures.length,
@@ -133,15 +171,16 @@ class PaperTimeline extends ChangeNotifier {
   /// Prefix is unknown if any preceding page or included passage is unresolved.
   int? prefixMicroseconds(String id) {
     final coverage = index.snapshot;
+    final durations = _durations();
     var nextPage = 1, sum = 0;
     for (final page in coverage.pages) {
       if (page.page != nextPage || page.unresolved) return null;
       nextPage++;
       for (final passage in page.passages) {
         if (passage.id == id) return sum;
-        final t = timing(passage.id);
-        if (t == null) return null;
-        sum += _micros(t.frames, t.sampleRate);
+        final duration = durations[passage.id];
+        if (duration == null) return null;
+        sum += duration;
       }
     }
     return null;
@@ -198,6 +237,7 @@ class PaperTimeline extends ChangeNotifier {
       _settingsKey!,
       index.snapshot.passages,
       _timings,
+      _durations(),
     );
   }
 
@@ -216,6 +256,7 @@ class PaperTimeline extends ChangeNotifier {
     index.removeListener(_indexChanged);
     _timings.clear();
     _failures.clear();
+    _fallbacks.clear();
     super.dispose();
   }
 }
@@ -238,6 +279,7 @@ class PaperTimelineSnapshot {
     required this.plannedPassages,
     required this.passageCount,
     required this.failedPassages,
+    required this.fallbackPassages,
     required this.processedPages,
     required this.pageCount,
     required this.unresolvedPages,
@@ -248,6 +290,7 @@ class PaperTimelineSnapshot {
       plannedPassages,
       passageCount,
       failedPassages,
+      fallbackPassages,
       processedPages,
       pageCount,
       unresolvedPages;
@@ -289,12 +332,15 @@ class PaperTimelineScale {
     this.settingsKey,
     Iterable<IndexedPaperPassage> values,
     Map<String, NarrationTiming> metadata,
+    Map<String, int> durations,
   ) : passages = List.unmodifiable(values),
-      timings = Map.unmodifiable(metadata);
+      timings = Map.unmodifiable(metadata),
+      _durations = Map.unmodifiable(durations);
   final int totalMicroseconds;
   final String settingsKey;
   final List<IndexedPaperPassage> passages;
   final Map<String, NarrationTiming> timings;
+  final Map<String, int> _durations;
   bool isCurrent(PaperTimeline timeline) {
     if (timeline._closed || settingsKey != timeline._settingsKey) return false;
     final current = timeline.index.snapshot.passages.toList();
@@ -303,8 +349,9 @@ class PaperTimelineScale {
         Iterable<int>.generate(current.length).every(
           (i) =>
               current[i].id == passages[i].id &&
-              timeline.timing(current[i].id)?.settingsKey ==
-                  timings[current[i].id]?.settingsKey,
+              (timings[current[i].id] == null ||
+                  timeline.timing(current[i].id)?.settingsKey ==
+                      timings[current[i].id]?.settingsKey),
         );
   }
 
@@ -312,12 +359,13 @@ class PaperTimelineScale {
     final total = totalMicroseconds;
     var remaining = microseconds.clamp(0, total - 1);
     for (var i = 0; i < passages.length; i++) {
-      final passage = passages[i], value = timings[passages[i].id]!;
-      final duration = _micros(value.frames, value.sampleRate);
+      final passage = passages[i], value = timings[passages[i].id];
+      final duration = _durations[passage.id]!;
       if (remaining >= duration && i < passages.length - 1) {
         remaining -= duration;
         continue;
       }
+      if (value == null) return null;
       final frame =
           (remaining * value.sampleRate / Duration.microsecondsPerSecond)
               .floor()
@@ -334,6 +382,18 @@ class PaperTimelineScale {
         segment.end,
         ((frame - segment.startFrame) / segment.frames).clamp(0.0, 1.0),
       );
+    }
+    return null;
+  }
+
+  IndexedPaperPassage? unavailablePassageAt(int microseconds) {
+    var remaining = microseconds.clamp(0, totalMicroseconds - 1);
+    for (final passage in passages) {
+      final duration = _durations[passage.id]!;
+      if (remaining < duration) {
+        return timings.containsKey(passage.id) ? null : passage;
+      }
+      remaining -= duration;
     }
     return null;
   }

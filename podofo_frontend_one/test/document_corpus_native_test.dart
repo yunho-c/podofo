@@ -91,10 +91,27 @@ void main() {
                   timeline.plannedPassages + timeline.failedPassages,
                   timeline.passageCount,
                 );
-                if (timeline.failedPassages > 0 ||
-                    timeline.unresolvedPages > 0) {
+                if (timeline.unresolvedPages > 0) {
                   expect(timeline.totalMicroseconds, isNull);
                   expect(paper.timeline.freeze(), isNull);
+                } else if (timeline.passageCount > 0) {
+                  final scale = paper.timeline.freeze()!;
+                  expect(timeline.fallbackPassages, timeline.failedPassages);
+                  for (final passage in index.passages) {
+                    final prefix = paper.timeline.prefixMicroseconds(
+                      passage.id,
+                    )!;
+                    final target = scale.targetAt(prefix);
+                    if (paper.timeline.timing(passage.id) == null) {
+                      expect(target, isNull);
+                      expect(
+                        scale.unavailablePassageAt(prefix)?.id,
+                        passage.id,
+                      );
+                    } else {
+                      expect(target?.passage.id, passage.id);
+                    }
+                  }
                 }
                 expect(paper.cachedPageCount, 0);
                 expect(native.mlsr_live_handles(), baseline + 1);
@@ -112,6 +129,7 @@ void main() {
                   'passages': timeline.passageCount,
                   'known_duration_us': timeline.knownMicroseconds,
                   'total_duration_us': timeline.totalMicroseconds,
+                  'fallback_passages': timeline.fallbackPassages,
                   'unresolved_pages': [
                     for (final page in index.unresolvedPages)
                       {'page': page.page, 'issue': page.issue},
