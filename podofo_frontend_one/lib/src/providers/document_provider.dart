@@ -13,6 +13,7 @@ import '../data/document_data.dart';
 import '../data/document_entity.dart';
 import '../data/document_history_entity.dart';
 import '../services/pdf_session.dart';
+import '../services/document_file_access.dart';
 import '../services/pdf_highlights.dart';
 import 'data_provider.dart';
 import 'narration_provider.dart';
@@ -45,9 +46,16 @@ final filePathProvider = NotifierProvider<FilePathNotifier, String?>(
 class FilePathNotifier extends Notifier<String?> {
   @override
   String? build() => null;
-  Future<void> pickFile({List<String> exts = const ['pdf']}) async {
+  Future<void> pickFile({
+    List<String> exts = const ['pdf'],
+    String? recoveringPath,
+  }) async {
     try {
       final result = await openFile(
+        initialDirectory: recoveringPath == null
+            ? null
+            : p.dirname(recoveringPath),
+        confirmButtonText: recoveringPath == null ? null : 'Grant access',
         acceptedTypeGroups: [
           XTypeGroup(
             label: 'PDF documents',
@@ -58,7 +66,12 @@ class FilePathNotifier extends Notifier<String?> {
       );
       if (!ref.mounted || result == null) return;
       state = result.path;
-      await ref.read(loadedDocumentsProvider.notifier).addDocument(state!);
+      final documents = ref.read(loadedDocumentsProvider.notifier);
+      if (recoveringPath == null) {
+        await documents.addDocument(state!, selected: true);
+      } else {
+        await documents.recoverDocument(recoveringPath, state!);
+      }
     } catch (e) {
       if (ref.mounted) {
         ref.read(documentErrorProvider.notifier).state =
@@ -124,14 +137,16 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
     String filePath, {
     int? lastPage,
     bool activate = true,
+    bool selected = false,
   }) => _operations.synchronized(() async {
     final path = p.normalize(p.absolute(filePath));
     PdfSession? opened;
     try {
+      lastPage ??= _findRecord(path)?.lastOpenedPage;
       // Compare canonical paths after opening too (symlinks and case).
       var key = state.keys.where((s) => p.equals(s, path)).firstOrNull;
       if (key == null) {
-        opened = await PdfSession.open(path);
+        opened = await PdfSession.open(path, selected: selected);
         if (!ref.mounted) {
           await opened.close();
           return false;
@@ -141,6 +156,9 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
           await opened.close();
           opened = null;
         }
+      }
+      if (key != null && selected && opened == null) {
+        await DocumentFileAccess.remember(key);
       }
       if (key == null) {
         final session = opened!;
@@ -189,6 +207,23 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
       return false;
     }
   });
+
+  Future<bool> recoverDocument(String oldPath, String selectedPath) async {
+    final lastPage = _findRecord(oldPath)?.lastOpenedPage;
+    final opened = await addDocument(
+      selectedPath,
+      lastPage: lastPage,
+      selected: true,
+    );
+    if (!opened || !ref.mounted) return false;
+    if (!state.containsKey(p.normalize(p.absolute(oldPath)))) {
+      _removeRecords(oldPath);
+    }
+    ref.read(documentFailuresProvider.notifier).state =
+        Map<String, String>.from(ref.read(documentFailuresProvider))
+          ..remove(oldPath);
+    return true;
+  }
 
   DocumentEntity? _findRecord(String path) {
     final query = _box.query(DocumentEntity_.filePath.equals(path)).build();
@@ -279,6 +314,9 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
         ref.read(documentErrorProvider.notifier).state =
             'PDF saved, but its session entry could not be updated: $e';
       }
+    }
+    if (document.session.fileAccessWarning case final warning?) {
+      ref.read(documentErrorProvider.notifier).state = warning;
     }
     refresh();
   });

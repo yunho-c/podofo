@@ -21,6 +21,8 @@
 /* End PBXAggregateTarget section */
 
 /* Begin PBXBuildFile section */
+		FA0000000000000000000012 /* FileAccessPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000002 /* FileAccessPlugin.swift */; };
+		FA0000000000000000000011 /* FileAccessStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA0000000000000000000001 /* FileAccessStore.swift */; };
 		331C80D8294CF71000263BE5 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 331C80D7294CF71000263BE5 /* RunnerTests.swift */; };
 		335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */ = {isa = PBXBuildFile; fileRef = 335BBD1A22A9A15E00E9071D /* GeneratedPluginRegistrant.swift */; };
 		33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 33CC10F02044A3C60003C045 /* AppDelegate.swift */; };
@@ -63,6 +65,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		FA0000000000000000000002 /* FileAccessPlugin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileAccessPlugin.swift; sourceTree = "<group>"; };
+		FA0000000000000000000001 /* FileAccessStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileAccessStore.swift; sourceTree = "<group>"; };
 		0BBE03FB10C1F0B690EB5E52 /* Pods-RunnerTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-RunnerTests.release.xcconfig"; path = "Target Support Files/Pods-RunnerTests/Pods-RunnerTests.release.xcconfig"; sourceTree = "<group>"; };
 		331C80D5294CF71000263BE5 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		331C80D7294CF71000263BE5 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
@@ -180,6 +184,8 @@
 			isa = PBXGroup;
 			children = (
 				33CC10F02044A3C60003C045 /* AppDelegate.swift */,
+				FA0000000000000000000001 /* FileAccessStore.swift */,
+				FA0000000000000000000002 /* FileAccessPlugin.swift */,
 				33CC11122044BFA00003C045 /* MainFlutterWindow.swift */,
 				33E51913231747F40026EE4D /* DebugProfile.entitlements */,
 				33E51914231749380026EE4D /* Release.entitlements */,
@@ -446,6 +452,8 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FA0000000000000000000011 /* FileAccessStore.swift in Sources */,
+				FA0000000000000000000012 /* FileAccessPlugin.swift in Sources */,
 				33CC11132044BFA00003C045 /* MainFlutterWindow.swift in Sources */,
 				33CC10F12044A3C60003C045 /* AppDelegate.swift in Sources */,
 				335BBD1B22A9A15E00E9071D /* GeneratedPluginRegistrant.swift in Sources */,
