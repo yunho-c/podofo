@@ -29,7 +29,7 @@ void paintNarration(
   }
   canvas.save();
   canvas.clipRect(pageRect);
-  final paint = Paint()..color = const Color(0x66ffb300);
+  final paint = Paint()..color = const Color(0x1affb300);
   for (final rect in passage.rectangles(page.pageNumber, start, end)) {
     canvas.drawRect(
       rect
