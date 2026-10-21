@@ -134,6 +134,37 @@ void main() {
         await controller.stop();
         expect(controller.documentPosition!.microseconds, documentPosition);
         expect(paper.timeline.retainedTimingCount, 3);
+        final thirdId = paper.index.page(3)!.passages.first.id;
+        final destinationTime =
+            paper.timeline.prefixMicroseconds(thirdId)! + 200000;
+        await controller.seekDocument(destinationTime);
+        expect(controller.error, isNull);
+        expect(paper.pageNumber, 3);
+        expect(controller.paused, true);
+        expect(
+          controller.documentPosition!.microseconds,
+          closeTo(destinationTime, 100),
+        );
+        await controller.seekDocument(0);
+        expect(controller.error, isNull);
+        expect(paper.pageNumber, 1);
+        expect(controller.paused, true);
+        controller.togglePause();
+        await until(
+          () => controller.snapshot?.phase == NarrationPhase.playing,
+          'seek restore playing',
+        );
+        await controller.seekDocument(destinationTime);
+        await until(
+          () => controller.snapshot?.phase == NarrationPhase.playing,
+          'cross-page seek playing',
+        );
+        expect(paper.pageNumber, 3);
+        final cancelledSeek = controller.seekDocument(0);
+        await controller.stop();
+        await cancelledSeek;
+        expect(paper.pageNumber, 3);
+        expect(controller.error, isNull);
         // Cross-passage Previous starts paused and selects the final native
         // sentence before any presented audio can begin at the passage start.
         for (final paused in [true, false]) {

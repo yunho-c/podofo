@@ -60,12 +60,26 @@ class NarrationController extends ChangeNotifier {
   NarrationSource? source;
   NarrationSnapshot? snapshot;
   PaperSequence? _timedSequence;
+  _DocumentSeek? _documentSeek;
+  bool get seekingDocument => _documentSeek != null;
+  bool _resumePending = false;
   NarrationTiming? _currentTiming;
   NarrationPlayback? _readingTimingFor;
   (int?, int?, int?)? _timingKey;
   PaperTimelineSnapshot? get documentTimeline =>
       _timedSequence?.timeline.snapshot;
   DocumentPosition? get documentPosition {
+    final operation = _documentSeek;
+    if (operation != null) {
+      final passage = operation.previousSource.passage;
+      return passage == null
+          ? null
+          : _timedSequence?.timeline.position(
+              passage,
+              operation.previousTiming,
+              operation.previousSnapshot,
+            );
+    }
     final passage = source?.passage;
     return passage == null
         ? null
@@ -96,6 +110,11 @@ class NarrationController extends ChangeNotifier {
         return;
       }
       _currentTiming = value;
+      final operation = _documentSeek;
+      if (operation != null && operation.frame == null) {
+        operation.frame = operation.target.frameIn(value);
+        playback.seek(operation.frame!);
+      }
       final passage = source?.passage, paper = _timedSequence;
       if (passage != null && paper != null && passage.originalOffset == 0) {
         final descriptor = paper.index.snapshot.passages
@@ -104,8 +123,11 @@ class NarrationController extends ChangeNotifier {
         if (descriptor != null) paper.timeline.record(descriptor, value);
       }
       _notify();
-    } catch (_) {
-      // Timing observation cannot interrupt speech. Background planning retains
+    } catch (failure) {
+      if (_documentSeek case final operation?) {
+        _failDocumentSeek(operation, failure);
+      }
+      // Timing observation cannot interrupt ordinary speech. Background planning retains
       // typed failures and coverage independently.
     } finally {
       if (identical(_readingTimingFor, playback)) _readingTimingFor = null;
@@ -126,7 +148,8 @@ class NarrationController extends ChangeNotifier {
   bool get active => preparing || (_playback != null && !terminal);
   bool get paused => preparing
       ? _pauseWhenReady
-      : _pauseWhenReady || snapshot?.phase == NarrationPhase.paused;
+      : _pauseWhenReady ||
+            (!_resumePending && snapshot?.phase == NarrationPhase.paused);
   bool get terminal => switch (snapshot?.phase) {
     NarrationPhase.completed ||
     NarrationPhase.stopped ||
@@ -249,8 +272,10 @@ class NarrationController extends ChangeNotifier {
     }
     source = next;
     _listenDocument(next.sequence);
-    _lastAnchor = null;
-    preparation = 'Loading voices…';
+    if (_documentSeek == null) _lastAnchor = null;
+    preparation = _documentSeek == null
+        ? 'Loading voices…'
+        : 'Preparing reading position…';
     _notify();
     await _load();
     await _joinRetiring();
@@ -258,14 +283,20 @@ class NarrationController extends ChangeNotifier {
     final playback = _session!.speak(
       next.text,
       settings,
-      paused: lastSentence || _pauseWhenReady,
+      paused: lastSentence || _pauseWhenReady || _documentSeek != null,
     );
     _positioning = lastSentence ? playback : null;
-    preparing = lastSentence;
+    preparing = lastSentence || _documentSeek != null;
     if (lastSentence) preparation = 'Finding the previous sentence…';
     _pendingDocumentId = null;
     _observe(playback, generation);
-    final sequence = next.sequence;
+    if (_documentSeek != null && playback is! NarrationTimedPlayback) {
+      throw StateError('Native timing is unavailable for document seeking.');
+    }
+    if (_documentSeek == null) _prepareAhead(next.sequence);
+  }
+
+  void _prepareAhead(NarrationSequence? sequence) {
     final session = _session;
     if (sequence is PaperSequence && session is NarrationDurationSession) {
       sequence.configureTiming(session as NarrationDurationSession, settings);
@@ -402,7 +433,45 @@ class NarrationController extends ChangeNotifier {
           _timingKey = key;
           unawaited(_captureTiming(playback, generation));
         }
-        if (value.start != null && !identical(_positioning, playback)) {
+        if (_documentSeek case final operation?) {
+          if (operation.frame != null &&
+              !value.seeking &&
+              value.positionFrames == operation.frame &&
+              (value.phase == NarrationPhase.paused ||
+                  value.phase == NarrationPhase.playing)) {
+            try {
+              if (operation.destination case final destination?) {
+                _timedSequence!.commitSeek(destination);
+              }
+              operation.timer?.cancel();
+              preparing = false;
+              _lastAnchor = source?.passage?.anchorAt(
+                value.start ?? operation.target.start,
+              );
+              _remember();
+              _documentSeek = null;
+              operation.complete();
+              if (!_pauseWhenReady) {
+                try {
+                  _resumePending = true;
+                  playback.resume();
+                } catch (failure) {
+                  _resumePending = false;
+                  _pauseWhenReady = true;
+                  error =
+                      'Reached the reading position but could not resume: $failure';
+                }
+              }
+              _prepareAhead(source?.sequence);
+            } catch (failure) {
+              _failDocumentSeek(operation, failure);
+              return;
+            }
+          }
+        }
+        if (_documentSeek == null &&
+            value.start != null &&
+            !identical(_positioning, playback)) {
           _lastAnchor = source?.passage?.anchorAt(value.start!);
           _remember();
         }
@@ -411,14 +480,19 @@ class NarrationController extends ChangeNotifier {
           unawaited(_updatePlan(playback, generation));
         }
         if (!preparing && value.phase == NarrationPhase.playing) {
+          _resumePending = false;
           _pauseWhenReady = false;
         }
         _notify();
       },
       onError: (Object failure) {
         if (_current(generation)) {
-          error = failure.toString();
-          _notify();
+          if (_documentSeek case final operation?) {
+            _failDocumentSeek(operation, failure);
+          } else {
+            error = failure.toString();
+            _notify();
+          }
         }
       },
     );
@@ -505,7 +579,129 @@ class NarrationController extends ChangeNotifier {
     }
   }
 
+  /// Navigate through frozen source identity. Newer navigation, Stop and close
+  /// invalidate all callbacks; only a confirmed native target commits the cursor.
+  Future<void> seekDocument(int microseconds) async {
+    final paper = _timedSequence;
+    final pending = _documentSeek;
+    final previous = pending?.previousSource ?? source;
+    if (_closed || paper == null || previous == null) return;
+    final target = paper.timeline.targetAt(microseconds);
+    if (target == null) return;
+    final keepPaused = preparing
+        ? paused
+        : terminal || _playback == null || paused;
+    final oldSnapshot = pending?.previousSnapshot ?? snapshot;
+    final oldTiming = pending?.previousTiming ?? _currentTiming;
+    final oldAnchor = pending?.previousAnchor ?? currentAnchor;
+    _remember();
+    final current = _playback, currentTiming = _currentTiming;
+    if (pending == null &&
+        !terminal &&
+        current != null &&
+        currentTiming != null &&
+        previous.passage?.originalOffset == 0 &&
+        previous.passage?.indexedPassageId == target.passage.id) {
+      final operation = _DocumentSeek(
+        target,
+        previous,
+        oldSnapshot,
+        oldTiming,
+        oldAnchor,
+      );
+      _documentSeek = operation;
+      _pauseWhenReady = keepPaused;
+      preparing = true;
+      preparation = 'Preparing reading position…';
+      error = null;
+      operation.timer = Timer(const Duration(seconds: 30), () {
+        _failDocumentSeek(
+          operation,
+          StateError(
+            'The reading position took too long to prepare. Try again.',
+          ),
+        );
+      });
+      try {
+        operation.frame = target.frameIn(currentTiming);
+        current.pause();
+        current.seek(operation.frame!);
+        _notify();
+        await operation.done.future;
+      } catch (failure) {
+        _failDocumentSeek(operation, failure);
+      }
+      return;
+    }
+    final generation = ++_generation;
+    _finishMovement();
+    paper.cancelPending();
+    _retireTiming();
+    _retireCurrent();
+    source = previous;
+    final operation = _DocumentSeek(
+      target,
+      previous,
+      oldSnapshot,
+      oldTiming,
+      oldAnchor,
+    );
+    _documentSeek = operation;
+    _lastAnchor = oldAnchor;
+    _pauseWhenReady = keepPaused;
+    preparing = true;
+    preparation = 'Preparing reading position…';
+    error = null;
+    operation.timer = Timer(const Duration(seconds: 30), () {
+      _failDocumentSeek(
+        operation,
+        StateError('The reading position took too long to prepare. Try again.'),
+      );
+    });
+    _notify();
+    try {
+      final destination = await paper.resolveSeek(target);
+      await _joinRetiring();
+      if (!_current(generation) || !identical(_documentSeek, operation)) return;
+      operation.destination = destination;
+      snapshot = null;
+      sentences = const [];
+      await _start(
+        NarrationSource(
+          documentId: previous.documentId,
+          title: previous.title,
+          text: destination.passage.text,
+          passage: destination.passage,
+          sequence: paper,
+        ),
+        generation,
+      );
+      await operation.done.future;
+    } catch (failure) {
+      if (_current(generation)) _failDocumentSeek(operation, failure);
+    }
+  }
+
+  void _failDocumentSeek(_DocumentSeek operation, Object failure) {
+    if (!identical(_documentSeek, operation)) return;
+    ++_generation;
+    source?.sequence?.cancelPending();
+    _retireTiming();
+    _retireCurrent();
+    source = operation.previousSource;
+    _lastAnchor = operation.previousAnchor;
+    _currentTiming = operation.previousTiming;
+    snapshot =
+        operation.previousSnapshot?.withPhase(NarrationPhase.stopped) ??
+        const NarrationSnapshot(phase: NarrationPhase.stopped);
+    preparing = false;
+    _pauseWhenReady = false;
+    error = 'Could not move to that reading position: $failure';
+    _notify();
+  }
+
   void seek(int frame) {
+    if (preparing) return;
     final total = snapshot?.durationFrames ?? snapshot?.estimatedFrames;
     if (total == null || total <= 0) return;
     try {
@@ -529,10 +725,12 @@ class NarrationController extends ChangeNotifier {
     settings = next;
     _timedSequence?.invalidateTiming(next);
     _currentTiming = null;
-    final previous = source;
+    final previous = _documentSeek?.previousSource ?? source;
     if (previous != null && active) {
       final keepPaused = paused;
-      final replacement = previous.fromOffset(snapshot?.start ?? 0);
+      final replacement = previous.fromOffset(
+        _documentSeek?.previousSnapshot?.start ?? snapshot?.start ?? 0,
+      );
       final work = read(
         previous.documentId,
         () async => replacement,
@@ -548,6 +746,15 @@ class NarrationController extends ChangeNotifier {
   Future<void> _completion(NarrationPlayback playback, int generation) async {
     try {
       final result = await playback.done;
+      if (_current(generation) &&
+          identical(_playback, playback) &&
+          _documentSeek != null) {
+        _failDocumentSeek(
+          _documentSeek!,
+          StateError('Speech ended before the reading position was ready.'),
+        );
+        return;
+      }
       await _movement?.future;
       if (!_current(generation) || !identical(_playback, playback)) return;
       preparing = false;
@@ -563,6 +770,12 @@ class NarrationController extends ChangeNotifier {
       _notify();
     } catch (failure) {
       await _movement?.future;
+      if (_current(generation) &&
+          identical(_playback, playback) &&
+          _documentSeek != null) {
+        _failDocumentSeek(_documentSeek!, failure);
+        return;
+      }
       if (_current(generation) && identical(_playback, playback)) {
         preparing = false;
         _positioning = null;
@@ -583,6 +796,7 @@ class NarrationController extends ChangeNotifier {
       return;
     }
     _pauseWhenReady = !paused;
+    _resumePending = false;
     if (preparing) {
       _notify();
       return;
@@ -601,6 +815,16 @@ class NarrationController extends ChangeNotifier {
   }
 
   void _retireCurrent() {
+    _resumePending = false;
+    final pending = _documentSeek;
+    pending?.complete();
+    _documentSeek = null;
+    if (pending != null) {
+      source = pending.previousSource;
+      snapshot = pending.previousSnapshot;
+      _lastAnchor = pending.previousAnchor;
+      _currentTiming = pending.previousTiming;
+    }
     final playback = _playback;
     final subscription = _subscription;
     _playback = null;
@@ -694,5 +918,28 @@ class NarrationController extends ChangeNotifier {
   void dispose() {
     unawaited(close());
     super.dispose();
+  }
+}
+
+class _DocumentSeek {
+  _DocumentSeek(
+    this.target,
+    this.previousSource,
+    this.previousSnapshot,
+    this.previousTiming,
+    this.previousAnchor,
+  );
+  final PaperSeekTarget target;
+  final NarrationSource previousSource;
+  final NarrationSnapshot? previousSnapshot;
+  final NarrationTiming? previousTiming;
+  final SourceAnchor? previousAnchor;
+  final done = Completer<void>();
+  ResolvedPaperSeek? destination;
+  Timer? timer;
+  int? frame;
+  void complete() {
+    timer?.cancel();
+    if (!done.isCompleted) done.complete();
   }
 }

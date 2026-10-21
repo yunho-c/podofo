@@ -306,6 +306,53 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     if (!_closed && epoch == _epoch) index.finish();
   }
 
+  /// Prepare a destination without moving the playback cursor or opening review.
+  Future<ResolvedPaperSeek> resolveSeek(PaperSeekTarget target) async {
+    final epoch = _epoch;
+    if (_closed || !timeline.accepts(target)) {
+      throw StateError('Document timing changed. Try again.');
+    }
+    final page = target.passage.page;
+    // Re-extract even if cached: validate the frozen text identity at admission.
+    final plan = await planner.plan(
+      page,
+      _preferences(page),
+      priority: PaperPlanPriority.playback,
+    );
+    if (_closed || epoch != _epoch || !timeline.accepts(target)) {
+      throw PaperPlanningCancelled();
+    }
+    index.record(plan, _preferences(page));
+    if (plan.issue != null) throw PaperReviewRequired(plan);
+    if (!timeline.accepts(target)) {
+      throw StateError('This passage changed. Review the page before seeking.');
+    }
+    final ordinal = target.passage.ordinal;
+    return ResolvedPaperSeek(
+      _passageAt(plan, ordinal),
+      plan,
+      ordinal,
+      epoch,
+      target,
+    );
+  }
+
+  void commitSeek(ResolvedPaperSeek destination) {
+    if (_closed ||
+        destination.epoch != _epoch ||
+        !timeline.accepts(destination.target)) {
+      throw PaperPlanningCancelled();
+    }
+    _page = destination.plan.page.page;
+    _passage = destination.ordinal;
+    review = null;
+    _pages.remove(_page);
+    _pages[_page] = destination.plan;
+    while (_pages.length > 2) {
+      _pages.remove(_pages.keys.first);
+    }
+  }
+
   Future<NarrationPassage?> start({int page = 1, SourceAnchor? anchor}) async {
     if (page < 1 || page > pageCount) {
       throw StateError('The saved page is no longer in this paper.');
@@ -437,4 +484,18 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     timeline.dispose();
     index.close();
   }
+}
+
+class ResolvedPaperSeek {
+  const ResolvedPaperSeek(
+    this.passage,
+    this.plan,
+    this.ordinal,
+    this.epoch,
+    this.target,
+  );
+  final NarrationPassage passage;
+  final PaperPagePlan plan;
+  final int ordinal, epoch;
+  final PaperSeekTarget target;
 }

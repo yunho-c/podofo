@@ -319,3 +319,34 @@ checks and a document-replacement quiescence barrier; analysis passes. The separ
 background planning, nonzero document position, paused/Stopped cursor retention,
 existing backward-navigation behavior and native handle return to baseline.
 Speaker naturalness and complete document scrubbing remain later qualification.
+
+## Document timeline: cancellable seeking (milestone 4)
+
+Document seeks freeze a passage identity, synthesis identity, original segment
+source range and relative position. Later duration corrections cannot redirect
+the destination to another passage. Only a complete, resolved document scale
+accepts a timestamp; the document endpoint clamps to the final valid frame.
+
+A same-passage full-request seek reuses native reader playback. Cross-passage or
+suffix seeks cancel previous work, revalidate destination text through the shared
+foreground page planner, and start a full-passage request paused. After its native
+timeline is ready, source-relative timing selects the frame. Only a native state
+confirming that destination commits the sequence cursor and bookmark. Playback
+then restores the latest user pause/play intent; seeking after Stop stays paused.
+The resume command's pending acknowledgement is distinct from intentional pause.
+
+A newer seek, Stop, settings change, document replacement or close invalidates
+older callbacks. Uncommitted destinations do not overwrite source bookmarks or
+the document position. Changed text/settings fail validation without advancing.
+Preparation has a 30-second timeout and reports a retryable UI error while keeping
+the previous committed source position. Native inference/PDF extraction already
+inside an uninterruptible call can finish, but their stale results are discarded.
+A failed seek leaves playback stopped at the previous source location.
+
+Validation: 108 Flutter regressions pass (one opt-in native skip), analysis passes,
+and six seek-specific tests cover reuse, paused admission, latest-wins extraction,
+Stop during synthesis, changed source, settings/close cancellation, intent changes
+and endpoints. The separate muted native test passes cross-page seek both paused
+and playing, seek to document start, Stop superseding a pending seek, existing
+Previous behavior and native handle return to baseline. Logs are retained under
+`build/document-timeline-qualification/milestone4/` in the app directory.

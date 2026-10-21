@@ -185,6 +185,46 @@ class PaperTimeline extends ChangeNotifier {
     );
   }
 
+  /// Freeze source identity and segment-relative position from a complete scale.
+  /// Later duration corrections cannot silently redirect this destination.
+  PaperSeekTarget? targetAt(int microseconds) {
+    final total = snapshot.totalMicroseconds;
+    if (total == null || total <= 0 || _settingsKey == null) return null;
+    var remaining = microseconds.clamp(0, total - 1);
+    final passages = index.snapshot.passages.toList();
+    for (var i = 0; i < passages.length; i++) {
+      final passage = passages[i], value = timing(passages[i].id)!;
+      final duration = _micros(value.frames, value.sampleRate);
+      if (remaining >= duration && i < passages.length - 1) {
+        remaining -= duration;
+        continue;
+      }
+      final frame =
+          (remaining * value.sampleRate / Duration.microsecondsPerSecond)
+              .floor()
+              .clamp(0, value.frames - 1);
+      final segment = value.segments.firstWhere(
+        (s) => frame < s.startFrame + s.frames,
+        orElse: () => value.segments.last,
+      );
+      return PaperSeekTarget(
+        passage,
+        _settingsKey!,
+        value.settingsKey,
+        segment.start,
+        segment.end,
+        ((frame - segment.startFrame) / segment.frames).clamp(0.0, 1.0),
+      );
+    }
+    return null;
+  }
+
+  bool accepts(PaperSeekTarget target) =>
+      !_closed &&
+      _settingsKey == target.settingsKey &&
+      index.snapshot.passages.any((p) => p.id == target.passage.id) &&
+      timing(target.passage.id)?.settingsKey == target.nativeSettingsKey;
+
   @override
   void dispose() {
     _closed = true;
@@ -228,4 +268,31 @@ class PaperTimelineSnapshot {
       unresolvedPages;
   final int? totalMicroseconds;
   final bool planning, measured;
+}
+
+/// A source navigation destination, independent of later prefix-time changes.
+@immutable
+class PaperSeekTarget {
+  const PaperSeekTarget(
+    this.passage,
+    this.settingsKey,
+    this.nativeSettingsKey,
+    this.start,
+    this.end,
+    this.fraction,
+  );
+  final IndexedPaperPassage passage;
+  final String settingsKey, nativeSettingsKey;
+  final int start, end;
+  final double fraction;
+  int frameIn(NarrationTiming timing) {
+    if (timing.textHash != passage.spokenTextHash ||
+        timing.settingsKey != nativeSettingsKey) {
+      throw StateError(
+        'The passage or voice changed while seeking. Try again.',
+      );
+    }
+    final a = timing.frameAtOffset(start), b = timing.frameAtOffset(end);
+    return (a + (b - a) * fraction).floor().clamp(0, timing.frames - 1);
+  }
 }
