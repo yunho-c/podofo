@@ -122,7 +122,10 @@ class PaperTimeline extends ChangeNotifier {
       processedPages: coverage.processedPageCount,
       pageCount: coverage.scopeEndPage,
       unresolvedPages: coverage.unresolvedPages.length,
-      planning: planning || coverage.status == PaperIndexStatus.indexing,
+      planning:
+          planning ||
+          coverage.status == PaperIndexStatus.indexing ||
+          coverage.status == PaperIndexStatus.idle,
       measured: complete && measured,
     );
   }
@@ -187,37 +190,19 @@ class PaperTimeline extends ChangeNotifier {
 
   /// Freeze source identity and segment-relative position from a complete scale.
   /// Later duration corrections cannot silently redirect this destination.
-  PaperSeekTarget? targetAt(int microseconds) {
+  PaperTimelineScale? freeze() {
     final total = snapshot.totalMicroseconds;
     if (total == null || total <= 0 || _settingsKey == null) return null;
-    var remaining = microseconds.clamp(0, total - 1);
-    final passages = index.snapshot.passages.toList();
-    for (var i = 0; i < passages.length; i++) {
-      final passage = passages[i], value = timing(passages[i].id)!;
-      final duration = _micros(value.frames, value.sampleRate);
-      if (remaining >= duration && i < passages.length - 1) {
-        remaining -= duration;
-        continue;
-      }
-      final frame =
-          (remaining * value.sampleRate / Duration.microsecondsPerSecond)
-              .floor()
-              .clamp(0, value.frames - 1);
-      final segment = value.segments.firstWhere(
-        (s) => frame < s.startFrame + s.frames,
-        orElse: () => value.segments.last,
-      );
-      return PaperSeekTarget(
-        passage,
-        _settingsKey!,
-        value.settingsKey,
-        segment.start,
-        segment.end,
-        ((frame - segment.startFrame) / segment.frames).clamp(0.0, 1.0),
-      );
-    }
-    return null;
+    return PaperTimelineScale._(
+      total,
+      _settingsKey!,
+      index.snapshot.passages,
+      _timings,
+    );
   }
+
+  PaperSeekTarget? targetAt(int microseconds) =>
+      freeze()?.targetAt(microseconds);
 
   bool accepts(PaperSeekTarget target) =>
       !_closed &&
@@ -294,5 +279,62 @@ class PaperSeekTarget {
     }
     final a = timing.frameAtOffset(start), b = timing.frameAtOffset(end);
     return (a + (b - a) * fraction).floor().clamp(0, timing.frames - 1);
+  }
+}
+
+/// Immutable drag scale: only compact metadata is copied, never text or audio.
+class PaperTimelineScale {
+  PaperTimelineScale._(
+    this.totalMicroseconds,
+    this.settingsKey,
+    Iterable<IndexedPaperPassage> values,
+    Map<String, NarrationTiming> metadata,
+  ) : passages = List.unmodifiable(values),
+      timings = Map.unmodifiable(metadata);
+  final int totalMicroseconds;
+  final String settingsKey;
+  final List<IndexedPaperPassage> passages;
+  final Map<String, NarrationTiming> timings;
+  bool isCurrent(PaperTimeline timeline) {
+    if (timeline._closed || settingsKey != timeline._settingsKey) return false;
+    final current = timeline.index.snapshot.passages.toList();
+    return timeline.index.snapshot.fullyResolved &&
+        current.length == passages.length &&
+        Iterable<int>.generate(current.length).every(
+          (i) =>
+              current[i].id == passages[i].id &&
+              timeline.timing(current[i].id)?.settingsKey ==
+                  timings[current[i].id]?.settingsKey,
+        );
+  }
+
+  PaperSeekTarget? targetAt(int microseconds) {
+    final total = totalMicroseconds;
+    var remaining = microseconds.clamp(0, total - 1);
+    for (var i = 0; i < passages.length; i++) {
+      final passage = passages[i], value = timings[passages[i].id]!;
+      final duration = _micros(value.frames, value.sampleRate);
+      if (remaining >= duration && i < passages.length - 1) {
+        remaining -= duration;
+        continue;
+      }
+      final frame =
+          (remaining * value.sampleRate / Duration.microsecondsPerSecond)
+              .floor()
+              .clamp(0, value.frames - 1);
+      final segment = value.segments.firstWhere(
+        (s) => frame < s.startFrame + s.frames,
+        orElse: () => value.segments.last,
+      );
+      return PaperSeekTarget(
+        passage,
+        settingsKey,
+        value.settingsKey,
+        segment.start,
+        segment.end,
+        ((frame - segment.startFrame) / segment.frames).clamp(0.0, 1.0),
+      );
+    }
+    return null;
   }
 }

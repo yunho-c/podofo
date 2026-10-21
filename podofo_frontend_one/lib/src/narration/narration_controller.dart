@@ -581,13 +581,22 @@ class NarrationController extends ChangeNotifier {
 
   /// Navigate through frozen source identity. Newer navigation, Stop and close
   /// invalidate all callbacks; only a confirmed native target commits the cursor.
-  Future<void> seekDocument(int microseconds) async {
+  Future<void> seekDocument(int microseconds) {
+    final target = _timedSequence?.timeline.targetAt(microseconds);
+    return target == null ? Future<void>.value() : seekToTarget(target);
+  }
+
+  /// Accept a source target captured from a frozen drag scale.
+  Future<void> seekToTarget(PaperSeekTarget target) async {
     final paper = _timedSequence;
     final pending = _documentSeek;
     final previous = pending?.previousSource ?? source;
     if (_closed || paper == null || previous == null) return;
-    final target = paper.timeline.targetAt(microseconds);
-    if (target == null) return;
+    if (!paper.timeline.accepts(target)) {
+      error = 'Document timing changed while selecting a reading position. Try again.';
+      _notify();
+      return;
+    }
     final keepPaused = preparing
         ? paused
         : terminal || _playback == null || paused;

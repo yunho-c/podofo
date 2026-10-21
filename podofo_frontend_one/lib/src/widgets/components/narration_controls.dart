@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../../narration/narrator.dart';
+import 'document_narration_timeline.dart';
 import '../../narration/paper_sequence.dart';
 import '../../providers/narration_provider.dart';
 import '../../providers/user_state_provider.dart';
@@ -261,40 +262,13 @@ class NarrationControls extends ConsumerWidget {
                     ],
                   ],
                 ),
-              if (controller.documentTimeline case final document?)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 4),
-                  child: Column(
-                    children: [
-                      Text(
-                        document.totalMicroseconds != null
-                            ? '${controller.documentPosition == null ? "—" : "${controller.documentPosition!.approximate ? "~" : ""}${_documentClock(controller.documentPosition!.microseconds)}"} / ${document.measured ? "" : "~"}${_documentClock(document.totalMicroseconds!)} · document'
-                            : '${document.planning ? "Estimating document duration…" : "Partial document duration"} ${_documentClock(document.knownMicroseconds)} planned · ${document.processedPages}/${document.pageCount} pages · ${document.plannedPassages}/${document.passageCount} passages${document.unresolvedPages + document.failedPassages > 0 ? " · ${document.unresolvedPages} unresolved pages, ${document.failedPassages} failed passages" : ""}',
-                      ).small().muted(),
-                      if (document.totalMicroseconds case final duration?
-                          when duration > 0)
-                        m.LinearProgressIndicator(
-                          semanticsLabel: 'Document progress, read only',
-                          value: controller.documentPosition == null
-                              ? null
-                              : (controller.documentPosition!.microseconds /
-                                        duration)
-                                    .clamp(0, 1),
-                        ),
-                      if (document.totalMicroseconds != null &&
-                          controller.documentPosition != null)
-                        Text(
-                          '${_documentClock((document.totalMicroseconds! - controller.documentPosition!.microseconds).clamp(0, document.totalMicroseconds!))} remaining',
-                        ).small().muted(),
-                      if (document.failedPassages > 0 && !document.planning)
-                        m.TextButton(
-                          onPressed: paper?.retryTiming,
-                          child: const Text('Retry duration planning'),
-                        ),
-                    ],
-                  ),
-                ),
-              if (state != null && total != null && total > 0)
+              if (paper != null)
+                DocumentNarrationTimeline(controller: controller),
+              if ((paper == null ||
+                      controller.documentTimeline?.totalMicroseconds == null) &&
+                  state != null &&
+                  total != null &&
+                  total > 0)
                 Row(
                   children: [
                     Text(_clock(state.positionFrames, state.sampleRate))
@@ -328,13 +302,4 @@ class NarrationControls extends ConsumerWidget {
 String _clock(int frames, int rate) {
   final seconds = frames ~/ rate;
   return '${seconds ~/ 60}:${(seconds % 60).toString().padLeft(2, '0')}';
-}
-
-String _documentClock(int microseconds) {
-  final seconds = microseconds ~/ Duration.microsecondsPerSecond;
-  final minutes = seconds ~/ 60;
-  final tail = (seconds % 60).toString().padLeft(2, '0');
-  return minutes < 60
-      ? '$minutes:$tail'
-      : '${minutes ~/ 60}:${(minutes % 60).toString().padLeft(2, '0')}:$tail';
 }

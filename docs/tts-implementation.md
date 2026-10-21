@@ -350,3 +350,27 @@ and endpoints. The separate muted native test passes cross-page seek both paused
 and playing, seek to document start, Stop superseding a pending seek, existing
 Previous behavior and native handle return to baseline. Logs are retained under
 `build/document-timeline-qualification/milestone4/` in the app directory.
+
+## Document timeline: scrubber and loading (milestone 5)
+
+A complete document scale now replaces the passage scrubber with the document
+scrubber. While coverage is incomplete, the document slider is disabled and the
+labeled passage scrubber remains available. Counts and partial duration explain
+what has been processed; unresolved pages and failed timings stay visible. No
+percentage or total is extrapolated across unknown content.
+
+Pointer movement previews a frozen compact timing scale and never starts speech.
+Release submits one source destination. Timing corrections during the drag do not
+move that destination; settings, reading scope, document replacement or Stop
+invalidate the drag. Keyboard and accessibility adjustment use the same operation.
+During preparation the UI shows a loading message and retains the last committed
+position until native seeking confirms the target. Another seek can supersede it.
+Seeking after Stop selects the target paused. Hour-long durations use h:mm:ss.
+
+Validation: 114 Flutter regressions pass (one opt-in native skip) and analysis is
+clean. Six widget/formatting checks cover release-only submission, a changed
+prefix duration during dragging, partial-coverage disabling, settings/Stop
+invalidation, keyboard adjustment, a real pointer gesture, and hour formatting.
+The narrow 360-pixel partial-state capture has been inspected for wrapping and
+slider layout; it uses the bundled Urbanist font. Evidence is retained under
+`build/document-timeline-qualification/milestone5/` in the app directory.

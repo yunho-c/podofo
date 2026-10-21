@@ -1,0 +1,226 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+
+import 'package:flutter/material.dart' as m;
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:podofo_one/src/narration/narration_controller.dart';
+import 'package:podofo_one/src/narration/narrator.dart';
+import 'package:podofo_one/src/widgets/components/document_narration_timeline.dart';
+
+import 'document_seek_test.dart' as seek;
+import 'paper_index_test.dart' as fixture;
+import 'paper_timeline_test.dart' as timings;
+
+Future<void> mount(
+  WidgetTester tester,
+  NarrationController controller, {
+  double width = 600,
+}) async {
+  await tester.pumpWidget(
+    ShadcnApp(
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(
+        typography: const Typography.geist().copyWith(
+          sans: () => const TextStyle(fontFamily: 'Urbanist'),
+        ),
+        colorScheme: ColorSchemes.lightZinc,
+      ),
+      localizationsDelegates: const [m.DefaultMaterialLocalizations.delegate],
+      builder: (_, child) => m.Theme(
+        data: m.ThemeData(fontFamily: 'Urbanist'),
+        child: m.Material(type: m.MaterialType.transparency, child: child),
+      ),
+      home: Center(
+        child: RepaintBoundary(
+          key: const ValueKey('timeline-capture'),
+          child: ColoredBox(
+            color: const Color(0xFFFFFFFF),
+            child: SizedBox(
+              width: width,
+              child: ListenableBuilder(
+                listenable: controller,
+                builder: (_, _) =>
+                    DocumentNarrationTimeline(controller: controller),
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+  await tester.pump();
+}
+
+m.Slider slider(WidgetTester tester) => tester.widget<m.Slider>(
+  find.byKey(const ValueKey('document-narration-timeline')),
+);
+Future<void> settle(WidgetTester tester) async {
+  for (var i = 0; i < 12; i++) {
+    await tester.runAsync(timings.settle);
+    await tester.pump(const Duration(milliseconds: 1));
+  }
+}
+
+void main() {
+  setUpAll(() async {
+    await (FontLoader('Urbanist')..addFont(
+          rootBundle.load('assets/fonts/Urbanist/static/Urbanist-Regular.ttf'),
+        ))
+        .load();
+  });
+  testWidgets(
+    'one seek on release; frozen scale survives measured prefix correction',
+    (tester) async {
+      final paper = fixture.sequence(3), session = seek.SeekSession();
+      final controller = (await tester.runAsync(
+        () => seek.reader(paper, session),
+      ))!;
+      addTearDown(controller.close);
+      await mount(tester, controller);
+      slider(tester).onChangeStart!(15000000);
+      slider(tester).onChanged!(15000000);
+      await tester.pump();
+      expect(session.playbacks.length, 1);
+      expect(find.textContaining('Seek to 0:15'), findsOneWidget);
+      final descriptor = paper.index.page(1)!.passages.single;
+      paper.timeline.record(
+        descriptor,
+        timings.timing(session.texts.first, frames: 2000, actual: true),
+      );
+      await tester.pump();
+      expect(slider(tester).max, 30000000);
+      slider(tester).onChangeEnd!(15000000);
+      await settle(tester);
+      expect(session.playbacks.length, 2);
+      expect(
+        paper.pageNumber,
+        2,
+        reason:
+            '${controller.status}; frame=${session.playbacks.last.lastSeek}, native=${controller.snapshot?.positionFrames}, pending=${controller.seekingDocument}',
+      );
+      expect(session.playbacks.last.lastSeek, 500);
+      expect(controller.documentPosition!.microseconds, 25000000);
+      expect(slider(tester).max, 40000000);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'partial coverage disables document seeking and shows its limits',
+    (tester) async {
+      final paper = fixture.sequence(3), session = seek.SeekSession();
+      final controller = (await tester.runAsync(
+        () => seek.reader(paper, session),
+      ))!;
+      addTearDown(controller.close);
+      paper.index.fail(2, StateError('Review page'));
+      await mount(tester, controller, width: 360);
+      expect(slider(tester).onChanged, isNull);
+      expect(find.textContaining('Partial document duration'), findsOneWidget);
+      expect(find.textContaining('1 unresolved page'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      final boundary = tester.renderObject<RenderRepaintBoundary>(
+        find.byKey(const ValueKey('timeline-capture')),
+      );
+      await tester.runAsync(() async {
+        final image = await boundary.toImage();
+        try {
+          final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+          final file = File(
+            'build/document-timeline-qualification/milestone5/partial-360.png',
+          );
+          await file.parent.create(recursive: true);
+          await file.writeAsBytes(bytes!.buffer.asUint8List());
+        } finally {
+          image.dispose();
+        }
+      });
+    },
+  );
+
+  testWidgets('settings invalidate an ongoing drag; keyboard remains usable', (
+    tester,
+  ) async {
+    final paper = fixture.sequence(3), session = seek.SeekSession();
+    final controller = (await tester.runAsync(
+      () => seek.reader(paper, session),
+    ))!;
+    addTearDown(controller.close);
+    await mount(tester, controller);
+    slider(tester).onChangeStart!(15000000);
+    slider(tester).onChanged!(15000000);
+    await tester.runAsync(
+      () => controller.configure(const NarrationSettings(speed: 1.3)),
+    );
+    await settle(tester);
+    final count = session.playbacks.length;
+    slider(tester).onChanged!(25000000);
+    slider(tester).onChangeEnd!(25000000);
+    await settle(tester);
+    expect(session.playbacks.length, count);
+    expect(paper.pageNumber, 1);
+    slider(tester).focusNode!.requestFocus();
+    await tester.pump();
+    await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+    await settle(tester);
+    expect(controller.documentPosition!.microseconds, greaterThan(0));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('Stop cancels a drag without resuming speech', (tester) async {
+    final paper = fixture.sequence(3), session = seek.SeekSession();
+    final controller = (await tester.runAsync(
+      () => seek.reader(paper, session),
+    ))!;
+    addTearDown(controller.close);
+    await mount(tester, controller);
+    slider(tester).onChangeStart!(15000000);
+    slider(tester).onChanged!(15000000);
+    await tester.runAsync(controller.stop);
+    await settle(tester);
+    slider(tester).onChanged!(25000000);
+    slider(tester).onChangeEnd!(25000000);
+    await settle(tester);
+    expect(session.playbacks.length, 1);
+    expect(paper.pageNumber, 1);
+    expect(controller.snapshot!.phase, NarrationPhase.stopped);
+  });
+
+  testWidgets('pointer drag previews without seeking until release', (
+    tester,
+  ) async {
+    final paper = fixture.sequence(3), session = seek.SeekSession();
+    final controller = (await tester.runAsync(
+      () => seek.reader(paper, session),
+    ))!;
+    addTearDown(controller.close);
+    await mount(tester, controller);
+    final rect = tester.getRect(
+      find.byKey(const ValueKey('document-narration-timeline')),
+    );
+    final gesture = await tester.startGesture(
+      Offset(rect.left + 40, rect.center.dy),
+    );
+    await gesture.moveTo(Offset(rect.right - 40, rect.center.dy));
+    await tester.pump();
+    expect(session.playbacks.length, 1);
+    expect(find.textContaining('Seek to'), findsOneWidget);
+    await gesture.up();
+    await settle(tester);
+    expect(session.playbacks.length, 2);
+    expect(
+      paper.pageNumber,
+      3,
+      reason:
+          '${controller.status}; frame=${session.playbacks.last.lastSeek}, native=${controller.snapshot?.positionFrames}, pending=${controller.seekingDocument}',
+    );
+  });
+
+  test('long document clock and zero duration formatting', () {
+    expect(documentClock(0), '0:00');
+    expect(documentClock(3661000000), '1:01:01');
+  });
+}
