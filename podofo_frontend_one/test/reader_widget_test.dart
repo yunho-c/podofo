@@ -342,8 +342,11 @@ void main() {
       await tester.tap(find.byKey(const ValueKey('narration-play-pause')));
       expect(speech.playbacks.single.pauses, 1);
       expect(speech.playbacks.single.cancelled, false);
-      await tester.tap(find.byKey(const ValueKey('narration-stop')));
+      final savedSource = narrator.source!;
+      await tester.tap(find.byKey(const ValueKey('narration-close')));
       await waitForNative(tester, () => speech.playbacks.single.disposed);
+      expect(find.byKey(const ValueKey('narration-controls')), findsNothing);
+      expect(find.byType(PdfViewer), findsOneWidget);
       // With mode off, a selection-menu swatch applies its own chosen color.
       await tester.runAsync(
         () =>
@@ -380,7 +383,6 @@ void main() {
       expect(find.byType(PdfSelectionMenu), findsNothing);
       expect(container.read(documentErrorProvider), isNull);
 
-      final savedSource = narrator.source!;
       await tester.runAsync(
         () => narrator.read(savedSource.documentId, () async => savedSource),
       );
@@ -463,10 +465,10 @@ void main() {
         final controls = tester.getRect(
           find.byKey(const ValueKey('narration-controls')),
         );
-        final stop = tester.getRect(
-          find.byKey(const ValueKey('narration-stop')),
+        final close = tester.getRect(
+          find.byKey(const ValueKey('narration-close')),
         );
-        expect(stop.right, closeTo(controls.right - 16, .5));
+        expect(close.right, closeTo(controls.right - 16, .5));
       }
 
       expectRightAlignedPlayback();

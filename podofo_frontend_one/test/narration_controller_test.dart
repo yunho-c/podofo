@@ -65,6 +65,72 @@ void main() {
     expect(session.texts, ['New request.']);
   });
 
+  test(
+    'dismiss hides immediately and preserves a newer reading session',
+    () async {
+      final session = FakeNarratorSession();
+      final controller = NarrationController(open: (_) async => session);
+      addTearDown(controller.close);
+      await controller.read(owner, () async => source('First.'));
+      final first = session.playbacks.single;
+      final disposal = Completer<void>();
+      first.disposalGate = disposal;
+      final dismiss = controller.dismiss();
+      expect(first.cancelled, true);
+      expect(controller.source, isNull);
+      expect(controller.snapshot, isNull);
+      expect(controller.sentences, isEmpty);
+      expect(controller.preparing, false);
+      expect(controller.error, isNull);
+      expect(session.disposals, 0);
+
+      final next = controller.read(owner, () async => source('Second.'));
+      disposal.complete();
+      await Future.wait([dismiss, next]);
+      expect(controller.source?.text, 'Second.');
+      expect(session.texts, ['First.', 'Second.']);
+      expect(session.disposals, 0);
+    },
+  );
+
+  test(
+    'dismiss during model loading prevents late audio and stays hidden',
+    () async {
+      final loading = Completer<NarratorSession>();
+      final session = FakeNarratorSession();
+      final controller = NarrationController(open: (_) => loading.future);
+      addTearDown(controller.close);
+      final read = controller.read(owner, () async => source('Old request.'));
+      await pumpEventQueue();
+      await controller.dismiss();
+      loading.complete(session);
+      await read;
+      expect(session.playbacks, isEmpty);
+      expect(controller.source, isNull);
+      expect(controller.preparing, false);
+      expect(controller.error, isNull);
+      await controller.read(owner, () async => source('New request.'));
+      expect(session.texts, ['New request.']);
+    },
+  );
+
+  test('dismiss clears an error without a resolved source', () async {
+    final controller = NarrationController(
+      open: (_) async => FakeNarratorSession(),
+    );
+    addTearDown(controller.close);
+    await controller.read(
+      owner,
+      () async => throw StateError('Extraction failed'),
+    );
+    expect(controller.source, isNull);
+    expect(controller.error, isNotNull);
+    await controller.dismiss();
+    expect(controller.error, isNull);
+    expect(controller.preparing, false);
+    expect(controller.snapshot, isNull);
+  });
+
   test('latest selection wins while engine is opening', () async {
     final loading = Completer<NarratorSession>();
     final session = FakeNarratorSession();

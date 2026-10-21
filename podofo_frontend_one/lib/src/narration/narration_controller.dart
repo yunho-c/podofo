@@ -899,6 +899,30 @@ class NarrationController extends ChangeNotifier {
     await _joinRetiring();
   }
 
+  /// Dismisses narration without disposing the reusable speech engine.
+  Future<void> dismiss() async {
+    final stopping = stop();
+    final generation = _generation;
+    source?.sequence?.close();
+    source = null;
+    _listenDocument(null);
+    _lastAnchor = null;
+    snapshot = null;
+    sentences = const [];
+    _currentTiming = null;
+    _timingKey = null;
+    error = null;
+    preparation = '';
+    _notify();
+    await stopping;
+    // A cleanup failure must not reopen a dismissed panel, nor clear errors
+    // belonging to narration started while the old playback was retiring.
+    if (_generation == generation) {
+      error = null;
+      _notify();
+    }
+  }
+
   Future<void> closeDocument(Object documentId) async {
     if (!identical(source?.documentId, documentId) &&
         !identical(_pendingDocumentId, documentId)) {
