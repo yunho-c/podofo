@@ -17,6 +17,10 @@ class PaperReadOptions {
   });
   final PaperOrder order;
   final bool stopAtReferences, skipCaptions, skipRunningMatter;
+
+  /// Value identity for shared page work and compact passage descriptors.
+  String get key =>
+      '${PaperPlanner.version}:${order.name}:$stopAtReferences:$skipCaptions:$skipRunningMatter';
 }
 
 enum PaperBlockKind { paragraph, heading, caption, references, runningMatter }

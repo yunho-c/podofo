@@ -99,11 +99,90 @@ The existing local macOS modernization and unrelated icon/document edits were
 present before this work and are preserved. A baseline patch and the abandoned
 2025 Git sequencer metadata are backed up under `.git/mlsr-tts-baseline/`.
 
+## Document timeline: compact index
+
+The document-timeline prerequisite milestone 2 adds an in-memory index to each
+`PaperSequence`. `PaperPagePlanner` is shared by preview, playback, prefetch and
+indexing, so they use identical reading order, exclusions and passage boundaries.
+`PaperIndex` publishes immutable progress snapshots in document order. A passage
+descriptor contains the plan revision/options, page and ordinal, a context-free
+source anchor and page hash, normalized spoken-text hash, UTF-16/scalar counts,
+Unicode letter/mark/number run count, and punctuation count. It retains no spoken
+text, glyph geometry, native PDF objects or audio.
+
+Playback admission seeds the full starting page even when narration starts inside
+a passage. After speech admission, the controller starts indexing alongside
+next-page preparation. Playback takes priority over prefetch, which takes priority
+over indexing; matching in-flight page/options requests share work and can be
+promoted. One extraction lane checks cancellation and priorities between target
+and neighbor reads. A lower-priority plan releases its snapshots and retries after
+foreground work; an already-entered native extraction must finish first. Detached
+page analysis remains synchronous, with event-loop yields between pages and
+neighbor reads. The existing two-page playback cache stays separate from index
+metadata, so scanning cannot evict the current/next playback pages.
+
+Indexing continues while paused. Stop cancels pending work and rejects stale
+results while retaining completed metadata; Play resumes the missing work.
+Document close/replacement clears the index. Global reading-option changes reset
+its revision and detailed cache; page review/skip invalidates only that page's
+metadata. A fresh playback extraction replaces metadata when its text hash
+changes. Annotation saves and Save As preserve valid entries. No persistence or
+schema changes are involved.
+
+The earliest known References stop bounds the exposed scope. Missing, ambiguous,
+scanned or failed pages before that boundary prevent `fullyResolved`, even when
+`scanFinished` is true. Background failures remain per-page issues and do not
+interrupt narration or open the active review flow. Call
+`indexDocument(retryFailures: true)` to retry extraction failures. Duration
+estimates, measured-audio reconciliation and whole-document scrubbing remain later
+milestones; the current transport remains passage-based.
+
+Validation on 2026-10-20: 94 Flutter regressions pass, static analysis passes, and
+the separate muted native playback test passes, including the existing revised
+Previous-at-beginning behavior and handle cleanup. Coverage includes priority/promotion,
+Stop/restart and option-change races, close during extraction, continued indexing
+while paused, unresolved reference scope, page review/skip, changed-text identity,
+Unicode, annotation saves and Save As, and real-PDF index/preview parity. A
+250-page synthetic document retains two detailed playback pages and permits only
+one concurrent extraction; its compact descriptor-array JSON is 45,393 bytes.
+That serialization measure is not Dart heap or process RSS accounting.
+
+The existing local ViT and ResNet PDFs were each measured in three separate test
+processes, interleaved by document, using default reading options and a readable
+starting page (ViT 2, ResNet 3). Timing includes the remaining scan and next-page
+prefetch after the starting page is prepared; it excludes PDF open, the seed plan,
+parity verification and speech. These are active-host diagnostics, not a
+first-audio or UI frame-latency benchmark.
+
+| PDF | Pages / indexed scope | Passages | Unresolved pages | Scan + prefetch | Metadata JSON |
+| --- | --- | --- | --- | --- | --- |
+| ViT | 22 / 22 | 75 | 17 | 289–317 ms | 26,507 bytes |
+| ResNet | 12 / 9 | 24 | 7 | 159–169 ms | 8,870 bytes |
+
+Both keep two detailed cached pages and one concurrent extraction. Every indexed
+page matches a fresh preview's issue, source hash, stop marker, passage count,
+anchor offsets and spoken hashes. The automatic planner's existing uncertain
+pages remain unresolved; these partial scopes do not represent complete readable
+documents. Real-PDF metadata JSON includes page status and named descriptor fields,
+so its byte count is not directly comparable to the synthetic descriptor array.
+Reports and input hashes are under
+`podofo_frontend_one/build/mlsr-qualification/document-index-20261020-v2/`.
+
+Reproduce one run from the app directory, choosing a new output file:
+
+```sh
+PODOFO_PDF=build/mlsr-qualification/corpus/vit.pdf \
+PODOFO_INDEX_START=2 \
+PODOFO_INDEX_OUTPUT=build/index-vit-new.json \
+python3 tool/test_macos.py tool/benchmark_paper_index_test.dart
+```
+
 ## Progress
 
 - Document-timeline prerequisite, milestone 1: Stop, close and replacement retain
   the last native source anchor; failed initial loading can be retried through
-  Play. Backward navigation preserves the current request at the paper boundary.
+  Play. At the paper boundary, Previous restarts the first sentence and preserves
+  the user's pause intent.
   Across passages, Previous Sentence starts the destination paused, waits for its
   native duration/sentence plan, selects its final sentence, and restores the
   user's pause intent. Completion and stale plan callbacks cannot race that move.
@@ -111,7 +190,8 @@ present before this work and are preserved. A baseline patch and the abandoned
   the expanded muted native test passes backward navigation while playing and
   paused, checks presented sentence positions, and returns handles to baseline.
   The persisted-bookmark regression exercises Stop, close and reopen. Document
-  indexing, duration estimates and the whole-document scrubber are later work.
+  indexing is implemented above; duration estimates and the whole-document
+  scrubber are later work.
 - Branch created; stale sequencer metadata safely quit after backup.
 - Milestone 1: selected-text listening, native pause/resume, cancellation and
   application/document cleanup implemented. The pinned engine and 10-voice model

@@ -209,6 +209,17 @@ class NarrationController extends ChangeNotifier {
     _observe(playback, generation);
     final sequence = next.sequence;
     if (sequence != null) unawaited(_prepareNext(sequence));
+    if (sequence is DocumentIndexingSequence) {
+      unawaited(_indexDocument(sequence as DocumentIndexingSequence));
+    }
+  }
+
+  Future<void> _indexDocument(DocumentIndexingSequence sequence) async {
+    try {
+      await sequence.indexDocument();
+    } catch (_) {
+      // Index failures belong to page coverage, not the active audio request.
+    }
   }
 
   Future<void> _prepareNext(NarrationSequence sequence) async {

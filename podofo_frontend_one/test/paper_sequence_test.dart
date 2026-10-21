@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/objectbox.g.dart';
@@ -10,6 +12,7 @@ import 'package:podofo_one/src/narration/narration_controller.dart';
 import 'package:podofo_one/src/narration/narrator.dart';
 import 'package:podofo_one/src/services/narration_bookmarks.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
+import 'package:podofo_one/src/services/pdf_highlights.dart';
 
 import 'fixtures/narration_pdf_fixture.dart';
 import 'support/fake_narrator.dart';
@@ -71,6 +74,27 @@ void main() {
         contains('Methods for measured results'),
       );
       expect((await sequence.start())!.text, 'Introduction');
+      await sequence.indexDocument();
+      expect(sequence.cachedPageCount, 1);
+      expect(sequence.pageNumber, 1);
+      expect(sequence.index.snapshot.fullyResolved, true);
+      expect(sequence.index.snapshot.scopeEndPage, 4);
+      for (final indexed in sequence.index.snapshot.pages) {
+        final planned = await sequence.preview(indexed.page);
+        expect(indexed.textHash, planned.page.textHash);
+        expect(indexed.endsPaper, planned.endsPaper);
+        expect(indexed.passages, hasLength(planned.passages.length));
+        for (var i = 0; i < planned.passages.length; i++) {
+          final passage = planned.passages[i], descriptor = indexed.passages[i];
+          expect(descriptor.ordinal, i);
+          expect(descriptor.anchor.offset, passage.anchorAt(0)!.offset);
+          expect(descriptor.utf16Length, passage.text.length);
+          expect(
+            descriptor.spokenTextHash,
+            sha256.convert(utf8.encode(passage.text)).toString(),
+          );
+        }
+      }
       await sequence.prepareNext();
       expect(sequence.pageNumber, 1);
       expect(sequence.cachedPageCount, 2);
@@ -101,6 +125,46 @@ void main() {
     } finally {
       sequence.close();
       await session.close();
+    }
+  });
+
+  test('Unicode index identities survive annotation save and Save As without rebuilding', () async {
+    final file = File('${directory.path}/index-save.pdf')
+      ..writeAsBytesSync(
+        narrationPdfFixture([
+          for (var i = 0; i < 3; i++) 'BT /F1 12 Tf 40 700 Td (A B C.) Tj ET\n',
+        ], unicodeMap: narrationUnicodeMap),
+      );
+    final session = await PdfSession.open(file.path);
+    final sequence = PaperSequence(session, const PaperReadOptions());
+    try {
+      final passage = (await sequence.start())!;
+      expect(passage.text, '🚀 fi é.');
+      await sequence.indexDocument();
+      final before = sequence.index.snapshot;
+      final id = before.passages.first.id;
+      final descriptor = before.passages.first;
+      expect(descriptor.utf16Length, passage.text.length);
+      expect(descriptor.scalarCount, passage.text.runes.length);
+      expect(descriptor.anchor.textHash, passage.anchorAt(0)!.textHash);
+      await session.highlight([
+        const HighlightRegion(1, [PdfRect(40, 710, 100, 690)]),
+      ], 0x88ffff00);
+      await session.save();
+      await session.save(destination: '${directory.path}/index-copy.pdf');
+      final extractions = sequence.planner.extractionCount;
+      await sequence.indexDocument();
+      expect(sequence.planner.extractionCount, extractions);
+      expect(identical(sequence.index.snapshot, before), true);
+      // Evict the first detailed page, then verify fresh extraction after saves.
+      await sequence.start(page: 2);
+      await sequence.start(page: 3);
+      expect((await sequence.start())!.text, passage.text);
+      expect(sequence.index.page(1)!.passages.first.id, id);
+      expect(sequence.index.revision, before.revision);
+    } finally {
+      sequence.close();
+      await session.close(discard: true);
     }
   });
 

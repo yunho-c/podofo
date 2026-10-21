@@ -6,3 +6,8 @@ abstract interface class NarrationSequence {
   void cancelPending();
   void close();
 }
+
+/// Optional text-only preparation, independent of playback position and pause.
+abstract interface class DocumentIndexingSequence {
+  Future<void> indexDocument({bool retryFailures = false});
+}
