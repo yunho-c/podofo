@@ -111,8 +111,8 @@ present before this work and are preserved. A baseline patch and the abandoned
   also exercises real synthesis/output. It mocks only plugin path discovery;
   relocated sandboxed plugin operation and audible review remain milestone 4.
 - Windows CI prepares a portable native library and model-free package before
-  dependency resolution. Windows build execution remains a release gate; a
-  macOS build is not evidence for Windows runtime compatibility.
+  dependency resolution. The executed Windows build and regression gate now
+  passes; see the qualification record for its exact commit and artifact.
 - Milestone 2: detached, hashed page text and UTF-16 source maps; ligature and
   whitespace normalization; temporary sentence paint; follow/show-location;
   native sentence navigation and passage timeline; voice/language/synthesis-speed
@@ -174,4 +174,10 @@ present before this work and are preserved. A baseline patch and the abandoned
   adds specialization-cache artifacts, so relocation/upgrade storage is a
   separate boundary. The final-source probe records source hashes and restores
   the normal signed Release app. Human listening and native-window acceptance
-  remain pending; Windows has no executed build evidence in this workspace.
+  remain pending.
+- After the authorized push, [Windows CI run 39524485170](https://github.com/yunho-c/podofo/actions/runs/39524485170)
+  passes on `359546e`: native MLSR preparation, locked dependencies, formatting,
+  ObjectBox generation, analysis, x64 Release build and 63 regressions (one
+  macOS-native speech skip). The uploaded archive's digest and AMD64 binaries
+  are verified, and it contains no MLSR model payload. This closes the Windows
+  build gate without expanding the supported listening platforms.

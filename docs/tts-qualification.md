@@ -25,9 +25,9 @@ this run does not establish behavior on a macOS 15 machine or a notarized app.
 | Packaged runtime | Four relocated sandboxed runs passed with real plugins, including two three-minute warm stress runs; no resource-path mocks |
 | Dark inversion | Real Release Impeller offscreen pixels pass for normal and inverted source-region highlights |
 | Release packaging | Exact inventory/hash match for 50 model/notice assets, 459,351,926 bytes; arm64 MLSR, portable linkage, nested signing |
-| Native window interaction | Not verified; Computer Use denied PoDoFo access, including the requested retry |
+| Native window interaction | Not verified; earlier PoDoFo access was denied, and the resumed session could not start the native Computer Use connection |
 | Human listening | Sample exported; review pending |
-| Windows | Portable preparation and CI wiring implemented; this branch has not run a Windows build or remote CI |
+| Windows | x64 Release build and 63 regressions passed in [CI](https://github.com/yunho-c/podofo/actions/runs/39524485170); one opt-in native speech test skipped; model-free artifact inspected |
 
 The regression suite uses real local PDF fixtures and a fake speech adapter for
 deterministic UI/lifecycle behavior. It covers Unicode offsets, source geometry
@@ -153,6 +153,39 @@ artifacts; warm-loop stability does not establish a bound across upgrades or
 relocations. Handle counts and PCM quotas do not measure all native allocations.
 
 ## Evidence and reproduction
+
+### Windows compatibility
+
+[Run 39524485170](https://github.com/yunho-c/podofo/actions/runs/39524485170)
+passed on source commit `359546ece9b305df5b73d0971b434cd336775de7` after the
+authorized branch push. The job ran for 7 minutes 46 seconds on Windows Server
+2025 (10.0.26100), runner image `windows-2025-vs2026` version
+`20261007.264.1`, using the repository's pinned Flutter SDK.
+
+The job prepared MLSR `14ff251` for `x86_64-pc-windows-msvc` with listening
+disabled, resolved the locked dependencies, checked formatting and regenerated
+ObjectBox files, passed analysis, built `PoDoFo.exe` in Release mode, and passed
+all 63 regressions. The real macOS speech test was explicitly skipped. Generated
+files were compared after formatting and newline normalization, as specified in
+`tool/verify.ps1`.
+
+The uploaded `podofo-windows` artifact was downloaded and its SHA-256 verified
+against GitHub's artifact digest:
+`d23fde38c2d902124a52a47a3523ac6aea08254bfc83fb8a1cae1029356d1094`.
+The archive is 22,103,240 bytes and contains 339 files totaling 50,282,836 logical
+bytes. All 11 executable/library files have AMD64 PE headers, including
+`PoDoFo.exe`, `mlsr_ffi.dll`, `objectbox.dll`, and `pdfium.dll`. No MLSR model
+payload is included. The MLSR DLL SHA-256 is
+`5561a8809936fd5188bd5359fc6b88666af34e1de703a090677a753683d02beb`.
+
+This verifies the Windows reader's build, regression, and packaging path.
+Listening remains supported only on macOS Apple Silicon; this run does not
+qualify Windows speech or an interactive Windows app launch. The run metadata,
+full CI log, downloaded archive, and per-file inspection receipt are retained
+under `build/mlsr-qualification/windows-39524485170/`. GitHub's artifact expires
+on 2026-10-28; the local evidence is retained independently.
+
+### macOS and paper inspection
 
 From `podofo_frontend_one`, after [preparation](tts-implementation.md#build-preparation):
 
