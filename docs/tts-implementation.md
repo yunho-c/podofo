@@ -4,6 +4,10 @@ Implementation branch: `feat/mlsr-tts`. The first supported listening target is
 macOS Apple Silicon, macOS 15 or later. Other desktop targets keep the PDF reader
 and expose listening as unavailable until their runtime/output is qualified.
 
+All four milestones are complete for this scope. Automated qualification and the
+author's successful manual acceptance review are recorded in
+[qualification](tts-qualification.md).
+
 PoDoFo owns PDF extraction, reading order, source maps, document navigation and
 bookmarks. MLSR owns inference, model segmentation, PCM, native playback, timing,
 cancellation, and bounded temporary audio retention. One application-owned engine
@@ -85,7 +89,7 @@ normal Release app in a `finally` step. Logs, report and sample WAV are retained
 in a new `build/mlsr-qualification/<timestamp>/` directory, with the relocated app
 in a temporary directory named in the report. Never nest `sandbox-exec` around
 this already-sandboxed app; macOS traps before Flutter starts. See
-[qualification](tts-qualification.md) for evidence and remaining manual checks.
+[qualification](tts-qualification.md) for evidence and the manual acceptance record.
 
 On Windows, run `python tool/prepare_mlsr.py` before the ordinary locked package
 resolution and `tool/verify.ps1`. This produces a model-free package and portable
@@ -109,7 +113,8 @@ present before this work and are preserved. A baseline patch and the abandoned
 - `python3 tool/test_macos.py` loads PDFium and ObjectBox from the Release bundle.
   `PODOFO_TEST_MLSR=1 python3 tool/test_macos.py test/narration_native_test.dart`
   also exercises real synthesis/output. It mocks only plugin path discovery;
-  relocated sandboxed plugin operation and audible review remain milestone 4.
+  relocated sandboxed plugin operation and audible review were deferred to
+  milestone 4.
 - Windows CI prepares a portable native library and model-free package before
   dependency resolution. The executed Windows build and regression gate now
   passes; see the qualification record for its exact commit and artifact.
@@ -123,7 +128,7 @@ present before this work and are preserved. A baseline patch and the abandoned
   rotation paint, annotation-only save identity, and snapshot/close serialization.
   The reader test covers active speech across another tab, cancelled dirty close,
   save and final close. Temporary paint was inspected in the generated reader
-  capture; native app visual/listening review remains a release check.
+  capture; native app visual/listening review was a separate release check.
 - Milestone 3: continuous bounded passages, a reading-order preview with explicit
   single-column/two-column/PDF-order choices, references/caption options, and
   review/skip handling for ambiguous or textless pages. Two page plans are cached;
@@ -146,8 +151,8 @@ present before this work and are preserved. A baseline patch and the abandoned
   bundle audits pass, with repeatable tooling that restores the ordinary app.
   Native pause/navigation, continuous drain, persisted source position, repeated
   cancellation and engine/PCM cleanup pass. The 760×520 reader/preview checks
-  also pass. Timing/resource observations and outstanding native-window/human
-  listening gates are recorded in [qualification](tts-qualification.md).
+  also pass. Timing/resource observations and native-window/human listening
+  results are recorded in [qualification](tts-qualification.md).
 - Completion-audit follow-up: source-to-speech lookup now finds the containing
   source span even when extraction order differs from reading order. Page plans
   expose paragraph/heading/caption/reference/excluded-margin blocks. Margin
@@ -173,11 +178,14 @@ present before this work and are preserved. A baseline patch and the abandoned
   cache bytes/file counts stay unchanged during the warm loops. Engine loading
   adds specialization-cache artifacts, so relocation/upgrade storage is a
   separate boundary. The final-source probe records source hashes and restores
-  the normal signed Release app. Human listening and native-window acceptance
-  remain pending.
+  the normal signed Release app.
 - After the authorized push, [Windows CI run 39524485170](https://github.com/yunho-c/podofo/actions/runs/39524485170)
   passes on `359546e`: native MLSR preparation, locked dependencies, formatting,
   ObjectBox generation, analysis, x64 Release build and 63 regressions (one
   macOS-native speech skip). The uploaded archive's digest and AMD64 binaries
   are verified, and it contains no MLSR model payload. This closes the Windows
   build gate without expanding the supported listening platforms.
+- Manual acceptance completed on 2026-10-20: the author approved the exported
+  listening sample, confirmed actual app playback, and reported satisfactory
+  results after completing the native UI checklist. This closes milestone 4 and
+  the implementation goal for macOS Apple Silicon.

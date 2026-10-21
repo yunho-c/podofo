@@ -1,9 +1,9 @@
 # MLSR listening qualification — 2026-10-20
 
 The macOS Apple Silicon implementation passes automated reader, native playback,
-and relocated sandboxed Release checks. Human listening and native window
-interaction remain separate acceptance checks; neither is implied by these
-results. Implementation is on `feat/mlsr-tts`, with MLSR pinned to
+and relocated sandboxed Release checks. The author also confirmed successful
+listening and native window interaction after completing the manual acceptance
+checklist on 2026-10-20. Implementation is on `feat/mlsr-tts`, with MLSR pinned to
 `14ff251eb7e9011801945233cf91ef8b444cd734` and the ten-voice
 `supertonic3-coreml-fp16-t384-voices-v1` bundle.
 
@@ -25,8 +25,8 @@ this run does not establish behavior on a macOS 15 machine or a notarized app.
 | Packaged runtime | Four relocated sandboxed runs passed with real plugins, including two three-minute warm stress runs; no resource-path mocks |
 | Dark inversion | Real Release Impeller offscreen pixels pass for normal and inverted source-region highlights |
 | Release packaging | Exact inventory/hash match for 50 model/notice assets, 459,351,926 bytes; arm64 MLSR, portable linkage, nested signing |
-| Native window interaction | Not verified; earlier PoDoFo access was denied, and the resumed session could not start the native Computer Use connection |
-| Human listening | Sample exported; review pending |
+| Native window interaction | Passed in the author's manual acceptance review on 2026-10-20 |
+| Human listening | Author approved the exported sample and confirmed actual app playback on 2026-10-20 |
 | Windows | x64 Release build and 63 regressions passed in [CI](https://github.com/yunho-c/podofo/actions/runs/39524485170); one opt-in native speech test skipped; model-free artifact inspected |
 
 The regression suite uses real local PDF fixtures and a fake speech adapter for
@@ -215,7 +215,13 @@ PODOFO_PAGES=2,3 PODOFO_ORDERS=automatic,pdfOrder \
 python3 tool/test_macos.py tool/inspect_paper_test.dart
 ```
 
-## Manual acceptance still open
+## Manual acceptance — passed 2026-10-20
+
+The author reported that the listening sample sounds great, confirmed actual
+playback, and completed the following checklist with satisfactory results. This
+closes the remaining manual acceptance gates for the macOS Apple Silicon
+implementation. These results come from the author's review; automated native
+window inspection remained unavailable because Computer Use could not connect.
 
 1. Open the generated qualification PDF through the native file picker. Review
    the detected order, start reading, pause/resume, navigate sentences, and check
