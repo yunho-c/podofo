@@ -167,7 +167,7 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
             children: [
               Expanded(
                 child: Text(
-                  '$label / ${total == null ? "—" : "${document.measured ? "" : "~"}${documentClock(total)}"} · document',
+                  '$label / ${total == null ? "—" : "${document.measured ? "" : "~"}${documentClock(total)}"}',
                   key: const ValueKey('document-time-label'),
                 ).small().muted(),
               ),
