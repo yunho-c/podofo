@@ -1,0 +1,199 @@
+// Runs in the isolated package created by prepare_sdk.py. No audible playback.
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:crypto/crypto.dart';
+import 'package:mlsr/mlsr.dart';
+
+const request = RequestOptions(voice: 'supertonic3:M1');
+
+Future<void> main(List<String> args) async {
+  if (args.length != 4) {
+    throw ArgumentError('MANIFEST BUNDLE CORPUS_JSON REPORT_JSON');
+  }
+  final corpus = jsonDecode(File(args[2]).readAsStringSync()) as Map;
+  final units = (corpus['units'] as List).cast<String>();
+  if (units.length != 24) throw StateError('Expected 24 fixed text units');
+  final report = <String, Object?>{
+    'passed': false,
+    'dart': Platform.version,
+    'started_at': DateTime.now().toUtc().toIso8601String(),
+    'pid': pid,
+    'instrumentation': jsonDecode(
+      File('instrumentation.json').readAsStringSync(),
+    ),
+    'manifest_sha256': sha256
+        .convert(File(args[0]).readAsBytesSync())
+        .toString(),
+    'corpus': corpus,
+    'boundary':
+        'Warm Tts; sequential duration admission through metadata and disposal. '
+        'Foreground setup and model loading excluded. Queue times overlap across concurrent operations.',
+    'audio_volume': 0,
+    'runs': <Map<String, Object?>>[],
+  };
+  final load = Stopwatch()..start();
+  final tts = await Tts.open(manifest: args[0], bundle: args[1]);
+  report['load_ms_excluded'] = load.elapsedMicroseconds / 1000;
+  stdout.writeln('Loaded in ${report['load_ms_excluded']} ms (excluded)');
+  final runs = report['runs'] as List<Map<String, Object?>>;
+  try {
+    // Warm inference, binding paths, and temporary-isolate cleanup before trials.
+    for (final text in [units.first, units.take(8).join('\n'), units.first]) {
+      final job = tts.planDuration(text, options: request);
+      await job.done;
+      await job.timeline();
+      await job.dispose();
+    }
+    final repetitions = int.parse(
+      Platform.environment['PROFILE_REPETITIONS'] ?? '3',
+    );
+    final modes =
+        (Platform.environment['PROFILE_MODES'] ?? 'idle,playing,paused').split(
+          ',',
+        );
+    for (var repetition = 0; repetition < repetitions; repetition++) {
+      for (final mode in repetition.isEven ? modes : modes.reversed) {
+        for (final group in repetition.isEven ? [1, 8] : [8, 1]) {
+          final passages = [
+            for (var i = 0; i < units.length; i += group)
+              units.skip(i).take(group).join('\n'),
+          ];
+          Speech? speech;
+          StreamSubscription<SpeechState>? subscription;
+          Future<Completion>? done;
+          Object? observerError;
+          SpeechState? latest;
+          try {
+            if (mode != 'idle') {
+              speech = tts.speak(
+                List.filled(8, units.join('\n')).join('\n'),
+                request: request,
+                options: SpeechOptions(
+                  volume: 0,
+                  paused: mode.startsWith('paused'),
+                  onDemandSeeking: true,
+                ),
+              );
+              final deadline = Stopwatch()..start();
+              while (true) {
+                latest = await speech.snapshot();
+                if (latest.playback == PlaybackPhase.failed)
+                  throw StateError('Foreground failed');
+                if (latest.estimatedFrames != null &&
+                    (mode == 'playing'
+                        ? latest.positionFrame > 0
+                        : latest.bufferedUntilFrame > 0))
+                  break;
+                if (deadline.elapsed.inSeconds > 45)
+                  throw StateError('Foreground readiness timeout');
+                await Future<void>.delayed(const Duration(milliseconds: 10));
+              }
+              // Separate diagnostic controls let us isolate each observer.
+              if (mode != 'paused_unobserved' && mode != 'paused_done_only') {
+                subscription = speech.states.listen(
+                  (value) => latest = value,
+                  onError: (Object error) {
+                    observerError = error;
+                  },
+                );
+              }
+              if (mode != 'paused_unobserved' && mode != 'paused_states_only') {
+                done = speech.done;
+                unawaited(
+                  done.then<void>(
+                    (_) {},
+                    onError: (Object error) {
+                      observerError = error;
+                    },
+                  ),
+                );
+              }
+            }
+            sdkTimingEvents.clear();
+            sdkTimingEnabled = true;
+            final clock = Stopwatch()..start();
+            final jobs = <Map<String, Object?>>[];
+            final segmentTexts = <String>[];
+            for (var i = 0; i < passages.length; i++) {
+              final text = passages[i];
+              final begin = clock.elapsedMicroseconds;
+              final job = tts.planDuration(text, options: request);
+              final admitted = clock.elapsedMicroseconds;
+              try {
+                if ((await job.done).kind != OutcomeKind.completed)
+                  throw StateError('Duration cancelled');
+                final completed = clock.elapsedMicroseconds;
+                final plan = (await job.timeline())!;
+                final metadata = clock.elapsedMicroseconds;
+                for (final segment in plan.segments) {
+                  segmentTexts.add(
+                    text
+                        .substring(segment.utf16.start, segment.utf16.end)
+                        .trim(),
+                  );
+                }
+                await job.dispose();
+                jobs.add({
+                  'passage': i,
+                  'utf16_length': text.length,
+                  'segments': plan.segments.length,
+                  'admission_us': admitted - begin,
+                  'done_us': completed - admitted,
+                  'metadata_us': metadata - completed,
+                  'dispose_us': clock.elapsedMicroseconds - metadata,
+                  'total_us': clock.elapsedMicroseconds - begin,
+                });
+              } finally {
+                await job.dispose();
+              }
+            }
+            final total = clock.elapsedMicroseconds;
+            sdkTimingEnabled = false;
+            if (observerError != null)
+              throw StateError('Observer failed: $observerError');
+            if (mode == 'playing' && latest?.playback == PlaybackPhase.ended) {
+              throw StateError('Foreground ended during trial');
+            }
+            runs.add({
+              'repetition': repetition,
+              'mode': mode,
+              'group': group,
+              'passages': passages.length,
+              'segments': segmentTexts.length,
+              'segment_text_sha256': sha256
+                  .convert(utf8.encode(segmentTexts.join('\u0000')))
+                  .toString(),
+              'total_us': total,
+              'jobs': jobs,
+              'worker_events': List.of(sdkTimingEvents),
+              'foreground_phase_at_end': latest?.playback.name,
+            });
+            stdout.writeln(
+              '$repetition $mode group=$group: ${total / 1000} ms, ${segmentTexts.length} segments',
+            );
+          } finally {
+            sdkTimingEnabled = false;
+            speech?.cancel();
+            await subscription?.cancel();
+            if (done != null) await done;
+            await speech?.dispose();
+          }
+          File(args[3]).writeAsStringSync(
+            '${const JsonEncoder.withIndent('  ').convert(report)}\n',
+          );
+        }
+      }
+    }
+    report['matched_segments'] =
+        runs.map((r) => r['segment_text_sha256']).toSet().length == 1;
+    report['passed'] = true;
+  } finally {
+    sdkTimingEnabled = false;
+    await tts.dispose();
+    File(args[3]).writeAsStringSync(
+      '${const JsonEncoder.withIndent('  ').convert(report)}\n',
+    );
+  }
+}
