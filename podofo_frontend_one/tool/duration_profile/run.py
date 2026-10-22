@@ -15,6 +15,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pdf', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True, help='New evidence directory')
+    parser.add_argument('--sdk-source', type=Path, default=APP / '.mlsr/sdk/bindings/dart',
+                        help='Dart SDK package for the isolated CLI comparison')
     parser.add_argument('--processes', type=int, default=2)
     parser.add_argument('--repetitions', type=int, default=3)
     parser.add_argument('--modes', default='idle,playing,paused')
@@ -51,7 +53,7 @@ def main():
         run([flutter, 'test', '--no-pub', 'tool/duration_profile/app_probe_test.dart', '--reporter', 'expanded'],
             APP, 'app.log', env)
         sdk = output / 'sdk'
-        run([sys.executable, APP / 'tool/duration_profile/prepare_sdk.py', sdk], APP, 'prepare.log')
+        run([sys.executable, APP / 'tool/duration_profile/prepare_sdk.py', sdk, '--sdk-source', args.sdk_source.resolve()], APP, 'prepare.log')
         run([dart, 'pub', 'get', '--offline'], sdk, 'pub.log')
         run([dart, 'build', 'cli', '-t', 'probe.dart', '-o', 'aot'], sdk, 'build.log')
         for i in range(args.processes):

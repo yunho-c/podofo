@@ -53,12 +53,19 @@ ordinary app in `finally`, including when the probe fails.
 The probe exports its fixed artifact set through stdout with SHA-256 digests;
 the host does not need permission to read the app's protected container.
 
-The pinned SDK revision is `c2b7408f4a6950617099eea433d768623f352b26` on the
-local `feat/document-duration-api` branch. Publish that SDK revision before
+The release qualification below used SDK
+`c2b7408f4a6950617099eea433d768623f352b26`. The current pin is
+`0ca5d81bbcad0fa8a6274ebe3a7e44200bdc4da6` on the local
+`fix/dart-observation` branch, adding isolated Dart polling workers without
+changing Rust/native code or model assets. Publish that SDK revision before
 expecting a fresh remote checkout to fetch it. Local preparation can use
-`python3 tool/prepare_mlsr.py --sdk-source /Users/yunhocho/GitHub/MLSR-document-duration`.
+`python3 tool/prepare_mlsr.py --sdk-source /Users/yunhocho/GitHub/MLSR-dart-observation`.
 The SDK's own qualification covers priority/preemption, cancellation, compact
 timing DTOs, prediction/render consistency and C/Dart/Go/Python bindings.
+The polling fix additionally passed six real SDK tests and 42 PoDoFo narration
+checks, including two native tests; the performance evidence and its boundaries
+are in [the duration profiling notes](../podofo_frontend_one/tool/duration_profile/README.md).
+The earlier sandboxed release receipt remains specific to its recorded revision.
 
 ## Real-paper coverage
 

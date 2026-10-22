@@ -3,12 +3,12 @@
 Usage: python3 tool/duration_profile/prepare_sdk.py OUTPUT_DIRECTORY
 The new directory must not exist. Native code/model bytes remain unchanged.
 """
+import argparse
 import hashlib
 import json
 from pathlib import Path
 import shutil
 import subprocess
-import sys
 
 APP = Path(__file__).resolve().parents[2]
 SOURCE = APP / '.mlsr/sdk/bindings/dart'
@@ -22,10 +22,16 @@ def replace(path, old, new):
 
 
 def main():
-    destination = Path(sys.argv[1]).resolve()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('output', type=Path)
+    parser.add_argument('--sdk-source', type=Path, default=SOURCE,
+                        help='Dart SDK package to copy; defaults to the prepared SDK')
+    args = parser.parse_args()
+    source = args.sdk_source.resolve(strict=True)
+    destination = args.output.resolve()
     destination.mkdir(parents=True, exist_ok=False)
     sdk = destination / 'sdk'
-    shutil.copytree(SOURCE, sdk, ignore=shutil.ignore_patterns('.dart_tool', 'build', '.git'))
+    shutil.copytree(source, sdk, ignore=shutil.ignore_patterns('.dart_tool', 'build', '.git'))
     synthesis = sdk / 'lib/src/synthesis.dart'
     native = sdk / 'lib/src/synthesis_native.dart'
     sdk_native = sdk / 'lib/src/sdk_native.dart'
@@ -53,7 +59,7 @@ void recordSdkTiming(Map<String, Object?> event) {
     try {''', '''    final id = values[0] as int;
     final timing = values.length > 3 ? <String, Object?>{
       'operation': values[1], 'handle': (values[2] as Map)['handle'],
-      'request': id, 'lane': 'shared', 'enqueued_us': values[3],
+      'request': id, 'lane': Isolate.current.debugName, 'enqueued_us': values[3],
       'started_us': developer.Timeline.now,
     } : null;
     List<Object?> response(Object? result, Object? error) => [id, result, error,
@@ -93,11 +99,13 @@ hooks:
       native-library: {json.dumps(str(APP / '.mlsr/native/mlsr_ffi'))}
 ''')
     shutil.copy2(APP / 'tool/duration_profile/probe.dart.in', destination / 'probe.dart')
-    files = ['lib/src/synthesis.dart', 'lib/src/synthesis_native.dart', 'lib/src/sdk_native.dart']
+    files = ['lib/src/sdk.dart', 'lib/src/synthesis.dart', 'lib/src/synthesis_native.dart', 'lib/src/sdk_native.dart']
     (destination / 'instrumentation.json').write_text(json.dumps({
-        'sdk_revision': subprocess.check_output(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD'], text=True).strip(),
+        'sdk_revision': subprocess.check_output(['git', '-C', str(source), 'rev-parse', 'HEAD'], text=True).strip(),
+        'sdk_source': str(source),
+        'sdk_status': subprocess.check_output(['git', '-C', str(source), 'status', '--short'], text=True),
         'native_sha256': hashlib.sha256((APP / '.mlsr/native/mlsr_ffi').read_bytes()).hexdigest(),
-        'files': {name: {'original': hashlib.sha256((SOURCE / name).read_bytes()).hexdigest(),
+        'files': {name: {'original': hashlib.sha256((source / name).read_bytes()).hexdigest(),
                          'instrumented': hashlib.sha256((sdk / name).read_bytes()).hexdigest()} for name in files},
     }, indent=2) + '\n')
     print(destination)

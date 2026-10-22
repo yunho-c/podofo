@@ -111,9 +111,9 @@ synchronous timing publication. There was no mounted reader UI, so widget/frame
 costs are outside this document measurement. Native completion waiting still
 combines preparation, inference, and scheduling.
 
-The next targeted fix is to keep blocking speech observation off the serial lane
+This diagnosis motivated keeping blocking speech observation off the serial lane
 used to deliver duration completion and metadata, while preserving handle
-ownership, cancellation, and bounded observation. Passage merging would mask
+ownership, cancellation, and bounded observation; see the fix validation below. Passage merging would mask
 this cost and alter document behavior; the evidence points to the SDK adapter.
 
 Local raw evidence (ignored, retained on this checkout):
@@ -130,3 +130,61 @@ that stopped on its zero-failures assertion, and a plain `dart compile exe` laun
 without native assets remain separately in the diagnostic directory. Successful
 CLI builds use `dart build cli`; the PDF probe explicitly selects the prepared
 PDFium library. These setup failures are not included in the timing table.
+
+## Fix validation on 2026-10-21
+
+PoDoFo now pins MLSR `0ca5d81bbcad0fa8a6274ebe3a7e44200bdc4da6`.
+Completion waiting, state polling, and audio polling each use a persistent
+adapter owned by that future or stream. Metadata retains the shared Tts adapter.
+Every poll retains the existing lease accounting, and each polling adapter closes
+in `finally` after the native call returns. Cancellation, coalescing, and stream
+backpressure keep their existing contracts. This changes Dart scheduling only;
+the prepared native library SHA-256 stayed
+`ecc5b178a2d49fa2dda020773eefb714d160e277b0461308e6b689734f9ea19f`.
+
+A fixed / original / fixed sequence of independent AOT processes reproduced the
+improvement. The fixed processes each ran three alternating-order repetitions;
+the intervening original process ran two. The same saved ResNet-derived corpus,
+24 model segments and segment-text hashes were used throughout. Engines were
+loaded and warmed before timing; foreground readiness was excluded. The original
+executable retains its original Dart binding and native asset.
+
+| Activity | Passages | Original control median | Fixed median |
+| --- | ---: | ---: | ---: |
+| No speech | 24 | 66.86 ms | 68.83 ms |
+| No speech | 3 | 61.92 ms | 65.83 ms |
+| Playing | 24 | 2473.55 ms | 71.94 ms |
+| Playing | 3 | 303.89 ms | 64.77 ms |
+| Paused | 24 | 5078.21 ms | 69.53 ms |
+| Paused | 3 | 540.39 ms | 64.97 ms |
+
+The 24-passage playing and paused workloads improved about 34x and 73x. Idle
+changes are a few milliseconds; the extra worker lifecycle remains included,
+and these active-host measurements do not establish an idle speed improvement.
+The application PDF probe still reports unsupported extracted characters as
+failures; this scheduling fix does not change text normalization or model support.
+
+Validation included six real SDK tests (two unrelated model-delivery/export
+cases skipped), 42 PoDoFo controller/timeline/lifecycle checks including two native
+narration tests, SDK analysis, and preparation tests. The new SDK regression test
+fails against the original binding: 64 sequential metadata reads with pending
+completion/state observers took 6.96 seconds, exceeding its generous two-second
+bound. It passes with the fix and also covers early disposal, error completion,
+owner shutdown, and native handles returning to baseline. No new human listening
+or reader-window acceptance is claimed by these automated checks.
+
+Evidence remains under `build/duration-profile/`:
+
+- `fixed-sdk/fixed-{1,2}.json`: the repeated fixed measurements.
+- `sdk-probe/control-after-fix.json`: the intervening original-binding control.
+- `sdk-probe/regression-before.log`: the expected regression-test failure.
+- `fix-app-tests.log`: the 42 passing PoDoFo checks.
+- `fixed-integrated/`: the final end-to-end run with the pinned SDK.
+- `fix-summary.json`: consolidated comparison and verified source hashes.
+
+`run.py --sdk-source /path/to/MLSR/bindings/dart` can select another Dart package
+for the isolated CLI comparison. The application PDF probe always uses PoDoFo's
+prepared SDK. The CLI trace records isolate debug names and includes `sdk.dart`
+in source hashes, distinguishing metadata, completion, state, and audio workers.
+The new SDK revision is currently local to `fix/dart-observation` in
+`/Users/yunhocho/GitHub/MLSR-dart-observation`; it has not been published remotely.

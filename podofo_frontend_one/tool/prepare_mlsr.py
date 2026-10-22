@@ -12,7 +12,7 @@ import subprocess
 import sys
 
 
-SDK_REVISION = "c2b7408f4a6950617099eea433d768623f352b26"
+SDK_REVISION = "0ca5d81bbcad0fa8a6274ebe3a7e44200bdc4da6"
 SDK_URL = "https://github.com/yunho-c/MLSR.git"
 APP = Path(__file__).resolve().parents[1]
 ROOT = APP / ".mlsr"
