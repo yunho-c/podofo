@@ -71,7 +71,7 @@ class _Line {
 /// Preserve the extracted PDF sequence. Geometry only separates paragraphs;
 /// it never sorts words, infers columns, or changes reading order.
 abstract final class PaperPlanner {
-  static const version = 3;
+  static const version = 4;
   static const maxPageUnits = 200000;
   static const maxPassageBytes = 4096;
 

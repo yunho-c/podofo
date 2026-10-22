@@ -41,6 +41,61 @@ Test captures are not native-window screenshots. The ordinary widget engine
 does not support Impeller image filters; inversion is exercised in the Release
 probe using the production painter and shader.
 
+## Discretionary hyphens (reading plan version 4) — 2026-10-21
+
+The real two-line `discretionaryHyphenPdfFixture()` contains an ASCII line-end
+hyphen, not an injected control character. The native pdfrx/PDFium extraction
+returns `inter\u0002national`. Before this fix, PoDoFo's intact-word heuristic
+converted that to `inter-national` unless `international` occurred elsewhere on
+the page. The planner's `\S+` scan retains the marker inside one word; the extra
+literal hyphen was introduced by `NarrationPassage.fromSlices`, before MLSR.
+
+That existing normalization pass now deletes U+0002 unconditionally. Its existing
+`SpokenSpan` list retains a zero-length, geometry-free entry for the deleted
+source character so a selection/bookmark at the marker can resume at the next
+spoken character. No separate mapping structure or normalized page copy is added.
+Original pdfrx text, selection coordinates, source hashes and geometry remain
+unchanged. Ordinary hyphens, minus signs, dashes, other control characters and
+the existing whitespace policy are unchanged, as are literal line-break
+dehyphenation and cross-page policies. The plan version changes to invalidate
+old reading-plan identities.
+
+This targets the actual native `pdfrx_engine` 0.6.1 `FPDFText_GetUnicode` path.
+[PDFium](https://raw.githubusercontent.com/chromium/pdfium/main/core/fpdftext/cpdf_textpage.cpp)
+uses U+0002 for the per-character representation and U+FFFE in its bulk text
+buffer. [Chromium's bulk-text cleanup](https://raw.githubusercontent.com/chromium/chromium/main/pdf/pdfium/pdfium_range.cc)
+therefore is not the filter to copy into this path. No bulk-text or alternative
+renderer cleanup is added, and MLSR has no PDF-specific changes.
+
+`narration_hyphen_pdf_test.dart` exercises real extraction, selected-text and
+paper passage construction, controller admission, highlights on both printed
+lines, and resume at the deleted marker. `narration_source_map_test.dart` covers
+partial ranges, multiple markers, ordinary punctuation, supplementary Unicode,
+and UTF-16 source spans. The PDF and a visually inspected rendering are generated
+under `build/test-artifacts/discretionary-hyphen.{pdf,png}`.
+
+The opt-in `narration_hyphen_native_test.dart` passed with the prepared Core ML
+model: the normalized model input contains `international` and `well-known`, and
+the UTF-8/UTF-16 request ranges map back to the prepared passage. It produced
+185,882 finite, non-silent audio frames (about 4.2 seconds at 44.1 kHz).
+The sample is `build/test-artifacts/hyphen-1792629768997837.wav`; `afplay`
+completed successfully. This is synthesis/playback evidence, not human listening
+confirmation or a newly built application's native-UI qualification.
+The user subsequently confirmed on 2026-10-21 that this fix works well.
+
+Final full Flutter run: 169 passed, four opt-in tests skipped; analysis is clean.
+The new native case was enabled and passed separately. One earlier full run
+failed the existing `PDF link consumes a click without clearing selection` UI
+test; that entire test file passed in isolation and the full rerun passed.
+The link-click test and viewer implementation were not changed by this fix.
+
+Reproduce from `podofo_frontend_one`:
+
+```sh
+python3 tool/test_macos.py test/narration_source_map_test.dart test/narration_hyphen_pdf_test.dart
+PODOFO_TEST_MLSR=1 python3 tool/test_macos.py test/narration_hyphen_native_test.dart
+```
+
 ## Reading plan version 3 — 2026-10-21
 
 The current planner preserves PDF text order and removes the automatic,
@@ -96,9 +151,9 @@ character rectangles span two visual lines. Its page-wide word rectangle had
 scrambled row grouping. The planner now separates visual runs and rejoins their
 spoken slices without losing either source location. PDFium's
 [hyphen marker implementation](https://pdfium.googlesource.com/pdfium/+/03baf4f3d7e756ac5ce4bc106a862908530df105/core/fpdftext/cpdf_textpage.cpp)
-uses U+0002. PoDoFo preserves an uncertain compound hyphen unless the intact word
-also occurs on that page; explicit soft hyphens can be removed. This is
-conservative normalization, not dictionary-based pronunciation correction.
+uses U+0002. At version 2, PoDoFo preserved an uncertain compound hyphen unless
+the intact word also occurred on that page. Version 4 supersedes that heuristic
+for PDFium markers; literal line-end hyphen policy remains separate.
 
 Equations remain literal extracted text; footnotes stay at their geometric
 location, including before a continuation in the next column. Diagram labels,

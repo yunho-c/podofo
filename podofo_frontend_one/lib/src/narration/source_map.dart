@@ -56,22 +56,6 @@ class PdfTextSnapshot {
       match.group(0)!.toLowerCase(),
   };
 
-  String pdfiumHyphen(int offset) {
-    final left = RegExp(r'[A-Za-z]+$')
-        .firstMatch(text.substring(math.max(0, offset - 64), offset))
-        ?.group(0);
-    final right = RegExp(r'^[a-z]+')
-        .firstMatch(
-          text.substring(offset + 1, math.min(text.length, offset + 65)),
-        )
-        ?.group(0);
-    return left != null &&
-            right != null &&
-            intactWords.contains('$left$right'.toLowerCase())
-        ? ''
-        : '-';
-  }
-
   SourceAnchor anchor(int offset) =>
       SourceAnchor(page, offset, textHash).withContext(text, offset);
 
@@ -180,7 +164,11 @@ class SpokenSpan {
     this.sourceEnd,
     this.boxes,
   );
-  final int start, end, sourceEnd;
+
+  /// UTF-16 spoken range; empty for a deleted PDFium marker. Such a span
+  /// retains source membership for resume/seek but has no highlight geometry.
+  final int start, end;
+  final int sourceEnd;
   final SourceAnchor source;
   final List<PdfRect> boxes;
 }
@@ -227,14 +215,16 @@ class NarrationPassage {
         final original = String.fromCharCode(rune);
         final sourceEnd = offset + original.length;
         var spoken = ligatures[original] ?? original;
-        // PDFium marks a joined line-end hyphen as U+0002. Keep the original
-        // source unit/geometry; remove it only with intact-word evidence.
-        if (rune == 2) spoken = slice.page.pdfiumHyphen(offset);
+        // pdfrx's FPDFText_GetUnicode path exposes PDFium's discretionary
+        // line-end hyphen as U+0002 (not GetText's U+FFFE). Delete only the
+        // spoken unit; source offsets/boxes still advance across the marker.
+        // A literal hyphen is different and must remain literal.
+        if (rune == 0x02) spoken = '';
         final space = original.trim().isEmpty;
         if (space) spoken = previousSpace ? '' : ' ';
         // Soft hyphens and PDF NUL markers are not words. Literal hyphens remain.
         if (rune == 0xad || rune == 0 || rune == 0x200b) spoken = '';
-        if (spoken.isNotEmpty) {
+        if (spoken.isNotEmpty || rune == 0x02) {
           final start = output.length;
           output.write(spoken);
           spans.add(
@@ -243,10 +233,14 @@ class NarrationPassage {
               output.length,
               SourceAnchor(slice.page.page, offset, slice.page.textHash),
               sourceEnd,
-              List.unmodifiable(slice.page.boxes.sublist(offset, sourceEnd)),
+              spoken.isEmpty
+                  ? const []
+                  : List.unmodifiable(
+                      slice.page.boxes.sublist(offset, sourceEnd),
+                    ),
             ),
           );
-          previousSpace = space;
+          if (spoken.isNotEmpty) previousSpace = space;
         }
         offset = sourceEnd;
       }
