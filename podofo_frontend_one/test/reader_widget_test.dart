@@ -297,6 +297,10 @@ void main() {
         tester.getCenter(find.byType(PdfViewer)),
         kind: PointerDeviceKind.mouse,
       );
+      // Cross the drag threshold: a stationary press/release is a tap and
+      // correctly clears selection immediately with the pdfrx staging fix.
+      await gesture.moveBy(const Offset(30, 0));
+      await tester.pump();
       await tester.runAsync(
         () =>
             controller.textSelectionDelegate.setTextSelectionPointRange(range),
