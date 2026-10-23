@@ -8,6 +8,7 @@ import 'package:synchronized/synchronized.dart';
 
 import '../data/pdf_document_lease.dart';
 import 'pdf_highlights.dart';
+import 'pdf_navigation_history.dart';
 
 /// A tab owns one detached PDF, so replacing its source file is safe on Windows.
 /// Mutations, saves, and close are serialized. Failed saves retain dirty edits.
@@ -15,6 +16,7 @@ class PdfSession {
   PdfSession._(this.path, this.lease, this._fingerprint, this._savedBytes);
   String path;
   final PdfDocumentLease lease;
+  final navigationHistory = PdfNavigationHistory();
   String _fingerprint;
   Uint8List _savedBytes;
   final Lock _lock = Lock();
