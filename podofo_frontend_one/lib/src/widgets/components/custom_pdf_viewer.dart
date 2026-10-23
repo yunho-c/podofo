@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/scheduler.dart' show SchedulerPhase;
+import 'package:flutter/widgets.dart' as flutter show Positioned;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -520,7 +521,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       useDocumentLayoutCoordinates: false,
     );
     if (hit == null) return;
-    _hoverTimer = Timer(const Duration(milliseconds: 350), () async {
+    _hoverTimer = Timer(const Duration(milliseconds: 300), () async {
       try {
         final links = await document.session.lease.use(
           (_) => hit.page.loadLinks(),
@@ -530,32 +531,55 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
           if (!link.rects.any((rect) => rect.containsPoint(hit.offset))) {
             continue;
           }
-          final label = link.url == null
+          final internal = link.url == null;
+          final label = internal
               ? 'Page ${link.dest?.pageNumber ?? ''}'
               : linkPreviewLabel(link.url!);
-          final size = MediaQuery.sizeOf(context);
           final overlayBox =
               Overlay.of(context).context.findRenderObject() as RenderBox;
           final position = overlayBox.globalToLocal(event.position);
           _overlay = OverlayEntry(
-            builder: (context) => Positioned(
-              left: (position.dx + 15).clamp(
-                0,
-                (size.width - 340).clamp(0, double.infinity),
-              ),
-              top: (position.dy + 15).clamp(
-                0,
-                (size.height - 110).clamp(0, double.infinity),
-              ),
+            // Overlay uses Flutter's parent data, not shadcn's patched Stack.
+            builder: (context) => flutter.Positioned.fill(
               child: IgnorePointer(
-                child: SizedBox(
-                  width: 320,
-                  child: Card(
-                    child: Text(
-                      label,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                    ).small(),
+                child: CustomSingleChildLayout(
+                  delegate: _LinkHoverCardLayout(
+                    position,
+                    maxWidth: internal ? 400 : 320,
+                  ),
+                  child: SizedBox(
+                    width: internal ? null : 320,
+                    child: Card(
+                      key: const ValueKey('pdf-link-hover-card'),
+                      boxShadow: internal
+                          ? [
+                              BoxShadow(
+                                color: Theme.of(context).colorScheme.primary
+                                    .withAlpha(50),
+                                offset: const Offset(0, 2),
+                                blurRadius: 2,
+                              ),
+                            ]
+                          : null,
+                      child: internal
+                          ? Padding(
+                              padding: const EdgeInsets.all(1),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    label,
+                                    style: Theme.of(context).typography.small,
+                                  ),
+                                ],
+                              ),
+                            )
+                          : Text(
+                              label,
+                              maxLines: 4,
+                              overflow: TextOverflow.ellipsis,
+                            ).small(),
+                    ),
                   ),
                 ),
               ),
@@ -569,4 +593,30 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       }
     });
   }
+}
+
+/// Clamp the actual card size, so a short page label stays beside the pointer
+/// even near the right edge instead of reserving the full maximum width.
+class _LinkHoverCardLayout extends SingleChildLayoutDelegate {
+  const _LinkHoverCardLayout(this.position, {required this.maxWidth});
+
+  final Offset position;
+  final double maxWidth;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      BoxConstraints(
+        maxWidth: math.min(maxWidth, constraints.maxWidth),
+        maxHeight: constraints.maxHeight,
+      );
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) => Offset(
+    (position.dx + 15).clamp(0, math.max(0, size.width - childSize.width)),
+    (position.dy + 15).clamp(0, math.max(0, size.height - childSize.height)),
+  );
+
+  @override
+  bool shouldRelayout(_LinkHoverCardLayout oldDelegate) =>
+      oldDelegate.position != position || oldDelegate.maxWidth != maxWidth;
 }

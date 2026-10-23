@@ -18,6 +18,7 @@ import 'package:podofo_one/src/providers/data_provider.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/narration_provider.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
+import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 import 'package:podofo_one/src/widgets/components/pdf_back_button.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
@@ -32,6 +33,75 @@ void main() {
   final platform = Platform.isMacOS
       ? TargetPlatform.macOS
       : TargetPlatform.windows;
+
+  testWidgets(
+    'internal link hover stays beside the pointer, fits the window, and passes clicks through',
+    (tester) async {
+      final reader = await _Reader.open(tester);
+      await reader.position(1, zoom: 2);
+      final viewer = reader.viewer;
+      final link = await reader.linkRectangle(1);
+      final point = viewer.documentToGlobal(link.center)!;
+      final original = viewer.value.clone();
+      final card = find.byKey(const ValueKey('pdf-link-hover-card'));
+
+      await reader.mouse.moveTo(point);
+      await tester.pump(const Duration(milliseconds: 299));
+      expect(card, findsNothing);
+      await tester.pump(const Duration(milliseconds: 1));
+      await waitForNative(tester, () => card.evaluate().isNotEmpty);
+      expect(tester.getTopLeft(card), point + const Offset(15, 15));
+      _expectMatrix(viewer.value, original);
+      await captureReader(tester, 'page-tooltip-light');
+
+      // The full-window overlay must remain transparent to PDF pointer input,
+      // even where the card itself overlaps the link annotation.
+      await reader.click(point + const Offset(20, 20));
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(viewer.pageNumber, 2);
+      expect(card, findsNothing);
+
+      await tester.runAsync(
+        () => reader.container
+            .read(userPreferenceProvider.notifier)
+            .setThemeMode(shadcn.ThemeMode.dark),
+      );
+      await tester.pump();
+      final localTarget = Offset(
+        viewer.viewSize.width - 10,
+        viewer.viewSize.height - 10,
+      );
+      await viewer.goTo(
+        viewer.calcMatrixFor(
+          link.center + (viewer.viewSize.center(Offset.zero) - localTarget) / 6,
+          zoom: 6,
+        ),
+        duration: Duration.zero,
+      );
+      await tester.pump();
+      final cornerPoint = viewer.documentToGlobal(link.center)!;
+      await reader.mouse.moveTo(cornerPoint);
+      await tester.pump(const Duration(milliseconds: 300));
+      await waitForNative(tester, () => card.evaluate().isNotEmpty);
+      final cardRect = tester.getRect(card);
+      final window = tester.getRect(
+        find.byKey(const ValueKey('reader-capture')),
+      );
+      expect(cardRect.left, greaterThanOrEqualTo(window.left));
+      expect(cardRect.top, greaterThanOrEqualTo(window.top));
+      expect(cardRect.right, lessThanOrEqualTo(window.right));
+      expect(cardRect.bottom, lessThanOrEqualTo(window.bottom));
+      expect(cardRect.left, lessThan(cornerPoint.dx + 15));
+      expect(cardRect.top, lessThan(cornerPoint.dy + 15));
+      await captureReader(tester, 'page-tooltip-dark-edge');
+
+      await reader.mouse.moveTo(Offset.zero);
+      await tester.pump();
+      expect(card, findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(platform),
+  );
 
   testWidgets(
     'citation Back restores nested positions and zoom with the old hover style',
@@ -423,15 +493,19 @@ class _Reader {
     }
   }
 
-  Future<void> clickLink(int pageNumber, {bool settle = true}) async {
+  Future<Rect> linkRectangle(int pageNumber) async {
     final page = session.lease.document.pages[pageNumber - 1];
     final links = (await tester.runAsync(
       () => session.lease.use((_) => page.loadLinks()),
     ))!;
-    final rect = links.single.rects.single.toRectInDocument(
+    return links.single.rects.single.toRectInDocument(
       page: page,
       pageRect: viewer.layout.pageLayouts[pageNumber - 1],
     );
+  }
+
+  Future<void> clickLink(int pageNumber, {bool settle = true}) async {
+    final rect = await linkRectangle(pageNumber);
     final point = viewer.documentToGlobal(rect.center)!;
     expect(tester.getRect(find.byType(PdfViewer)).contains(point), true);
     await click(point);
