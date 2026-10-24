@@ -39,7 +39,9 @@ dependencies:
   shared_preferences: ^2.5.5
   window_manager: ^0.5.2
   file_selector: ^1.1.0
-  pdfrx: 2.6.5
+  # Staging fixes backported to 2.6.5; see third_party/pdfrx/PODOFO.md.
+  pdfrx:
+    path: third_party/pdfrx
   url_launcher: ^6.3.2
   path: ^1.9.0
   image: ^4.10.1

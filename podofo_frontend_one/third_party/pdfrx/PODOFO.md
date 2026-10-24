@@ -15,7 +15,8 @@ Changes from the published package:
 - `pubspec.yaml`: replace workspace resolution with `publish_to: none` and omit
   the promotional screenshot entry.
 - `lib/src/widgets/selection_rects.dart`: adapt the visual rectangle merge pass
-  from the local `pdfrx_og` selection fix into a package-private extension.
+  from the local `pdfrx_og` selection fix into a shared extension exported by
+  `pdfrx.dart`.
 - `lib/src/widgets/pdf_viewer.dart`: paint those rectangles instead of each
   extracted fragment independently.
 
