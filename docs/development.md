@@ -74,6 +74,12 @@ the analyzer constraint merely to silence an SDK language-version warning.
 
 - Ctrl/Command+O opens a PDF; Ctrl/Command+P opens recent files.
 - Ctrl/Command+F searches; Ctrl/Command+B opens thumbnails.
+- After following an internal PDF link, hover over the reader's upper-left
+  corner to reveal the outlined Back arrow. It restores the previous reading
+  position and zoom; repeated clicks retrace nested links. Each open tab keeps
+  its own history (up to 100 jumps), including after Save As, until it closes.
+  Keyboard focus also reveals the arrow; touch devices keep it visible. Link
+  jumps and Back suspend narration's Follow Text without stopping playback.
 - The highlighter toggles highlighting mode. Right-click or long-press it for
   colors; a selection-menu swatch highlights text directly.
 - Ctrl/Command+Shift+H highlights selected text.
@@ -82,6 +88,15 @@ the analyzer constraint merely to silence an SDK language-version warning.
 - Ctrl+Tab / Ctrl+Shift+Tab switches tabs; Ctrl/Command+1–9 selects a tab and
   Ctrl/Command+0 selects the last tab.
 - The More menu controls auto-save.
+- Right-click blank space in a PDF page or the surrounding viewer pane, then
+  use the **View** section: **Two pages** for side-by-side spreads, or
+  **Single page** for the standard layout. Right-clicking text offers text
+  actions without the View section. Spreads pair pages 1–2, 3–4, etc.; an
+  unpaired last page is centered. Switching fits the current page or spread into
+  the viewer. Each open tab remembers its layout until it is closed.
+- PDF context menus open at the pointer, shifting only as needed to stay visible
+  at the edges of the pane (in-document) or window (surrounding padding).
+  Their theme and highlight swatches are unaffected by PDF color inversion.
 - The Annotations pane lists and removes existing highlights.
 
 Bare letter/number hotkeys no longer intercept typing in text fields.

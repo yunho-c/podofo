@@ -37,6 +37,28 @@ need granting again next launch.
 
 ## Validation
 
+### Main integration — 2026-10-24
+
+Merged main at `ba64a49` into the file-access branch. The `PdfSession` import
+conflict was resolved by keeping both the file-access bridge and page-relative
+navigation history. The existing bookmark open/save implementation and the
+current main reader, narration, and two-page controls are retained.
+
+- Locked dependency resolution and static analysis passed with published
+  pdfrx 2.6.5 / pdfrx_engine 0.6.1.
+- The standard test suite passed **156 tests**, with **4 opt-in native
+  MLSR/audio/corpus tests skipped**. This includes access recovery, save failures,
+  reader navigation/Save As, and two-page context-menu coverage.
+- The native Swift bookmark-alias regression passed.
+- The macOS Apple Silicon Debug build and deep/strict signature verification
+  passed; the signed app retains sandbox, user-selected read/write, and
+  app-scoped bookmark entitlements.
+- Logs are retained under `podofo_frontend_one/build/file-access-merge-*.log`
+  in the integration worktree. Fresh user-document quit/relaunch acceptance was
+  not repeated for this merge; the earlier sandbox probe is described below.
+
+### Commands and coverage
+
 From `podofo_frontend_one`:
 
 ```sh

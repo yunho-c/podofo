@@ -147,6 +147,60 @@ void main() {
   }
 
   testWidgets(
+    'scrubbing previews cached text without extraction or playback changes',
+    (tester) async {
+      final paper = fixture.sequence(3), session = seek.SeekSession();
+      final controller = (await tester.runAsync(
+        () => seek.reader(paper, session),
+      ))!;
+      addTearDown(controller.close);
+      await mount(tester, controller);
+      final source = controller.source, anchor = controller.currentAnchor;
+      final position = controller.documentPosition!.microseconds;
+      final extractions = paper.planner.extractionCount;
+      final cachedPages = paper.cachedPageCount;
+      var playbackNotifications = 0;
+      controller.addListener(() => playbackNotifications++);
+      slider(tester).onChangeStart!(5000000);
+      slider(tester).onChanged!(5000000);
+      await tester.pump();
+      expect(controller.previewingDocument, true);
+      final preview = controller.previewHighlight!;
+      expect(
+        preview.passage.rectangles(1, preview.start, preview.end),
+        isNotEmpty,
+      );
+      expect(controller.source, same(source));
+      expect(controller.currentAnchor, same(anchor));
+      expect(controller.documentPosition!.microseconds, position);
+      expect(playbackNotifications, 0);
+      expect(session.playbacks, hasLength(1));
+      expect(session.playbacks.single.lastSeek, isNull);
+
+      // Indexed timing alone does not authorize loading uncached page geometry.
+      slider(tester).onChanged!(25000000);
+      await tester.pump();
+      expect(controller.previewingDocument, true);
+      expect(controller.previewHighlight, isNull);
+      expect(paper.planner.extractionCount, extractions);
+      expect(paper.cachedPageCount, cachedPages);
+      slider(tester).onChanged!(5000000);
+      await tester.pump();
+      expect(controller.previewHighlight, isNotNull);
+      session.confirmSeek = false;
+      (session.playbacks.single as seek.TimedPlayback).confirmSeek = false;
+      slider(tester).onChangeEnd!(5000000);
+      await settle(tester);
+      expect(controller.scrubPreview.value, isNull);
+      expect(controller.previewHighlight, isNotNull);
+      await tester.runAsync(controller.stop);
+      await settle(tester);
+      expect(controller.previewingDocument, false);
+      expect(controller.previewHighlight, isNull);
+    },
+  );
+
+  testWidgets(
     'pending preview follows the latest seek and clears on failure or Stop',
     (tester) async {
       final paper = fixture.sequence(3), session = seek.SeekSession();

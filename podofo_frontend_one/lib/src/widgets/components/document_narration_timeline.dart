@@ -37,6 +37,7 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
     _ => null,
   };
   void _clear() {
+    widget.controller.clearDocumentPreview();
     _drag = null;
     _dragPaper = null;
     _preview = null;
@@ -83,12 +84,16 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
       _beganStopped =
           widget.controller.snapshot?.phase == NarrationPhase.stopped;
     });
+    widget.controller.previewDocumentSeek(scale.targetAt(value.round()));
   }
 
   void _change(double value) {
     if (_invalidatedDrag) return;
     if (_drag == null) _begin(value);
-    if (_drag != null) setState(() => _preview = value);
+    if (_drag != null) {
+      setState(() => _preview = value);
+      widget.controller.previewDocumentSeek(_drag!.targetAt(value.round()));
+    }
   }
 
   void _end(double value) {
@@ -119,6 +124,7 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
 
   @override
   void dispose() {
+    widget.controller.clearDocumentPreview();
     _focus.dispose();
     super.dispose();
   }
@@ -161,7 +167,7 @@ class _DocumentNarrationTimelineState extends State<DocumentNarrationTimeline> {
             children: [
               Expanded(
                 child: Text(
-                  '$label / ${total == null ? "—" : "${document.measured ? "" : "~"}${documentClock(total)}"} · document',
+                  '$label / ${total == null ? "—" : "${document.measured ? "" : "~"}${documentClock(total)}"}',
                   key: const ValueKey('document-time-label'),
                 ).small().muted(),
               ),

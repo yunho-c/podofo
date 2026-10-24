@@ -5,6 +5,7 @@ import 'package:mlsr_app_models/app_models.dart';
 import 'package:mlsr_flutter/mlsr_flutter.dart';
 
 import 'narrator.dart';
+import 'duration_profile.dart';
 
 String? narrationUnavailableReason() =>
     Platform.isMacOS && Abi.current() == Abi.macosArm64
@@ -13,7 +14,8 @@ String? narrationUnavailableReason() =>
 
 class MlsrNarrator implements NarratorSession, NarrationDurationSession {
   /// Takes ownership of an already-open facade, also useful for release probes.
-  MlsrNarrator.fromTts(this._tts, {this._volume = 1});
+  MlsrNarrator.fromTts(this._tts, {this._volume = 1, this.profile});
+  final DurationProfile? profile;
   final Tts _tts;
   final double _volume;
 
@@ -74,6 +76,7 @@ class MlsrNarrator implements NarratorSession, NarrationDurationSession {
             speakingRate: settings.speed,
           ),
         ),
+        profile,
       );
 
   @override
@@ -177,13 +180,22 @@ NarrationTiming _timing(DurationPlan plan) => NarrationTiming(
 );
 
 class _MlsrDurationJob implements NarrationDurationJob {
-  _MlsrDurationJob(this.job);
+  _MlsrDurationJob(this.job, this.profile);
+  final DurationProfile? profile;
   final DurationPlanningJob job;
   @override
   Future<NarrationTiming?> get result async {
-    if ((await job.done).kind != OutcomeKind.completed) return null;
+    final waitStart = profile?.begin();
+    final completion = await job.done;
+    if (waitStart != null) profile!.end('sdk_done', waitStart);
+    if (completion.kind != OutcomeKind.completed) return null;
+    final metadataStart = profile?.begin();
     final plan = await job.timeline();
-    return plan == null ? null : _timing(plan);
+    if (metadataStart != null) profile!.end('sdk_timeline', metadataStart);
+    final convertStart = profile?.begin();
+    final result = plan == null ? null : _timing(plan);
+    if (convertStart != null) profile!.end('timing_conversion', convertStart);
+    return result;
   }
 
   @override

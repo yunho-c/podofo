@@ -2,11 +2,13 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 /// Hand-authored PDF: text on normal, cropped, and rotated pages; no downloads.
-Uint8List pdfFixture() {
+Uint8List pdfFixture({int pageCount = 3}) {
+  assert(pageCount >= 1 && pageCount <= 3);
   const text = 'BT /F1 18 Tf 60 300 Td (Hello highlight) Tj ET\n';
+  final kids = ['3 0 R', '5 0 R', '7 0 R'].take(pageCount).join(' ');
   final objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R] /Count 3 >>',
+    '<< /Type /Pages /Kids [$kids] /Count $pageCount >>',
     '<< /Type /Page /Parent 2 0 R /MediaBox [10 20 310 420] /CropBox [30 40 290 400] /Resources << /Font << /F1 9 0 R >> >> /Contents 4 0 R >>',
     '<< /Length ${text.length} >>\nstream\n${text}endstream',
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Rotate 90 /Resources << /Font << /F1 9 0 R >> >> /Contents 6 0 R >>',

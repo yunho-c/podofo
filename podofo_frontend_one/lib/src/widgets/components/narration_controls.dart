@@ -94,13 +94,6 @@ class NarrationControls extends ConsumerWidget {
                               child: CircularProgressIndicator(),
                             ),
                           ),
-                        Flexible(
-                          child: Text(
-                            controller.source?.title ?? 'Listen to your paper',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ).small(),
-                        ),
                         if (controller.voices.isNotEmpty) ...[
                           m.PopupMenuButton<String>(
                             tooltip: 'Voice',

@@ -3,19 +3,110 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/narration/source_map.dart';
 
 void main() {
-  test('PDFium discretionary markers preserve compound hyphens unless a joined word is witnessed', () {
-    const text = 'inter\u0002national well\u0002being International';
-    final page = PdfTextSnapshot(
-      page: 1,
-      text: text,
-      boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
-    );
+  test(
+    'PDFium discretionary markers disappear without intact-word evidence',
+    () {
+      const text = 'inter\u0002national co\u0002operation well-known';
+      final page = PdfTextSnapshot(
+        page: 1,
+        text: text,
+        boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+      );
+      final passage = NarrationPassage.fromSlices([
+        PdfTextSlice(page, 0, text.length),
+      ]);
+      expect(passage.text, 'international cooperation well-known');
+      expect(passage.offsetOf(page.anchor(text.indexOf('national'))), 5);
+      expect(passage.anchorAt(5)!.offset, text.indexOf('national'));
+    },
+  );
+
+  test(
+    'marker deletion leaves punctuation and existing whitespace policy alone',
+    () {
+      const text =
+          '  inter\u0002national\t well-known -5 −5 – —\r\n'
+          'x\u0003y\u001fz\ufffe inter-\nnational  ';
+      final page = PdfTextSnapshot(
+        page: 1,
+        text: text,
+        boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+      );
+      final passage = NarrationPassage.fromSlices([
+        PdfTextSlice(page, 0, text.length),
+      ]);
+      expect(
+        passage.text,
+        'international well-known -5 −5 – — x\u0003y\u001fz\ufffe inter- national',
+      );
+      expect(page.text, text);
+    },
+  );
+
+  test(
+    'partial source selections delete only markers within the selection',
+    () {
+      const text = 'inter\u0002national';
+      final page = PdfTextSnapshot(
+        page: 1,
+        text: text,
+        boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+      );
+      NarrationPassage select(int start, int end) =>
+          NarrationPassage.fromSlices([PdfTextSlice(page, start, end)]);
+      expect(select(0, 6).text, 'inter');
+      expect(select(5, text.length).text, 'national');
+      expect(select(5, 6).text, isEmpty);
+      expect(select(5, 6).spans, isEmpty);
+      final partial = select(3, 9);
+      expect(partial.text, 'ernat');
+      expect(partial.anchorAt(2)!.offset, 6);
+      expect(partial.offsetOf(page.anchor(5)), 2);
+      expect(partial.sliceFrom(2).text, 'nat');
+      // Visual-run slices already carry their explicit join relationship.
+      expect(
+        NarrationPassage.fromSlices([
+          PdfTextSlice(page, 0, 6),
+          PdfTextSlice(page, 6, text.length, joinPrevious: true),
+        ]).text,
+        'international',
+      );
+    },
+  );
+
+  test('deleted markers preserve UTF-16 anchors and scalar geometry', () {
+    const text = '🚀 inter\u0002national 𐐀.';
+    final glyphs = [
+      for (var i = 0; i < text.runes.length; i++)
+        PdfRect(i * 10, 20, i * 10 + 5, 10),
+    ];
+    final page = PdfTextSnapshot(page: 1, text: text, boxes: glyphs);
     final passage = NarrationPassage.fromSlices([
       PdfTextSlice(page, 0, text.length),
     ]);
-    expect(passage.text, 'international well-being International');
-    expect(passage.offsetOf(page.anchor(text.indexOf('national'))), 5);
-    expect(passage.anchorAt(5)!.offset, text.indexOf('national'));
+    expect(passage.text, '🚀 international 𐐀.');
+    final marker = text.indexOf('\u0002');
+    expect(passage.offsetOf(page.anchor(marker)), marker);
+    expect(passage.offsetOf(page.anchor(marker + 1)), marker);
+    expect(passage.anchorAt(marker)!.offset, marker + 1);
+    final deletion = passage.spans.singleWhere(
+      (s) => s.source.offset == marker,
+    );
+    expect(deletion.start, deletion.end);
+    expect(deletion.sourceEnd, marker + 1);
+    expect(deletion.boxes, isEmpty);
+    final joined = passage.rectangles(1, 3, 16);
+    expect(joined, [
+      ...page.boxes.sublist(3, marker),
+      ...page.boxes.sublist(marker + 1, 17),
+    ]);
+    final supplementary = passage.text.indexOf('𐐀');
+    expect(passage.anchorAt(supplementary)!.offset, text.indexOf('𐐀'));
+    expect(passage.anchorAt(supplementary + 1)!.offset, text.indexOf('𐐀'));
+    expect(passage.rectangles(1, supplementary, supplementary + 2), [
+      page.boxes[text.indexOf('𐐀')],
+    ]);
+    expect(passage.sliceFrom(supplementary + 1).text, '𐐀.');
   });
 
   test(

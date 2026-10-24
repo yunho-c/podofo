@@ -1,5 +1,67 @@
 # Validation record
 
+## Context-menu integration with MLSR main — 2026-10-24
+
+Merged main at `3b94d13` into `fix/context-menu`, retaining the two-page layout,
+pointer-anchored menus, and menu rendering outside PDF inversion alongside the
+narration and citation-back callbacks. Initial spread fitting precedes narration
+viewport tracking, and changing layout cancels an active citation transition.
+
+This integration uses published pdfrx 2.6.5 and pdfrx_engine 0.6.1. It does not
+include the pending dependency backports, internal-link-preview branch, or
+Windows-titlebar branch.
+
+- Locked dependency resolution passed without changing `pubspec.lock`.
+- Static analysis and formatting checks passed.
+- **12 focused tests passed** across `pdf_page_layout_test.dart`,
+  `pdf_context_menu_overlay_test.dart`, `two_page_view_test.dart`,
+  `reader_navigation_test.dart`, and `reader_widget_test.dart`.
+- Added real-PDF coverage for switching to two pages during fake narration,
+  right-page citation navigation, and page-relative Back after changing layout.
+  Existing checks cover menu placement/color isolation, selection/tab retention,
+  highlight/save behavior, keyboard access, reduced motion, and touch Back.
+- Three original navigation tests also failed against unmodified main with the
+  published dependency: they assumed immediate link-tap dispatch. The helper now
+  waits for navigation history to record the tap before checking the animation,
+  accommodating pdfrx's double-tap timeout without changing library behavior.
+- `bash tool/build_macos_local.sh debug` produced a locally signed Apple Silicon
+  app; deep/strict signature verification passed. Native tests used ObjectBox and
+  PDFium from this Debug bundle via `DYLD_LIBRARY_PATH` and `PDFIUM_PATH`, with
+  Flutter's Dart tool snapshot invoked directly.
+
+Logs are in `podofo_frontend_one/build/context-menu-*.log` in the integration
+worktree. The full suite, real audio playback, and native GUI acceptance were
+not rerun; the Debug bundle is prepared for manual testing. Existing plugin,
+deprecation, bundle-identifier, and toolchain-path build diagnostics remain.
+
+## Internal-link return navigation — 2026-10-22
+
+Restored the original outlined back arrow, 60px hover region, 10px inset, and
+100ms fade. The icon now returns through a bounded history owned by each open
+document, restoring the reading position and zoom. No dependency updates were
+needed for this change.
+
+- `flutter analyze --no-pub`: no issues.
+- `python3 tool/test_macos.py` in the working checkout: **174 passed, 4 skipped**.
+  This includes the existing local pdfrx backport. The skipped tests are
+  the opt-in native MLSR audio/corpus tests; narration-follow behavior here uses
+  the fake playback backend.
+- Five new test cases cover real PDF citation clicks, nested and same-page
+  returns, hover/focus, zoom/resize, tab isolation, Save As, interrupted
+  navigation, close/reopen, invalid destinations, keyboard activation, reduced
+  motion, and Android/iOS touch presentation in the widget runner.
+- `bash tool/build_macos_local.sh release`: Apple Silicon Release build and
+  local signature verification passed. Existing plugin/deprecation, bundle-ID,
+  and toolchain-path warnings remain unrelated to this feature.
+
+The widget-rendered hover image is in
+`podofo_frontend_one/build/test-artifacts/citation-back-hover.png`. Test, analysis,
+and build logs are in `podofo_frontend_one/build/link-back-*.log`. Native window
+interaction was not manually exercised for this change. The old source/archive
+and `podofo-comparison/PoDoFo Old.app` were left untouched.
+
+## Earlier Windows verification
+
 Environment: Windows on ARM64, Flutter 3.47.5 / Dart 3.13.4, Visual Studio
 Build Tools 2022. The application and Flutter test engine target x64.
 

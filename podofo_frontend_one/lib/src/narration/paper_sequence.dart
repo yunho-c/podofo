@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import '../services/pdf_session.dart';
+import 'duration_profile.dart';
 import 'narration_sequence.dart';
 import 'narrator.dart';
 import 'paper_timeline.dart';
@@ -20,18 +21,23 @@ class PaperReviewRequired implements Exception {
 
 /// Two playback page plans plus a compact, independent document text index.
 class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
-  PaperSequence(PdfSession session, PaperReadOptions options)
-    : this.withPlanner(
-        PaperPagePlanner(
-          pageCount: session.lease.document.pages.length,
-          extract: PdfTextRepository(session).extract,
-        ),
-        options,
-      );
+  PaperSequence(
+    PdfSession session,
+    PaperReadOptions options, {
+    DurationProfile? profile,
+  }) : this.withPlanner(
+         PaperPagePlanner(
+           pageCount: session.lease.document.pages.length,
+           extract: PdfTextRepository(session).extract,
+         ),
+         options,
+         profile: profile,
+       );
 
   /// Owns the shared planner; injectable for extraction scheduling tests.
-  PaperSequence.withPlanner(this.planner, this._options)
+  PaperSequence.withPlanner(this.planner, this._options, {this.profile})
     : index = PaperIndex(planner.pageCount);
+  final DurationProfile? profile;
   final PaperPagePlanner planner;
   final PaperIndex index;
   late final PaperTimeline timeline = PaperTimeline(index);
@@ -99,9 +105,17 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
     bool valid() =>
         !_closed && epoch == _epoch && settings.key == _durationSettings?.key;
     if (!valid()) return;
+    final documentStart = profile?.begin();
     timeline.setPlanning(true);
     try {
+      final indexStart = profile?.begin();
+      final extractionStart = planner.extractionCount;
       await indexDocument();
+      if (indexStart != null) {
+        profile!.end('index', indexStart, {
+          'extractions': planner.extractionCount - extractionStart,
+        });
+      }
       if (!valid()) return;
       for (final page in index.snapshot.pages) {
         if (!valid()) return;
@@ -116,6 +130,8 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
           continue;
         }
         final PaperPagePlan plan;
+        final pageStart = profile?.begin();
+        final extractionStart = planner.extractionCount;
         try {
           plan =
               _pages[page.page] ??
@@ -134,8 +150,16 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
           }
           continue;
         }
+        if (pageStart != null) {
+          profile!.end('page_reconstruction', pageStart, {
+            'page': page.page,
+            'extractions': planner.extractionCount - extractionStart,
+          });
+        }
         if (!valid()) return;
+        final recordStart = profile?.begin();
         index.record(plan, options);
+        if (recordStart != null) profile!.end('index_record', recordStart);
         if (plan.issue != null) continue;
         final descriptors = index.page(page.page)!.passages;
         for (var i = 0; i < descriptors.length; i++) {
@@ -146,26 +170,70 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
             continue;
           }
           NarrationDurationJob? job;
+          final passageStart = profile?.begin();
+          final fields = profile == null
+              ? const <String, Object?>{}
+              : <String, Object?>{
+                  'page': page.page,
+                  'ordinal': i,
+                  'utf16_length': plan.passages[i].text.length,
+                };
+          var outcome = 'cancelled';
           try {
+            final admissionStart = profile?.begin();
             job = session.planDuration(plan.passages[i].text, settings);
             _durationJob = job;
+            if (admissionStart != null) {
+              profile!.end('admission', admissionStart, fields);
+            }
+            final resultStart = profile?.begin();
             final result = await job.result;
+            if (resultStart != null) {
+              profile!.end('result', resultStart, {
+                ...fields,
+                'segments': result?.segments.length,
+              });
+            }
             if (!valid()) return;
+            final publishStart = profile?.begin();
             if (result != null) timeline.record(descriptor, result);
+            outcome = result == null ? 'cancelled' : 'completed';
+            if (publishStart != null) {
+              profile!.end('timeline_record', publishStart, fields);
+            }
           } catch (error) {
+            outcome = 'failed';
             if (valid()) timeline.fail(descriptor.id, error);
           } finally {
             // Disposal closes the public handle before its asynchronous join.
             // Stop/settings/seek may run during that join; only live jobs may
             // remain reachable through the cancellation slot.
             if (identical(_durationJob, job)) _durationJob = null;
+            final disposeStart = profile?.begin();
             await job?.dispose();
+            if (disposeStart != null) {
+              profile!.end('dispose', disposeStart, fields);
+            }
+            if (passageStart != null) {
+              profile!.end('passage', passageStart, {
+                ...fields,
+                'outcome': outcome,
+              });
+            }
           }
+          final yieldStart = profile?.begin();
           await Future<void>.delayed(Duration.zero);
+          if (yieldStart != null) profile!.end('yield', yieldStart, fields);
         }
       }
     } finally {
       if (!_closed) timeline.setPlanning(false);
+      if (documentStart != null) {
+        profile!.end('document', documentStart, {
+          'valid': valid(),
+          'planned_passages': timeline.retainedTimingCount,
+        });
+      }
     }
   }
 
@@ -203,6 +271,19 @@ class PaperSequence implements NarrationSequence, DocumentIndexingSequence {
   Future<void>? _indexing;
   PaperPagePlan? review;
   int get cachedPageCount => _pages.length;
+
+  /// Geometry already retained for playback; never extracts or promotes a page.
+  NarrationPassage? cachedSeekPassage(PaperSeekTarget target) {
+    if (!timeline.accepts(target)) return null;
+    final plan = _pages[target.passage.page];
+    if (plan == null ||
+        plan.page.textHash != target.passage.anchor.textHash ||
+        target.passage.ordinal >= plan.passages.length) {
+      return null;
+    }
+    return plan.passages[target.passage.ordinal];
+  }
+
   int get pageNumber => _page;
   int get pageCount => planner.pageCount;
 

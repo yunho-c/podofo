@@ -39,3 +39,10 @@ const narrationUnicodeMap = '''/CIDInit /ProcSet findresource begin
 3 beginbfchar <41> <D83DDE80> <42> <FB01> <43> <00E9> endbfchar
 endcmap CMapName currentdict /CMap defineresource pop end end
 ''';
+
+/// A visible line-end hyphen that PDFium recognizes itself; the PDF stream
+/// contains an ordinary ASCII hyphen, never an injected U+0002 marker.
+Uint8List discretionaryHyphenPdfFixture() => narrationPdfFixture([
+  'BT /F1 18 Tf 60 700 Td (We study inter-) Tj ET\n'
+      'BT /F1 18 Tf 60 675 Td (national cooperation with well-known methods.) Tj ET\n',
+]);

@@ -63,6 +63,41 @@ class NarrationController extends ChangeNotifier {
   _DocumentSeek? _documentSeek;
   bool get seekingDocument => _documentSeek != null;
   PaperSeekTarget? get documentSeekTarget => _documentSeek?.target;
+  // A separate notification path repaints previews without invoking follow-text.
+  final _scrubPreview =
+      ValueNotifier<({PaperSequence paper, PaperSeekTarget? target})?>(null);
+  ValueListenable<({PaperSequence paper, PaperSeekTarget? target})?>
+  get scrubPreview => _scrubPreview;
+  bool get previewingDocument => _scrubPreview.value != null || seekingDocument;
+
+  void previewDocumentSeek(PaperSeekTarget? target) {
+    final paper = _timedSequence;
+    if (_closed || paper == null) return;
+    final old = _scrubPreview.value;
+    if (identical(old?.paper, paper) &&
+        old?.target?.passage.id == target?.passage.id &&
+        old?.target?.start == target?.start &&
+        old?.target?.end == target?.end) {
+      return;
+    }
+    _scrubPreview.value = (paper: paper, target: target);
+  }
+
+  void clearDocumentPreview() => _scrubPreview.value = null;
+
+  ({NarrationPassage passage, int start, int end})? get previewHighlight {
+    final preview = _scrubPreview.value;
+    final target = preview != null ? preview.target : documentSeekTarget;
+    final paper = preview?.paper ?? _timedSequence;
+    if (target == null || paper == null || !identical(paper, _timedSequence)) {
+      return null;
+    }
+    final passage = paper.cachedSeekPassage(target);
+    return passage == null
+        ? null
+        : (passage: passage, start: target.start, end: target.end);
+  }
+
   bool _resumePending = false;
   NarrationTiming? _currentTiming;
   NarrationPlayback? _readingTimingFor;
@@ -833,6 +868,7 @@ class NarrationController extends ChangeNotifier {
   }
 
   void _retireCurrent() {
+    clearDocumentPreview();
     _resumePending = false;
     final pending = _documentSeek;
     pending?.complete();
