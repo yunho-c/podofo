@@ -74,6 +74,12 @@ the analyzer constraint merely to silence an SDK language-version warning.
 
 - Ctrl/Command+O opens a PDF; Ctrl/Command+P opens recent files.
 - Ctrl/Command+F searches; Ctrl/Command+B opens thumbnails.
+- After following an internal PDF link, hover over the reader's upper-left
+  corner to reveal the outlined Back arrow. It restores the previous reading
+  position and zoom; repeated clicks retrace nested links. Each open tab keeps
+  its own history (up to 100 jumps), including after Save As, until it closes.
+  Keyboard focus also reveals the arrow; touch devices keep it visible. Link
+  jumps and Back suspend narration's Follow Text without stopping playback.
 - The highlighter toggles highlighting mode. Right-click or long-press it for
   colors; a selection-menu swatch highlights text directly.
 - Ctrl/Command+Shift+H highlights selected text.

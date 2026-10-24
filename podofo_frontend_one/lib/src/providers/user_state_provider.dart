@@ -20,6 +20,9 @@ class UserState {
   String audioBackend = 'system';
   String? audioVoice;
   double audioSpeed = 1.0;
+  String audioLanguage = 'en';
+  bool followSpokenText = true;
+  bool developerMode = false;
   @Property(uid: 8031658732022810243)
   bool autoSaveEnabled = true;
   UserState();
@@ -38,6 +41,9 @@ class UserState {
       audioBackend = other.audioBackend,
       audioVoice = other.audioVoice,
       audioSpeed = other.audioSpeed,
+      audioLanguage = other.audioLanguage,
+      followSpokenText = other.followSpokenText,
+      developerMode = other.developerMode,
       autoSaveEnabled = other.autoSaveEnabled;
 }
 
@@ -50,6 +56,7 @@ class UserStateNotifier extends Notifier<UserState> {
   UserState build() {
     _box = ref.watch(objectboxProvider).store.box<UserState>();
     final result = _box.get(1) ?? _box.getAll().firstOrNull ?? UserState();
+    if (result.audioLanguage.isEmpty) result.audioLanguage = 'en';
     final valid = result.highlightColorPalette
         .where((color) => RegExp(r'^#[0-9a-fA-F]{8}$').hasMatch(color))
         .toList();
@@ -125,6 +132,11 @@ class UserStateNotifier extends Notifier<UserState> {
   void setAudioBackend(String value) => _update((s) => s.audioBackend = value);
   void setAudioVoice(String? value) => _update((s) => s.audioVoice = value);
   void setAudioSpeed(double value) => _update((s) => s.audioSpeed = value);
+  void setAudioLanguage(String value) =>
+      _update((s) => s.audioLanguage = value);
+  void setFollowSpokenText(bool value) =>
+      _update((s) => s.followSpokenText = value);
+  void setDeveloperMode(bool value) => _update((s) => s.developerMode = value);
   void setAutoSaveEnabled(bool value) =>
       _update((s) => s.autoSaveEnabled = value);
   void nuke() {

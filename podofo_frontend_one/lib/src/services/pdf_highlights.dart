@@ -53,7 +53,7 @@ class PdfHighlights {
     PdfDocument document,
     int pageNumber,
   ) => document.useNativeDocumentHandle((handle) {
-    final api = getPdfium();
+    final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
     final page = api.FPDF_LoadPage(
       Pointer<fpdf_document_t__>.fromAddress(handle),
       pageNumber - 1,
@@ -117,7 +117,7 @@ class PdfHighlights {
     }
     final added = <AddedHighlight>[];
     await document.useNativeDocumentHandle((handle) {
-      final api = getPdfium();
+      final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
       final native = Pointer<fpdf_document_t__>.fromAddress(handle);
       if (api.FPDF_GetSignatureCount(native) > 0) {
         throw StateError(
@@ -219,14 +219,14 @@ class PdfHighlights {
   ) async {
     await document.useNativeDocumentHandle((handle) {
       if (document.permissions?.allowsModifyAnnotations == false ||
-          getPdfium().FPDF_GetSignatureCount(
+          getPdfium(modulePath: Pdfrx.pdfiumModulePath).FPDF_GetSignatureCount(
                 Pointer<fpdf_document_t__>.fromAddress(handle),
               ) >
               0) {
         throw StateError('This PDF does not allow annotation changes.');
       }
       _remove(
-        getPdfium(),
+        getPdfium(modulePath: Pdfrx.pdfiumModulePath),
         Pointer<fpdf_document_t__>.fromAddress(handle),
         added,
       );

@@ -51,6 +51,12 @@ dependencies:
   crypto: ^3.0.7
   ffi: ^2.1.5
   pdfium_dart: 0.3.1
+  mlsr:
+    path: .mlsr/sdk/bindings/dart
+  mlsr_flutter:
+    path: .mlsr/sdk/bindings/flutter
+  mlsr_app_models:
+    path: .mlsr/model_assets
 
 dev_dependencies:
   flutter_test:
@@ -154,3 +160,11 @@ flutter_launcher_icons:
   macos:
     generate: true
     image_path: "assets/favicon/original.png"
+
+# Prepared for the host by tool/prepare_mlsr.py. The extensionless source holds
+# the host's native library; MLSR's hook gives the bundled asset its correct name.
+# Feature flags are selected when preparing, so Apple flags never reach Windows.
+hooks:
+  user_defines:
+    mlsr:
+      native-library: .mlsr/native/mlsr_ffi

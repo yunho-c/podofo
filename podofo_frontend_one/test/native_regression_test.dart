@@ -106,6 +106,7 @@ void main() {
     try {
       final current = store.box<UserState>().get(preferences.id)!;
       expect(current.autoSaveEnabled, false);
+      expect(current.developerMode, false);
       expect(current.highlightColor, '#66aabbcc');
       expect(current.highlightColorPalette, ['#66aabbcc']);
       expect(store.box<DocumentEntity>().getAll().single.lastOpenedPage, 23);
@@ -119,12 +120,15 @@ void main() {
         3,
       ]);
       current.autoSaveEnabled = true;
+      current.developerMode = true;
+      expect(UserState.from(current).developerMode, true);
       store.box<UserState>().put(current);
     } finally {
       store.close();
     }
     store = Store(getObjectBoxModel(), directory: path);
     expect(store.box<UserState>().get(preferences.id)!.autoSaveEnabled, true);
+    expect(store.box<UserState>().get(preferences.id)!.developerMode, true);
     store.close();
   });
 
@@ -194,7 +198,7 @@ void main() {
     final reopened = await PdfDocument.openFile(file.path);
     try {
       await reopened.useNativeDocumentHandle((handle) {
-        final api = getPdfium();
+        final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
         final native = Pointer<fpdf_document_t__>.fromAddress(handle);
         for (var index = 0; index < 3; index++) {
           final page = api.FPDF_LoadPage(native, index);
@@ -266,7 +270,7 @@ void main() {
     await session.close();
     final undone = await PdfDocument.openFile(file.path);
     await undone.useNativeDocumentHandle((handle) {
-      final api = getPdfium();
+      final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
       final page = api.FPDF_LoadPage(
         Pointer<fpdf_document_t__>.fromAddress(handle),
         0,

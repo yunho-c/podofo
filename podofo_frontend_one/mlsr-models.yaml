@@ -1,0 +1,10 @@
+schema_version: 1
+package: mlsr_app_models
+output: .mlsr/model_assets
+mlsr_package: .mlsr/sdk/bindings/dart
+models:
+  - id: supertonic3-coreml-fp16-t384-voices-v1
+    dart_name: supertonic3
+    source: ~/.cache/mlsr/models/supertonic3-coreml-fp16-t384-voices-v1
+    manifest: .mlsr/sdk/model-manifests/supertonic3-coreml-fp16-voices.yaml
+    platforms: [macos-arm64]

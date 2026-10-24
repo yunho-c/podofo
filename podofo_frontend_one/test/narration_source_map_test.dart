@@ -1,0 +1,197 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pdfrx/pdfrx.dart';
+import 'package:podofo_one/src/narration/source_map.dart';
+
+void main() {
+  test(
+    'PDFium discretionary markers disappear without intact-word evidence',
+    () {
+      const text = 'inter\u0002national co\u0002operation well-known';
+      final page = PdfTextSnapshot(
+        page: 1,
+        text: text,
+        boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+      );
+      final passage = NarrationPassage.fromSlices([
+        PdfTextSlice(page, 0, text.length),
+      ]);
+      expect(passage.text, 'international cooperation well-known');
+      expect(passage.offsetOf(page.anchor(text.indexOf('national'))), 5);
+      expect(passage.anchorAt(5)!.offset, text.indexOf('national'));
+    },
+  );
+
+  test(
+    'marker deletion leaves punctuation and existing whitespace policy alone',
+    () {
+      const text =
+          '  inter\u0002national\t well-known -5 −5 – —\r\n'
+          'x\u0003y\u001fz\ufffe inter-\nnational  ';
+      final page = PdfTextSnapshot(
+        page: 1,
+        text: text,
+        boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+      );
+      final passage = NarrationPassage.fromSlices([
+        PdfTextSlice(page, 0, text.length),
+      ]);
+      expect(
+        passage.text,
+        'international well-known -5 −5 – — x\u0003y\u001fz\ufffe inter- national',
+      );
+      expect(page.text, text);
+    },
+  );
+
+  test(
+    'partial source selections delete only markers within the selection',
+    () {
+      const text = 'inter\u0002national';
+      final page = PdfTextSnapshot(
+        page: 1,
+        text: text,
+        boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+      );
+      NarrationPassage select(int start, int end) =>
+          NarrationPassage.fromSlices([PdfTextSlice(page, start, end)]);
+      expect(select(0, 6).text, 'inter');
+      expect(select(5, text.length).text, 'national');
+      expect(select(5, 6).text, isEmpty);
+      expect(select(5, 6).spans, isEmpty);
+      final partial = select(3, 9);
+      expect(partial.text, 'ernat');
+      expect(partial.anchorAt(2)!.offset, 6);
+      expect(partial.offsetOf(page.anchor(5)), 2);
+      expect(partial.sliceFrom(2).text, 'nat');
+      // Visual-run slices already carry their explicit join relationship.
+      expect(
+        NarrationPassage.fromSlices([
+          PdfTextSlice(page, 0, 6),
+          PdfTextSlice(page, 6, text.length, joinPrevious: true),
+        ]).text,
+        'international',
+      );
+    },
+  );
+
+  test('deleted markers preserve UTF-16 anchors and scalar geometry', () {
+    const text = '🚀 inter\u0002national 𐐀.';
+    final glyphs = [
+      for (var i = 0; i < text.runes.length; i++)
+        PdfRect(i * 10, 20, i * 10 + 5, 10),
+    ];
+    final page = PdfTextSnapshot(page: 1, text: text, boxes: glyphs);
+    final passage = NarrationPassage.fromSlices([
+      PdfTextSlice(page, 0, text.length),
+    ]);
+    expect(passage.text, '🚀 international 𐐀.');
+    final marker = text.indexOf('\u0002');
+    expect(passage.offsetOf(page.anchor(marker)), marker);
+    expect(passage.offsetOf(page.anchor(marker + 1)), marker);
+    expect(passage.anchorAt(marker)!.offset, marker + 1);
+    final deletion = passage.spans.singleWhere(
+      (s) => s.source.offset == marker,
+    );
+    expect(deletion.start, deletion.end);
+    expect(deletion.sourceEnd, marker + 1);
+    expect(deletion.boxes, isEmpty);
+    final joined = passage.rectangles(1, 3, 16);
+    expect(joined, [
+      ...page.boxes.sublist(3, marker),
+      ...page.boxes.sublist(marker + 1, 17),
+    ]);
+    final supplementary = passage.text.indexOf('𐐀');
+    expect(passage.anchorAt(supplementary)!.offset, text.indexOf('𐐀'));
+    expect(passage.anchorAt(supplementary + 1)!.offset, text.indexOf('𐐀'));
+    expect(passage.rectangles(1, supplementary, supplementary + 2), [
+      page.boxes[text.indexOf('𐐀')],
+    ]);
+    expect(passage.sliceFrom(supplementary + 1).text, '𐐀.');
+  });
+
+  test(
+    'inverse anchors follow exact source ranges after reading-order changes',
+    () {
+      const text = 'Later. First.';
+      final page = PdfTextSnapshot(
+        page: 1,
+        text: text,
+        boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+      );
+      final passage = NarrationPassage.fromSlices([
+        PdfTextSlice(page, 7, text.length),
+        PdfTextSlice(page, 0, 6),
+      ]);
+      expect(passage.text, 'First. Later.');
+      expect(passage.offsetOf(page.anchor(0)), 7);
+      expect(passage.offsetOf(page.anchor(7)), 0);
+      expect(
+        passage.sliceFrom(passage.offsetOf(page.anchor(0))!).text,
+        'Later.',
+      );
+      expect(passage.anchorAt(7)!.contextAfter, 'Later.');
+    },
+  );
+
+  test('ligatures, combining marks and surrogate pairs retain original source ranges', () {
+    const text = 'A ﬁ 🚀 e\u0301 한글';
+    final glyphs = [
+      for (var i = 0; i < text.runes.length; i++)
+        PdfRect(i * 10, 20, i * 10 + 8, 10),
+    ];
+    final page = PdfTextSnapshot(page: 1, text: text, boxes: glyphs);
+    expect(page.boxes.length, text.length);
+    expect(page.boxes[4], page.boxes[5]);
+    final passage = NarrationPassage.fromSlices([
+      PdfTextSlice(page, 0, text.length),
+    ]);
+    expect(passage.text, 'A fi 🚀 e\u0301 한글');
+    expect(
+      passage.anchorAt(3)!.offset,
+      2,
+    ); // Both f/i point at the PDF ligature.
+    expect(passage.anchorAt(5)!.offset, 4);
+    expect(
+      passage.anchorAt(6)!.offset,
+      4,
+    ); // Both UTF-16 units use the rocket box.
+    expect(passage.rectangles(1, 2, 4), [glyphs[2]]);
+    expect(passage.rectangles(1, 5, 7), [glyphs[4]]);
+    final resumed = passage.sliceFrom(5);
+    expect(resumed.text, '🚀 e\u0301 한글');
+    expect(resumed.anchorAt(0)!.offset, 4);
+    expect(passage.offsetOf(resumed.anchorAt(0)!), 5);
+  });
+
+  test(
+    'whitespace cleanup maps multiple page slices without painting page gaps',
+    () {
+      PdfTextSnapshot page(int number, String text) => PdfTextSnapshot(
+        page: number,
+        text: text,
+        boxes: List.filled(text.length, const PdfRect(10, 20, 15, 10)),
+      );
+      final a = page(1, '  First\r\nline.  '), b = page(2, 'Second page.');
+      final passage = NarrationPassage.fromSlices([
+        PdfTextSlice(a, 0, a.text.length),
+        PdfTextSlice(b, 0, b.text.length),
+      ]);
+      expect(passage.text, 'First line. Second page.');
+      expect(passage.anchorAt(0)!.offset, 2);
+      expect(passage.anchorAt(12)!.page, 2);
+      expect(passage.rectangles(2, 0, 11), isEmpty);
+      expect(passage.rectangles(1, 12, passage.text.length), isEmpty);
+      expect(passage.offsetOf(SourceAnchor(1, 2, 'changed')), isNull);
+    },
+  );
+
+  test(
+    'invalid geometry lengths fail before producing misleading highlights',
+    () {
+      expect(
+        () => PdfTextSnapshot(page: 1, text: 'abc', boxes: []),
+        throwsStateError,
+      );
+    },
+  );
+}

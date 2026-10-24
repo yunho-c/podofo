@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
+import 'package:flutter/scheduler.dart' show SchedulerPhase;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -12,8 +13,14 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_state_provider.dart';
+import '../../providers/narration_provider.dart';
+import '../../narration/narration_controller.dart';
+import '../../narration/narration_painter.dart';
 import '../../services/document_actions.dart';
+import '../../services/pdf_navigation_history.dart';
+import '../../services/pdf_session.dart';
 import '../../workers/open_graph_worker.dart';
+import 'pdf_back_button.dart';
 import 'pdf_selection_menu.dart';
 
 class CustomPdfViewer extends ConsumerStatefulWidget {
@@ -22,7 +29,8 @@ class CustomPdfViewer extends ConsumerStatefulWidget {
   ConsumerState<CustomPdfViewer> createState() => _CustomPdfViewerState();
 }
 
-class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
+class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
+    with SingleTickerProviderStateMixin {
   static final _disabledFilter = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
 
   OverlayEntry? _overlay;
@@ -30,6 +38,256 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
   int _generation = 0;
   final _selectionPointers = <int>{};
   bool _selectionChanged = false;
+  late final NarrationController _narration;
+  Object? _paintedRange;
+  int _followRequest = 0;
+  Offset? _followOrigin;
+  bool _scrollCheckPending = false;
+  bool _resetScrollOrigin = false;
+  late final AnimationController _linkAnimation;
+  ({
+    PdfViewerController viewer,
+    PdfSession session,
+    Matrix4Tween tween,
+    VoidCallback? complete,
+  })?
+  _linkNavigation;
+  Matrix4? _lastNavigationMatrix;
+
+  void _cancelLinkNavigation() {
+    if (_linkNavigation == null) return;
+    _linkAnimation.stop();
+    _linkNavigation = null;
+    if (mounted) setState(() {});
+  }
+
+  void _animateLinkNavigation() {
+    final navigation = _linkNavigation;
+    if (navigation == null) return;
+    final viewer = navigation.viewer;
+    if (!mounted ||
+        !viewer.isReady ||
+        navigation.session.lease.isClosed ||
+        !identical(
+          ref.read(currentDocumentProvider)?.session,
+          navigation.session,
+        ) ||
+        viewer.value != _lastNavigationMatrix) {
+      // A tab change, resize or another navigation takes precedence. In
+      // particular, an interrupted Back must keep its return point.
+      _cancelLinkNavigation();
+      return;
+    }
+    viewer.value = navigation.tween.transform(
+      Curves.easeInOut.transform(_linkAnimation.value),
+    );
+    _lastNavigationMatrix = viewer.value.clone();
+  }
+
+  void _navigateLink(
+    PdfViewerController viewer,
+    PdfSession session,
+    Matrix4 destination, {
+    VoidCallback? complete,
+  }) {
+    _clearHover();
+    if (identical(session, _narration.source?.documentId)) {
+      _narration.setFollowText(false);
+    }
+    // Own this short animation: pdfrx's goTo future can remain pending when
+    // another goTo or disposal cancels it. History must never stay locked.
+    unawaited(viewer.goTo(viewer.value.clone(), duration: Duration.zero));
+    final target = viewer.calcMatrixForClampedToNearestBoundary(
+      destination,
+      viewSize: viewer.viewSize,
+    );
+    if (MediaQuery.disableAnimationsOf(context)) {
+      viewer.value = target;
+      complete?.call();
+      setState(() {});
+      return;
+    }
+    _lastNavigationMatrix = viewer.value.clone();
+    _linkNavigation = (
+      viewer: viewer,
+      session: session,
+      tween: Matrix4Tween(begin: viewer.value.clone(), end: target),
+      complete: complete,
+    );
+    setState(() {});
+    _linkAnimation.forward(from: 0);
+  }
+
+  void _followInternalLink(
+    PdfViewerController viewer,
+    PdfSession session,
+    PdfDest destination,
+  ) {
+    if (_linkNavigation != null ||
+        !viewer.isReady ||
+        session.lease.isClosed ||
+        !identical(ref.read(currentDocumentProvider)?.session, session)) {
+      return;
+    }
+    if (destination.pageNumber < 1 ||
+        destination.pageNumber > viewer.layout.pageLayouts.length) {
+      throw StateError('This link points to a page that is not in this PDF.');
+    }
+    final target = viewer.calcMatrixForDest(destination);
+    if (target == null || target.storage.any((value) => !value.isFinite)) {
+      throw StateError('This PDF link has an unsupported destination.');
+    }
+    final position = PdfReadingPosition.capture(viewer);
+    _navigateLink(viewer, session, target);
+    session.navigationHistory.remember(position);
+  }
+
+  void _goBack() {
+    final document = ref.read(currentDocumentProvider);
+    final viewer = ref.read(pdfViewerControllerProvider);
+    if (_linkNavigation != null ||
+        !viewer.isReady ||
+        document == null ||
+        document.session.lease.isClosed) {
+      return;
+    }
+    final history = document.session.navigationHistory;
+    final position = history.previous;
+    if (position == null) return;
+    try {
+      _navigateLink(
+        viewer,
+        document.session,
+        position.matrixFor(viewer),
+        complete: () {
+          history.returnedTo(position);
+          viewer.requestFocus();
+        },
+      );
+    } catch (e) {
+      DocumentActions.error(ref, e);
+    }
+  }
+
+  // Inspect the resulting viewport, not pointer travel: selecting text must not
+  // suspend following. Only user input schedules this check; ensureVisible does not.
+  void _checkUserScroll({bool zooming = false}) {
+    _resetScrollOrigin = _resetScrollOrigin || zooming;
+    if (_scrollCheckPending) return;
+    _scrollCheckPending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollCheckPending = false;
+      final reset = _resetScrollOrigin;
+      _resetScrollOrigin = false;
+      if (!mounted) return;
+      final viewer = ref.read(pdfViewerControllerProvider);
+      final document = ref.read(currentDocumentProvider);
+      if (!viewer.isReady ||
+          document == null ||
+          !identical(document.session, _narration.source?.documentId)) {
+        return;
+      }
+      final center = viewer.visibleRect.center;
+      if (reset || _followOrigin == null) {
+        _followOrigin = center;
+      } else if (_narration.followText &&
+          (center - _followOrigin!).distance * viewer.currentZoom >= 32) {
+        _narration.setFollowText(false);
+      }
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _linkAnimation = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+    )..addListener(_animateLinkNavigation);
+    _linkAnimation.addStatusListener((status) {
+      if (status != AnimationStatus.completed) return;
+      final navigation = _linkNavigation;
+      _linkNavigation = null;
+      navigation?.complete?.call();
+      if (mounted) setState(() {});
+    });
+    _narration = ref.read(narrationControllerProvider);
+    _narration.addListener(_onNarrationChanged);
+    _narration.scrubPreview.addListener(_onScrubPreviewChanged);
+  }
+
+  void _onScrubPreviewChanged() {
+    if (!mounted) return;
+    // A stale drag can be cleared while the timeline is rebuilding.
+    if (WidgetsBinding.instance.schedulerPhase ==
+        SchedulerPhase.persistentCallbacks) {
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _onScrubPreviewChanged(),
+      );
+      return;
+    }
+    final viewer = ref.read(pdfViewerControllerProvider);
+    if (viewer.isReady) viewer.invalidate();
+  }
+
+  void _onNarrationChanged() {
+    if (!mounted) return;
+    final document = ref.read(currentDocumentProvider);
+    final viewer = ref.read(pdfViewerControllerProvider);
+    if (document == null || !viewer.isReady) return;
+    final state = _narration.snapshot;
+    final requested = _followRequest != _narration.followRequest;
+    _followRequest = _narration.followRequest;
+    final key = (
+      _narration.source,
+      state?.start,
+      state?.end,
+      _narration.terminal,
+      _narration.followText,
+      _narration.followRequest,
+      _narration.documentSeekTarget,
+    );
+    if (_paintedRange == key) return;
+    _paintedRange = key;
+    viewer.invalidate(); // Repaint a sentence change; never rebuild for audio ticks.
+    if (_narration.previewingDocument ||
+        !_narration.followText ||
+        (_scrollCheckPending && !requested) ||
+        (_narration.terminal && !requested) ||
+        !identical(document.session, _narration.source?.documentId)) {
+      return;
+    }
+    final anchor = _narration.currentAnchor;
+    final passage = _narration.source?.passage;
+    if (anchor == null ||
+        passage == null ||
+        state?.start == null ||
+        state?.end == null) {
+      return;
+    }
+    final rectangles = passage.rectangles(
+      anchor.page,
+      state!.start!,
+      state.end!,
+    );
+    if (rectangles.isEmpty) return;
+    final page = document.pdfDocument.pages[anchor.page - 1];
+    final layout = viewer.layout.pageLayouts[anchor.page - 1];
+    final target = rectangles.first
+        .toRect(page: page, scaledPageSize: layout.size)
+        .translate(layout.left, layout.top);
+    _followOrigin = viewer.visibleRect.center;
+    if (!viewer.visibleRect.contains(target.center)) {
+      unawaited(
+        viewer.ensureVisible(target, duration: Duration.zero).then((_) {
+          if (mounted && viewer.isReady) {
+            _followOrigin = viewer.visibleRect.center;
+          }
+        }),
+      );
+    }
+  }
 
   void _applyHighlightMode() {
     if (!mounted || !_selectionChanged || _selectionPointers.isNotEmpty) return;
@@ -53,6 +311,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
 
   @override
   void dispose() {
+    _linkAnimation.dispose();
+    _narration.removeListener(_onNarrationChanged);
+    _narration.scrubPreview.removeListener(_onScrubPreviewChanged);
     _clearHover();
     super.dispose();
   }
@@ -74,6 +335,28 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
       controller: controller,
       initialPageNumber: document.lastOpenedPage ?? 1,
       params: PdfViewerParams(
+        onViewSizeChanged: (_, _, _) => _checkUserScroll(zooming: true),
+        onInteractionUpdate: (details) =>
+            _checkUserScroll(zooming: (details.scale - 1).abs() > .001),
+        onKey: (params, key, isRealKeyPress) {
+          if (isRealKeyPress) _cancelLinkNavigation();
+          if (isRealKeyPress &&
+              identical(document.session, _narration.source?.documentId) &&
+              const [
+                LogicalKeyboardKey.pageUp,
+                LogicalKeyboardKey.pageDown,
+                LogicalKeyboardKey.home,
+                LogicalKeyboardKey.end,
+                LogicalKeyboardKey.space,
+                LogicalKeyboardKey.arrowUp,
+                LogicalKeyboardKey.arrowDown,
+                LogicalKeyboardKey.arrowLeft,
+                LogicalKeyboardKey.arrowRight,
+              ].contains(key)) {
+            _narration.setFollowText(false);
+          }
+          return null; // Retain the viewer's normal keyboard navigation.
+        },
         pageDropShadow: const BoxShadow(
           color: Color(0x0C000000),
           blurRadius: 8,
@@ -83,6 +366,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
           Future.microtask(() {
             if (mounted) {
               ref.read(viewerReadyProvider.notifier).state = readyController;
+              _paintedRange = null;
+              _followOrigin = readyController.visibleRect.center;
+              _onNarrationChanged();
             }
           });
         },
@@ -95,6 +381,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         },
         pagePaintCallbacks: [
           if (searcher != null) searcher.pageTextMatchPaintCallback,
+          (canvas, rect, page) =>
+              paintNarration(canvas, rect, page, _narration, document.session),
         ],
         textSelectionParams: PdfTextSelectionParams(
           onTextSelectionChange: (selection) {
@@ -118,7 +406,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
                   throw StateError('Could not open this link.');
                 }
               } else if (link.dest != null) {
-                await controller.goToDest(link.dest!);
+                _followInternalLink(controller, document.session, link.dest!);
               } else {
                 throw StateError(
                   'Only HTTP and HTTPS external links are supported.',
@@ -165,7 +453,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
       ),
     );
     final invert = brightness == Brightness.dark && shader != null;
-    return MouseRegion(
+    final content = MouseRegion(
       onHover: _onHover,
       onExit: (_) => _clearHover(),
       // Keep the viewer mounted so theme/inversion changes preserve its viewport.
@@ -173,6 +461,20 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
         enabled: invert,
         imageFilter: invert ? ImageFilter.shader(shader) : _disabledFilter,
         child: Listener(
+          onPointerSignal: (event) {
+            _cancelLinkNavigation();
+            if (event is PointerScrollEvent) {
+              _checkUserScroll(
+                zooming: HardwareKeyboard.instance.isControlPressed,
+              );
+            } else if (event is PointerScaleEvent) {
+              _checkUserScroll(zooming: true);
+            }
+          },
+          onPointerMove: (_) {
+            _cancelLinkNavigation();
+            _checkUserScroll();
+          },
           onPointerDown: (event) {
             if (event.buttons == kPrimaryButton) {
               _selectionPointers.add(event.pointer);
@@ -189,6 +491,21 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer> {
           child: viewer,
         ),
       ),
+    );
+    return Stack(
+      children: [
+        content,
+        if (document.session.navigationHistory.previous != null)
+          Positioned(
+            top: 0,
+            left: 0,
+            child: PdfBackButton(
+              onPressed: _linkNavigation == null && controller.isReady
+                  ? _goBack
+                  : null,
+            ),
+          ),
+      ],
     );
   }
 

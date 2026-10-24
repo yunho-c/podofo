@@ -1,5 +1,33 @@
 # Validation record
 
+## Internal-link return navigation — 2026-10-22
+
+Restored the original outlined back arrow, 60px hover region, 10px inset, and
+100ms fade. The icon now returns through a bounded history owned by each open
+document, restoring the reading position and zoom. No dependency updates were
+needed for this change.
+
+- `flutter analyze --no-pub`: no issues.
+- `python3 tool/test_macos.py` in the working checkout: **174 passed, 4 skipped**.
+  This includes the existing local pdfrx backport. The skipped tests are
+  the opt-in native MLSR audio/corpus tests; narration-follow behavior here uses
+  the fake playback backend.
+- Five new test cases cover real PDF citation clicks, nested and same-page
+  returns, hover/focus, zoom/resize, tab isolation, Save As, interrupted
+  navigation, close/reopen, invalid destinations, keyboard activation, reduced
+  motion, and Android/iOS touch presentation in the widget runner.
+- `bash tool/build_macos_local.sh release`: Apple Silicon Release build and
+  local signature verification passed. Existing plugin/deprecation, bundle-ID,
+  and toolchain-path warnings remain unrelated to this feature.
+
+The widget-rendered hover image is in
+`podofo_frontend_one/build/test-artifacts/citation-back-hover.png`. Test, analysis,
+and build logs are in `podofo_frontend_one/build/link-back-*.log`. Native window
+interaction was not manually exercised for this change. The old source/archive
+and `podofo-comparison/PoDoFo Old.app` were left untouched.
+
+## Earlier Windows verification
+
 Environment: Windows on ARM64, Flutter 3.47.5 / Dart 3.13.4, Visual Studio
 Build Tools 2022. The application and Flutter test engine target x64.
 

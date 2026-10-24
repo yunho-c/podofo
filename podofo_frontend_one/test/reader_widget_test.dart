@@ -17,6 +17,11 @@ import 'package:podofo_one/src/providers/data_provider.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/providers/theme_provider.dart';
+import 'package:podofo_one/src/providers/narration_provider.dart';
+import 'package:podofo_one/src/narration/narration_controller.dart';
+import 'package:podofo_one/src/narration/narrator.dart';
+import 'package:podofo_one/src/narration/paper_sequence.dart';
+import 'package:podofo_one/src/narration/paper_plan.dart';
 import 'package:podofo_one/src/services/pdf_highlights.dart';
 import 'package:podofo_one/src/widgets/components/highlight_palette.dart';
 import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
@@ -25,6 +30,8 @@ import 'package:podofo_one/src/widgets/panes/thumbnail_pane.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import 'fixtures/pdf_fixture.dart';
+import 'support/fake_narrator.dart';
+import 'paper_timeline_test.dart' as timings;
 
 Future<void> waitForNative(
   WidgetTester tester,
@@ -59,9 +66,15 @@ Future<void> captureReader(WidgetTester tester, String name) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  final platform = Platform.isMacOS
+      ? TargetPlatform.macOS
+      : TargetPlatform.windows;
   testWidgets('reader searches, highlights, saves and closes a real PDF', (
     tester,
   ) async {
+    final commandModifier = Platform.isMacOS
+        ? LogicalKeyboardKey.metaLeft
+        : LogicalKeyboardKey.controlLeft;
     await tester.runAsync(() async {
       await (FontLoader('Urbanist')..addFont(
             rootBundle.load(
@@ -69,6 +82,9 @@ void main() {
             ),
           ))
           .load();
+      await (FontLoader(
+        'MaterialIcons',
+      )..addFont(rootBundle.load('fonts/MaterialIcons-Regular.otf'))).load();
       await (FontLoader('packages/font_awesome_flutter/FontAwesomeSolid')
             ..addFont(
               rootBundle.load(
@@ -91,8 +107,13 @@ void main() {
     final store = Store(getObjectBoxModel(), directory: '${temporary.path}/db');
     store.box<DocumentEntity>().put(DocumentEntity(filePath: file.path));
     store.box<UserState>().put(UserState()..autoSaveEnabled = false);
+    final speech = FakeNarratorSession();
+    final narrator = NarrationController(open: (_) async => speech);
     final container = ProviderContainer(
-      overrides: [objectboxProvider.overrideWithValue(ObjectBox(store))],
+      overrides: [
+        objectboxProvider.overrideWithValue(ObjectBox(store)),
+        narrationControllerProvider.overrideWithValue(narrator),
+      ],
     );
     try {
       await tester.pumpWidget(
@@ -178,11 +199,11 @@ void main() {
         true,
       );
       await tester.tap(find.byKey(const ValueKey('highlight-mode')));
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
       await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(commandModifier);
       await tester.pump();
       expect(container.read(documentErrorProvider), isNull);
       expect(container.read(currentDocumentProvider)!.dirty, false);
@@ -276,6 +297,10 @@ void main() {
         tester.getCenter(find.byType(PdfViewer)),
         kind: PointerDeviceKind.mouse,
       );
+      // Cross the drag threshold: a stationary press/release is a tap and
+      // correctly clears selection immediately with the pdfrx staging fix.
+      await gesture.moveBy(const Offset(30, 0));
+      await tester.pump();
       await tester.runAsync(
         () =>
             controller.textSelectionDelegate.setTextSelectionPointRange(range),
@@ -301,6 +326,34 @@ void main() {
         false,
       );
 
+      // Listening consumes the real viewer's selected text without PDF edits.
+      final narrationRevision = container
+          .read(currentDocumentProvider)!
+          .session
+          .revision;
+      await tester.runAsync(
+        () =>
+            controller.textSelectionDelegate.setTextSelectionPointRange(range),
+      );
+      await tester.tap(find.byTooltip('Listen to paper'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Read selected text'));
+      await waitForNative(tester, () => speech.texts.isNotEmpty);
+      expect(speech.texts.single, text.fullText.substring(0, 5));
+      expect(
+        container.read(currentDocumentProvider)!.session.revision,
+        narrationRevision,
+      );
+      speech.playbacks.single.emit(NarrationPhase.playing);
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('narration-play-pause')));
+      expect(speech.playbacks.single.pauses, 1);
+      expect(speech.playbacks.single.cancelled, false);
+      final savedSource = narrator.source!;
+      await tester.tap(find.byKey(const ValueKey('narration-close')));
+      await waitForNative(tester, () => speech.playbacks.single.disposed);
+      expect(find.byKey(const ValueKey('narration-controls')), findsNothing);
+      expect(find.byType(PdfViewer), findsOneWidget);
       // With mode off, a selection-menu swatch applies its own chosen color.
       await tester.runAsync(
         () =>
@@ -337,15 +390,138 @@ void main() {
       expect(find.byType(PdfSelectionMenu), findsNothing);
       expect(container.read(documentErrorProvider), isNull);
 
+      await tester.runAsync(
+        () => narrator.read(savedSource.documentId, () async => savedSource),
+      );
+      final reading = speech.playbacks.last;
+      reading.events.add(
+        const NarrationSnapshot(
+          phase: NarrationPhase.playing,
+          start: 0,
+          end: 5,
+        ),
+      );
+      await tester.pump();
+      expect(savedSource.passage!.rectangles(1, 0, 5), isNotEmpty);
+      expect(find.byTooltip('Show reading location'), findsNothing);
+      // Programmatic movement is not a user scroll. The action must still
+      // reveal this same sentence when followText was already true.
+      await tester.runAsync(
+        () => controller.goToPage(pageNumber: 3, duration: Duration.zero),
+      );
+      await tester.pump();
+      expect(narrator.followText, true);
+      await tester.tap(find.byKey(const ValueKey('narration-follow')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(controller.pageNumber, 1);
+      final viewerCenter = tester.getCenter(find.byType(PdfViewer));
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: viewerCenter,
+          scrollDelta: const Offset(0, 5),
+        ),
+      );
+      await tester.pump();
+      expect(narrator.followText, true); // Ignore incidental wheel motion.
+      await tester.sendEventToBinding(
+        PointerScrollEvent(
+          position: viewerCenter,
+          scrollDelta: const Offset(0, 1000),
+        ),
+      );
+      await tester.pump();
+      expect(narrator.followText, false);
+      await tester.pump(); // Render the state change from the scroll check.
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('narration-follow')),
+          matching: find.byIcon(Icons.visibility_off),
+        ),
+        findsOneWidget,
+      );
+      final browsedPosition = controller.visibleRect.center;
+      reading.events.add(
+        const NarrationSnapshot(
+          phase: NarrationPhase.playing,
+          start: 1,
+          end: 4,
+        ),
+      );
+      await tester.pump();
+      expect(controller.visibleRect.center, browsedPosition);
+      await tester.tap(find.byKey(const ValueKey('narration-follow')));
+      await tester.pump();
+      expect(narrator.followText, true);
+      // Clicking again is an action, never an off toggle.
+      await tester.tap(find.byKey(const ValueKey('narration-follow')));
+      await tester.pump();
+      expect(narrator.followText, true);
+      final thumb = find.descendant(
+        of: find.byType(PdfViewerScrollThumb),
+        matching: find.byType(GestureDetector),
+      );
+      await tester.drag(thumb, const Offset(0, 100));
+      await tester.pump();
+      expect(narrator.followText, false);
+      await tester.tap(find.byKey(const ValueKey('narration-follow')));
+      await tester.pump();
+      expect(narrator.followText, true);
+      await captureReader(tester, 'narration-selection');
+      void expectRightAlignedPlayback() {
+        final controls = tester.getRect(
+          find.byKey(const ValueKey('narration-controls')),
+        );
+        final close = tester.getRect(
+          find.byKey(const ValueKey('narration-close')),
+        );
+        expect(close.right, closeTo(controls.right - 16, .5));
+      }
+
+      expectRightAlignedPlayback();
+      tester.view.physicalSize = const Size(760, 520);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(tester.takeException(), isNull);
+      await captureReader(tester, 'narration-minimum-window');
+      expectRightAlignedPlayback();
+      tester.view.physicalSize = const Size(1200, 900);
+      await tester.pump();
+      final narrationPreferences = container.read(
+        userPreferenceProvider.notifier,
+      );
+      final narrationAnchor = narrator.currentAnchor!;
+      await tester.runAsync(() async {
+        await narrationPreferences.setThemeMode(shadcn.ThemeMode.dark);
+        if (ui.ImageFilter.isShaderFilterSupported) {
+          await narrationPreferences.setShaderPreference(true);
+        }
+      });
+      if (ui.ImageFilter.isShaderFilterSupported) {
+        await waitForNative(
+          tester,
+          () => container.read(shaderProvider) != null,
+        );
+      }
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(narrator.currentAnchor!.offset, narrationAnchor.offset);
+      expect(tester.takeException(), isNull);
+      await captureReader(tester, 'narration-dark');
+      await tester.runAsync(() async {
+        await narrationPreferences.setThemeMode(shadcn.ThemeMode.light);
+        await narrationPreferences.setShaderPreference(false);
+      });
+      await tester.pump();
       // Cancelling close must keep both the tab and its unsaved annotations.
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(commandModifier);
       await tester.pumpAndSettle();
       expect(find.text('Save changes to reader.pdf?'), findsOneWidget);
       await tester.tap(find.text('Cancel'));
       await tester.pumpAndSettle();
       expect(container.read(currentDocumentProvider)!.dirty, true);
+      expect(reading.cancelled, false);
 
       await tester.tap(find.byTooltip('Annotations'));
       await waitForNative(
@@ -430,6 +606,35 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
       expect(tester.takeException(), isNull);
 
+      // Audio remains attached to its source when another tab is opened/closed.
+      final other = File('${temporary.path}/other.pdf')
+        ..writeAsBytesSync(pdfFixture());
+      await tester.runAsync(
+        () => container
+            .read(loadedDocumentsProvider.notifier)
+            .addDocument(other.path),
+      );
+      await tester.pump();
+      expect(
+        identical(narrator.source!.documentId, savedSource.documentId),
+        true,
+      );
+      expect(reading.cancelled, false);
+      await tester.runAsync(
+        () => container
+            .read(loadedDocumentsProvider.notifier)
+            .removeDocument(other.resolveSymbolicLinksSync()),
+      );
+      await waitForNative(
+        tester,
+        () => container.read(pdfViewerControllerProvider).isReady,
+      );
+      expect(reading.cancelled, false);
+      expect(
+        container.read(currentDocumentProvider)!.filePath,
+        file.resolveSymbolicLinksSync(),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(find.text('File'));
       await waitForNative(
         tester,
@@ -441,12 +646,83 @@ void main() {
         tester,
         () => !container.read(currentDocumentProvider)!.dirty,
       );
+      expect(reading.cancelled, false);
       expect(container.read(documentErrorProvider), isNull);
-      expect(find.textContaining('● reader'), findsNothing);
+      await waitForNative(
+        tester,
+        () => find.textContaining('● reader').evaluate().isEmpty,
+      );
 
-      await tester.sendKeyDownEvent(LogicalKeyboardKey.controlLeft);
+      // Scrubbing repaints only: even with follow enabled, offscreen targets
+      // and incoming audio states must not move the viewport during a drag.
+      final document = container.read(currentDocumentProvider)!;
+      final paper = PaperSequence(
+        document.session,
+        const PaperReadOptions(skipRunningMatter: false),
+      );
+      await tester.runAsync(() async {
+        final passage = (await paper.start())!;
+        await narrator.read(
+          document.session,
+          () async => NarrationSource(
+            documentId: document.session,
+            title: 'Paper',
+            text: passage.text,
+            passage: passage,
+            sequence: paper,
+          ),
+        );
+        await paper.indexDocument();
+        paper.timeline.configure(narrator.settings);
+        for (final page in paper.index.snapshot.pages) {
+          final plan = await paper.preview(page.page);
+          for (var i = 0; i < page.passages.length; i++) {
+            paper.timeline.record(
+              page.passages[i],
+              timings.timing(plan.passages[i].text, key: narrator.settings.key),
+            );
+          }
+        }
+      });
+      narrator.setFollowText(true);
+      await tester.pump();
+      final viewer = container.read(pdfViewerControllerProvider);
+      await tester.runAsync(
+        () => viewer.goToPage(pageNumber: 3, duration: Duration.zero),
+      );
+      await tester.pump();
+      final scrubViewport = viewer.visibleRect;
+      final scrubber = tester.widget<Slider>(
+        find.byKey(const ValueKey('document-narration-timeline')),
+      );
+      scrubber.onChangeStart!(5000000);
+      scrubber.onChanged!(5000000);
+      speech.playbacks.last.events.add(
+        const NarrationSnapshot(
+          phase: NarrationPhase.playing,
+          start: 0,
+          end: 5,
+        ),
+      );
+      await tester.pump();
+      expect(narrator.previewHighlight, isNotNull);
+      expect(narrator.followText, true);
+      expect(viewer.visibleRect, scrubViewport);
+      expect(paper.pageNumber, 1);
+      // Invalidating a drag during rebuild must repaint safely, without loading.
+      paper.index.reset();
+      await tester.pump();
+      await tester.pump();
+      expect(narrator.previewingDocument, false);
+      expect(tester.takeException(), isNull);
+      // Closing after cancellation leaves no deferred seek.
+      await tester.tap(find.byKey(const ValueKey('narration-close')));
+      await tester.pump();
+      expect(narrator.previewingDocument, false);
+
+      await tester.sendKeyDownEvent(commandModifier);
       await tester.sendKeyEvent(LogicalKeyboardKey.keyW);
-      await tester.sendKeyUpEvent(LogicalKeyboardKey.controlLeft);
+      await tester.sendKeyUpEvent(commandModifier);
       await waitForNative(
         tester,
         () => container.read(loadedDocumentsProvider).isEmpty,
@@ -457,9 +733,11 @@ void main() {
         findsOneWidget,
       );
       expect(container.read(pdfTextSearcherProvider), isNull);
+      expect(reading.disposed, true);
       expect(tester.takeException(), isNull);
     } finally {
       await tester.pumpWidget(const SizedBox.shrink());
+      await tester.runAsync(narrator.close);
       container.dispose();
       store.close();
       await tester.runAsync(() async {
@@ -467,5 +745,5 @@ void main() {
         await temporary.delete(recursive: true);
       });
     }
-  }, variant: TargetPlatformVariant.only(TargetPlatform.windows));
+  }, variant: TargetPlatformVariant.only(platform));
 }
