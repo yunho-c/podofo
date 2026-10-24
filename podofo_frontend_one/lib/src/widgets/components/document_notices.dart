@@ -30,25 +30,35 @@ class DocumentNotices extends ConsumerWidget {
               for (final entry in failures.entries)
                 m.ListTile(
                   title: m.Text('Could not open ${entry.key}', maxLines: 2),
-                  subtitle: m.Text(
-                    entry.value,
-                    maxLines: 2,
-                    overflow: m.TextOverflow.ellipsis,
-                  ),
-                  trailing: m.Row(
-                    mainAxisSize: m.MainAxisSize.min,
+                  subtitle: m.Column(
+                    crossAxisAlignment: m.CrossAxisAlignment.start,
                     children: [
-                      m.TextButton(
-                        onPressed: () => ref
-                            .read(loadedDocumentsProvider.notifier)
-                            .addDocument(entry.key),
-                        child: const m.Text('Retry'),
+                      m.Text(
+                        entry.value,
+                        maxLines: 2,
+                        overflow: m.TextOverflow.ellipsis,
                       ),
-                      m.TextButton(
-                        onPressed: () => ref
-                            .read(loadedDocumentsProvider.notifier)
-                            .forgetUnavailable(entry.key),
-                        child: const m.Text('Remove from session'),
+                      m.Wrap(
+                        children: [
+                          m.TextButton(
+                            onPressed: () => ref
+                                .read(loadedDocumentsProvider.notifier)
+                                .addDocument(entry.key),
+                            child: const m.Text('Retry'),
+                          ),
+                          m.TextButton(
+                            onPressed: () => ref
+                                .read(filePathProvider.notifier)
+                                .pickFile(recoveringPath: entry.key),
+                            child: const m.Text('Locate PDF…'),
+                          ),
+                          m.TextButton(
+                            onPressed: () => ref
+                                .read(loadedDocumentsProvider.notifier)
+                                .forgetUnavailable(entry.key),
+                            child: const m.Text('Remove from session'),
+                          ),
+                        ],
                       ),
                     ],
                   ),

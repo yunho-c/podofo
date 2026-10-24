@@ -8,6 +8,7 @@ import 'package:synchronized/synchronized.dart';
 
 import '../data/pdf_document_lease.dart';
 import 'pdf_highlights.dart';
+import 'document_file_access.dart';
 import 'pdf_navigation_history.dart';
 
 /// A tab owns one detached PDF, so replacing its source file is safe on Windows.
@@ -20,6 +21,7 @@ class PdfSession {
   String _fingerprint;
   Uint8List _savedBytes;
   final Lock _lock = Lock();
+  String? fileAccessWarning;
   int revision = 0;
   int _savedRevision = 0;
   final _undo = <List<AddedHighlight>>[];
@@ -33,22 +35,26 @@ class PdfSession {
   Future<T> readLocked<T>(Future<T> Function(PdfDocument) read) =>
       _lock.synchronized(() => lease.use(read));
 
-  static Future<PdfSession> open(String path) async {
-    path = p.normalize(p.absolute(path));
-    // Resolve links so Save updates the same file Open read, not a link entry.
-    path = await File(path).resolveSymbolicLinks();
-    final bytes = await File(path).readAsBytes();
-    final pdf = await PdfDocument.openData(
-      bytes,
-      sourceName: path,
-      useProgressiveLoading: false,
-    );
-    return PdfSession._(
-      path,
-      PdfDocumentLease(pdf),
-      sha256.convert(bytes).toString(),
-      bytes,
-    );
+  static Future<PdfSession> open(String path, {bool selected = false}) async {
+    final access = await DocumentFileAccess.acquire(path, selected: selected);
+    try {
+      // Resolve only after restoring sandbox access, including moved bookmarks.
+      path = await File(access.path).resolveSymbolicLinks();
+      final bytes = await File(path).readAsBytes();
+      final pdf = await PdfDocument.openData(
+        bytes,
+        sourceName: path,
+        useProgressiveLoading: false,
+      );
+      return PdfSession._(
+        path,
+        PdfDocumentLease(pdf),
+        sha256.convert(bytes).toString(),
+        bytes,
+      );
+    } finally {
+      await access.release();
+    }
   }
 
   Future<void> highlight(List<HighlightRegion> regions, int argb) =>
@@ -101,41 +107,63 @@ class PdfSession {
   });
 
   /// [expectedTarget] is captured before the overwrite confirmation for Save As.
-  Future<void> save({String? destination, String? expectedTarget}) =>
-      _lock.synchronized(() async {
-        var target = p.normalize(p.absolute(destination ?? path));
-        if (await File(target).exists()) {
-          target = await File(target).resolveSymbolicLinks();
+  Future<void> save({
+    String? destination,
+    String? expectedTarget,
+  }) => _lock.synchronized(() async {
+    final access = await DocumentFileAccess.acquire(
+      destination ?? path,
+      // Save As was authorized by the save panel. Do not follow an old
+      // bookmark away from the destination the user just selected.
+      restore: destination == null,
+    );
+    try {
+      var target = access.path;
+      if (await File(target).exists()) {
+        target = await File(target).resolveSymbolicLinks();
+      }
+      final sameFile = destination == null || p.equals(target, path);
+      if (sameFile && !dirty) return;
+      final expected = sameFile ? _fingerprint : expectedTarget;
+      // Clean copies retain signatures, encryption, and byte-level structure.
+      final bytes = dirty
+          ? await lease.use((pdf) => pdf.encodePdf())
+          : _savedBytes;
+      // Validate output before touching any existing file.
+      final check = await PdfDocument.openData(
+        bytes,
+        sourceName: 'save-validation',
+        useProgressiveLoading: false,
+      );
+      try {
+        if (check.pages.length != lease.document.pages.length ||
+            bytes.length < 8) {
+          throw StateError(
+            'PDF validation failed. The original file was preserved.',
+          );
         }
-        final sameFile = p.equals(target, path);
-        if (sameFile && !dirty) return;
-        final expected = sameFile ? _fingerprint : expectedTarget;
-        // Clean copies retain signatures, encryption, and byte-level structure.
-        final bytes = dirty
-            ? await lease.use((pdf) => pdf.encodePdf())
-            : _savedBytes;
-        // Validate output before touching any existing file.
-        final check = await PdfDocument.openData(
-          bytes,
-          sourceName: 'save-validation',
-          useProgressiveLoading: false,
-        );
-        try {
-          if (check.pages.length != lease.document.pages.length ||
-              bytes.length < 8) {
-            throw StateError(
-              'PDF validation failed. The original file was preserved.',
-            );
-          }
-        } finally {
-          await check.dispose();
-        }
-        await AtomicPdfFile.write(target, bytes, expectedFingerprint: expected);
-        path = target;
-        _fingerprint = sha256.convert(bytes).toString();
-        _savedBytes = bytes;
-        _savedRevision = revision;
-      });
+      } finally {
+        await check.dispose();
+      }
+      await AtomicPdfFile.write(target, bytes, expectedFingerprint: expected);
+      path = target;
+      _fingerprint = sha256.convert(bytes).toString();
+      _savedBytes = bytes;
+      _savedRevision = revision;
+      fileAccessWarning = null;
+      try {
+        await DocumentFileAccess.remember(target);
+      } catch (e) {
+        // The PDF is already committed. Do not report a failed save or retain
+        // dirty state merely because its permission could not be persisted.
+        fileAccessWarning =
+            'PDF saved, but access could not be remembered. '
+            'Use Locate PDF after reopening PoDoFo: $e';
+      }
+    } finally {
+      await access.release();
+    }
+  });
 
   Future<void> close({bool discard = false}) => _lock.synchronized(() {
     if (dirty && !discard) {
@@ -167,8 +195,7 @@ class AtomicPdfFile {
 
     await check();
     // A unique same-filesystem directory makes staging collision-free.
-    final staging = await Directory(p.dirname(target))
-        .createTemp('.podofo-save-');
+    final staging = await DocumentFileAccess.stagingDirectory(target);
     final temporary = File(p.join(staging.path, 'document.pdf'));
     try {
       await temporary.writeAsBytes(bytes, flush: true);
