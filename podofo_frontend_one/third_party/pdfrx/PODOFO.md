@@ -36,6 +36,14 @@ an equivalent upstream fix and run these tests before removing this backport.
 `test/highlight_selection_test.dart` and `test/highlight_persistence_test.dart`
 cover the annotation path, including native save/reopen and rendered word gaps.
 
+Page-status changes invalidate both preview and partial image caches even when
+page dimensions and rotation are unchanged. The engine uses these events for
+annotation edits as well as page measurement; geometry alone cannot establish
+bitmap validity. Pending renders for the changed pages are cancelled, including
+previews awaiting image decoding, so stale work cannot overwrite the refresh.
+`test/highlight_refresh_test.dart` checks creation, undo, and removal against the
+stationary viewer's actual pixels in preview and partial-rendering modes.
+
 ## Staging fixes
 
 Ported from `pdfrx_og` staging at `fe80962214a3df7615c5f1a1917f6f26326fa661`:

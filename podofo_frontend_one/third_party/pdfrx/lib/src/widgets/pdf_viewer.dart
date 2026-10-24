@@ -640,8 +640,8 @@ class _PdfViewerState extends State<PdfViewer>
     if (event is PdfDocumentPageStatusChangedEvent) {
       // FIXME: We can handle the event more efficiently by only updating the affected pages.
       for (final change in event.changes.entries) {
-        _imageCache.makeCacheImageForPageDirty(change.key, page: change.value.page);
-        _magnifierImageCache.makeCacheImageForPageDirty(change.key, page: change.value.page);
+        _imageCache.makeCacheImageForPageDirty(change.key);
+        _magnifierImageCache.makeCacheImageForPageDirty(change.key);
         _canvasLinkPainter.releaseLinksForPage(change.key);
         _textCache.remove(change.key);
       }
@@ -2133,7 +2133,14 @@ class _PdfViewerState extends State<PdfViewer>
             return;
           }
 
-          final newImage = _PdfImageWithScale(await img.createImage(), scale, pageGeometry: _pageGeometryOf(page));
+          final image = await img.createImage();
+          // A page may change while its native bitmap is being decoded. Never
+          // let that older render replace the invalidated cache entry.
+          if (!mounted || cancellationToken.isCanceled) {
+            image.dispose();
+            return;
+          }
+          final newImage = _PdfImageWithScale(image, scale);
           cache.pageImages[page.pageNumber]?.dispose();
           cache.pageImages[page.pageNumber] = newImage;
           if (identical(cache, _imageCache)) _completeInitialPageImageWaiterIfReady();
@@ -2240,7 +2247,7 @@ class _PdfViewerState extends State<PdfViewer>
         cancellationToken: cancellationToken,
       );
       if (img == null || !mounted || cancellationToken.isCanceled) return null;
-      return _PdfImageWithScaleAndRect(await img.createImage(), scale, rect, x, y, pageGeometry: _pageGeometryOf(page));
+      return _PdfImageWithScaleAndRect(await img.createImage(), scale, rect, x, y);
     } catch (e) {
       return null; // ignore error
     } finally {
@@ -4225,21 +4232,18 @@ class _PdfPageImageCache {
 
   /// Marks the cached bitmaps for [pageNumber] as needing a re-render.
   ///
-  /// When [page] is given, bitmaps already rendered from that same geometry are
-  /// left alone: re-rendering them would burn a full page render on the worker
-  /// isolate to produce a pixel-identical image. This matters under on-demand
-  /// measurement, where every page raises a status change as its estimated size
-  /// is replaced -- usually by the very same size.
-  void makeCacheImageForPageDirty(int pageNumber, {PdfPage? page}) {
-    final geometry = page == null ? null : _pageGeometryOf(page);
-    bool stillValid(_PdfImageWithScale image) => geometry != null && image.pageGeometry == geometry;
-
+  /// Status changes also report content edits and page replacements: identical
+  /// dimensions/rotation do not imply identical pixels. Cancel older requests
+  /// before marking both resolutions dirty, retaining the last bitmap until
+  /// its replacement is ready so the page does not flash blank.
+  void makeCacheImageForPageDirty(int pageNumber) {
+    cancelPendingRenderings(pageNumber);
     final image = pageImages[pageNumber];
-    if (image != null && !stillValid(image)) {
+    if (image != null) {
       image.isDirty = true;
     }
     final imagePartial = pageImagesPartial[pageNumber];
-    if (imagePartial != null && !stillValid(imagePartial)) {
+    if (imagePartial != null) {
       imagePartial.isDirty = true;
     }
   }
@@ -4292,22 +4296,10 @@ class _PdfPartialImageRenderingRequest {
   }
 }
 
-/// Identifies the page geometry a cached bitmap was rendered from.
-///
-/// Used to tell a page-status change that actually moved something apart from
-/// one that did not. With on-demand measurement every page raises a change event
-/// when its estimate is replaced by real dimensions, and for a document of
-/// uniformly sized pages -- a scanned book -- the two are identical.
-String _pageGeometryOf(PdfPage page) => '${page.width}x${page.height}/${page.rotation.index}';
-
 class _PdfImageWithScale {
-  _PdfImageWithScale(this.image, this.scale, {this.pageGeometry});
+  _PdfImageWithScale(this.image, this.scale);
   final ui.Image image;
   final double scale;
-
-  /// Geometry of the page at the time this bitmap was rendered, or null when it
-  /// was not recorded -- in which case any change is treated as invalidating.
-  final String? pageGeometry;
 
   int get width => image.width;
   int get height => image.height;
@@ -4320,7 +4312,7 @@ class _PdfImageWithScale {
 }
 
 class _PdfImageWithScaleAndRect extends _PdfImageWithScale {
-  _PdfImageWithScaleAndRect(super.image, super.scale, this.rect, this.left, this.top, {super.pageGeometry});
+  _PdfImageWithScaleAndRect(super.image, super.scale, this.rect, this.left, this.top);
   final Rect rect;
   final int left;
   final int top;
