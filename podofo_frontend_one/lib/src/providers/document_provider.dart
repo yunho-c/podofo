@@ -349,6 +349,12 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
     }
   }
 
+  void setTwoPageView(String path, bool enabled) {
+    final document = state[path];
+    if (document == null || document.twoPageView == enabled) return;
+    state = {...state, path: document.copyWith(twoPageView: enabled)};
+  }
+
   void updateDocumentPage(String path, int pageNumber) {
     if (!state.containsKey(path)) return;
     state = {...state, path: state[path]!.copyWith(lastOpenedPage: pageNumber)};

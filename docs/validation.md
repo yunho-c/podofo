@@ -1,5 +1,39 @@
 # Validation record
 
+## Context-menu integration with MLSR main — 2026-10-24
+
+Merged main at `3b94d13` into `fix/context-menu`, retaining the two-page layout,
+pointer-anchored menus, and menu rendering outside PDF inversion alongside the
+narration and citation-back callbacks. Initial spread fitting precedes narration
+viewport tracking, and changing layout cancels an active citation transition.
+
+This integration uses published pdfrx 2.6.5 and pdfrx_engine 0.6.1. It does not
+include the pending dependency backports, internal-link-preview branch, or
+Windows-titlebar branch.
+
+- Locked dependency resolution passed without changing `pubspec.lock`.
+- Static analysis and formatting checks passed.
+- **12 focused tests passed** across `pdf_page_layout_test.dart`,
+  `pdf_context_menu_overlay_test.dart`, `two_page_view_test.dart`,
+  `reader_navigation_test.dart`, and `reader_widget_test.dart`.
+- Added real-PDF coverage for switching to two pages during fake narration,
+  right-page citation navigation, and page-relative Back after changing layout.
+  Existing checks cover menu placement/color isolation, selection/tab retention,
+  highlight/save behavior, keyboard access, reduced motion, and touch Back.
+- Three original navigation tests also failed against unmodified main with the
+  published dependency: they assumed immediate link-tap dispatch. The helper now
+  waits for navigation history to record the tap before checking the animation,
+  accommodating pdfrx's double-tap timeout without changing library behavior.
+- `bash tool/build_macos_local.sh debug` produced a locally signed Apple Silicon
+  app; deep/strict signature verification passed. Native tests used ObjectBox and
+  PDFium from this Debug bundle via `DYLD_LIBRARY_PATH` and `PDFIUM_PATH`, with
+  Flutter's Dart tool snapshot invoked directly.
+
+Logs are in `podofo_frontend_one/build/context-menu-*.log` in the integration
+worktree. The full suite, real audio playback, and native GUI acceptance were
+not rerun; the Debug bundle is prepared for manual testing. Existing plugin,
+deprecation, bundle-identifier, and toolchain-path build diagnostics remain.
+
 ## Internal-link return navigation — 2026-10-22
 
 Restored the original outlined back arrow, 60px hover region, 10px inset, and

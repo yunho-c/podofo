@@ -20,6 +20,7 @@ import 'package:podofo_one/src/providers/narration_provider.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 import 'package:podofo_one/src/widgets/components/pdf_back_button.dart';
+import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -32,6 +33,73 @@ void main() {
   final platform = Platform.isMacOS
       ? TargetPlatform.macOS
       : TargetPlatform.windows;
+
+  testWidgets(
+    'two-page menus preserve playback and page-relative citation history',
+    (tester) async {
+      final reader = await _Reader.open(tester);
+      final paper = PaperSequence(
+        reader.session,
+        const PaperReadOptions(skipRunningMatter: false),
+      );
+      await tester.runAsync(() async {
+        final passage = (await paper.start())!;
+        await reader.narrator.read(
+          reader.session,
+          () async => NarrationSource(
+            documentId: reader.session,
+            title: 'Linked paper',
+            text: passage.text,
+            passage: passage,
+            sequence: paper,
+          ),
+        );
+      });
+      reader.narrator.setFollowText(true);
+      await tester.pump();
+      await reader.setTwoPages(true);
+      expect(reader.narrator.followText, isTrue);
+      expect(reader.speech.playbacks.single.cancelled, isFalse);
+      final pages = reader.viewer.layout.pageLayouts;
+      expect(pages[0].top, pages[1].top);
+      expect(pages[1].left, greaterThan(pages[0].right));
+      final spread = pages[0].expandToInclude(pages[1]);
+      expect(
+        reader.viewer.visibleRect.inflate(.01).contains(spread.topLeft),
+        true,
+      );
+      expect(
+        reader.viewer.visibleRect.inflate(.01).contains(spread.bottomRight),
+        true,
+      );
+
+      // A citation on the right page returns to the same page and zoom even
+      // when the context menu changes the layout before Back is pressed.
+      await reader.position(2, zoom: 2);
+      final origin = reader.viewer.value.clone();
+      await reader.clickLink(2);
+      expect(reader.viewer.pageNumber, 3);
+      expect(reader.narrator.followText, isFalse);
+      expect(reader.speech.playbacks.single.cancelled, isFalse);
+      await reader.back(reader.mouse);
+      _expectMatrix(reader.viewer.value, origin);
+      await reader.clickLink(2);
+      final returnPoint = reader.session.navigationHistory.previous!;
+      await reader.setTwoPages(false);
+      final target = reader.viewer.calcMatrixForClampedToNearestBoundary(
+        returnPoint.matrixFor(reader.viewer),
+        viewSize: reader.viewer.viewSize,
+      );
+      await reader.back(reader.mouse);
+      _expectMatrix(reader.viewer.value, target);
+      expect(reader.viewer.pageNumber, 2);
+      expect(reader.session.navigationHistory.previous, isNull);
+      expect(reader.speech.playbacks.single.cancelled, isFalse);
+      expect(reader.container.read(documentErrorProvider), isNull);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(platform),
+  );
 
   testWidgets(
     'citation Back restores nested positions and zoom with the old hover style',
@@ -423,6 +491,24 @@ class _Reader {
     }
   }
 
+  Future<void> setTwoPages(bool enabled) async {
+    await tester.tapAt(
+      tester.getTopLeft(find.byType(PdfViewer)) + const Offset(4, 4),
+      buttons: kSecondaryMouseButton,
+      kind: PointerDeviceKind.mouse,
+    );
+    final label = enabled ? 'Two pages' : 'Single page';
+    await waitForNative(tester, () => find.text(label).evaluate().isNotEmpty);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(find.text(label));
+    await waitForNative(
+      tester,
+      () => (viewer.params.layoutPages != null) == enabled,
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.byType(PdfSelectionMenu), findsNothing);
+  }
+
   Future<void> clickLink(int pageNumber, {bool settle = true}) async {
     final page = session.lease.document.pages[pageNumber - 1];
     final links = (await tester.runAsync(
@@ -434,7 +520,15 @@ class _Reader {
     );
     final point = viewer.documentToGlobal(rect.center)!;
     expect(tester.getRect(find.byType(PdfViewer)).contains(point), true);
+    final previous = session.navigationHistory.previous;
     await click(point);
+    // Published pdfrx waits for its double-tap timeout before dispatching a
+    // link tap. Observe dispatch before advancing the app's link animation;
+    // this also works with the optional reduced-tap-delay dependency fix.
+    await waitForNative(
+      tester,
+      () => !identical(session.navigationHistory.previous, previous),
+    );
     await tester.pump();
     if (settle) {
       await tester.pump(const Duration(milliseconds: 250));
