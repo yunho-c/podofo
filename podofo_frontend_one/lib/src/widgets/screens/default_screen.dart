@@ -11,6 +11,7 @@ import 'package:podofo_one/src/widgets/panes/pane_widget.dart';
 import 'package:podofo_one/src/data/pane_data.dart';
 
 import '../components/document_notices.dart';
+import '../components/narration_controls.dart';
 
 class DefaultScreen extends ConsumerWidget {
   const DefaultScreen({super.key});
@@ -43,6 +44,7 @@ class DefaultScreen extends ConsumerWidget {
                   ],
                 ),
               ),
+              const NarrationControls(),
             ],
           ),
         ),

@@ -16,6 +16,21 @@ class DebugPane extends ConsumerWidget {
         mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          Row(
+            children: [
+              const Expanded(child: Text('Developer mode')),
+              Semantics(
+                label: 'Developer mode',
+                child: Switch(
+                  value: userState.developerMode,
+                  onChanged: (value) => ref
+                      .read(userStateNotifierProvider.notifier)
+                      .setDeveloperMode(value),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           Collapsible(
             children: [
               const CollapsibleTrigger(child: Text('Loaded Documents')),

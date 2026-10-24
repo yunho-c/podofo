@@ -55,12 +55,19 @@ Each tab owns one detached PDF session. The viewer receives that session's
 lease while working. Closing releases the owner; pdfrx disposes the native PDF
 after viewer references and pending jobs finish.
 
-Thumbnails render only for visible/nearby pages, at most 256 × 384 pixels, through
-one render queue. Leaving a pane or switching documents cancels work. Native
+Thumbnails render only for visible/nearby pages through one render queue. Raster
+sizes follow the card size and display pixel density, in 64-pixel buckets capped
+at 1024 × 1536 pixels. Leaving a pane or switching documents cancels work. Native
 images are disposed in `finally`; JPEG encoding runs off the UI isolate.
 The LRU stores at most 128 thumbnails / 8 MiB and keys entries by content hash,
-edit revision, and page. There is no persistent thumbnail cache to become stale
-or grow indefinitely.
+edit revision, page, and raster size. There is no persistent thumbnail cache to
+become stale or grow indefinitely.
+
+The original card styling, spacing, focus navigation, and dark-mode inversion
+are restored without visible page captions. Card heights follow each PDF page's
+dimensions rather than a fixed portrait ratio. The initial viewport uses
+one pane-level loading indicator; later pages still load on demand. See
+[thumbnail-restoration.md](thumbnail-restoration.md) for the before/after table.
 
 Link cards now display the actual destination. Hovering never fetches web
 metadata or remote images. This deliberately replaces the former automatic

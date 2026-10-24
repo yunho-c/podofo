@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
 import '../providers/document_provider.dart';
+import '../providers/narration_provider.dart';
 import 'document_actions.dart';
 
 final desktopWindowProvider = Provider<bool>((ref) => false);
@@ -78,6 +79,7 @@ class _DesktopLifecycleState extends ConsumerState<DesktopLifecycle>
         /* Optional window geometry must not prevent closing. */
       }
       // Preserve session records for next launch.
+      await ref.read(narrationControllerProvider).close();
       for (var i = 0; i < documents.length; i++) {
         await documents[i].session.close(discard: decisions[i]);
       }

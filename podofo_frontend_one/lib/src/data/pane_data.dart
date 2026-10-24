@@ -108,7 +108,6 @@ final rightPaneData = PaneData(
     ),
     SideBarItem(
       name: 'Debug',
-      enabled: false,
       icon: const ResponsiveIcon(
         lightThemeIcon: Icon(Icons.pest_control_outlined),
         darkThemeIcon: Icon(Icons.pest_control_outlined, color: Colors.white),

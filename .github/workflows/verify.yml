@@ -26,7 +26,10 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw 'Flutter checkout failed' }
           (Join-Path $sdk bin) | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       - name: Resolve locked packages
-        run: flutter pub get --enforce-lockfile
+        run: |
+          python tool/prepare_mlsr.py
+          if ($LASTEXITCODE -ne 0) { throw 'MLSR preparation failed' }
+          flutter pub get --enforce-lockfile
       - name: Verify generation, analysis, build, and regressions
         run: ./tool/verify.ps1
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0

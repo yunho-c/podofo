@@ -7,6 +7,8 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../../providers/document_provider.dart';
 import '../../services/document_actions.dart';
+import '../../services/narration_actions.dart';
+import '../../providers/narration_provider.dart';
 import 'highlight_palette.dart';
 
 List<MenuItem> pdfPageLayoutMenuItems({
@@ -98,9 +100,26 @@ class PdfSelectionMenu extends ConsumerWidget {
                 ),
                 child: const Text('Select all'),
               ),
+            if (copy && ref.watch(narrationControllerProvider).available)
+              MenuButton(
+                onPressed: (_) =>
+                    run(() => NarrationActions.readSelection(ref)),
+                child: const Text('Read selection'),
+              ),
+            if (selection.isCopyAllowed &&
+                ref.watch(narrationControllerProvider).available)
+              MenuButton(
+                onPressed: (_) => run(() => NarrationActions.readFromHere(ref)),
+                child: const Text('Read from here'),
+              ),
             if (highlight) ...[
               if (copy || selectAll) const MenuDivider(),
-              const MenuLabel(child: Text('Highlight')),
+              const MenuLabel(
+                child: Text(
+                  'Highlight',
+                  style: TextStyle(fontWeight: FontWeight.normal),
+                ),
+              ),
               MenuLabel(
                 child: HighlightPalette(
                   onSelected: (color) {

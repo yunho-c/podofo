@@ -12,6 +12,7 @@
 .swiftpm/
 migrate_working_dir/
 pubspec_overrides.yaml
+.mlsr/
 
 # IntelliJ related
 *.iml

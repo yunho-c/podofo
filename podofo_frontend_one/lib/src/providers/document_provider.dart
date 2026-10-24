@@ -15,6 +15,7 @@ import '../data/document_history_entity.dart';
 import '../services/pdf_session.dart';
 import '../services/pdf_highlights.dart';
 import 'data_provider.dart';
+import 'narration_provider.dart';
 import 'tab_provider.dart';
 import 'user_state_provider.dart';
 
@@ -209,6 +210,14 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
       _operations.synchronized(() async {
         final document = state[path];
         if (document == null) return;
+        await document.session.waitForIdle();
+        // Do not stop narration for a rejected dirty close.
+        if (document.dirty && !discard) {
+          throw StateError('Save or discard changes before closing.');
+        }
+        await ref
+            .read(narrationControllerProvider)
+            .closeDocument(document.session);
         await document.session.close(discard: discard);
         final oldIndex = ref.read(currentTabIndexProvider);
         final removedIndex = state.keys.toList().indexOf(path);
@@ -255,6 +264,7 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
           entry.key == oldPath ? document.filePath : entry.key: entry.value,
       };
       try {
+        ref.read(narrationBookmarksProvider).copy(oldPath, document.filePath);
         ref.read(objectboxProvider).store.runInTransaction(TxMode.write, () {
           _removeRecords(oldPath);
           _removeRecords(document.filePath);

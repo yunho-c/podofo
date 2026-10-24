@@ -50,7 +50,10 @@ class _ThumbnailCardState extends State<ThumbnailCard> {
       focusNode: _focusNode,
       style: ButtonVariance.menu,
       alignment: AlignmentDirectional.centerStart,
-      child: Row(children: [Expanded(child: widget.thumbnail)]),
+      child: Semantics(
+        label: widget.label,
+        child: Row(children: [Expanded(child: widget.thumbnail)]),
+      ),
       onPressed: () {
         if (_focusNode.hasFocus) {
           widget.onPressed();

@@ -1,0 +1,421 @@
+# MLSR paper narration
+
+Implementation branch: `feat/mlsr-tts`. The first supported listening target is
+macOS Apple Silicon, macOS 15 or later. Other desktop targets keep the PDF reader
+and expose listening as unavailable until their runtime/output is qualified.
+
+All four milestones are complete for this scope. Automated qualification and the
+author's successful manual acceptance review are recorded in
+[qualification](tts-qualification.md).
+
+PoDoFo owns PDF extraction, reading order, source maps, document navigation and
+bookmarks. MLSR owns inference, model segmentation, PCM, native playback, timing,
+cancellation, and bounded temporary audio retention. One application-owned engine
+serves one active narration session independently of the visible tab.
+
+## Milestones and acceptance
+
+1. **Packaged selected-text listening.** Pinned, offline model delivery; lazy
+   persistent engine; native pause/resume and stop; injectable lifecycle tests;
+   unsupported desktop builds remain viable. Commit after focused tests and a
+   native macOS build/playback check.
+2. **Source-mapped controls.** Temporary PDF highlights, sentence navigation and
+   source-anchor starts. Verify Unicode, ligatures, cropped/rotated geometry,
+   switching tabs, save/close races and safe shutdown.
+3. **Continuous papers.** Bounded paragraph passages across pages, reviewed
+   PDF text order, explicit unreadable/scanned content, and
+   per-paper source bookmarks. Preserve ObjectBox UIDs. Verify long-input and
+   cleanup bounds and resume behavior.
+4. **Release qualification.** Sandboxed relocated offline release; real listening
+   review; first-audio and passage-transition measurements; sustained native
+   handle/memory/storage bounds; regression and platform build evidence.
+
+Each milestone is independently reviewable and committed after its checks. A
+build, muted playback test, and audible review are distinct evidence. Remaining
+gates stay explicit until exercised.
+
+## Invariants
+
+- A passage is below MLSR's 64 KiB UTF-8 request limit; input is never truncated.
+- Prepared speech text retains a mapping to one or more original PDF ranges.
+- PDF native access uses the existing session/lease, with immutable snapshots
+  released before speech; annotation-only edits do not invalidate spoken text.
+- Native extraction is serialized; paragraph segmentation runs on detached snapshots
+  after that lock exits. Text for the next page may be prepared during playback,
+  without creating another speech handle or advancing the source cursor.
+- Native `Speech.done` completion, not synthesis completion, advances passages.
+- Cancellation/failure never advances narration. Late callbacks cannot restart it.
+- Source text anchors are durable; request IDs, sentence IDs and frame offsets
+  belong to one frozen request. Reopening resumes at a validated sentence anchor.
+- Temporary listening paint never writes PDF annotations or triggers auto-save.
+- Voice and synthesis speed replace from the current source sentence. Playback
+  rate stays 1.0. Native pause/resume preserves the live cursor.
+- Timeline scale is final duration or whole-request estimate, never buffered PCM.
+
+## Reading plan version 3
+
+The planner preserves PDFium/pdfrx's extracted sequence. The preview has no
+layout selector: geometric one-column, two-column and automatic ordering were
+removed after they interleaved narrow columns in an otherwise correctly ordered
+PDF. Source positions remain monotonic through included passages. Paragraph
+segmentation uses adjacent source lines, blank lines, spacing and position
+changes; it never sorts words or estimates a column split.
+
+Recognized caption labels start caption blocks. A new paragraph, a column
+transition, or a change in caption alignment or text size ends the block, so a
+centered caption cannot absorb a following body column. Label separators avoid
+mistaking prose such as "Table 4 lists the results" for a caption. Arabic and
+Roman-numbered headings are recognized. Caption exclusion remains optional and
+its results are visible in the preview.
+
+Header/footer exclusion, reference stopping, Unicode/source mapping, bounded
+passages, document indexing and seeking share this same plan. The options key
+includes version 3; bookmarks retain their original source identity and plan
+version. The existing preview warns when resuming a version-2 bookmark. There
+is no ObjectBox schema or source-offset migration. Unreadable pages still support
+review/skip; a bad extracted sequence requires selected text rather than a layout
+override.
+
+## Build preparation
+
+`python3 tool/prepare_mlsr.py` in `podofo_frontend_one` obtains the exact SDK
+revision and builds the host's native library before `flutter pub get`. On Apple
+Silicon it also prepares verified offline model assets from `mlsr-models.yaml`.
+The model must already be available locally; no weights download implicitly.
+`--sdk-source /path/to/MLSR` permits an offline local Git source while still
+checking out the pinned revision. Other native desktop hosts create a model-free
+package and a portable native library; no Apple feature flags are applied there.
+Generated SDK, build outputs and weights live under ignored `.mlsr/`.
+
+Use Python 3, Rust (the SDK selects its toolchain), Flutter 3.47.5, Xcode and
+CocoaPods. From the app directory, after making the model bundle named in
+`mlsr-models.yaml` available locally:
+
+```sh
+python3 tool/prepare_mlsr.py
+# Optional offline SDK source: --sdk-source /path/to/MLSR
+../.fvm/flutter_sdk/bin/flutter pub get --enforce-lockfile
+bash tool/build_macos_local.sh release
+python3 tool/test_macos.py
+```
+
+The FVM path is optional; use the pinned `flutter` executable on PATH or set
+`FLUTTER_BIN` for the build helper. The release app is
+`build/macos/Build/Products/Release/PoDoFo.app`. It is locally ad-hoc signed and
+sandboxed, not notarized for distribution. Both the Flutter plugin and app now
+require macOS 15; older macOS build notes predate MLSR.
+
+For the full packaged check, run `python3 tool/qualify_mlsr_macos.py`. It builds a
+separate probe entrypoint, clones the bundle outside the checkout, verifies all
+asset hashes/signatures/linkage, then exercises real plugins and muted native
+playback with denied network/developer-file access. It restores and audits the
+normal Release app in a `finally` step. Logs, report and sample WAV are retained
+in a new `build/mlsr-qualification/<timestamp>/` directory, with the relocated app
+in a temporary directory named in the report. Never nest `sandbox-exec` around
+this already-sandboxed app; macOS traps before Flutter starts. See
+[qualification](tts-qualification.md) for evidence and the manual acceptance record.
+
+On Windows, run `python tool/prepare_mlsr.py` before the ordinary locked package
+resolution and `tool/verify.ps1`. This produces a model-free package and portable
+native library for the host. It does not enable Windows speech.
+
+The existing local macOS modernization and unrelated icon/document edits were
+present before this work and are preserved. A baseline patch and the abandoned
+2025 Git sequencer metadata are backed up under `.git/mlsr-tts-baseline/`.
+
+## Document timeline: compact index
+
+The document-timeline prerequisite milestone 2 adds an in-memory index to each
+`PaperSequence`. `PaperPagePlanner` is shared by preview, playback, prefetch and
+indexing, so they use identical reading order, exclusions and passage boundaries.
+`PaperIndex` publishes immutable progress snapshots in document order. A passage
+descriptor contains the plan revision/options, page and ordinal, a context-free
+source anchor and page hash, normalized spoken-text hash, UTF-16/scalar counts,
+Unicode letter/mark/number run count, and punctuation count. It retains no spoken
+text, glyph geometry, native PDF objects or audio.
+
+Playback admission seeds the full starting page even when narration starts inside
+a passage. After speech admission, the controller starts indexing alongside
+next-page preparation. Playback takes priority over prefetch, which takes priority
+over indexing; matching in-flight page/options requests share work and can be
+promoted. One extraction lane checks cancellation and priorities between target
+and neighbor reads. A lower-priority plan releases its snapshots and retries after
+foreground work; an already-entered native extraction must finish first. Detached
+page analysis remains synchronous, with event-loop yields between pages and
+neighbor reads. The existing two-page playback cache stays separate from index
+metadata, so scanning cannot evict the current/next playback pages.
+
+Indexing continues while paused. Stop cancels pending work and rejects stale
+results while retaining completed metadata; Play resumes the missing work.
+Document close/replacement clears the index. Global reading-option changes reset
+its revision and detailed cache; page review/skip invalidates only that page's
+metadata. A fresh playback extraction replaces metadata when its text hash
+changes. Annotation saves and Save As preserve valid entries. No persistence or
+schema changes are involved.
+
+The earliest known References stop bounds the exposed scope. Missing, ambiguous,
+scanned or failed pages before that boundary prevent `fullyResolved`, even when
+`scanFinished` is true. Background failures remain per-page issues and do not
+interrupt narration or open the active review flow. Call
+`indexDocument(retryFailures: true)` to retry extraction failures. Duration
+estimates, measured-audio reconciliation and whole-document scrubbing remain later
+milestones; the current transport remains passage-based.
+
+Validation on 2026-10-20: 94 Flutter regressions pass, static analysis passes, and
+the separate muted native playback test passes, including the existing revised
+Previous-at-beginning behavior and handle cleanup. Coverage includes priority/promotion,
+Stop/restart and option-change races, close during extraction, continued indexing
+while paused, unresolved reference scope, page review/skip, changed-text identity,
+Unicode, annotation saves and Save As, and real-PDF index/preview parity. A
+250-page synthetic document retains two detailed playback pages and permits only
+one concurrent extraction; its compact descriptor-array JSON is 45,393 bytes.
+That serialization measure is not Dart heap or process RSS accounting.
+
+The existing local ViT and ResNet PDFs were each measured in three separate test
+processes, interleaved by document, using default reading options and a readable
+starting page (ViT 2, ResNet 3). Timing includes the remaining scan and next-page
+prefetch after the starting page is prepared; it excludes PDF open, the seed plan,
+parity verification and speech. These are active-host diagnostics, not a
+first-audio or UI frame-latency benchmark.
+
+| PDF | Pages / indexed scope | Passages | Unresolved pages | Scan + prefetch | Metadata JSON |
+| --- | --- | --- | --- | --- | --- |
+| ViT | 22 / 22 | 75 | 17 | 289–317 ms | 26,507 bytes |
+| ResNet | 12 / 9 | 24 | 7 | 159–169 ms | 8,870 bytes |
+
+Both keep two detailed cached pages and one concurrent extraction. Every indexed
+page matches a fresh preview's issue, source hash, stop marker, passage count,
+anchor offsets and spoken hashes. The automatic planner's existing uncertain
+pages remain unresolved; these partial scopes do not represent complete readable
+documents. Real-PDF metadata JSON includes page status and named descriptor fields,
+so its byte count is not directly comparable to the synthetic descriptor array.
+Reports and input hashes are under
+`podofo_frontend_one/build/mlsr-qualification/document-index-20261020-v2/`.
+
+Reproduce one run from the app directory, choosing a new output file:
+
+```sh
+PODOFO_PDF=build/mlsr-qualification/corpus/vit.pdf \
+PODOFO_INDEX_START=2 \
+PODOFO_INDEX_OUTPUT=build/index-vit-new.json \
+python3 tool/test_macos.py tool/benchmark_paper_index_test.dart
+```
+
+## Progress
+
+- Document-timeline prerequisite, milestone 1: Stop, close and replacement retain
+  the last native source anchor; failed initial loading can be retried through
+  Play. At the paper boundary, Previous restarts the first sentence and preserves
+  the user's pause intent.
+  Across passages, Previous Sentence starts the destination paused, waits for its
+  native duration/sentence plan, selects its final sentence, and restores the
+  user's pause intent. Completion and stale plan callbacks cannot race that move.
+  Validation: 79 Flutter regressions pass (the opt-in native test is separate);
+  the expanded muted native test passes backward navigation while playing and
+  paused, checks presented sentence positions, and returns handles to baseline.
+  The persisted-bookmark regression exercises Stop, close and reopen. Document
+  indexing is implemented above; duration estimates and the whole-document
+  scrubber are later work.
+- Branch created; stale sequencer metadata safely quit after backup.
+- Milestone 1: selected-text listening, native pause/resume, cancellation and
+  application/document cleanup implemented. The pinned engine and 10-voice model
+  package prepare successfully, including an idempotent second preparation.
+- Validation: 33 Flutter regressions pass (native speech opt-in skipped in this
+  suite); the separate 62-second real Core ML/native-output test passes, including
+  model reuse, frozen pause cursor, resume, completion and native handle cleanup.
+  Audio was muted. Two preparation tests and Flutter analysis pass. macOS arm64
+  Release builds and nested code-signature verification pass.
+- `python3 tool/test_macos.py` loads PDFium and ObjectBox from the Release bundle.
+  `PODOFO_TEST_MLSR=1 python3 tool/test_macos.py test/narration_native_test.dart`
+  also exercises real synthesis/output. It mocks only plugin path discovery;
+  relocated sandboxed plugin operation and audible review were deferred to
+  milestone 4.
+- Windows CI prepares a portable native library and model-free package before
+  dependency resolution. The executed Windows build and regression gate now
+  passes; see the qualification record for its exact commit and artifact.
+- Milestone 2: detached, hashed page text and UTF-16 source maps; ligature and
+  whitespace normalization; temporary sentence paint; follow/show-location;
+  native sentence navigation and passage timeline; voice/language/synthesis-speed
+  controls. Selection and page extraction share the session's edit/save/close
+  lock. The PDFium scalar-to-UTF-16 conversion runs before page formatting.
+- Validation: 42 Flutter regressions pass with one opt-in native test skipped;
+  analysis passes. Real PDF fixtures cover emoji/ligature extraction, crop and
+  rotation paint, annotation-only save identity, and snapshot/close serialization.
+  The reader test covers active speech across another tab, cancelled dirty close,
+  save and final close. Temporary paint was inspected in the generated reader
+  capture; native app visual/listening review was a separate release check.
+- Milestone 3 originally shipped continuous bounded passages and explicit
+  single-column/two-column/PDF-order choices (superseded by version 3 above),
+  references/caption options, and
+  review/skip handling for ambiguous or textless pages. Two page plans are cached;
+  passages cap raw text at 4 KiB and normally split earlier at sentence endings.
+  Only successful native playback completion advances. Per-paper bookmarks store
+  page, source offset, text hash and mapping version, and survive reopen/Save As.
+- Validation: 55 regressions pass, with the opt-in real speech test skipped;
+  analysis passes and repeated ObjectBox regeneration is byte-identical. Legacy
+  schema IDs are preserved. Tests include real two-column PDFs, 24-page traversal
+  with a scanned page, bounded page caches, changed-text resume rejection, delayed
+  close versus a new request, and pause/stop during page preparation.
+- Reading now preserves PDF text order, reviewed before starting.
+  It is not semantic PDF understanding or OCR. Footnotes and unconfirmed marginal
+  text remain in the stream. Confirmed repeated margin lines are optional;
+  ordinary compound hyphens are preserved, while witnessed line-end splits and
+  explicit soft hyphens can be joined with source mappings retained.
+  Complex tables, incorrectly ordered source text and equations can need
+  selected-text reading. No whole-paper duration is fabricated from the current passage.
+- Milestone 4 automated portion: relocated sandboxed Release playback and exact
+  bundle audits pass, with repeatable tooling that restores the ordinary app.
+  Native pause/navigation, continuous drain, persisted source position, repeated
+  cancellation and engine/PCM cleanup pass. The 760×520 reader/preview checks
+  also pass. Timing/resource observations and native-window/human listening
+  results are recorded in [qualification](tts-qualification.md).
+- Completion-audit follow-up: source-to-speech lookup now finds the containing
+  source span even when extraction order differs from reading order. Page plans
+  expose paragraph/heading/caption/reference/excluded-margin blocks. Margin
+  detection uses up to four nearby pages, one temporary snapshot at a time;
+  two prepared page plans remain the persistent cache bound. Preparation shares
+  in-flight page work, and cancellation invalidates it before publication.
+  Bookmarks add bounded context and plan version without changing existing UIDs.
+  The preview exposes exclusions and labels its 16,000-character display limit.
+- The expanded 63-test suite passes, including a real four-page corpus with
+  alternating headers, page numbers, scientific notation, cross-page prose and
+  two columns; source reorder and PDFium hyphen-marker regressions; cancellation
+  versus replacement prefetch; and dark-theme reader ownership. Static analysis
+  and repeated schema generation pass. The ordinary widget engine cannot run
+  Impeller image filters; the Release probe checks inversion with offscreen
+  source-region pixels under the real renderer.
+- The real-paper review compared a single-column ViT body page and two-column
+  ResNet body page to their PDFium renderings. It caught joined-word geometry
+  spanning lines and a footer-position gap; regressions now cover those cases,
+  vertical marginal text and reversed PDF word emission. Complex pages require
+  explicit review. See the qualification record for inputs and exact scope.
+- Two extended sandboxed runs each complete 184 warm cycles over three minutes.
+  Every stop releases PCM/stores, shutdown returns native handles to zero, and
+  cache bytes/file counts stay unchanged during the warm loops. Engine loading
+  adds specialization-cache artifacts, so relocation/upgrade storage is a
+  separate boundary. The final-source probe records source hashes and restores
+  the normal signed Release app.
+- After the authorized push, [Windows CI run 39524485170](https://github.com/yunho-c/podofo/actions/runs/39524485170)
+  passes on `359546e`: native MLSR preparation, locked dependencies, formatting,
+  ObjectBox generation, analysis, x64 Release build and 63 regressions (one
+  macOS-native speech skip). The uploaded archive's digest and AMD64 binaries
+  are verified, and it contains no MLSR model payload. This closes the Windows
+  build gate without expanding the supported listening platforms.
+- Manual acceptance completed on 2026-10-20: the author approved the exported
+  listening sample, confirmed actual app playback, and reported satisfactory
+  results after completing the native UI checklist. This closes milestone 4 and
+  the implementation goal for macOS Apple Silicon.
+
+## Document timeline: duration and position (milestone 3)
+
+PoDoFo uses the public duration-planning facade introduced in MLSR `76ae48b` across the
+existing application-owned engine. MLSR owns background admission, foreground
+preemption, cancellation and retry; no second engine or PCM consumer is created.
+The SDK change is on local branch `feat/document-duration-api`; publish that
+revision before a fresh remote checkout can resolve the updated pin. Local
+preparation supports `--sdk-source /Users/yunhocho/GitHub/MLSR-document-duration`.
+
+`PaperTimeline` retains compact native segment durations and source offsets beside
+`PaperIndex`. After speech admission, indexing completes and a serial background
+pass reconstructs missing page text through the shared planner. One temporary
+page and one native planning job are retained; neither enters the two-page
+playback cache. Stop cancels and keeps valid timing, Play resumes, pause permits
+planning, and close discards it. Changed settings invalidate timing; changed
+reading options/text/review or References scope follow index identity.
+
+The document row is read-only in this milestone. It shows native estimates,
+planning counts or explicitly partial coverage, without word-rate heuristics.
+Unresolved pages and unsupported passages never count as zero. Retry duration
+planning retries retained failures. Selected-text playback and the passage
+scrubber keep their existing behavior. The speed menu offers 0.9–1.3x in 0.1 steps;
+legacy preferences are normalized on load and native playback rate remains 1.0.
+
+Position uses presented native frames plus a known document prefix. Source
+passages retain their original index identity and cumulative UTF-16 offset through
+resume/slicing. Suffix playback is mapped through source segment ranges and
+marked approximate, since slicing may change segmentation. A suffix cannot replace
+its parent's full duration. Full-request generated segment lengths supersede
+matching predictions. Model loading, buffering and pauses are not media duration.
+No timing cache is persisted and ObjectBox schema/UIDs are unchanged.
+
+Validation: the 100-test Flutter suite passed (one opt-in native test skipped),
+then the expanded 8-case timeline suite passed after adding coverage-boundary
+checks and a document-replacement quiescence barrier; analysis passes. The separate real-model, muted native-output test passes
+background planning, nonzero document position, paused/Stopped cursor retention,
+existing backward-navigation behavior and native handle return to baseline.
+Speaker naturalness and complete document scrubbing remain later qualification.
+
+## Document timeline: cancellable seeking (milestone 4)
+
+Document seeks freeze a passage identity, synthesis identity, original segment
+source range and relative position. Later duration corrections cannot redirect
+the destination to another passage. Only a complete, resolved document scale
+accepts a timestamp; the document endpoint clamps to the final valid frame.
+
+A same-passage full-request seek reuses native reader playback. Cross-passage or
+suffix seeks cancel previous work, revalidate destination text through the shared
+foreground page planner, and start a full-passage request paused. After its native
+timeline is ready, source-relative timing selects the frame. Only a native state
+confirming that destination commits the sequence cursor and bookmark. Playback
+then restores the latest user pause/play intent; seeking after Stop stays paused.
+The resume command's pending acknowledgement is distinct from intentional pause.
+
+A newer seek, Stop, settings change, document replacement or close invalidates
+older callbacks. Uncommitted destinations do not overwrite source bookmarks or
+the document position. Changed text/settings fail validation without advancing.
+Preparation has a 30-second timeout and reports a retryable UI error while keeping
+the previous committed source position. Native inference/PDF extraction already
+inside an uninterruptible call can finish, but their stale results are discarded.
+A failed seek leaves playback stopped at the previous source location.
+
+Validation: 108 Flutter regressions pass (one opt-in native skip), analysis passes,
+and six seek-specific tests cover reuse, paused admission, latest-wins extraction,
+Stop during synthesis, changed source, settings/close cancellation, intent changes
+and endpoints. The separate muted native test passes cross-page seek both paused
+and playing, seek to document start, Stop superseding a pending seek, existing
+Previous behavior and native handle return to baseline. Logs are retained under
+`build/document-timeline-qualification/milestone4/` in the app directory.
+
+## Document timeline: scrubber and loading (milestone 5)
+
+A complete document scale now replaces the passage scrubber with the document
+scrubber. While coverage is incomplete, the document slider is disabled and the
+labeled passage scrubber remains available. Counts and partial duration explain
+what has been processed; unresolved pages and failed timings stay visible. No
+percentage or total is extrapolated across unknown content.
+
+Pointer movement previews a frozen compact timing scale and never starts speech.
+Release submits one source destination. Timing corrections during the drag do not
+move that destination; settings, reading scope, document replacement or Stop
+invalidate the drag. Keyboard and accessibility adjustment use the same operation.
+During preparation the UI shows a loading message and retains the last committed
+position until native seeking confirms the target. Another seek can supersede it.
+Seeking after Stop selects the target paused. Hour-long durations use h:mm:ss.
+
+Validation: 114 Flutter regressions pass (one opt-in native skip) and analysis is
+clean. Six widget/formatting checks cover release-only submission, a changed
+prefix duration during dragging, partial-coverage disabling, settings/Stop
+invalidation, keyboard adjustment, a real pointer gesture, and hour formatting.
+The narrow 360-pixel partial-state capture has been inspected for wrapping and
+slider layout; it uses the bundled Urbanist font. Evidence is retained under
+`build/document-timeline-qualification/milestone5/` in the app directory.
+
+## Document timeline: qualification (milestone 6)
+
+The real-PDF/native release probe exercises complete duration coverage from a
+middle-page start, References scope, 24 cross-page seeks, bookmarks, paused and
+playing intent, endpoints, Stop cancellation and both speed limits. The regular
+suite adds timeout, asynchronous duration-disposal and narrow hour-scale checks.
+Real ViT/ResNet corpus runs preserve unsupported-text failures and review gaps;
+these cases intentionally have no complete document scale.
+
+Qualification found a cancellation race during asynchronous duration-job disposal
+and a native paused-readiness recovery deadlock. The cancellation slot now holds
+only live handles. MLSR's Apple output can restore buffers after a configuration
+notification while remaining paused; a deterministic muted test failed before
+that fix and passes afterward. The SDK pin includes both the public duration API
+and this follow-up (`c2b7408`).
+
+See [document timeline qualification](document-timeline-qualification.md) for
+reproduction, exact coverage, evidence boundaries and remaining limits. Existing
+user edits outside this implementation remain separate from its commits.

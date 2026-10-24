@@ -19,6 +19,7 @@ import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/services/pdf_highlights.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
+import 'package:podofo_one/src/workers/thumbnail_worker.dart';
 
 import 'fixtures/legacy_objectbox.g.dart' as legacy;
 import 'fixtures/pdf_fixture.dart';
@@ -34,6 +35,49 @@ void main() {
     await PdfrxEntryFunctions.instance.stopBackgroundWorker();
     await temporary.delete(recursive: true);
   });
+
+  test(
+    'thumbnail cache separates display resolutions and bounds large renders',
+    () async {
+      final file = File('${temporary.path}/thumbnails.pdf');
+      await file.writeAsBytes(pdfFixture());
+      final session = await PdfSession.open(file.path);
+      final container = ProviderContainer();
+      try {
+        Future<img.Image> render(int width, int height) async {
+          final provider = thumbnailProvider((
+            session: session,
+            revision: session.revision,
+            page: 1,
+            pixelWidth: width,
+            pixelHeight: height,
+          ));
+          final subscription = container.listen(provider, (_, _) {});
+          try {
+            return img.decodeJpg((await container.read(provider.future))!)!;
+          } finally {
+            subscription.close();
+          }
+        }
+
+        final normal = await render(256, 384);
+        final highDensity = await render(512, 768);
+        expect(highDensity.width, greaterThan(normal.width));
+        expect(highDensity.height, greaterThan(normal.height));
+        expect(container.read(thumbnailCacheProvider).length, 2);
+        final oversized = await render(8192, 8192);
+        expect(oversized.width, lessThanOrEqualTo(1024));
+        expect(oversized.height, lessThanOrEqualTo(1536));
+        expect(
+          container.read(thumbnailCacheProvider).bytes,
+          lessThanOrEqualTo(8 * 1024 * 1024),
+        );
+      } finally {
+        container.dispose();
+        await session.close();
+      }
+    },
+  );
 
   test('legacy ObjectBox data survives the auto-save rename', () {
     final path = '${temporary.path}/migration';
@@ -62,6 +106,7 @@ void main() {
     try {
       final current = store.box<UserState>().get(preferences.id)!;
       expect(current.autoSaveEnabled, false);
+      expect(current.developerMode, false);
       expect(current.highlightColor, '#66aabbcc');
       expect(current.highlightColorPalette, ['#66aabbcc']);
       expect(store.box<DocumentEntity>().getAll().single.lastOpenedPage, 23);
@@ -75,12 +120,15 @@ void main() {
         3,
       ]);
       current.autoSaveEnabled = true;
+      current.developerMode = true;
+      expect(UserState.from(current).developerMode, true);
       store.box<UserState>().put(current);
     } finally {
       store.close();
     }
     store = Store(getObjectBoxModel(), directory: path);
     expect(store.box<UserState>().get(preferences.id)!.autoSaveEnabled, true);
+    expect(store.box<UserState>().get(preferences.id)!.developerMode, true);
     store.close();
   });
 
@@ -150,7 +198,7 @@ void main() {
     final reopened = await PdfDocument.openFile(file.path);
     try {
       await reopened.useNativeDocumentHandle((handle) {
-        final api = getPdfium();
+        final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
         final native = Pointer<fpdf_document_t__>.fromAddress(handle);
         for (var index = 0; index < 3; index++) {
           final page = api.FPDF_LoadPage(native, index);
@@ -222,7 +270,7 @@ void main() {
     await session.close();
     final undone = await PdfDocument.openFile(file.path);
     await undone.useNativeDocumentHandle((handle) {
-      final api = getPdfium();
+      final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
       final page = api.FPDF_LoadPage(
         Pointer<fpdf_document_t__>.fromAddress(handle),
         0,
