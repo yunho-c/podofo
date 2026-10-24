@@ -2,11 +2,17 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/services/pdf_highlights.dart';
 
-PdfPageTextRange textRange(int pageNumber, List<PdfRect> bounds) {
+PdfPageTextRange textRange(
+  int pageNumber,
+  List<PdfRect> bounds, {
+  String? content,
+  int start = 0,
+  int? end,
+}) {
   final fragments = <PdfPageTextFragment>[];
   final text = PdfPageText(
     pageNumber: pageNumber,
-    fullText: List.filled(bounds.length, 'x').join(),
+    fullText: content ?? List.filled(bounds.length, 'x').join(),
     charRects: bounds,
     fragments: fragments,
   );
@@ -22,12 +28,62 @@ PdfPageTextRange textRange(int pageNumber, List<PdfRect> bounds) {
       ),
     );
   }
-  return PdfPageTextRange(pageText: text, start: 0, end: bounds.length);
+  return PdfPageTextRange(
+    pageText: text,
+    start: start,
+    end: end ?? bounds.length,
+  );
 }
 
 void main() {
   const first = PdfRect(10, 30, 20, 10);
   const second = PdfRect(40, 30, 50, 10);
+
+  test(
+    'new highlights join word gaps and retain partial endpoints and text',
+    () {
+      final range = textRange(
+        1,
+        [
+          const PdfRect(0, 10, 5, 0),
+          const PdfRect(5, 10, 10, 0),
+          const PdfRect(10, 10, 12, 0),
+          const PdfRect(20, 10, 25, 0),
+          const PdfRect(25, 10, 30, 0),
+        ],
+        content: 'ab cd',
+        start: 1,
+        end: 4,
+      );
+      final region = HighlightRegion.fromTextRanges([
+        range,
+      ], includeText: true).single;
+      expect(region.rects, [const PdfRect(5, 10, 25, 0)]);
+      expect(region.text, 'b c');
+      expect((range.start, range.end, range.text), (1, 4, 'b c'));
+    },
+  );
+
+  test('new highlights preserve column gutters and explicit line breaks', () {
+    final range = textRange(1, [
+      const PdfRect(0, 30, 10, 20),
+      const PdfRect(10, 30, 12, 20),
+      const PdfRect(100, 30, 110, 20),
+      PdfRect.empty,
+      const PdfRect(0, 10, 10, 0),
+      const PdfRect(10, 10, 12, 0),
+      const PdfRect(15, 10, 25, 0),
+    ], content: 'a b\nc d');
+    final region = HighlightRegion.fromTextRanges([
+      range,
+    ], includeText: true).single;
+    expect(region.rects, [
+      const PdfRect(0, 30, 12, 20),
+      const PdfRect(100, 30, 110, 20),
+      const PdfRect(0, 10, 25, 0),
+    ]);
+    expect(region.text, 'a b\nc d');
+  });
 
   test(
     'empty pages and separator fragments do not reject valid highlights',

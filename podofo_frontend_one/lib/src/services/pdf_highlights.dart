@@ -23,8 +23,7 @@ class HighlightRegion {
         continue;
       }
       final rects = range
-          .enumerateFragmentBoundingRects()
-          .map((fragment) => fragment.bounds)
+          .enumerateSelectionRects()
           .where(_hasUsableBounds)
           .toList();
       if (rects.isEmpty) continue;

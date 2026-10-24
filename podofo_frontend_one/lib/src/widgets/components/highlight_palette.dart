@@ -41,7 +41,8 @@ class HighlightPalette extends ConsumerWidget {
                 width: 16,
                 height: 16,
                 decoration: BoxDecoration(
-                  color: colorFromHex(entry.value),
+                  // Swatches show the hue; alpha is reserved for the PDF mark.
+                  color: colorFromHex(entry.value).withAlpha(255),
                   shape: BoxShape.circle,
                   border: entry.value == state.highlightColor
                       ? Border.all(
@@ -71,7 +72,7 @@ class HighlightPalette extends ConsumerWidget {
                   width: 16,
                   height: 16,
                   decoration: BoxDecoration(
-                    color: value.toColor(),
+                    color: value.toColor().withAlpha(255),
                     borderRadius: BorderRadius.circular(3),
                     border: Border.all(color: theme.colorScheme.border),
                   ),
