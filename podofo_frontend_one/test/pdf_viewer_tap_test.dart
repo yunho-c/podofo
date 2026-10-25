@@ -221,11 +221,23 @@ void main() {
   testWidgets('PDF link consumes a click without clearing selection', (
     tester,
   ) async {
+    final semantics = tester.ensureSemantics();
     final links = <PdfLink>[];
     final view = await _setup(tester, onLinkTap: links.add);
+    // Viewer/text readiness does not await the separate native link load.
+    await _pumpUntil(
+      tester,
+      () => find
+          .byWidgetPredicate(
+            (widget) => widget is Semantics && widget.properties.link == true,
+          )
+          .evaluate()
+          .isNotEmpty,
+    );
     await _tap(tester, view.point(const PdfPoint(100, 40)));
     expect(links, hasLength(1));
     expect(view.selection.hasSelectedText, isTrue);
+    semantics.dispose();
     await tester.pumpWidget(const SizedBox());
   });
 

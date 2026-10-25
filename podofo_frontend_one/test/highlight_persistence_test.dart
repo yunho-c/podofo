@@ -27,13 +27,17 @@ void main() {
   for (final rotation in [0, 90, 180, 270]) {
     test('saved highlight fills word gaps but not gutters at $rotation degrees', () async {
       final file = File('${temporary.path}/highlight-$rotation.pdf');
-      await file.writeAsBytes(spacedTextPdf(cropped: true));
+      await file.writeAsBytes(spacedTextPdf(cropped: true, rotation: rotation));
       final session = await PdfSession.open(file.path);
       late PdfPageTextRange range;
       late List<HighlightRegion> regions;
+      // Extract from an unrotated copy to isolate persistence/rendering from
+      // PDFium's rotation-sensitive extraction order. Coordinates are unrotated.
+      final selectionDocument = await PdfDocument.openData(
+        spacedTextPdf(cropped: true),
+      );
       try {
-        final text = await session.lease.document.pages.single
-            .loadStructuredText();
+        final text = await selectionDocument.pages.single.loadStructuredText();
         final start = text.fullText.indexOf('The') + 1;
         final end = text.fullText.indexOf('curve') + 3;
         range = PdfPageTextRange(pageText: text, start: start, end: end);
@@ -41,16 +45,9 @@ void main() {
         regions = HighlightRegion.fromTextRanges([range], includeText: true);
         expect(regions.single.rects, hasLength(2));
         await session.highlight(regions, 0x66ffeb3b);
-        // Rotate after extracting/selecting the text so the test isolates
-        // persistence and rendering from PDFium's rotation-sensitive text order.
-        final document = session.lease.document;
-        document.pages = [
-          document.pages.single.rotatedTo(
-            PdfPageRotation.values[rotation ~/ 90],
-          ),
-        ];
         await session.save();
       } finally {
+        await selectionDocument.dispose();
         await session.close(discard: true);
       }
 

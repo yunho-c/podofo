@@ -2,16 +2,16 @@ import 'package:flutter/material.dart' as m;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../providers/document_provider.dart';
-import '../../services/pdf_highlights.dart';
+import '../../editing/annotation_edit.dart';
 import '../../services/pdf_session.dart';
 import '../../services/document_actions.dart';
 
 typedef _PageRequest = ({PdfSession session, int revision, int page});
 final _pageHighlights = FutureProvider.autoDispose
-    .family<List<SavedHighlight>, _PageRequest>((ref, request) {
-      return request.session.lease.use(
-        (pdf) => PdfHighlights.listPage(pdf, request.page),
-      );
+    .family<List<AnnotationRecord>, _PageRequest>((ref, request) async {
+      return (await request.session.annotations())
+          .where((record) => record.pageNumber == request.page)
+          .toList();
     });
 
 class AnnotationPane extends ConsumerWidget {
@@ -58,7 +58,9 @@ class AnnotationPane extends ConsumerWidget {
                                   dense: true,
                                   contentPadding: m.EdgeInsets.zero,
                                   title: m.Text(
-                                    item.text.isEmpty ? 'Highlight' : item.text,
+                                    item.contents.isEmpty
+                                        ? 'Highlight'
+                                        : item.contents,
                                     maxLines: 3,
                                     overflow: m.TextOverflow.ellipsis,
                                   ),
@@ -73,23 +75,24 @@ class AnnotationPane extends ConsumerWidget {
                                     }
                                   },
                                   trailing: m.IconButton(
-                                    tooltip: 'Remove highlight',
+                                    tooltip: item.owned ? 'Remove highlight' : 'Only PoDoFo highlights can be edited',
                                     icon: const m.Icon(m.Icons.delete_outline),
                                     onPressed:
-                                        document
-                                                .pdfDocument
-                                                .permissions
-                                                ?.allowsModifyAnnotations ==
-                                            false
+                                        !item.canEdit ||
+                                            document
+                                                    .pdfDocument
+                                                    .permissions
+                                                    ?.allowsModifyAnnotations ==
+                                                false
                                         ? null
                                         : () async {
                                             final notifier = ref.read(
                                               loadedDocumentsProvider.notifier,
                                             );
                                             try {
-                                              await notifier.removeHighlight(
+                                              await notifier.removeAnnotations(
                                                 document,
-                                                item,
+                                                {item.id},
                                                 revision,
                                               );
                                             } catch (e) {

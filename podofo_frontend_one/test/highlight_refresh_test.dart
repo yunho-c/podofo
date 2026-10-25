@@ -109,9 +109,14 @@ void main() {
             }))!;
           }
 
-          Future<void> expectHighlight(bool highlighted) async {
+          Future<void> expectHighlight(
+            bool highlighted, {
+            bool blue = false,
+          }) async {
             bool matches(Color color) => highlighted
-                ? color.r > .95 && color.g > .9 && color.b < .8
+                ? (blue
+                      ? color.b > .95 && color.r < .8 && color.g < .8
+                      : color.r > .95 && color.g > .9 && color.b < .8)
                 : color == const Color(0xffffffff);
             Color? last;
             for (var i = 0; i < 60; i++) {
@@ -137,6 +142,24 @@ void main() {
           await expectHighlight(true);
           await tester.runAsync(session.undoHighlight);
           await expectHighlight(false);
+          await tester.runAsync(session.redo);
+          await expectHighlight(true);
+          final annotations = (await tester.runAsync(session.annotations))!;
+          await tester.runAsync(
+            () => session.recolorHighlights(
+              {annotations.single.id},
+              0x660000ff,
+              session.revision,
+            ),
+          );
+          await expectHighlight(true, blue: true);
+          await tester.runAsync(session.undo);
+          await expectHighlight(true);
+          await tester.runAsync(session.redo);
+          await expectHighlight(true, blue: true);
+          await tester.runAsync(session.undo);
+          await tester.runAsync(session.undo);
+          await expectHighlight(false);
           await tester.runAsync(() => session.highlight(regions, 0x66ffeb3b));
           await expectHighlight(true);
           final highlight = (await tester.runAsync(
@@ -145,6 +168,10 @@ void main() {
           await tester.runAsync(
             () => session.removeHighlight(highlight, session.revision),
           );
+          await expectHighlight(false);
+          await tester.runAsync(session.undo);
+          await expectHighlight(true);
+          await tester.runAsync(session.redo);
           await expectHighlight(false);
           expect(tester.takeException(), isNull);
         } finally {

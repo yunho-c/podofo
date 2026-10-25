@@ -1,9 +1,10 @@
 import 'dart:ffi';
-import 'dart:math' as math;
 
 import 'package:ffi/ffi.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:pdfium_dart/pdfium_dart.dart';
+
+import '../editing/pdfium_document_task.dart';
 
 /// Coordinates from pdfrx are relative to the unrotated page's bounding box.
 class HighlightRegion {
@@ -51,7 +52,9 @@ class PdfHighlights {
   static Future<List<SavedHighlight>> listPage(
     PdfDocument document,
     int pageNumber,
-  ) => document.useNativeDocumentHandle((handle) {
+  ) => pdfiumDocumentTask(document, _listPage, pageNumber);
+
+  static List<SavedHighlight> _listPage(int handle, int pageNumber) {
     final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
     final page = api.FPDF_LoadPage(
       Pointer<fpdf_document_t__>.fromAddress(handle),
@@ -64,7 +67,9 @@ class PdfHighlights {
         final annotation = api.FPDFPage_GetAnnot(page, index);
         if (annotation == nullptr) continue;
         try {
-          if (api.FPDFAnnot_GetSubtype(annotation) != FPDF_ANNOT_HIGHLIGHT) {
+          if (api.FPDFAnnot_GetFlags(annotation) & FPDF_ANNOT_FLAG_HIDDEN !=
+                  0 ||
+              api.FPDFAnnot_GetSubtype(annotation) != FPDF_ANNOT_HIGHLIGHT) {
             continue;
           }
           final text = using((arena) {
@@ -94,163 +99,5 @@ class PdfHighlights {
     } finally {
       api.FPDF_ClosePage(page);
     }
-  });
-
-  static Future<List<AddedHighlight>> add(
-    PdfDocument document,
-    List<HighlightRegion> regions,
-    int argb,
-  ) async {
-    if (document.permissions?.allowsModifyAnnotations == false) {
-      throw StateError('This PDF does not allow annotation changes.');
-    }
-    if (regions.isEmpty ||
-        regions.any(
-          (r) =>
-              r.rects.isEmpty ||
-              r.pageNumber < 1 ||
-              r.pageNumber > document.pages.length ||
-              r.rects.any((rect) => !_hasUsableBounds(rect)),
-        )) {
-      throw ArgumentError('Invalid highlight bounds.');
-    }
-    final added = <AddedHighlight>[];
-    await document.useNativeDocumentHandle((handle) {
-      final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
-      final native = Pointer<fpdf_document_t__>.fromAddress(handle);
-      if (api.FPDF_GetSignatureCount(native) > 0) {
-        throw StateError(
-          'Digitally signed PDFs are read-only. Open an unsigned copy to add highlights.',
-        );
-      }
-      try {
-        for (final region in regions) {
-          final page = api.FPDF_LoadPage(native, region.pageNumber - 1);
-          if (page == nullptr) throw StateError('Cannot load page.');
-          try {
-            final index = api.FPDFPage_GetAnnotCount(page);
-            final annotation = api.FPDFPage_CreateAnnot(
-              page,
-              FPDF_ANNOT_HIGHLIGHT,
-            );
-            if (annotation == nullptr) {
-              throw StateError('Cannot create highlight.');
-            }
-            added.add((pageNumber: region.pageNumber, index: index));
-            try {
-              using((arena) {
-                final box = arena<FS_RECTF>();
-                _check(api.FPDF_GetPageBoundingBox(page, box));
-                final dx = box.ref.left, dy = box.ref.bottom;
-                double left = double.infinity, bottom = double.infinity;
-                double right = -double.infinity, top = -double.infinity;
-                for (final rect in region.rects) {
-                  final quad = arena<FS_QUADPOINTSF>();
-                  quad.ref
-                    ..x1 = rect.left + dx
-                    ..y1 = rect.top + dy
-                    ..x2 = rect.right + dx
-                    ..y2 = rect.top + dy
-                    ..x3 = rect.left + dx
-                    ..y3 = rect.bottom + dy
-                    ..x4 = rect.right + dx
-                    ..y4 = rect.bottom + dy;
-                  _check(
-                    api.FPDFAnnot_AppendAttachmentPoints(annotation, quad),
-                  );
-                  left = math.min(left, rect.left + dx);
-                  right = math.max(right, rect.right + dx);
-                  bottom = math.min(bottom, rect.bottom + dy);
-                  top = math.max(top, rect.top + dy);
-                }
-                box.ref
-                  ..left = left
-                  ..right = right
-                  ..bottom = bottom
-                  ..top = top;
-                _check(api.FPDFAnnot_SetRect(annotation, box));
-                _check(
-                  api.FPDFAnnot_SetColor(
-                    annotation,
-                    FPDFANNOT_COLORTYPE.FPDFANNOT_COLORTYPE_Color,
-                    (argb >> 16) & 255,
-                    (argb >> 8) & 255,
-                    argb & 255,
-                    (argb >> 24) & 255,
-                  ),
-                );
-                _check(
-                  api.FPDFAnnot_SetFlags(annotation, FPDF_ANNOT_FLAG_PRINT),
-                );
-                _check(
-                  api.FPDFAnnot_SetStringValue(
-                    annotation,
-                    'Contents'.toNativeUtf8(allocator: arena).cast(),
-                    region.text.toNativeUtf16(allocator: arena).cast(),
-                  ),
-                );
-                _check(
-                  api.FPDFAnnot_SetStringValue(
-                    annotation,
-                    'T'.toNativeUtf8(allocator: arena).cast(),
-                    'PoDoFo'.toNativeUtf16(allocator: arena).cast(),
-                  ),
-                );
-              });
-            } finally {
-              api.FPDFPage_CloseAnnot(annotation);
-            }
-          } finally {
-            api.FPDF_ClosePage(page);
-          }
-        }
-      } catch (_) {
-        _remove(api, native, added);
-        rethrow;
-      }
-    });
-    return added;
-  }
-
-  static Future<void> remove(
-    PdfDocument document,
-    List<AddedHighlight> added,
-  ) async {
-    await document.useNativeDocumentHandle((handle) {
-      if (document.permissions?.allowsModifyAnnotations == false ||
-          getPdfium(modulePath: Pdfrx.pdfiumModulePath).FPDF_GetSignatureCount(
-                Pointer<fpdf_document_t__>.fromAddress(handle),
-              ) >
-              0) {
-        throw StateError('This PDF does not allow annotation changes.');
-      }
-      _remove(
-        getPdfium(modulePath: Pdfrx.pdfiumModulePath),
-        Pointer<fpdf_document_t__>.fromAddress(handle),
-        added,
-      );
-    });
-  }
-
-  static void _remove(
-    PDFium api,
-    FPDF_DOCUMENT document,
-    List<AddedHighlight> added,
-  ) {
-    for (final item in added.reversed) {
-      final page = api.FPDF_LoadPage(document, item.pageNumber - 1);
-      if (page == nullptr) {
-        throw StateError('Cannot load page to remove highlight.');
-      }
-      try {
-        _check(api.FPDFPage_RemoveAnnot(page, item.index));
-      } finally {
-        api.FPDF_ClosePage(page);
-      }
-    }
-  }
-
-  static void _check(int result) {
-    if (result == 0) throw StateError('PDFium could not update the highlight.');
   }
 }
