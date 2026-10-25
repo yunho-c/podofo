@@ -1,0 +1,357 @@
+import 'dart:io';
+
+import 'package:flutter/gestures.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pdfrx/pdfrx.dart';
+import 'package:podofo_one/main.dart';
+import 'package:podofo_one/objectbox.g.dart';
+import 'package:podofo_one/src/data/document_entity.dart';
+import 'package:podofo_one/src/data/objectbox.dart';
+import 'package:podofo_one/src/narration/narration_controller.dart';
+import 'package:podofo_one/src/providers/data_provider.dart';
+import 'package:podofo_one/src/providers/document_provider.dart';
+import 'package:podofo_one/src/providers/narration_provider.dart';
+import 'package:podofo_one/src/providers/user_state_provider.dart';
+import 'package:podofo_one/src/services/pdf_highlights.dart';
+import 'package:podofo_one/src/services/pdf_session.dart';
+import 'package:podofo_one/src/widgets/components/highlight_palette.dart';
+import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
+
+import 'fixtures/annotation_pdf.dart';
+import 'fixtures/spaced_text_pdf.dart';
+import 'reader_widget_test.dart' show waitForNative, captureReader;
+import 'support/fake_narrator.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+  for (final rotation in [0, 90, 180, 270]) {
+    testWidgets('right-click edits a cropped highlight at $rotation degrees', (
+      tester,
+    ) async {
+      await tester.runAsync(() async {
+        for (final font in {
+          'Urbanist': 'assets/fonts/Urbanist/static/Urbanist-Regular.ttf',
+          'MaterialIcons': 'fonts/MaterialIcons-Regular.otf',
+          'packages/shadcn_flutter/RadixIcons':
+              'packages/shadcn_flutter/lib/icons/RadixIcons.otf',
+          'packages/font_awesome_flutter/FontAwesomeSolid': 'packages/font_awesome_flutter/lib/fonts/Font-Awesome-7-Free-Solid-900.otf',
+        }.entries) {
+          await (FontLoader(
+            font.key,
+          )..addFont(rootBundle.load(font.value))).load();
+        }
+      });
+      SharedPreferences.setMockInitialValues({});
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final temporary = (await tester.runAsync(
+        () => Directory.systemTemp.createTemp('podofo-context-'),
+      ))!;
+      await tester.runAsync(() => pdfrxInitialize(tmpPath: temporary.path));
+      final file = File('${temporary.path}/context.pdf')
+        ..writeAsBytesSync(spacedTextPdf(cropped: true, rotation: rotation));
+      final store = Store(
+        getObjectBoxModel(),
+        directory: '${temporary.path}/db',
+      );
+      store.box<DocumentEntity>().put(DocumentEntity(filePath: file.path));
+      store.box<UserState>().put(UserState()..autoSaveEnabled = false);
+      final narration = NarrationController(
+        open: (_) async => FakeNarratorSession(),
+      );
+      final container = ProviderContainer(
+        overrides: [
+          objectboxProvider.overrideWithValue(ObjectBox(store)),
+          narrationControllerProvider.overrideWithValue(narration),
+        ],
+      );
+      try {
+        await tester.pumpWidget(
+          RepaintBoundary(
+            key: const ValueKey('reader-capture'),
+            child: UncontrolledProviderScope(
+              container: container,
+              child: const MyApp(),
+            ),
+          ),
+        );
+        await waitForNative(
+          tester,
+          () => container.read(pdfTextSearcherProvider) != null,
+        );
+
+        final document = container.read(currentDocumentProvider)!;
+        final session = document.session;
+        final notifier = container.read(loadedDocumentsProvider.notifier);
+        final viewer = container.read(pdfViewerControllerProvider);
+        const rects = [PdfRect(30, 135, 110, 110), PdfRect(170, 135, 230, 110)];
+        await tester.runAsync(
+          () => notifier.highlight(document, [
+            const HighlightRegion(1, rects),
+          ], 0x66ffeb3b),
+        );
+        await tester.pump();
+
+        final original = (await tester.runAsync(session.annotations))!.single;
+        final defaultColor = container
+            .read(userStateNotifierProvider)
+            .highlightColor;
+        Offset screen(double x, double y) => viewer.documentToGlobal(
+          PdfRect(x, y, x, y)
+              .toRectInDocument(
+                page: document.pdfDocument.pages.first,
+                pageRect: viewer.layout.pageLayouts.first,
+              )
+              .center,
+        )!;
+
+        await viewer.setZoom(
+          viewer.layout.pageLayouts.first.center,
+          1.8,
+          duration: Duration.zero,
+        );
+        await tester.pump();
+
+        await tester.tapAt(screen(60, 120), kind: PointerDeviceKind.mouse);
+        await tester.pump();
+        expect(find.text('Remove highlight'), findsNothing);
+
+        // A pre-existing text selection must never turn recoloring into
+        // another highlight creation.
+        final text = (await tester.runAsync(
+          () => document.pdfDocument.pages.first.loadStructuredText(),
+        ))!;
+        await viewer.textSelectionDelegate.setTextSelectionPointRange(
+          PdfTextSelectionRange.fromPoints(
+            PdfTextSelectionPoint(text, 0),
+            PdfTextSelectionPoint(text, text.fullText.length - 1),
+          ),
+        );
+        await tester.pump();
+        Future<void> menu(double x, double y) async {
+          await tester.tapAt(
+            screen(x, y),
+            buttons: kSecondaryMouseButton,
+            kind: PointerDeviceKind.mouse,
+          );
+          await tester.pump();
+          await waitForNative(
+            tester,
+            () => find.text('Remove highlight').evaluate().isNotEmpty,
+          );
+          await tester.pump();
+        }
+
+        await menu(60, 120);
+        expect(find.text('Copy'), findsOneWidget);
+        expect(find.byType(HighlightPalette), findsOneWidget);
+        expect(
+          tester
+              .widget<HighlightPalette>(find.byType(HighlightPalette))
+              .selectedColor,
+          '#66ffeb3b',
+        );
+        if (rotation == 0) {
+          await captureReader(tester, 'highlight-edit-context-menu');
+        }
+        final palette = container
+            .read(userStateNotifierProvider)
+            .highlightColorPalette;
+        final next = palette.indexWhere((c) => c != '#66ffeb3b');
+        final revision = session.revision;
+        await tester.tap(find.byKey(ValueKey('highlight-color-$next')));
+        await waitForNative(tester, () => session.revision > revision);
+
+        final recolored = (await tester.runAsync(session.annotations))!.single;
+        expect(recolored.id, original.id);
+        expect(
+          recolored.argb,
+          int.parse(palette[next].substring(1), radix: 16),
+        );
+        expect(
+          container.read(userStateNotifierProvider).highlightColor,
+          defaultColor,
+        );
+        expect(session.undoLabel, 'Change highlight color');
+        await tester.runAsync(() => notifier.undo(document));
+        expect(
+          (await tester.runAsync(session.annotations))!.single.argb,
+          original.argb,
+        );
+        await tester.runAsync(() => notifier.redo(document));
+        await tester.pump();
+        await menu(190, 120);
+        final deleteRevision = session.revision;
+        await tester.tap(find.text('Remove highlight'));
+        await waitForNative(tester, () => session.revision > deleteRevision);
+        expect(await tester.runAsync(session.annotations), isEmpty);
+        await tester.runAsync(() => notifier.undo(document));
+        await tester.pump();
+
+        await menu(60, 120);
+        final unchangedRevision = session.revision;
+        await tester.tap(find.byKey(ValueKey('highlight-color-$next')));
+        await tester.runAsync(session.waitForIdle);
+        await tester.pump();
+        expect(session.revision, unchangedRevision);
+        await menu(60, 120);
+        await tester.tapAt(const Offset(15, 850));
+        await tester.pump();
+        expect(find.byType(PdfSelectionMenu), findsNothing);
+        await menu(60, 120);
+        // Reopening elsewhere while a menu is still open updates its target
+        // and gives the new menu keyboard focus as well.
+        await menu(190, 120);
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        await tester.pump();
+        expect(find.byType(PdfSelectionMenu), findsNothing);
+        // The gap between quads is not part of the highlight.
+        await tester.tapAt(
+          screen(140, 120),
+          buttons: kSecondaryMouseButton,
+          kind: PointerDeviceKind.mouse,
+        );
+        await waitForNative(
+          tester,
+          () => find.byType(PdfSelectionMenu).evaluate().isNotEmpty,
+        );
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+        expect(find.text('Remove highlight'), findsNothing);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        await tester.pump();
+        // A menu opened before another edit cannot act on a newer model.
+
+        await menu(60, 120);
+        await tester.runAsync(
+          () => notifier.recolorHighlights(
+            document,
+            {original.id},
+            0x66abcdef,
+            session.revision,
+          ),
+        );
+        await tester.pump();
+        expect(find.text('Remove highlight'), findsNothing);
+
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        await tester.pump();
+        await tester.runAsync(() => notifier.saveDocument(document));
+        await tester.runAsync(() async {
+          final reopened = await PdfSession.open(file.path);
+          try {
+            final a = (await reopened.annotations()).single;
+            expect(a.pdfName, original.pdfName);
+            expect(a.argb, 0x66abcdef);
+            expect(a.canEdit, true);
+          } finally {
+            await reopened.close(discard: true);
+          }
+        });
+        if (rotation == 0) {
+          await menu(60, 120);
+          // Switching tabs must dismiss the captured target.
+          final foreignFile = File('${temporary.path}/foreign.pdf')
+            ..writeAsBytesSync(annotationPdf(relationships: false));
+          expect(
+            await tester.runAsync(() => notifier.addDocument(foreignFile.path)),
+            true,
+          );
+          await waitForNative(
+            tester,
+            () =>
+                container.read(currentDocumentProvider)?.filePath ==
+                    foreignFile.resolveSymbolicLinksSync() &&
+                container.read(pdfTextSearcherProvider) != null,
+          );
+          expect(find.text('Remove highlight'), findsNothing);
+          final foreign = container.read(currentDocumentProvider)!;
+          final foreignViewer = container.read(pdfViewerControllerProvider);
+          await foreignViewer.setZoom(
+            foreignViewer.layout.pageLayouts.first.center,
+            1.8,
+            duration: Duration.zero,
+          );
+          await tester.pump();
+          Future<void> foreignMenu() async {
+            final point = foreignViewer.documentToGlobal(
+              const PdfRect(60, 110, 60, 110)
+                  .toRectInDocument(
+                    page: foreign.pdfDocument.pages.first,
+                    pageRect: foreignViewer.layout.pageLayouts.first,
+                  )
+                  .center,
+            )!;
+            await tester.tapAt(
+              point,
+              buttons: kSecondaryMouseButton,
+              kind: PointerDeviceKind.mouse,
+            );
+            await waitForNative(
+              tester,
+              () => find.text('Remove highlight').evaluate().isNotEmpty,
+            );
+            await tester.pump();
+          }
+
+          await foreignMenu();
+          expect(find.text('This highlight is read-only'), findsOneWidget);
+          final remove = find.ancestor(
+            of: find.text('Remove highlight'),
+            matching: find.byType(shadcn.MenuButton),
+          );
+          expect(tester.widget<shadcn.MenuButton>(remove).onPressed, isNull);
+          expect(find.byType(HighlightPalette), findsNothing);
+          expect(foreign.session.dirty, false);
+          await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          await tester.pump();
+          await tester.runAsync(
+            () => notifier.highlight(foreign, [
+              const HighlightRegion(1, [PdfRect(20, 120, 130, 100)]),
+            ], 0x66abcdef),
+          );
+          await tester.pump();
+          await foreignMenu();
+          expect(find.text('This highlight is read-only'), findsNothing);
+          expect(find.byTooltip('Current highlight color'), findsOneWidget);
+          final revision = foreign.session.revision;
+          await tester.tap(find.text('Remove highlight'));
+          await waitForNative(
+            tester,
+            () => foreign.session.revision > revision,
+          );
+          final remaining = (await tester.runAsync(
+            foreign.session.annotations,
+          ))!;
+          expect(remaining, hasLength(3));
+          expect(remaining.every((a) => !a.owned), true);
+          await foreignMenu();
+          expect(find.text('This highlight is read-only'), findsOneWidget);
+        }
+        expect(tester.takeException(), isNull);
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        container.dispose();
+        await tester.runAsync(narration.close);
+        store.close();
+        await tester.runAsync(() async {
+          await PdfrxEntryFunctions.instance.stopBackgroundWorker();
+          await temporary.delete(recursive: true);
+        });
+      }
+    }, variant: TargetPlatformVariant.only(TargetPlatform.macOS));
+  }
+}

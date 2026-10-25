@@ -127,6 +127,26 @@ text field focused, they invoke that field's own typing history, even when it
 has no remaining undo steps. The Flutter shortcut handler ignores held-key
 repeats.
 
+## Editing existing highlights
+
+Right-click a highlight to use the existing Flutter context menu. It shows
+inline color swatches and Remove highlight, alongside the usual selection and
+view commands. Left-click and drag retain their text-selection behavior; there
+is no persistent annotation selection or separate editing popover.
+
+The click is converted to unrotated page coordinates and tested against each
+quad, excluding gaps between lines or columns. The topmost visible annotation
+wins at overlaps, including read-only annotations. Unsupported, locked, and
+foreign highlights show a read-only menu rather than targeting a mark beneath
+them. The menu captures the document, annotation ID, and revision; stale targets
+cannot edit a different document or newer model.
+
+Recoloring uses the annotation's current color and leaves the default creation
+color unchanged. Each color change or removal uses the session command path,
+including undo/redo, redraw, and auto-save. Choosing the current color is a no-op.
+An existing text selection does not turn recoloring into highlight creation.
+Escape and outside clicks dismiss the menu without clearing the text selection.
+
 ## Validation and next work
 
 Run `python3 podofo_frontend_one/tool/test_macos.py` with the app's native libraries.
@@ -138,8 +158,14 @@ beyond a large stream to exercise the callback path that crashed on the main
 isolate. Its history usage must match an otherwise equivalent small PDF. A guarded
 backend rejects document reopening or serialization during ordinary adapter edits.
 
-The existing creation and annotation-list removal flows use this boundary.
-Highlight selection/popovers remain the next UI milestone. Other annotation
+`highlight_context_menu_test.dart` exercises right-click recolor/removal,
+selection coexistence, dismissal, stale targets, read-only and overlapping
+highlights, unchanged default color, and undo/save/reopen on cropped pages at
+all four rotations. Quad tests cover gaps,
+skewed geometry, visibility, and overlap priority.
+
+Creation, context-menu editing, and annotation-list removal use this boundary.
+Other annotation
 types, arbitrary imported appearance preservation,
 comment/drag editing, persistent history, and page structure edits remain out of
 scope. Native mutation outside the session is unsupported.

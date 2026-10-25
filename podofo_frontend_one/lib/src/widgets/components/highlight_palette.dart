@@ -5,36 +5,79 @@ import 'package:shadcn_flutter/shadcn_flutter.dart' hide colorToHex;
 import '../../providers/user_state_provider.dart';
 import '../../utils/color_utils.dart';
 
-/// Shared by the toolbar palette and the PDF's selection menu.
+/// Shared by creation and editing. Editing supplies its own selected color and
+/// leaves the default creation color unchanged.
 class HighlightPalette extends ConsumerWidget {
-  const HighlightPalette({super.key, this.showCustom = false, this.onSelected});
+  const HighlightPalette({
+    super.key,
+    this.showCustom = false,
+    this.onSelected,
+    this.selectedColor,
+    this.updateDefault = true,
+  });
 
   final bool showCustom;
   final ValueChanged<String>? onSelected;
+  final String? selectedColor;
+  final bool updateDefault;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(userStateNotifierProvider);
     final theme = Theme.of(context);
-    final selectedColor = colorFromHex(state.highlightColor ?? '#66ffeb3b');
+    final activeColor = colorFromHex(
+      selectedColor ?? state.highlightColor ?? '#66ffeb3b',
+    );
+    bool selected(String color) => colorFromHex(color) == activeColor;
     return Wrap(
       spacing: 2,
       runSpacing: 8,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        if (!showCustom &&
+            selectedColor != null &&
+            !state.highlightColorPalette.any(selected))
+          m.Tooltip(
+            message: 'Current highlight color',
+            child: Semantics(
+              label: 'Current highlight color',
+              selected: true,
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: Center(
+                  child: Container(
+                    width: 16,
+                    height: 16,
+                    decoration: BoxDecoration(
+                      color: activeColor.withAlpha(255),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: theme.colorScheme.muted,
+                        width: 4,
+                        strokeAlign: BorderSide.strokeAlignOutside,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         for (final entry in state.highlightColorPalette.asMap().entries)
           Semantics(
             label: 'Highlight color ${entry.key + 1}',
-            selected: entry.value == state.highlightColor,
+            selected: selected(entry.value),
             child: m.IconButton(
               key: ValueKey('highlight-color-${entry.key}'),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 24, height: 24),
               iconSize: 16,
               onPressed: () {
-                ref
-                    .read(userStateNotifierProvider.notifier)
-                    .setHighlightActiveColorIndex(entry.key);
+                if (updateDefault) {
+                  ref
+                      .read(userStateNotifierProvider.notifier)
+                      .setHighlightActiveColorIndex(entry.key);
+                }
                 onSelected?.call(entry.value);
               },
               icon: Container(
@@ -44,7 +87,7 @@ class HighlightPalette extends ConsumerWidget {
                   // Swatches show the hue; alpha is reserved for the PDF mark.
                   color: colorFromHex(entry.value).withAlpha(255),
                   shape: BoxShape.circle,
-                  border: entry.value == state.highlightColor
+                  border: selected(entry.value)
                       ? Border.all(
                           color: theme.colorScheme.muted,
                           width: 4,
@@ -64,7 +107,7 @@ class HighlightPalette extends ConsumerWidget {
               child: ObjectFormField<ColorDerivative>(
                 key: const ValueKey('highlight-custom-color'),
                 placeholder: const SizedBox.shrink(),
-                value: ColorDerivative.fromColor(selectedColor),
+                value: ColorDerivative.fromColor(activeColor),
                 mode: PromptMode.popover,
                 density: ButtonDensity.iconDense,
                 immediateValueChange: true,
@@ -81,8 +124,7 @@ class HighlightPalette extends ConsumerWidget {
                   width: 300,
                   child: ColorPicker(
                     value:
-                        handler.value ??
-                        ColorDerivative.fromColor(selectedColor),
+                        handler.value ?? ColorDerivative.fromColor(activeColor),
                     initialMode: ColorPickerMode.hex,
                     showAlpha: true,
                     enableEyeDropper: false,
@@ -91,9 +133,12 @@ class HighlightPalette extends ConsumerWidget {
                 ),
                 onChanged: (value) {
                   if (value == null) return;
-                  ref
-                      .read(userStateNotifierProvider.notifier)
-                      .setHighlightColor(colorToHex(value.toColor()));
+                  if (updateDefault) {
+                    ref
+                        .read(userStateNotifierProvider.notifier)
+                        .setHighlightColor(colorToHex(value.toColor()));
+                  }
+                  onSelected?.call(colorToHex(value.toColor()));
                   ColorHistoryStorage.of(context).addHistory(value.toColor());
                 },
               ),
