@@ -88,6 +88,44 @@ void _author(int handle, String author) {
   }
 }
 
+List<({int subtype, bool author, bool contents})> _commentFields(
+  int handle,
+  Null _,
+) {
+  final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
+  final page = api.FPDF_LoadPage(
+    Pointer<fpdf_document_t__>.fromAddress(handle),
+    0,
+  );
+  try {
+    return using(
+      (arena) => [
+        for (var i = 0; i < api.FPDFPage_GetAnnotCount(page); i++)
+          (() {
+            final a = api.FPDFPage_GetAnnot(page, i);
+            try {
+              bool has(String key) =>
+                  api.FPDFAnnot_HasKey(
+                    a,
+                    key.toNativeUtf8(allocator: arena).cast(),
+                  ) !=
+                  0;
+              return (
+                subtype: api.FPDFAnnot_GetSubtype(a),
+                author: has('T'),
+                contents: has('Contents'),
+              );
+            } finally {
+              api.FPDFPage_CloseAnnot(a);
+            }
+          })(),
+      ],
+    );
+  } finally {
+    api.FPDF_ClosePage(page);
+  }
+}
+
 class _NoSerializationDocument extends EditablePdfDocument {
   _NoSerializationDocument(super.document);
   @override
@@ -190,7 +228,7 @@ void main() {
     expect(s.lease.document, same(document));
   });
 
-  test('exact author rule accepts legacy names and rejects foreign annotations without writes', () async {
+  test('legacy author rule accepts missing/duplicate names and rejects foreign annotations without writes', () async {
     final s = await open(annotationPdf());
     final original = await File(s.path).readAsBytes();
     final records = await s.annotations();
@@ -219,6 +257,114 @@ void main() {
     expect(legacy.last.pdfName, isEmpty);
     expect(owned.dirty, false);
   });
+
+  test(
+    'new names survive history and reopen without author or comment fields',
+    () async {
+      final s = await open(spacedTextPdf());
+      await s.highlight(regions, 0x66ffff00);
+      final first = (await s.annotations()).single;
+      expect(first.pdfName, matches(RegExp(r'^PoDoFo:[0-9a-f]{32}-new-0$')));
+      expect(first.author, isEmpty);
+      expect(first.contents, isEmpty);
+      await s.undo();
+      expect(await s.annotations(), isEmpty);
+      await s.redo();
+      expect((await s.annotations()).single.pdfName, first.pdfName);
+      await s.highlight(regions, 0x66ff0000);
+      final names = (await s.annotations()).map((a) => a.pdfName).toList();
+      expect(names.toSet(), hasLength(2));
+      await s.save();
+      final reopened = await PdfSession.open(s.path);
+      try {
+        final records = await reopened.annotations();
+        expect(records.map((a) => a.pdfName), names);
+        expect(records.every((a) => a.canEdit), true);
+        final a = records.first;
+        await reopened.recolorHighlights({a.id}, 0x660000ff, reopened.revision);
+        await reopened.removeAnnotations({a.id}, reopened.revision);
+        await reopened.undo();
+        await reopened.save();
+        final saved = await PdfDocument.openFile(reopened.path);
+        try {
+          expect(await pdfiumDocumentTask(saved, _commentFields, null), [
+            for (var i = 0; i < 2; i++)
+              (subtype: FPDF_ANNOT_HIGHLIGHT, author: false, contents: false),
+          ]);
+          final savedRecords = await PdfAnnotationAdapter().initialize(saved);
+          expect(savedRecords.values.map((a) => a.pdfName), names);
+          expect(savedRecords.values.every((a) => a.canEdit), true);
+        } finally {
+          await saved.dispose();
+        }
+      } finally {
+        await reopened.close(discard: true);
+      }
+    },
+  );
+
+  test(
+    'exact name prefix accepts supported appearances independently of author',
+    () async {
+      for (final author in ['', 'A real user']) {
+        for (final name in [
+          'PoDoFo:imported',
+          'PoDoFo-other',
+          'podofo:imported',
+        ]) {
+          final s = await open(
+            annotationPdf(
+              author: author,
+              firstName: name,
+              relationships: false,
+            ),
+          );
+          final a = (await s.annotations()).first;
+          final owned = name == 'PoDoFo:imported';
+          expect(a.owned, owned);
+          expect(a.canEdit, owned);
+          expect(s.dirty, false);
+          if (!owned) {
+            await expectLater(
+              s.recolorHighlights({a.id}, 0x660000ff, s.revision),
+              throwsStateError,
+            );
+            continue;
+          }
+          // The AP is green, despite a stale yellow /C entry.
+          expect((a.argb! >> 8) & 255, inInclusiveRange(203, 205));
+          await s.recolorHighlights({a.id}, 0x660000ff, s.revision);
+          await s.save();
+          final saved = await PdfDocument.openFile(s.path);
+          try {
+            final record = (await PdfAnnotationAdapter().initialize(saved))
+                .values
+                .first;
+            expect(record.author, author);
+            expect(record.contents, 'custom');
+            expect(record.pdfName, name);
+          } finally {
+            await saved.dispose();
+          }
+        }
+      }
+      final unsupported = await open(
+        annotationPdf(
+          author: '',
+          firstName: 'PoDoFo:unsupported',
+          relationships: false,
+          unsupportedAppearance: true,
+        ),
+      );
+      final a = (await unsupported.annotations()).first;
+      expect(a.owned, true);
+      expect(a.canEdit, false);
+      await expectLater(
+        unsupported.removeAnnotations({a.id}, unsupported.revision),
+        throwsUnsupportedError,
+      );
+    },
+  );
 
   test(
     'saving owned edits preserves foreign appearances and annotation order',

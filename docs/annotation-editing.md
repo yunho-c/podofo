@@ -6,18 +6,23 @@ and close share the session lock. There is no full-PDF checkpoint per edit.
 
 ## Eligibility and representation
 
-A highlight belongs to PoDoFo when its `/T` string is exactly `PoDoFo`. This also
-accepts legacy highlights without `/NM` or a version marker. Foreign highlights
-remain visible in the annotation list, with editing disabled. Native permissions,
-signatures, and locked flags still apply. An author overwritten by another viewer
-makes the annotation ineligible after reopening.
+A highlight belongs to PoDoFo when its `/NM` starts with the exact `PoDoFo:`
+prefix. For compatibility, `/T` equal to `PoDoFo` also accepts legacy highlights,
+including those with missing or duplicate names. Foreign highlights remain
+visible in the annotation list, with editing disabled. Native permissions,
+signatures, locked flags, and appearance/geometry checks still apply.
 
 `AnnotationRecord` stores immutable quads and bounds in unrotated PDF coordinates
 relative to the page bounding box, color/opacity, contents, author, name, flags,
 creation/modification dates, and subject. Stable session IDs do not depend on
 native indices or unique imported names. New annotations receive unique `/NM`
-values; imported names are not rewritten. The adapter maintains current native
-locators separately from history records.
+values in the form `PoDoFo:<128 random bits in hex>-new-<session counter>`;
+imported names are not rewritten. The name survives recoloring, undo/redo, and
+saving. New highlights omit `/T` and `/Contents`: selected text is not a comment,
+and the app name is not the user's author name. Existing author/comment fields
+are preserved. The annotation list uses its “Highlight” fallback for empty
+comments. The adapter maintains current native locators separately from history
+records.
 
 Opening does not normalize appearances or mark the document dirty. For owned
 highlights with `/AP`, the adapter reads uniform fill colors from appearance

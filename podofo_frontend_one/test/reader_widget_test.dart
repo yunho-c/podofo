@@ -557,7 +557,7 @@ void main() {
         tester,
         () => find.byTooltip('Remove highlight').evaluate().isNotEmpty,
       );
-      expect(find.textContaining('Hello highlight'), findsWidgets);
+      expect(find.text('Highlight'), findsWidgets);
       await tester.tap(find.byTooltip('Thumbnails'));
       await waitForNative(
         tester,

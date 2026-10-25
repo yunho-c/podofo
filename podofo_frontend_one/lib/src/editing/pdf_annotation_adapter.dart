@@ -81,7 +81,7 @@ class PdfAnnotationAdapter {
           )) {
         throw ArgumentError('Invalid highlight geometry.');
       }
-      final id = '$_prefix-new-${_nextId++}';
+      final id = '${AnnotationRecord.pdfNamePrefix}$_prefix-new-${_nextId++}';
       final index = _nextOrder.update(region.pageNumber, (n) => n + 1) - 1;
       final left = region.rects.map((r) => r.left).reduce(min);
       final right = region.rects.map((r) => r.right).reduce(max);
@@ -91,8 +91,8 @@ class PdfAnnotationAdapter {
         id: id,
         pageNumber: region.pageNumber,
         index: index,
-        contents: region.text,
-        author: 'PoDoFo',
+        contents: '',
+        author: '',
         pdfName: id,
         flags: FPDF_ANNOT_FLAG_PRINT,
         argb: argb,
@@ -337,7 +337,10 @@ _ApplyResult _apply(int handle, _ApplyRequest request) {
         location.pageNumber,
         (p) => e.annotation(p, location.index, (a) {
           if (e.api.FPDFAnnot_GetSubtype(a) != FPDF_ANNOT_HIGHLIGHT ||
-              e.string(a, 'T') != 'PoDoFo' ||
+              !AnnotationRecord.isPoDoFoHighlight(
+                e.string(a, 'NM'),
+                e.string(a, 'T'),
+              ) ||
               e.api.FPDFAnnot_GetFlags(a) & (64 | 128 | 512) != 0) {
             throw StateError('Highlight changed or is locked.');
           }
@@ -648,15 +651,16 @@ class _NativeEditor {
       ]);
     }
     final author = string(a, 'T');
+    final pdfName = string(a, 'NM');
     return AnnotationRecord(
       id: id,
       pageNumber: number,
       index: index,
       contents: string(a, 'Contents'),
       author: author,
-      pdfName: string(a, 'NM'),
+      pdfName: pdfName,
       flags: api.FPDFAnnot_GetFlags(a),
-      argb: color(a, author == 'PoDoFo'),
+      argb: color(a, AnnotationRecord.isPoDoFoHighlight(pdfName, author)),
       hasAppearance:
           api.FPDFAnnot_HasKey(a, 'AP'.toNativeUtf8(allocator: arena).cast()) !=
           0,
@@ -730,8 +734,20 @@ class _NativeEditor {
       ),
     );
     check(api.FPDFAnnot_SetFlags(a, record.flags));
-    setString(a, 'T', record.author, arena);
-    setString(a, 'Contents', record.contents, arena);
+    // Omit unused comment fields on new highlights; preserve existing fields.
+    for (final entry in {
+      'T': record.author,
+      'Contents': record.contents,
+    }.entries) {
+      if (entry.value.isNotEmpty ||
+          api.FPDFAnnot_HasKey(
+                a,
+                entry.key.toNativeUtf8(allocator: arena).cast(),
+              ) !=
+              0) {
+        setString(a, entry.key, entry.value, arena);
+      }
+    }
     if (record.pdfName.isNotEmpty) setString(a, 'NM', record.pdfName, arena);
     if (record.created.isNotEmpty) {
       setString(a, 'CreationDate', record.created, arena);

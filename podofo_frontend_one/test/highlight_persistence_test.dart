@@ -104,7 +104,7 @@ void main() {
             api.FPDF_ClosePage(page);
           }
         });
-        expect((await PdfHighlights.listPage(pdf, 1)).single.text, range.text);
+        expect((await PdfHighlights.listPage(pdf, 1)).single.text, isEmpty);
         final page = pdf.pages.single;
         expect(page.rotation.index * 90, rotation);
         final render = (await page.render(

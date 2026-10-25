@@ -1,6 +1,12 @@
 /// Editor values use unrotated PDF coordinates relative to the page's bounding
 /// box. Native dictionaries/resources are preserved separately by the adapter.
 class AnnotationRecord {
+  static const pdfNamePrefix = 'PoDoFo:';
+
+  /// New highlights use their name as provenance; older ones used the author.
+  static bool isPoDoFoHighlight(String pdfName, String author) =>
+      pdfName.startsWith(pdfNamePrefix) || author == 'PoDoFo';
+
   AnnotationRecord({
     required this.id,
     required this.pageNumber,
@@ -33,7 +39,7 @@ class AnnotationRecord {
   bool get locked => flags & (64 | 128 | 512) != 0;
   final List<double> bounds;
   final String created, modified, subject;
-  bool get owned => author == 'PoDoFo';
+  bool get owned => isPoDoFoHighlight(pdfName, author);
   bool get canEdit =>
       owned &&
       !locked &&
