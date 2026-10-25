@@ -1,4 +1,6 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:flutter/services.dart' show LogicalKeyboardKey;
 import 'package:flutter/material.dart' as m;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -7,13 +9,56 @@ import 'package:window_manager/window_manager.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/ui_provider.dart';
 import '../../services/document_actions.dart';
+import '../../services/history_actions.dart';
 
-class TitleBar extends ConsumerWidget {
+class TitleBar extends ConsumerStatefulWidget {
   const TitleBar({super.key, required this.child});
   final Widget child;
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<TitleBar> createState() => _TitleBarState();
+}
+
+class _TitleBarState extends ConsumerState<TitleBar> {
+  Listenable? _textHistory;
+  bool _refreshScheduled = false;
+
+  @override
+  void initState() {
+    super.initState();
+    FocusManager.instance.addListener(_refresh);
+  }
+
+  void _refresh() {
+    if (!mounted || _refreshScheduled) return;
+    if (SchedulerBinding.instance.schedulerPhase !=
+        SchedulerPhase.persistentCallbacks) {
+      setState(() {});
+      return;
+    }
+    _refreshScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshScheduled = false;
+      if (mounted) setState(() {});
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
+  @override
+  void dispose() {
+    FocusManager.instance.removeListener(_refresh);
+    _textHistory?.removeListener(_refresh);
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final document = ref.watch(currentDocumentProvider);
+    final history = HistoryActions.resolve(ref);
+    if (!identical(_textHistory, history.changes)) {
+      _textHistory?.removeListener(_refresh);
+      _textHistory = history.changes;
+      _textHistory?.addListener(_refresh);
+    }
     final isMacOS = defaultTargetPlatform == TargetPlatform.macOS;
     final content = Column(
       children: [
@@ -77,6 +122,33 @@ class TitleBar extends ConsumerWidget {
                         },
                       ),
               ),
+              if (!isMacOS)
+                m.TextFieldTapRegion(
+                  child: m.PopupMenuButton<VoidCallback>(
+                    tooltip: 'Edit menu',
+                    requestFocus: true,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Text('Edit'),
+                    ),
+                    itemBuilder: (_) {
+                      final target = HistoryActions.resolve(ref);
+                      return [
+                        m.PopupMenuItem(
+                          enabled: target.canUndo,
+                          value: () => target.invoke(redo: false),
+                          child: Text(target.undoLabel),
+                        ),
+                        m.PopupMenuItem(
+                          enabled: target.canRedo,
+                          value: () => target.invoke(redo: true),
+                          child: Text(target.redoLabel),
+                        ),
+                      ];
+                    },
+                    onSelected: (action) => action(),
+                  ),
+                ),
               Expanded(
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
@@ -113,7 +185,7 @@ class TitleBar extends ConsumerWidget {
             ],
           ),
         ),
-        Expanded(child: child),
+        Expanded(child: widget.child),
       ],
     );
     if (!isMacOS) return content;
@@ -187,6 +259,34 @@ class TitleBar extends ConsumerWidget {
               onSelected: document == null
                   ? null
                   : () => DocumentActions.close(context, ref, document),
+            ),
+          ],
+        ),
+        PlatformMenu(
+          label: 'Edit',
+          menus: [
+            PlatformMenuItem(
+              label: history.undoLabel,
+              shortcut: const SingleActivator(
+                LogicalKeyboardKey.keyZ,
+                meta: true,
+                includeRepeats: false,
+              ),
+              onSelected: history.canUndo
+                  ? () => HistoryActions.resolve(ref).invoke(redo: false)
+                  : null,
+            ),
+            PlatformMenuItem(
+              label: history.redoLabel,
+              shortcut: const SingleActivator(
+                LogicalKeyboardKey.keyZ,
+                meta: true,
+                shift: true,
+                includeRepeats: false,
+              ),
+              onSelected: history.canRedo
+                  ? () => HistoryActions.resolve(ref).invoke(redo: true)
+                  : null,
             ),
           ],
         ),

@@ -49,8 +49,13 @@ void main() {
           find.byType(PlatformMenuBar),
         );
         final menus = menuBar.menus.cast<PlatformMenu>();
-        expect(menus.map((menu) => menu.label), ['PoDoFo', 'File']);
-        final fileItems = menus.last.menus;
+        expect(menus.map((menu) => menu.label), ['PoDoFo', 'File', 'Edit']);
+        final fileItems = menus
+            .firstWhere((menu) => menu.label == 'File')
+            .menus;
+        final editItems = menus.last.menus;
+        expect(editItems.map((item) => item.label), ['Undo', 'Redo']);
+        expect(editItems.every((item) => item.onSelected == null), isTrue);
         expect(fileItems.map((item) => item.label), [
           'Open PDF',
           'Save',
@@ -64,6 +69,7 @@ void main() {
         );
       } else {
         expect(find.text('File'), findsOneWidget);
+        expect(find.text('Edit'), findsOneWidget);
         expect(find.byType(PlatformMenuBar), findsNothing);
       }
       expect(tester.takeException(), isNull);

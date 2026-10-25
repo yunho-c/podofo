@@ -6,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../data/pane_data.dart';
 import '../services/document_actions.dart';
+import '../services/history_actions.dart';
 import 'document_provider.dart';
 import 'tab_provider.dart';
 import 'ui_provider.dart';
@@ -28,27 +29,6 @@ class AppShortcuts extends ConsumerWidget {
       shift: shift,
       includeRepeats: repeat,
     );
-    void history({required bool redo}) {
-      // CallbackShortcuts may see the key before the app's default text
-      // shortcuts. Resolve the focused field's own action explicitly, including
-      // when its history is empty; never fall through to document undo.
-      final focus = FocusManager.instance.primaryFocus?.context;
-      if (focus?.widget is EditableText ||
-          focus?.findAncestorStateOfType<EditableTextState>() != null) {
-        Actions.maybeInvoke(
-          focus!,
-          redo
-              ? const RedoTextIntent(SelectionChangedCause.keyboard)
-              : const UndoTextIntent(SelectionChangedCause.keyboard),
-        );
-        return;
-      }
-      if (redo) {
-        DocumentActions.redo(ref);
-      } else {
-        DocumentActions.undo(ref);
-      }
-    }
 
     void save({bool as = false}) {
       final document = ref.read(currentDocumentProvider);
@@ -69,12 +49,12 @@ class AppShortcuts extends ConsumerWidget {
     return CallbackShortcuts(
       bindings: {
         chord(LogicalKeyboardKey.keyZ, repeat: false): () =>
-            history(redo: false),
+            HistoryActions.resolve(ref).invoke(redo: false),
         chord(LogicalKeyboardKey.keyZ, shift: true, repeat: false): () =>
-            history(redo: true),
+            HistoryActions.resolve(ref).invoke(redo: true),
         if (!isMac)
           chord(LogicalKeyboardKey.keyY, repeat: false): () =>
-              history(redo: true),
+              HistoryActions.resolve(ref).invoke(redo: true),
         chord(LogicalKeyboardKey.keyO): () =>
             ref.read(filePathProvider.notifier).pickFile(),
         chord(LogicalKeyboardKey.keyS): () => save(),

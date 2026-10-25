@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
@@ -663,13 +664,23 @@ void main() {
         file.resolveSymbolicLinksSync(),
       );
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('File'));
-      await waitForNative(
-        tester,
-        () => find.text('Save').evaluate().isNotEmpty,
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Save').last);
+      if (defaultTargetPlatform == TargetPlatform.macOS) {
+        final menus = tester
+            .widget<PlatformMenuBar>(find.byType(PlatformMenuBar))
+            .menus;
+        final fileMenu = menus.whereType<PlatformMenu>().firstWhere(
+          (menu) => menu.label == 'File',
+        );
+        fileMenu.menus.firstWhere((item) => item.label == 'Save').onSelected!();
+      } else {
+        await tester.tap(find.text('File'));
+        await waitForNative(
+          tester,
+          () => find.text('Save').evaluate().isNotEmpty,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Save').last);
+      }
       await waitForNative(
         tester,
         () => !container.read(currentDocumentProvider)!.dirty,

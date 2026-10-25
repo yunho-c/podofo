@@ -100,13 +100,27 @@ Queued edits run after a pending save and make the document dirty again. Failed
 writes preserve unsaved edits and history. Sessions start fresh history when
 reopened. External file replacement retains the existing Save As conflict flow.
 
-## Keyboard undo and redo
+## Edit menu and keyboard undo/redo
+
+The Edit menu exposes Undo and Redo with action labels such as “Undo Add
+highlight” and “Redo Change highlight color”. Items are disabled when the active
+history has no corresponding action. macOS uses its native menu bar; Windows and
+Linux use an Edit menu beside File. There are no separate undo/redo buttons.
+
+Menus and shortcuts share `HistoryActions`, which resolves the focused text field
+or active document. Popup menus capture their target before taking focus and
+ignore selections if the captured document is no longer active or the field has
+been removed. The search field supplies an `UndoHistoryController` so menu
+availability updates with its typing history; future app-owned text editors
+should do the same. Library fields without a controller retain Flutter's Action
+enablement and local undo routing, including harmless empty-history no-ops.
 
 Use Cmd-Z to undo and Cmd-Shift-Z to redo on macOS. On Windows and Linux,
 use Ctrl-Z and Ctrl-Shift-Z; Ctrl-Y also redoes. These shortcuts target the active
 document and retain the normal auto-save and error reporting behavior. With a
 text field focused, they invoke that field's own typing history, even when it
-has no remaining undo steps. Held-key repeats do not traverse document history.
+has no remaining undo steps. The Flutter shortcut handler ignores held-key
+repeats.
 
 ## Validation and next work
 
@@ -120,7 +134,7 @@ isolate. Its history usage must match an otherwise equivalent small PDF. A guard
 backend rejects document reopening or serialization during ordinary adapter edits.
 
 The existing creation and annotation-list removal flows use this boundary.
-Highlight selection/popovers and undo/redo menu controls remain a separate
-UI milestone. Other annotation types, arbitrary imported appearance preservation,
+Highlight selection/popovers remain the next UI milestone. Other annotation
+types, arbitrary imported appearance preservation,
 comment/drag editing, persistent history, and page structure edits remain out of
 scope. Native mutation outside the session is unsupported.
