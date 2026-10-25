@@ -284,6 +284,34 @@ void main() {
       expect(find.textContaining('● reader'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
+      // Exercise the actual viewer focus chain, not just AppShortcuts alone.
+      final editingSession = container.read(currentDocumentProvider)!.session;
+      controller.requestFocus();
+      await tester.pump();
+      await tester.sendKeyDownEvent(commandModifier);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+      await tester.sendKeyUpEvent(commandModifier);
+      await waitForNative(
+        tester,
+        () =>
+            !editingSession.dirty &&
+            find.textContaining('● reader').evaluate().isEmpty,
+      );
+      expect(editingSession.canRedo, true);
+      expect(find.textContaining('● reader'), findsNothing);
+      await tester.sendKeyDownEvent(commandModifier);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyUpEvent(commandModifier);
+      await waitForNative(
+        tester,
+        () =>
+            editingSession.dirty &&
+            find.textContaining('● reader').evaluate().isNotEmpty,
+      );
+      expect(find.textContaining('● reader'), findsOneWidget);
+
       // Highlight mode waits for pointer release, including a paused drag.
       final pdf = container.read(currentDocumentProvider)!.pdfDocument;
       final text = await tester.runAsync(

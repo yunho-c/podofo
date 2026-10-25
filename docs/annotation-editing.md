@@ -100,6 +100,14 @@ Queued edits run after a pending save and make the document dirty again. Failed
 writes preserve unsaved edits and history. Sessions start fresh history when
 reopened. External file replacement retains the existing Save As conflict flow.
 
+## Keyboard undo and redo
+
+Use Cmd-Z to undo and Cmd-Shift-Z to redo on macOS. On Windows and Linux,
+use Ctrl-Z and Ctrl-Shift-Z; Ctrl-Y also redoes. These shortcuts target the active
+document and retain the normal auto-save and error reporting behavior. With a
+text field focused, they invoke that field's own typing history, even when it
+has no remaining undo steps. Held-key repeats do not traverse document history.
+
 ## Validation and next work
 
 Run `python3 podofo_frontend_one/tool/test_macos.py` with the app's native libraries.
@@ -112,7 +120,7 @@ isolate. Its history usage must match an otherwise equivalent small PDF. A guard
 backend rejects document reopening or serialization during ordinary adapter edits.
 
 The existing creation and annotation-list removal flows use this boundary.
-Highlight selection/popovers and focus-aware Undo/Redo shortcuts remain a separate
+Highlight selection/popovers and undo/redo menu controls remain a separate
 UI milestone. Other annotation types, arbitrary imported appearance preservation,
 comment/drag editing, persistent history, and page structure edits remain out of
 scope. Native mutation outside the session is unsupported.

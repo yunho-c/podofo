@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -17,13 +16,40 @@ class AppShortcuts extends ConsumerWidget {
   final Widget child;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    SingleActivator chord(LogicalKeyboardKey key, {bool shift = false}) =>
-        SingleActivator(
-          key,
-          control: !Platform.isMacOS,
-          meta: Platform.isMacOS,
-          shift: shift,
+    final isMac = defaultTargetPlatform == TargetPlatform.macOS;
+    SingleActivator chord(
+      LogicalKeyboardKey key, {
+      bool shift = false,
+      bool repeat = true,
+    }) => SingleActivator(
+      key,
+      control: !isMac,
+      meta: isMac,
+      shift: shift,
+      includeRepeats: repeat,
+    );
+    void history({required bool redo}) {
+      // CallbackShortcuts may see the key before the app's default text
+      // shortcuts. Resolve the focused field's own action explicitly, including
+      // when its history is empty; never fall through to document undo.
+      final focus = FocusManager.instance.primaryFocus?.context;
+      if (focus?.widget is EditableText ||
+          focus?.findAncestorStateOfType<EditableTextState>() != null) {
+        Actions.maybeInvoke(
+          focus!,
+          redo
+              ? const RedoTextIntent(SelectionChangedCause.keyboard)
+              : const UndoTextIntent(SelectionChangedCause.keyboard),
         );
+        return;
+      }
+      if (redo) {
+        DocumentActions.redo(ref);
+      } else {
+        DocumentActions.undo(ref);
+      }
+    }
+
     void save({bool as = false}) {
       final document = ref.read(currentDocumentProvider);
       if (document != null) {
@@ -42,6 +68,13 @@ class AppShortcuts extends ConsumerWidget {
 
     return CallbackShortcuts(
       bindings: {
+        chord(LogicalKeyboardKey.keyZ, repeat: false): () =>
+            history(redo: false),
+        chord(LogicalKeyboardKey.keyZ, shift: true, repeat: false): () =>
+            history(redo: true),
+        if (!isMac)
+          chord(LogicalKeyboardKey.keyY, repeat: false): () =>
+              history(redo: true),
         chord(LogicalKeyboardKey.keyO): () =>
             ref.read(filePathProvider.notifier).pickFile(),
         chord(LogicalKeyboardKey.keyS): () => save(),

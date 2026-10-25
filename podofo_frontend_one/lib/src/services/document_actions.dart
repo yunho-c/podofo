@@ -15,6 +15,27 @@ class DocumentActions {
     ref.read(documentErrorProvider.notifier).state = error.toString();
   }
 
+  static Future<void> undo(WidgetRef ref) => _travelHistory(ref, redo: false);
+  static Future<void> redo(WidgetRef ref) => _travelHistory(ref, redo: true);
+
+  static Future<void> _travelHistory(
+    WidgetRef ref, {
+    required bool redo,
+  }) async {
+    final document = ref.read(currentDocumentProvider);
+    if (document == null) return;
+    try {
+      final notifier = ref.read(loadedDocumentsProvider.notifier);
+      if (redo) {
+        await notifier.redo(document);
+      } else {
+        await notifier.undo(document);
+      }
+    } catch (e) {
+      if (ref.context.mounted) error(ref, e);
+    }
+  }
+
   static Future<bool> save(
     m.BuildContext context,
     WidgetRef ref,
