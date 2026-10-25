@@ -1,0 +1,18 @@
+[package]
+name = "podoco-ffi"
+description = "Shared C ABI for the Podoco document analysis library."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+[dependencies]
+podoco.workspace = true
+
+[lints]
+workspace = true

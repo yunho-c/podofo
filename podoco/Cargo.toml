@@ -1,0 +1,28 @@
+[workspace]
+members = ["crates/*", "tools/codegen"]
+default-members = ["crates/podoco", "crates/podoco-ffi"]
+resolver = "3"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.88"
+license = "Apache-2.0"
+repository = "https://github.com/yunho-c/podofo"
+
+[workspace.dependencies]
+podoco = { path = "crates/podoco", version = "0.1.0" }
+
+# Keep native libraries loadable on macOS, matching the qualified MLSR setup.
+[profile.dev]
+strip = "none"
+
+[profile.release]
+strip = "none"
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+undocumented_unsafe_blocks = "deny"
