@@ -345,6 +345,18 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
 
   Future<void> undoHighlight(Document document) => undo(document);
 
+  Future<void> underline(
+    Document document,
+    List<HighlightRegion> regions,
+  ) async {
+    try {
+      await document.session.underline(regions);
+    } finally {
+      refresh();
+    }
+    await _autoSave(document);
+  }
+
   Future<void> undo(Document document) async {
     try {
       await document.session.undo();

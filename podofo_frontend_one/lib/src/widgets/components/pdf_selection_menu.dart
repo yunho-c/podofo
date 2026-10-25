@@ -33,8 +33,8 @@ List<MenuItem> pdfPageLayoutMenuItems({
 ];
 
 /// Captured on secondary pointer down, independently of any text selection.
-class HighlightMenuRequest {
-  HighlightMenuRequest(this.document, this.pageNumber, this.point)
+class AnnotationMenuRequest {
+  AnnotationMenuRequest(this.document, this.pageNumber, this.point)
     : revision = document.session.revision;
 
   final Document document;
@@ -44,29 +44,31 @@ class HighlightMenuRequest {
   Future<AnnotationRecord?> resolve() async {
     final records = await document.session.annotations();
     if (document.session.revision != revision) {
-      throw StateError('Highlights changed. Open the menu again.');
+      throw StateError('Annotations changed. Open the menu again.');
     }
-    return highlightAt(records, pageNumber, point.x, point.y);
+    return textMarkupAt(records, pageNumber, point.x, point.y);
   }
 }
 
-/// Reader context menu, including existing highlights and selection actions.
+/// Reader context menu, including existing text markup and selection actions.
 class PdfSelectionMenu extends ConsumerStatefulWidget {
   const PdfSelectionMenu({
     super.key,
     required this.params,
     required this.onHighlight,
+    required this.onUnderline,
     required this.twoPageView,
     required this.onTwoPageViewChanged,
-    this.highlightRequest,
+    this.annotationRequest,
     this.onDismiss,
   });
 
   final PdfViewerContextMenuBuilderParams params;
   final ValueChanged<String> onHighlight;
+  final VoidCallback onUnderline;
   final bool twoPageView;
   final ValueChanged<bool> onTwoPageViewChanged;
-  final HighlightMenuRequest? highlightRequest;
+  final AnnotationMenuRequest? annotationRequest;
   final VoidCallback? onDismiss;
 
   @override
@@ -80,7 +82,7 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
   @override
   void initState() {
     super.initState();
-    _target = widget.highlightRequest?.resolve();
+    _target = widget.annotationRequest?.resolve();
     _focusMenu();
   }
 
@@ -99,10 +101,10 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
   @override
   void didUpdateWidget(covariant PdfSelectionMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.highlightRequest != widget.highlightRequest) {
-      _target = widget.highlightRequest?.resolve();
+    if (oldWidget.annotationRequest != widget.annotationRequest) {
+      _target = widget.annotationRequest?.resolve();
     }
-    if (oldWidget.highlightRequest != widget.highlightRequest ||
+    if (oldWidget.annotationRequest != widget.annotationRequest ||
         oldWidget.params.anchorA != widget.params.anchorA) {
       _focusMenu();
     }
@@ -124,7 +126,7 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
     AsyncSnapshot<AnnotationRecord?> snapshot,
   ) {
     final params = widget.params;
-    final request = widget.highlightRequest;
+    final request = widget.annotationRequest;
     final document = ref.watch(currentDocumentProvider);
     final existing = request == null ? null : snapshot.data;
     final pending =
@@ -142,18 +144,25 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
         document?.pdfDocument.permissions?.allowsModifyAnnotations != false;
     final selection = params.textSelectionDelegate;
     final copy = selection.hasSelectedText && selection.isCopyAllowed;
-    final highlight =
-        existing == null &&
+    final canMarkSelection =
         !pending &&
         !snapshot.hasError &&
         !stale &&
         selection.hasSelectedText &&
         document != null &&
         document.pdfDocument.permissions?.allowsModifyAnnotations != false;
+    final highlight = existing == null && canMarkSelection;
+    final underline =
+        canMarkSelection && existing?.kind != AnnotationKind.underline;
     final selectAll =
         params.isTextSelectionEnabled && !selection.isSelectingAllText;
     final showView = params.contextMenuFor == PdfViewerPart.background;
-    if (!copy && !highlight && !selectAll && !showView && request == null) {
+    if (!copy &&
+        !highlight &&
+        !underline &&
+        !selectAll &&
+        !showView &&
+        request == null) {
       return const SizedBox.shrink();
     }
 
@@ -179,7 +188,7 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
               request.document.session ||
           request.document.session.lease.isClosed ||
           request.document.session.revision != request.revision) {
-        throw StateError('Highlights changed. Open the menu again.');
+        throw StateError('Annotations changed. Open the menu again.');
       }
       final notifier = ref.read(loadedDocumentsProvider.notifier);
       if (color == null) {
@@ -257,8 +266,8 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
               MenuLabel(
                 child: Text(
                   pending
-                      ? 'Loading highlight…'
-                      : 'Highlight unavailable. Reopen menu.',
+                      ? 'Loading annotation…'
+                      : 'Annotation unavailable. Reopen menu.',
                 ),
               ),
             if (existing != null &&
@@ -266,27 +275,37 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
                 !pending &&
                 !snapshot.hasError) ...[
               const MenuDivider(),
-              const MenuLabel(
+              MenuLabel(
                 child: Text(
-                  'Highlight',
-                  style: TextStyle(fontWeight: FontWeight.normal),
+                  existing.kind.label,
+                  style: const TextStyle(fontWeight: FontWeight.normal),
                 ),
               ),
-              if (canEdit)
+              if (canEdit && existing.canRecolor)
                 MenuLabel(
                   child: HighlightPalette(
                     selectedColor: colorToHex(Color(existing.argb!)),
                     updateDefault: false,
                     onSelected: (color) => edit(color: color),
                   ),
-                )
-              else
-                const MenuLabel(child: Text('This highlight is read-only')),
+                ),
+              if (!canEdit)
+                MenuLabel(
+                  child: Text('This ${existing.kind.name} is read-only'),
+                ),
               MenuButton(
                 onPressed: canEdit ? (_) => edit() : null,
-                child: const Text('Remove highlight'),
+                child: Text('Remove ${existing.kind.name}'),
               ),
             ],
+            if (underline)
+              MenuButton(
+                onPressed: (_) {
+                  _dismiss();
+                  widget.onUnderline();
+                },
+                child: const Text('Underline'),
+              ),
             if (showView) ...[
               if (copy || highlight || selectAll) const MenuDivider(),
               ...pdfPageLayoutMenuItems(

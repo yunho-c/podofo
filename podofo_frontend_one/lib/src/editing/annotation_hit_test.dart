@@ -2,7 +2,7 @@ import 'annotation_edit.dart';
 
 /// Hit individual PDF quads, not the bounds spanning lines or column gaps.
 /// Coordinates are unrotated and relative to the page bounding box.
-AnnotationRecord? highlightAt(
+AnnotationRecord? textMarkupAt(
   Iterable<AnnotationRecord> records,
   int pageNumber,
   double x,

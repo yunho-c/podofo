@@ -102,7 +102,20 @@ class PdfSession {
     }
   }
 
-  Future<void> highlight(List<HighlightRegion> regions, int argb) {
+  Future<void> highlight(List<HighlightRegion> regions, int argb) =>
+      _addTextMarkup(regions, argb, AnnotationKind.highlight);
+
+  Future<void> underline(List<HighlightRegion> regions) => _addTextMarkup(
+    regions,
+    AnnotationRecord.underlineColor,
+    AnnotationKind.underline,
+  );
+
+  Future<void> _addTextMarkup(
+    List<HighlightRegion> regions,
+    int argb,
+    AnnotationKind kind,
+  ) {
     if (argb < 0 || argb > 0xffffffff) throw ArgumentError('Invalid color.');
     final frozen = List<HighlightRegion>.unmodifiable([
       for (final r in regions)
@@ -111,7 +124,7 @@ class PdfSession {
     return _lock.synchronized(() async {
       if (frozen.isEmpty) return;
       await _ensureHistory();
-      await _commit(_adapter.create(lease.document, frozen, argb));
+      await _commit(_adapter.create(lease.document, frozen, argb, kind: kind));
     });
   }
 
@@ -196,7 +209,7 @@ class PdfSession {
   });
   void _checkRevision(int expectedRevision) {
     if (revision != expectedRevision) {
-      throw StateError('Highlights changed. Select the highlight again.');
+      throw StateError('Annotations changed. Open the menu again.');
     }
   }
 

@@ -3,13 +3,14 @@ import 'package:flutter/material.dart' as m;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../data/document_data.dart';
+import '../editing/annotation_edit.dart';
 import '../providers/document_provider.dart';
 import '../providers/user_state_provider.dart';
 import 'pdf_highlights.dart';
 import 'pdf_session.dart';
 
 class DocumentActions {
-  static final _highlighting = Expando<bool>();
+  static final _markingSelection = Expando<bool>();
 
   static void error(WidgetRef ref, Object error) {
     ref.read(documentErrorProvider.notifier).state = error.toString();
@@ -106,7 +107,7 @@ class DocumentActions {
       context: context,
       builder: (context) => m.AlertDialog(
         title: m.Text('Save changes to ${document.title}?'),
-        content: const m.Text('This PDF contains unsaved highlights.'),
+        content: const m.Text('This PDF contains unsaved annotations.'),
         actions: [
           m.TextButton(
             onPressed: () => m.Navigator.pop(context, 'cancel'),
@@ -144,14 +145,24 @@ class DocumentActions {
     }
   }
 
-  static Future<void> highlight(WidgetRef ref, {String? color}) async {
+  static Future<void> highlight(WidgetRef ref, {String? color}) =>
+      _markSelection(ref, AnnotationKind.highlight, color: color);
+
+  static Future<void> underline(WidgetRef ref) =>
+      _markSelection(ref, AnnotationKind.underline);
+
+  static Future<void> _markSelection(
+    WidgetRef ref,
+    AnnotationKind kind, {
+    String? color,
+  }) async {
     final document = ref.read(currentDocumentProvider);
     final controller = ref.read(pdfViewerControllerProvider);
     if (document == null || !controller.isReady) return;
     final selection = controller.textSelectionDelegate;
     if (!selection.hasSelectedText) return;
-    if (_highlighting[selection] == true) return;
-    _highlighting[selection] = true;
+    if (_markingSelection[selection] == true) return;
+    _markingSelection[selection] = true;
     final selectedColor =
         color ??
         ref.read(userStateNotifierProvider).highlightColor ??
@@ -169,17 +180,20 @@ class DocumentActions {
       );
       if (regions.isEmpty) return;
       await selection.clearTextSelection();
-      await ref
-          .read(loadedDocumentsProvider.notifier)
-          .highlight(
-            document,
-            regions,
-            int.parse(selectedColor.replaceFirst('#', ''), radix: 16),
-          );
+      final notifier = ref.read(loadedDocumentsProvider.notifier);
+      if (kind == AnnotationKind.underline) {
+        await notifier.underline(document, regions);
+      } else {
+        await notifier.highlight(
+          document,
+          regions,
+          int.parse(selectedColor.replaceFirst('#', ''), radix: 16),
+        );
+      }
     } catch (e) {
       if (ref.context.mounted) error(ref, e);
     } finally {
-      _highlighting[selection] = false;
+      _markingSelection[selection] = false;
     }
   }
 }

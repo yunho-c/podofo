@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +12,7 @@ import 'package:podofo_one/main.dart';
 import 'package:podofo_one/objectbox.g.dart';
 import 'package:podofo_one/src/data/document_entity.dart';
 import 'package:podofo_one/src/data/objectbox.dart';
+import 'package:podofo_one/src/editing/annotation_edit.dart';
 import 'package:podofo_one/src/narration/narration_controller.dart';
 import 'package:podofo_one/src/providers/data_provider.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
@@ -30,7 +33,7 @@ import 'support/fake_narrator.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   for (final rotation in [0, 90, 180, 270]) {
-    testWidgets('right-click edits a cropped highlight at $rotation degrees', (
+    testWidgets('right-click edits cropped text markup at $rotation degrees', (
       tester,
     ) async {
       await tester.runAsync(() async {
@@ -261,7 +264,126 @@ void main() {
             await reopened.close(discard: true);
           }
         });
+        // Underline the selected text even when it already has a highlight.
+        await viewer.textSelectionDelegate.setTextSelectionPointRange(
+          PdfTextSelectionRange.fromPoints(
+            PdfTextSelectionPoint(text, 0),
+            PdfTextSelectionPoint(text, text.fullText.length - 1),
+          ),
+        );
+        await tester.pump();
+        await menu(60, 120);
+        final beforeUnderline = session.revision;
+        final viewport = viewer.value.clone();
+        await tester.tap(find.text('Underline'));
+        await waitForNative(tester, () => session.revision > beforeUnderline);
+        final marks = (await tester.runAsync(session.annotations))!;
+        expect(marks, hasLength(2));
+        final underline = marks.singleWhere(
+          (a) => a.kind == AnnotationKind.underline,
+        );
+        expect(underline.argb, 0xffff0000);
+        expect(session.undoLabel, 'Add underline');
+        expect(
+          container.read(userStateNotifierProvider).highlightColor,
+          defaultColor,
+        );
+        expect(viewer.textSelectionDelegate.hasSelectedText, false);
+        Future<void> expectUnderlineVisible(bool visible) async {
+          var redPixels = 0;
+          for (var attempt = 0; attempt < 60; attempt++) {
+            await tester.runAsync(
+              () => Future<void>.delayed(const Duration(milliseconds: 20)),
+            );
+            await tester.pump(const Duration(milliseconds: 20));
+            final boundary = tester.renderObject<RenderRepaintBoundary>(
+              find.byKey(const ValueKey('reader-capture')),
+            );
+            redPixels = (await tester.runAsync(() async {
+              final image = await boundary.toImage();
+              try {
+                final bytes = (await image.toByteData(
+                  format: ui.ImageByteFormat.rawRgba,
+                ))!;
+                var red = 0;
+                for (var i = 0; i < bytes.lengthInBytes; i += 4) {
+                  if (bytes.getUint8(i) > 180 &&
+                      bytes.getUint8(i + 1) < 120 &&
+                      bytes.getUint8(i + 2) < 120) {
+                    red++;
+                  }
+                }
+                return red;
+              } finally {
+                image.dispose();
+              }
+            }))!;
+            if (visible ? redPixels > 30 : redPixels == 0) break;
+          }
+          expect(
+            redPixels,
+            visible ? greaterThan(30) : 0,
+            reason: 'The underline must refresh without scrolling or zooming',
+          );
+          expect(viewer.value, viewport);
+        }
+
+        await expectUnderlineVisible(true);
         if (rotation == 0) {
+          await captureReader(tester, 'underline-created');
+        }
+        final quad = underline.quads.first;
+        await tester.tapAt(
+          screen((quad[0] + quad[2]) / 2, (quad[1] + quad[5]) / 2),
+          kind: PointerDeviceKind.mouse,
+          buttons: kSecondaryMouseButton,
+        );
+        await waitForNative(
+          tester,
+          () => find.text('Remove underline').evaluate().isNotEmpty,
+        );
+        expect(find.byType(HighlightPalette), findsNothing);
+        expect(find.text('Remove highlight'), findsNothing);
+        if (rotation == 0) {
+          await captureReader(tester, 'underline-context-menu');
+        }
+        final beforeRemoval = session.revision;
+        await tester.tap(find.text('Remove underline'));
+        await waitForNative(tester, () => session.revision > beforeRemoval);
+        expect(
+          (await tester.runAsync(session.annotations))!.single.kind,
+          AnnotationKind.highlight,
+        );
+        expect(session.undoLabel, 'Remove underline');
+        await expectUnderlineVisible(false);
+        await tester.runAsync(() => notifier.undo(document));
+        await tester.runAsync(() => notifier.saveDocument(document));
+        await tester.runAsync(() async {
+          final reopened = await PdfSession.open(file.path);
+          try {
+            final a = (await reopened.annotations()).singleWhere(
+              (a) => a.kind == AnnotationKind.underline,
+            );
+            expect(a.argb, 0xffff0000);
+            expect(a.canEdit, true);
+          } finally {
+            await reopened.close(discard: true);
+          }
+        });
+        if (rotation == 0) {
+          await tester.tap(find.byTooltip('Annotations'));
+          await tester.pumpAndSettle();
+          await waitForNative(
+            tester,
+            () => find.byTooltip('Remove underline').evaluate().isNotEmpty,
+          );
+          final sidebarRevision = session.revision;
+          await tester.tap(find.byTooltip('Remove underline'));
+          await waitForNative(tester, () => session.revision > sidebarRevision);
+          expect(
+            (await tester.runAsync(session.annotations))!.single.kind,
+            AnnotationKind.highlight,
+          );
           await menu(60, 120);
           // Switching tabs must dismiss the captured target.
           final foreignFile = File('${temporary.path}/foreign.pdf')

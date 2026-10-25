@@ -65,8 +65,12 @@ class PdfAnnotationAdapter {
   AnnotationEdit create(
     PdfDocument pdf,
     List<HighlightRegion> regions,
-    int argb,
-  ) {
+    int argb, {
+    AnnotationKind kind = AnnotationKind.highlight,
+  }) {
+    if (kind == AnnotationKind.underline) {
+      argb = AnnotationRecord.underlineColor;
+    }
     if (argb < 0 || argb > 0xffffffff) throw ArgumentError('Invalid color.');
     final changes = <AnnotationChange>[];
     for (final region in regions) {
@@ -79,7 +83,7 @@ class PdfAnnotationAdapter {
                 r.width <= 0 ||
                 r.height <= 0,
           )) {
-        throw ArgumentError('Invalid highlight geometry.');
+        throw ArgumentError('Invalid text markup geometry.');
       }
       final id = '${AnnotationRecord.pdfNamePrefix}$_prefix-new-${_nextId++}';
       final index = _nextOrder.update(region.pageNumber, (n) => n + 1) - 1;
@@ -89,6 +93,7 @@ class PdfAnnotationAdapter {
       final bottom = region.rects.map((r) => r.bottom).reduce(min);
       final record = AnnotationRecord(
         id: id,
+        kind: kind,
         pageNumber: region.pageNumber,
         index: index,
         contents: '',
@@ -114,28 +119,28 @@ class PdfAnnotationAdapter {
       );
       changes.add(AnnotationChange(id: id, after: record));
     }
-    return AnnotationEdit(label: 'Add highlight', changes: changes);
+    return AnnotationEdit(label: 'Add ${kind.name}', changes: changes);
   }
 
   List<AnnotationRecord> _targets(
     Map<String, AnnotationRecord> model,
     Set<String> ids,
   ) {
-    if (ids.isEmpty) throw ArgumentError('No highlights selected.');
+    if (ids.isEmpty) throw ArgumentError('No annotations selected.');
     return [
       for (final id in ids)
         (() {
           final a = model[id];
-          if (a == null) throw StateError('Highlight no longer exists.');
+          if (a == null) throw StateError('Annotation no longer exists.');
           if (!a.owned) {
             throw StateError(
-              'Only highlights authored by PoDoFo can be edited.',
+              'Only annotations created by PoDoFo can be edited.',
             );
           }
-          if (a.locked) throw StateError('This highlight is locked.');
+          if (a.locked) throw StateError('This annotation is locked.');
           if (!a.canEdit || a.bounds.length != 4) {
             throw UnsupportedError(
-              'This highlight cannot be represented as a standard single-color highlight.',
+              'This annotation cannot be represented as a standard single-color text markup.',
             );
           }
           return a;
@@ -149,8 +154,12 @@ class PdfAnnotationAdapter {
     int argb,
   ) {
     if (argb < 0 || argb > 0xffffffff) throw ArgumentError('Invalid color.');
+    final targets = _targets(model, ids);
+    if (targets.any((a) => !a.canRecolor)) {
+      throw UnsupportedError('Underline colors cannot be changed.');
+    }
     final changes = [
-      for (final a in _targets(model, ids))
+      for (final a in targets)
         if (a.argb != argb)
           AnnotationChange(
             id: a.id,
@@ -163,14 +172,15 @@ class PdfAnnotationAdapter {
         : AnnotationEdit(label: 'Change highlight color', changes: changes);
   }
 
-  AnnotationEdit remove(Map<String, AnnotationRecord> model, Set<String> ids) =>
-      AnnotationEdit(
-        label: ids.length == 1 ? 'Remove highlight' : 'Remove highlights',
-        changes: [
-          for (final a in _targets(model, ids))
-            AnnotationChange(id: a.id, before: a),
-        ],
-      );
+  AnnotationEdit remove(Map<String, AnnotationRecord> model, Set<String> ids) {
+    final targets = _targets(model, ids);
+    final kinds = targets.map((a) => a.kind).toSet();
+    final label = kinds.length == 1 ? kinds.single.name : 'annotation';
+    return AnnotationEdit(
+      label: 'Remove $label${targets.length == 1 ? '' : 's'}',
+      changes: [for (final a in targets) AnnotationChange(id: a.id, before: a)],
+    );
+  }
 
   Future<void> apply(PdfDocument pdf, AnnotationEdit edit) async {
     if (pdf.permissions?.allowsModifyAnnotations == false) {
@@ -256,6 +266,14 @@ class PdfAnnotationAdapter {
       faults.failExport = false;
       throw StateError('Injected export failure.');
     }
+    // Save must not depend on a viewer rendering the edited page first.
+    await pdfiumDocumentTask(pdf, _ensureMarkupAppearances, [
+      for (final entry in _catalog.entries)
+        if (entry.value.canEdit &&
+            entry.value.flags & FPDF_ANNOT_FLAG_HIDDEN == 0 &&
+            !_tombstones.contains(entry.key))
+          _locations[entry.key]!,
+    ]);
     final bytes = await pdf.encodePdf();
     if (_tombstones.isEmpty) return bytes;
     final candidate = await PdfDocument.openData(
@@ -273,6 +291,64 @@ class PdfAnnotationAdapter {
     }
   }
 }
+
+/// PDFium creates missing annotation appearances while constructing the render
+/// annotation list, even for a one-pixel bitmap. Use its generator so opacity,
+/// Multiply blending, and geometry match the viewer. Existing APs are preserved.
+/// This runs synchronously on the document's worker before serialization.
+void _ensureMarkupAppearances(int handle, List<AnnotationLocation> targets) {
+  final e = _NativeEditor(handle);
+  final pages = <int, List<int>>{};
+  for (final target in targets) {
+    (pages[target.pageNumber] ??= []).add(target.index);
+  }
+  for (final entry in pages.entries) {
+    e.page(entry.key, (page) {
+      bool hasAppearance(int index) => e.annotation(
+        page,
+        index,
+        (a) =>
+            e.api.FPDFAnnot_GetAP(
+              a,
+              FPDF_ANNOT_APPEARANCEMODE_NORMAL,
+              nullptr,
+              0,
+            ) >
+            2,
+      );
+      final missing = entry.value
+          .where((index) => !hasAppearance(index))
+          .toList();
+      if (missing.isEmpty) return;
+      final bitmap = e.api.FPDFBitmap_Create(1, 1, 1);
+      if (bitmap == nullptr) {
+        throw StateError('Cannot prepare annotation appearances.');
+      }
+      try {
+        e.api.FPDFBitmap_FillRect(bitmap, 0, 0, 1, 1, 0xffffffff);
+        e.api.FPDF_RenderPageBitmap(bitmap, page, 0, 0, 1, 1, 0, FPDF_ANNOT);
+      } finally {
+        e.api.FPDFBitmap_Destroy(bitmap);
+      }
+      if (missing.any((index) => !hasAppearance(index))) {
+        throw StateError(
+          'PDFium could not generate an annotation appearance. The file was not saved.',
+        );
+      }
+    });
+  }
+}
+
+AnnotationKind? _annotationKind(int subtype) => switch (subtype) {
+  FPDF_ANNOT_HIGHLIGHT => AnnotationKind.highlight,
+  FPDF_ANNOT_UNDERLINE => AnnotationKind.underline,
+  _ => null,
+};
+
+int _nativeSubtype(AnnotationKind kind) => switch (kind) {
+  AnnotationKind.highlight => FPDF_ANNOT_HIGHLIGHT,
+  AnnotationKind.underline => FPDF_ANNOT_UNDERLINE,
+};
 
 class _Scan {
   _Scan(this.records, this.counts);
@@ -292,7 +368,7 @@ _Scan _scan(int handle, String prefix) {
       counts[number] = e.api.FPDFPage_GetAnnotCount(page);
       for (var index = 0; index < counts[number]!; index++) {
         e.annotation(page, index, (annot) {
-          if (e.api.FPDFAnnot_GetSubtype(annot) == FPDF_ANNOT_HIGHLIGHT) {
+          if (_annotationKind(e.api.FPDFAnnot_GetSubtype(annot)) != null) {
             final id = '$prefix-p$number-a$index';
             records[id] = e.read(page, annot, id, number, index);
           }
@@ -330,19 +406,20 @@ _ApplyResult _apply(int handle, _ApplyRequest request) {
   final deleting = <AnnotationLocation>[];
   for (final change in request.changes) {
     final record = change.after ?? change.before!;
-    if (!record.canEdit) throw StateError('Highlight is not editable.');
+    if (!record.canEdit) throw StateError('Annotation is not editable.');
     final location = request.locations[change.id];
     if (location != null) {
       e.page(
         location.pageNumber,
         (p) => e.annotation(p, location.index, (a) {
-          if (e.api.FPDFAnnot_GetSubtype(a) != FPDF_ANNOT_HIGHLIGHT ||
-              !AnnotationRecord.isPoDoFoHighlight(
+          if (e.api.FPDFAnnot_GetSubtype(a) != _nativeSubtype(record.kind) ||
+              !AnnotationRecord.isPoDoFoAnnotation(
                 e.string(a, 'NM'),
                 e.string(a, 'T'),
+                record.kind,
               ) ||
               e.api.FPDFAnnot_GetFlags(a) & (64 | 128 | 512) != 0) {
-            throw StateError('Highlight changed or is locked.');
+            throw StateError('Annotation changed or is locked.');
           }
         }),
       );
@@ -370,11 +447,11 @@ _ApplyResult _apply(int handle, _ApplyRequest request) {
             pageNumber: record.pageNumber,
             index: e.api.FPDFPage_GetAnnotCount(page),
           );
-          annot = e.api.FPDFPage_CreateAnnot(page, FPDF_ANNOT_HIGHLIGHT);
+          annot = e.api.FPDFPage_CreateAnnot(page, _nativeSubtype(record.kind));
         } else {
           annot = e.api.FPDFPage_GetAnnot(page, location.index);
         }
-        if (annot == nullptr) throw StateError('Cannot open highlight.');
+        if (annot == nullptr) throw StateError('Cannot open annotation.');
         changed.add((change: change, location: location, created: created));
         locations[change.id] = location;
         try {
@@ -457,8 +534,11 @@ Map<String, AnnotationLocation> _recover(int handle, _RecoveryRequest request) {
   for (final record in added) {
     e.page(record.pageNumber, (page) {
       final index = e.api.FPDFPage_GetAnnotCount(page);
-      final annot = e.api.FPDFPage_CreateAnnot(page, FPDF_ANNOT_HIGHLIGHT);
-      if (annot == nullptr) throw StateError('Cannot restore highlight.');
+      final annot = e.api.FPDFPage_CreateAnnot(
+        page,
+        _nativeSubtype(record.kind),
+      );
+      if (annot == nullptr) throw StateError('Cannot restore annotation.');
       try {
         e.write(page, annot, request.current[record.id] ?? record);
         if (!request.current.containsKey(record.id)) {
@@ -548,60 +628,40 @@ class _NativeEditor {
     );
   }
 
-  int? color(FPDF_ANNOTATION a, bool owned) => using((arena) {
-    final channels = arena<UnsignedInt>(4);
-    int packed() =>
-        (channels[3] << 24) |
-        (channels[0] << 16) |
-        (channels[1] << 8) |
-        channels[2];
-    if (api.FPDFAnnot_GetColor(
-          a,
-          FPDFANNOT_COLORTYPE.FPDFANNOT_COLORTYPE_Color,
-          channels,
-          channels + 1,
-          channels + 2,
-          channels + 3,
-        ) !=
-        0) {
-      return packed();
-    }
-    if (!owned) return null;
-    int? result;
-    var valid = true, objects = 0;
-    void inspect(FPDF_PAGEOBJECT object, int depth, double alpha) {
-      if (object == nullptr || depth > 16 || ++objects > 4096) {
-        valid = false;
-        return;
-      }
-      final type = api.FPDFPageObj_GetType(object);
-      if (type == FPDF_PAGEOBJ_FORM) {
-        // Form transparency multiplies the nested path alpha.
-        if (api.FPDFPageObj_GetFillColor(
-              object,
+  int? color(FPDF_ANNOTATION a, bool owned, AnnotationKind kind) =>
+      using((arena) {
+        final channels = arena<UnsignedInt>(4);
+        int packed() =>
+            (channels[3] << 24) |
+            (channels[0] << 16) |
+            (channels[1] << 8) |
+            channels[2];
+        if (api.FPDFAnnot_GetColor(
+              a,
+              FPDFANNOT_COLORTYPE.FPDFANNOT_COLORTYPE_Color,
               channels,
               channels + 1,
               channels + 2,
               channels + 3,
-            ) ==
+            ) !=
             0) {
-          valid = false;
-          return;
+          return packed();
         }
-        final formAlpha = channels[3] / 255;
-        for (var i = 0; i < api.FPDFFormObj_CountObjects(object); i++) {
-          inspect(
-            api.FPDFFormObj_GetObject(object, i),
-            depth + 1,
-            alpha * formAlpha,
-          );
-        }
-      } else if (type == FPDF_PAGEOBJ_PATH) {
-        final fill = arena<Int>(), stroke = arena<Int>();
-        if (api.FPDFPath_GetDrawMode(object, fill, stroke) == 0 ||
-            fill.value == 0 ||
-            stroke.value != 0 ||
-            api.FPDFPageObj_GetFillColor(
+        if (!owned) return null;
+        int? result;
+        var valid = true, objects = 0;
+        void inspect(FPDF_PAGEOBJECT object, int depth, double alpha) {
+          if (object == nullptr || depth > 16 || ++objects > 4096) {
+            valid = false;
+            return;
+          }
+          final type = api.FPDFPageObj_GetType(object);
+          if (type == FPDF_PAGEOBJ_FORM) {
+            // Form transparency multiplies the nested path alpha.
+            final getColor = kind == AnnotationKind.underline
+                ? api.FPDFPageObj_GetStrokeColor
+                : api.FPDFPageObj_GetFillColor;
+            if (getColor(
                   object,
                   channels,
                   channels + 1,
@@ -609,23 +669,52 @@ class _NativeEditor {
                   channels + 3,
                 ) ==
                 0) {
-          valid = false;
-          return;
+              valid = false;
+              return;
+            }
+            final formAlpha = channels[3] / 255;
+            for (var i = 0; i < api.FPDFFormObj_CountObjects(object); i++) {
+              inspect(
+                api.FPDFFormObj_GetObject(object, i),
+                depth + 1,
+                alpha * formAlpha,
+              );
+            }
+          } else if (type == FPDF_PAGEOBJ_PATH) {
+            final fill = arena<Int>(), stroke = arena<Int>();
+            final underline = kind == AnnotationKind.underline;
+            final getColor = underline
+                ? api.FPDFPageObj_GetStrokeColor
+                : api.FPDFPageObj_GetFillColor;
+            if (api.FPDFPath_GetDrawMode(object, fill, stroke) == 0 ||
+                (underline
+                    ? fill.value != 0 || stroke.value == 0
+                    : fill.value == 0 || stroke.value != 0) ||
+                getColor(
+                      object,
+                      channels,
+                      channels + 1,
+                      channels + 2,
+                      channels + 3,
+                    ) ==
+                    0) {
+              valid = false;
+              return;
+            }
+            channels[3] = (channels[3] * alpha).round();
+            final value = packed();
+            if (result != null && result != value) valid = false;
+            result = value;
+          } else {
+            valid = false;
+          }
         }
-        channels[3] = (channels[3] * alpha).round();
-        final value = packed();
-        if (result != null && result != value) valid = false;
-        result = value;
-      } else {
-        valid = false;
-      }
-    }
 
-    for (var i = 0; i < api.FPDFAnnot_GetObjectCount(a); i++) {
-      inspect(api.FPDFAnnot_GetObject(a, i), 0, 1);
-    }
-    return valid ? result : null;
-  });
+        for (var i = 0; i < api.FPDFAnnot_GetObjectCount(a); i++) {
+          inspect(api.FPDFAnnot_GetObject(a, i), 0, 1);
+        }
+        return valid ? result : null;
+      });
   AnnotationRecord read(
     FPDF_PAGE page,
     FPDF_ANNOTATION a,
@@ -650,17 +739,23 @@ class _NativeEditor {
         quad.ref.y4 - box.ref.bottom,
       ]);
     }
+    final kind = _annotationKind(api.FPDFAnnot_GetSubtype(a))!;
     final author = string(a, 'T');
     final pdfName = string(a, 'NM');
     return AnnotationRecord(
       id: id,
+      kind: kind,
       pageNumber: number,
       index: index,
       contents: string(a, 'Contents'),
       author: author,
       pdfName: pdfName,
       flags: api.FPDFAnnot_GetFlags(a),
-      argb: color(a, AnnotationRecord.isPoDoFoHighlight(pdfName, author)),
+      argb: color(
+        a,
+        AnnotationRecord.isPoDoFoAnnotation(pdfName, author, kind),
+        kind,
+      ),
       hasAppearance:
           api.FPDFAnnot_HasKey(a, 'AP'.toNativeUtf8(allocator: arena).cast()) !=
           0,
@@ -689,7 +784,7 @@ class _NativeEditor {
     AnnotationRecord record,
   ) => using((arena) {
     if (!record.canEdit || record.bounds.length != 4) {
-      throw StateError('Invalid highlight record.');
+      throw StateError('Invalid annotation record.');
     }
     final box = arena<FS_RECTF>(), rect = arena<FS_RECTF>();
     check(api.FPDF_GetPageBoundingBox(page, box));

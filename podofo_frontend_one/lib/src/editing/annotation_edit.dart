@@ -1,14 +1,29 @@
+enum AnnotationKind {
+  highlight('Highlight'),
+  underline('Underline');
+
+  const AnnotationKind(this.label);
+  final String label;
+}
+
 /// Editor values use unrotated PDF coordinates relative to the page's bounding
 /// box. Native dictionaries/resources are preserved separately by the adapter.
 class AnnotationRecord {
   static const pdfNamePrefix = 'PoDoFo:';
+  static const underlineColor = 0xffff0000;
 
-  /// New highlights use their name as provenance; older ones used the author.
-  static bool isPoDoFoHighlight(String pdfName, String author) =>
-      pdfName.startsWith(pdfNamePrefix) || author == 'PoDoFo';
+  /// Text markup uses its name as provenance; legacy highlights used the author.
+  static bool isPoDoFoAnnotation(
+    String pdfName,
+    String author,
+    AnnotationKind kind,
+  ) =>
+      pdfName.startsWith(pdfNamePrefix) ||
+      (kind == AnnotationKind.highlight && author == 'PoDoFo');
 
   AnnotationRecord({
     required this.id,
+    this.kind = AnnotationKind.highlight,
     required this.pageNumber,
     required this.index,
     required this.contents,
@@ -28,6 +43,7 @@ class AnnotationRecord {
        );
 
   final String id;
+  final AnnotationKind kind;
   final int pageNumber;
   // Adapter locator within this state, never the application's identity.
   final int index;
@@ -39,7 +55,7 @@ class AnnotationRecord {
   bool get locked => flags & (64 | 128 | 512) != 0;
   final List<double> bounds;
   final String created, modified, subject;
-  bool get owned => isPoDoFoHighlight(pdfName, author);
+  bool get owned => isPoDoFoAnnotation(pdfName, author, kind);
   bool get canEdit =>
       owned &&
       !locked &&
@@ -50,7 +66,7 @@ class AnnotationRecord {
       bounds[2] > bounds[0] &&
       bounds[1] > bounds[3] &&
       quads.every((q) => q.length == 8 && q.every((n) => n.isFinite));
-  bool get canRecolor => canEdit;
+  bool get canRecolor => canEdit && kind == AnnotationKind.highlight;
   int get retainedBytes =>
       320 +
       8 * bounds.length +
@@ -66,6 +82,7 @@ class AnnotationRecord {
 
   AnnotationRecord copyWith({int? argb, int? index}) => AnnotationRecord(
     id: id,
+    kind: kind,
     pageNumber: pageNumber,
     index: index ?? this.index,
     contents: contents,

@@ -41,7 +41,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   int _generation = 0;
   final _selectionPointers = <int>{};
   bool _selectionChanged = false;
-  HighlightMenuRequest? _highlightMenuRequest;
+  AnnotationMenuRequest? _annotationMenuRequest;
   late final NarrationController _narration;
   Object? _paintedRange;
   int _followRequest = 0;
@@ -356,8 +356,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   @override
   Widget build(BuildContext context) {
     final document = ref.watch(currentDocumentProvider);
-    if (_highlightMenuRequest?.document.session != document?.session) {
-      _highlightMenuRequest = null;
+    if (_annotationMenuRequest?.document.session != document?.session) {
+      _annotationMenuRequest = null;
     }
     if (document == null) {
       return const Center(
@@ -445,8 +445,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         // Return Flutter's Positioned so it recognizes our layout in both cases.
         buildContextMenu: (context, params) {
           final request =
-              _highlightMenuRequest?.document.session == document.session
-              ? _highlightMenuRequest
+              _annotationMenuRequest?.document.session == document.session
+              ? _annotationMenuRequest
               : null;
           return flutter.Positioned.fill(
             key: const ValueKey('pdf-context-menu'),
@@ -454,14 +454,15 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
               anchor: params.anchorA,
               child: PdfSelectionMenu(
                 params: params,
-                highlightRequest: request,
+                annotationRequest: request,
                 onDismiss: () {
-                  if (identical(_highlightMenuRequest, request)) {
-                    _highlightMenuRequest = null;
+                  if (identical(_annotationMenuRequest, request)) {
+                    _annotationMenuRequest = null;
                   }
                 },
                 onHighlight: (color) =>
                     DocumentActions.highlight(ref, color: color),
+                onUnderline: () => DocumentActions.underline(ref),
                 twoPageView: document.twoPageView,
                 onTwoPageViewChanged: _setTwoPageView,
               ),
@@ -550,7 +551,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             _checkUserScroll();
           },
           onPointerDown: (event) {
-            _highlightMenuRequest = null;
+            _annotationMenuRequest = null;
             if (event.buttons == kSecondaryMouseButton && controller.isReady) {
               _clearHover();
               final point = controller.globalToDocument(event.position);
@@ -561,7 +562,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
                       useDocumentLayoutCoordinates: true,
                     );
               if (hit != null) {
-                _highlightMenuRequest = HighlightMenuRequest(
+                _annotationMenuRequest = AnnotationMenuRequest(
                   document,
                   hit.page.pageNumber,
                   hit.offset,

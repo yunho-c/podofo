@@ -7,7 +7,7 @@ import '../../services/pdf_session.dart';
 import '../../services/document_actions.dart';
 
 typedef _PageRequest = ({PdfSession session, int revision, int page});
-final _pageHighlights = FutureProvider.autoDispose
+final _pageAnnotations = FutureProvider.autoDispose
     .family<List<AnnotationRecord>, _PageRequest>((ref, request) async {
       return (await request.session.annotations())
           .where((record) => record.pageNumber == request.page)
@@ -30,8 +30,8 @@ class AnnotationPane extends ConsumerWidget {
         itemCount: document.pdfDocument.pages.length,
         itemBuilder: (context, index) => Consumer(
           builder: (context, ref, _) {
-            final highlights = ref.watch(
-              _pageHighlights((
+            final annotations = ref.watch(
+              _pageAnnotations((
                 session: document.session,
                 revision: revision,
                 page: index + 1,
@@ -46,11 +46,11 @@ class AnnotationPane extends ConsumerWidget {
                     'Page ${index + 1}',
                     style: const m.TextStyle(fontWeight: m.FontWeight.bold),
                   ),
-                  highlights.when(
-                    loading: () => const m.Text('Loading highlights…'),
-                    error: (e, s) => const m.Text('Could not read highlights'),
+                  annotations.when(
+                    loading: () => const m.Text('Loading annotations…'),
+                    error: (e, s) => const m.Text('Could not read annotations'),
                     data: (items) => items.isEmpty
-                        ? const m.Text('No highlights')
+                        ? const m.Text('No annotations')
                         : m.Column(
                             children: [
                               for (final item in items)
@@ -59,7 +59,7 @@ class AnnotationPane extends ConsumerWidget {
                                   contentPadding: m.EdgeInsets.zero,
                                   title: m.Text(
                                     item.contents.isEmpty
-                                        ? 'Highlight'
+                                        ? item.kind.label
                                         : item.contents,
                                     maxLines: 3,
                                     overflow: m.TextOverflow.ellipsis,
@@ -75,7 +75,9 @@ class AnnotationPane extends ConsumerWidget {
                                     }
                                   },
                                   trailing: m.IconButton(
-                                    tooltip: item.owned ? 'Remove highlight' : 'Only PoDoFo highlights can be edited',
+                                    tooltip: item.owned
+                                        ? 'Remove ${item.kind.name}'
+                                        : 'Only PoDoFo annotations can be edited',
                                     icon: const m.Icon(m.Icons.delete_outline),
                                     onPressed:
                                         !item.canEdit ||

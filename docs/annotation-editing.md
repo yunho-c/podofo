@@ -1,34 +1,36 @@
-# Reversible PoDoFo highlight editing
+# Reversible PoDoFo text markup editing
 
 `PdfSession` owns one live PDF, the current annotation model, and a plain-Dart
-history of changes to affected highlights. Editing, undo/redo, saving, recovery,
+history of changes to affected highlights and underlines. Editing, undo/redo, saving, recovery,
 and close share the session lock. There is no full-PDF checkpoint per edit.
 
 ## Eligibility and representation
 
-A highlight belongs to PoDoFo when its `/NM` starts with the exact `PoDoFo:`
+A highlight or underline belongs to PoDoFo when its `/NM` starts with the exact `PoDoFo:`
 prefix. For compatibility, `/T` equal to `PoDoFo` also accepts legacy highlights,
-including those with missing or duplicate names. Foreign highlights remain
+including those with missing or duplicate names. Foreign highlights and underlines remain
 visible in the annotation list, with editing disabled. Native permissions,
 signatures, locked flags, and appearance/geometry checks still apply.
 
 `AnnotationRecord` stores immutable quads and bounds in unrotated PDF coordinates
-relative to the page bounding box, color/opacity, contents, author, name, flags,
+relative to the page bounding box, annotation kind, color/opacity, contents, author, name, flags,
 creation/modification dates, and subject. Stable session IDs do not depend on
 native indices or unique imported names. New annotations receive unique `/NM`
 values in the form `PoDoFo:<128 random bits in hex>-new-<session counter>`;
 imported names are not rewritten. The name survives recoloring, undo/redo, and
-saving. New highlights omit `/T` and `/Contents`: selected text is not a comment,
+saving. New highlights and underlines omit `/T` and `/Contents`: selected text is not a comment,
 and the app name is not the user's author name. Existing author/comment fields
-are preserved. The annotation list uses its “Highlight” fallback for empty
+are preserved. The annotation list uses its “Highlight” or “Underline” fallback for empty
 comments. The adapter maintains current native locators separately from history
 records.
 
 Opening does not normalize appearances or mark the document dirty. For owned
-highlights with `/AP`, the adapter reads uniform fill colors from appearance
-paths, including nested forms, rather than guessing from a stale `/C` entry.
-Mixed-color, stroked, unsupported, or malformed appearances are not editable.
-Editing and undo may regenerate the standard PDFium highlight appearance;
+text markup with `/AP`, the adapter reads uniform fill colors for highlights
+and uniform stroke colors for underlines from appearance paths, including nested
+forms, rather than guessing from a stale `/C` entry. Mixed-color, unsupported, or
+malformed appearances are not editable. Highlights require filled, unstroked paths;
+underlines require unfilled, stroked paths. Editing and undo may regenerate the
+standard PDFium appearance;
 geometry, color, opacity, text, and supported metadata are preserved, but exact
 third-party edge shapes are not promised. Unrelated dictionary entries remain
 on existing native annotations. Deletion with unexpected popup/reply relations
@@ -61,7 +63,7 @@ failed or no-op edits preserve it. Scroll, zoom, narration, and navigation do no
 participate in annotation undo.
 
 Deletion hides the existing native annotation with Hidden/NoView flags and
-clears Print, while omitting it from the committed model and highlight list.
+clears Print, while omitting it from the committed model and annotation list.
 This tombstone retains its exact annotation slot, so undo restores overlap order.
 Undoing creation works the same way. Tombstones no longer reachable from current
 state or retained history are removed and native indices are remapped by stable
@@ -88,10 +90,19 @@ be shut down ahead of a delayed document-close request.
 
 ## Saving
 
+Before serialization, export checks visible, editable PoDoFo highlights and underlines for
+missing normal appearance streams. A one-pixel offscreen render of each affected
+page asks PDFium to generate its usual vector appearances, including opacity and
+Multiply blending. The worker verifies the streams before saving; failure leaves
+the on-disk file and unsaved history intact. Existing appearance streams are not
+rewritten. As with normal page rendering, PDFium may also generate missing
+fallback appearances for other visible annotations on those pages. This does not
+flatten the PDF or retain a bitmap.
+
 Save serializes the live document. If tombstones exist, it opens a temporary
 export copy, removes their annotation entries, serializes and validates that
 copy, then performs the existing fingerprint-protected atomic file replacement.
-Deleted highlights are absent from the saved annotation list; undo slots remain
+Deleted annotations are absent from the saved annotation list; undo slots remain
 in the live session. This is ordinary annotation deletion, not redaction.
 
 The original baseline and latest saved bytes may be retained once each for
@@ -127,7 +138,15 @@ text field focused, they invoke that field's own typing history, even when it
 has no remaining undo steps. The Flutter shortcut handler ignores held-key
 repeats.
 
-## Editing existing highlights
+## Creating and editing text markup
+
+Select text and choose Underline in the Flutter context menu to create a genuine
+PDF `/Underline` annotation in opaque red. It uses the same continuous selection
+geometry as highlights, including line and column gaps. A multi-page selection
+is one history action. Underlines have no color selection or recoloring; the
+command layer enforces this too. Right-click an underline for Remove underline,
+or remove it from the annotation sidebar. New underlines use the `PoDoFo:` name
+prefix; the legacy author fallback applies only to highlights.
 
 Right-click a highlight to use the existing Flutter context menu. It shows
 inline color swatches and Remove highlight, alongside the usual selection and
@@ -137,8 +156,8 @@ is no persistent annotation selection or separate editing popover.
 The click is converted to unrotated page coordinates and tested against each
 quad, excluding gaps between lines or columns. The topmost visible annotation
 wins at overlaps, including read-only annotations. Unsupported, locked, and
-foreign highlights show a read-only menu rather than targeting a mark beneath
-them. The menu captures the document, annotation ID, and revision; stale targets
+foreign text markup shows a read-only menu rather than targeting a mark beneath
+it. The menu captures the document, annotation ID, and revision; stale targets
 cannot edit a different document or newer model.
 
 Recoloring uses the annotation's current color and leaves the default creation
@@ -158,14 +177,19 @@ beyond a large stream to exercise the callback path that crashed on the main
 isolate. Its history usage must match an otherwise equivalent small PDF. A guarded
 backend rejects document reopening or serialization during ordinary adapter edits.
 
-`highlight_context_menu_test.dart` exercises right-click recolor/removal,
-selection coexistence, dismissal, stale targets, read-only and overlapping
+`underline_editing_test.dart` checks fixed red color, native subtype, stable IDs,
+creation/deletion undo, multi-page selection, unsupported imported appearances,
+and mixed-type rollback recovery. It saves before rendering and checks the
+result in PDFium and PDFKit on cropped pages at all four rotations.
+
+`highlight_context_menu_test.dart` exercises underline creation/removal, sidebar
+removal, highlight recolor/removal, selection coexistence, dismissal, stale
+targets, read-only and overlapping
 highlights, unchanged default color, and undo/save/reopen on cropped pages at
 all four rotations. Quad tests cover gaps,
 skewed geometry, visibility, and overlap priority.
 
 Creation, context-menu editing, and annotation-list removal use this boundary.
-Other annotation
-types, arbitrary imported appearance preservation,
-comment/drag editing, persistent history, and page structure edits remain out of
+Annotation types beyond highlights and underlines, arbitrary imported appearance
+preservation, comment/drag editing, persistent history, and page structure edits remain out of
 scope. Native mutation outside the session is unsupported.

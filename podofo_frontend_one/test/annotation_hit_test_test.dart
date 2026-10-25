@@ -28,21 +28,21 @@ void main() {
   const bottom = <double>[10.0, 60, 40, 60, 10, 50, 40, 50];
   test('individual quads exclude line and column gaps and other pages', () {
     final a = mark('a', 0, [top, bottom]);
-    expect(highlightAt([a], 1, 20, 85), same(a));
-    expect(highlightAt([a], 1, 20, 55), same(a));
-    expect(highlightAt([a], 1, 10, 80), same(a));
-    expect(highlightAt([a], 1, 20, 70), isNull);
-    expect(highlightAt([a], 1, 60, 85), isNull);
-    expect(highlightAt([a], 2, 20, 85), isNull);
+    expect(textMarkupAt([a], 1, 20, 85), same(a));
+    expect(textMarkupAt([a], 1, 20, 55), same(a));
+    expect(textMarkupAt([a], 1, 10, 80), same(a));
+    expect(textMarkupAt([a], 1, 20, 70), isNull);
+    expect(textMarkupAt([a], 1, 60, 85), isNull);
+    expect(textMarkupAt([a], 2, 20, 85), isNull);
   });
   test('skewed quads exclude their bounding-box corners', () {
     final a = mark('a', 0, [
       [20, 90, 50, 90, 10, 80, 40, 80],
     ]);
-    expect(highlightAt([a], 1, 30, 85), same(a));
-    expect(highlightAt([a], 1, 11, 89), isNull);
+    expect(textMarkupAt([a], 1, 30, 85), same(a));
+    expect(textMarkupAt([a], 1, 11, 89), isNull);
     expect(
-      highlightAt(
+      textMarkupAt(
         [
           mark('bad', 0, [
             [0, 0, 0, 0, 0, 0, 0, 0],
@@ -58,10 +58,10 @@ void main() {
   test('topmost visible annotation wins even if read-only', () {
     final a = mark('a', 0, [top]);
     final b = mark('b', 3, [top], author: 'Someone else');
-    expect(highlightAt([b, a], 1, 20, 85), same(b));
+    expect(textMarkupAt([b, a], 1, 20, 85), same(b));
     for (final flags in [2, 32]) {
       expect(
-        highlightAt(
+        textMarkupAt(
           [
             a,
             mark('hidden', 5, [top], flags: flags),
