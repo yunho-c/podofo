@@ -375,6 +375,20 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
     await _autoSave(document);
   }
 
+  Future<void> highlightUnderline(
+    Document document,
+    String id,
+    int color,
+    int expectedRevision,
+  ) async {
+    try {
+      await document.session.highlightUnderline(id, color, expectedRevision);
+    } finally {
+      refresh();
+    }
+    await _autoSave(document);
+  }
+
   Future<void> recolorHighlights(
     Document document,
     Set<String> ids,

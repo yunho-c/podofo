@@ -340,22 +340,42 @@ void main() {
         );
         await waitForNative(
           tester,
-          () => find.text('Remove underline').evaluate().isNotEmpty,
+          () => find.byType(HighlightPalette).evaluate().isNotEmpty,
         );
-        expect(find.byType(HighlightPalette), findsNothing);
+        expect(find.byType(HighlightPalette), findsOneWidget);
+        expect(find.text('Highlight'), findsOneWidget);
+        expect(find.text('Underline'), findsNothing);
+        expect(find.text('Remove underline'), findsOneWidget);
         expect(find.text('Remove highlight'), findsNothing);
         if (rotation == 0) {
           await captureReader(tester, 'underline-context-menu');
         }
-        final beforeRemoval = session.revision;
-        await tester.tap(find.text('Remove underline'));
-        await waitForNative(tester, () => session.revision > beforeRemoval);
+        final beforeAddition = session.revision;
+        await tester.tap(find.byKey(ValueKey('highlight-color-$next')));
+        await waitForNative(tester, () => session.revision > beforeAddition);
+        final withHighlight = (await tester.runAsync(session.annotations))!;
+        expect(withHighlight, hasLength(3));
+        final added = withHighlight.last;
+        expect(added.kind, AnnotationKind.highlight);
+        expect(added.argb, int.parse(palette[next].substring(1), radix: 16));
+        expect(added.quads, underline.quads);
         expect(
-          (await tester.runAsync(session.annotations))!.single.kind,
-          AnnotationKind.highlight,
+          withHighlight.singleWhere((a) => a.id == underline.id).argb,
+          0xffff0000,
         );
-        expect(session.undoLabel, 'Remove underline');
-        await expectUnderlineVisible(false);
+        expect(session.undoLabel, 'Add highlight');
+        expect(
+          container.read(userStateNotifierProvider).highlightColor,
+          defaultColor,
+        );
+        await expectUnderlineVisible(true);
+        await tester.runAsync(() => notifier.undo(document));
+        expect(
+          (await tester.runAsync(session.annotations))!.map((a) => a.id),
+          marks.map((a) => a.id),
+        );
+        await tester.runAsync(() => notifier.redo(document));
+        expect((await tester.runAsync(session.annotations))!.last.id, added.id);
         await tester.runAsync(() => notifier.undo(document));
         await tester.runAsync(() => notifier.saveDocument(document));
         await tester.runAsync(() async {
@@ -372,7 +392,8 @@ void main() {
         });
         if (rotation == 0) {
           await tester.tap(find.byTooltip('Annotations'));
-          await tester.pumpAndSettle();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 250));
           await waitForNative(
             tester,
             () => find.byTooltip('Remove underline').evaluate().isNotEmpty,
@@ -380,10 +401,12 @@ void main() {
           final sidebarRevision = session.revision;
           await tester.tap(find.byTooltip('Remove underline'));
           await waitForNative(tester, () => session.revision > sidebarRevision);
-          expect(
-            (await tester.runAsync(session.annotations))!.single.kind,
-            AnnotationKind.highlight,
+          List<AnnotationRecord>? afterSidebarRemoval;
+          session.annotations().then(
+            (records) => afterSidebarRemoval = records,
           );
+          await waitForNative(tester, () => afterSidebarRemoval != null);
+          expect(afterSidebarRemoval!.single.kind, AnnotationKind.highlight);
           await menu(60, 120);
           // Switching tabs must dismiss the captured target.
           final foreignFile = File('${temporary.path}/foreign.pdf')

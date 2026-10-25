@@ -144,8 +144,12 @@ Select text and choose Underline in the Flutter context menu to create a genuine
 PDF `/Underline` annotation in opaque red. It uses the same continuous selection
 geometry as highlights, including line and column gaps. A multi-page selection
 is one history action. Underlines have no color selection or recoloring; the
-command layer enforces this too. Right-click an underline for Remove underline,
-or remove it from the annotation sidebar. New underlines use the `PoDoFo:` name
+command layer enforces this too. Right-click an underline to see the familiar
+Highlight palette. Choosing a color adds a separate highlight with the same quads,
+leaving the red underline intact, without requiring a text selection. This is one
+Add highlight history action and does not change the default highlight color.
+The menu also offers Remove underline; removal remains available in the
+annotation sidebar. New underlines use the `PoDoFo:` name
 prefix; the legacy author fallback applies only to highlights.
 
 Right-click a highlight to use the existing Flutter context menu. It shows
@@ -182,7 +186,8 @@ creation/deletion undo, multi-page selection, unsupported imported appearances,
 and mixed-type rollback recovery. It saves before rendering and checks the
 result in PDFium and PDFKit on cropped pages at all four rotations.
 
-`highlight_context_menu_test.dart` exercises underline creation/removal, sidebar
+`highlight_context_menu_test.dart` exercises underline creation, adding a
+highlight through an underline's palette, sidebar
 removal, highlight recolor/removal, selection coexistence, dismissal, stale
 targets, read-only and overlapping
 highlights, unchanged default color, and undo/save/reopen on cropped pages at

@@ -195,6 +195,13 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
         await notifier.removeAnnotations(request.document, {
           existing.id,
         }, request.revision);
+      } else if (existing.kind == AnnotationKind.underline) {
+        await notifier.highlightUnderline(
+          request.document,
+          existing.id,
+          colorFromHex(color).toARGB32(),
+          request.revision,
+        );
       } else {
         await notifier.recolorHighlights(
           request.document,
@@ -277,14 +284,16 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
               const MenuDivider(),
               MenuLabel(
                 child: Text(
-                  existing.kind.label,
+                  'Highlight',
                   style: const TextStyle(fontWeight: FontWeight.normal),
                 ),
               ),
-              if (canEdit && existing.canRecolor)
+              if (canEdit)
                 MenuLabel(
                   child: HighlightPalette(
-                    selectedColor: colorToHex(Color(existing.argb!)),
+                    selectedColor: existing.canRecolor
+                        ? colorToHex(Color(existing.argb!))
+                        : null,
                     updateDefault: false,
                     onSelected: (color) => edit(color: color),
                   ),

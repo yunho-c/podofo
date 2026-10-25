@@ -188,6 +188,63 @@ void main() {
     );
   }
 
+  test(
+    'highlighting an underline preserves it through history and saving',
+    () async {
+      final file = File('${temp.path}/highlight-underline.pdf');
+      await file.writeAsBytes(spacedTextPdf());
+      final s = await PdfSession.open(file.path);
+      try {
+        await s.underline(_regions);
+        final underline = (await s.annotations()).single;
+        await expectLater(
+          s.highlightUnderline(underline.id, 0x66ffeb3b, s.revision - 1),
+          throwsStateError,
+        );
+        expect(await s.annotations(), hasLength(1));
+        await s.highlightUnderline(underline.id, 0x66ffeb3b, s.revision);
+        final marks = await s.annotations();
+        final highlight = marks.last;
+        expect(marks, hasLength(2));
+        expect(marks.first.id, underline.id);
+        expect(marks.first.argb, underline.argb);
+        expect(marks.first.quads, underline.quads);
+        expect(highlight.kind, AnnotationKind.highlight);
+        expect(highlight.id, isNot(underline.id));
+        expect(highlight.quads, underline.quads);
+        expect(highlight.bounds, underline.bounds);
+        expect(highlight.argb, 0x66ffeb3b);
+        expect(highlight.contents, isEmpty);
+        expect(highlight.author, isEmpty);
+        expect(s.undoLabel, 'Add highlight');
+        await expectLater(
+          s.highlightUnderline(highlight.id, 0x66ffeb3b, s.revision),
+          throwsArgumentError,
+        );
+        await s.undo();
+        expect((await s.annotations()).single.id, underline.id);
+        await s.redo();
+        expect((await s.annotations()).last.id, highlight.id);
+        await s.save();
+        final reopened = await PdfSession.open(file.path);
+        try {
+          final restored = await reopened.annotations();
+          expect(restored.map((a) => a.kind), [
+            AnnotationKind.underline,
+            AnnotationKind.highlight,
+          ]);
+          expect(restored.map((a) => a.argb), [0xffff0000, 0x66ffeb3b]);
+          expect(restored.last.quads, restored.first.quads);
+          expect(restored.every((a) => a.canEdit), true);
+        } finally {
+          await reopened.close(discard: true);
+        }
+      } finally {
+        await s.close(discard: true);
+      }
+    },
+  );
+
   test('multi-page selection is one reversible underline action', () async {
     final file = File('${temp.path}/multi-page.pdf');
     await file.writeAsBytes(pdfFixture());

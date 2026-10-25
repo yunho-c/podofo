@@ -213,6 +213,13 @@ class PdfSession {
     }
   }
 
+  Future<void> highlightUnderline(String id, int argb, int expectedRevision) =>
+      _lock.synchronized(() async {
+        _checkRevision(expectedRevision);
+        await _ensureHistory();
+        await _commit(_adapter.highlightUnderline(_model!, id, argb));
+      });
+
   Future<void> recolorHighlights(
     Set<String> ids,
     int argb,

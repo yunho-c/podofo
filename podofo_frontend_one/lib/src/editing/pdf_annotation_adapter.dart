@@ -85,23 +85,14 @@ class PdfAnnotationAdapter {
           )) {
         throw ArgumentError('Invalid text markup geometry.');
       }
-      final id = '${AnnotationRecord.pdfNamePrefix}$_prefix-new-${_nextId++}';
-      final index = _nextOrder.update(region.pageNumber, (n) => n + 1) - 1;
       final left = region.rects.map((r) => r.left).reduce(min);
       final right = region.rects.map((r) => r.right).reduce(max);
       final top = region.rects.map((r) => r.top).reduce(max);
       final bottom = region.rects.map((r) => r.bottom).reduce(min);
-      final record = AnnotationRecord(
-        id: id,
+      final record = _newRecord(
         kind: kind,
         pageNumber: region.pageNumber,
-        index: index,
-        contents: '',
-        author: '',
-        pdfName: id,
-        flags: FPDF_ANNOT_FLAG_PRINT,
         argb: argb,
-        hasAppearance: false,
         bounds: [left, top, right, bottom],
         quads: [
           for (final r in region.rects)
@@ -117,9 +108,59 @@ class PdfAnnotationAdapter {
             ],
         ],
       );
-      changes.add(AnnotationChange(id: id, after: record));
+      changes.add(AnnotationChange(id: record.id, after: record));
     }
     return AnnotationEdit(label: 'Add ${kind.name}', changes: changes);
+  }
+
+  AnnotationRecord _newRecord({
+    required AnnotationKind kind,
+    required int pageNumber,
+    required int argb,
+    required List<double> bounds,
+    required Iterable<List<double>> quads,
+  }) {
+    final id = '${AnnotationRecord.pdfNamePrefix}$_prefix-new-${_nextId++}';
+    final index = _nextOrder.update(pageNumber, (n) => n + 1) - 1;
+    return AnnotationRecord(
+      id: id,
+      kind: kind,
+      pageNumber: pageNumber,
+      index: index,
+      contents: '',
+      author: '',
+      pdfName: id,
+      flags: FPDF_ANNOT_FLAG_PRINT,
+      argb: argb,
+      hasAppearance: false,
+      bounds: bounds,
+      quads: quads,
+    );
+  }
+
+  AnnotationEdit highlightUnderline(
+    Map<String, AnnotationRecord> model,
+    String id,
+    int argb,
+  ) {
+    if (argb < 0 || argb > 0xffffffff) throw ArgumentError('Invalid color.');
+    final underline = _targets(model, {id}).single;
+    if (underline.kind != AnnotationKind.underline) {
+      throw ArgumentError('Expected an underline.');
+    }
+    // Preserve the actual quads, including skew and gaps, independently of the
+    // current selection or viewport. The underline itself is unchanged.
+    final highlight = _newRecord(
+      kind: AnnotationKind.highlight,
+      pageNumber: underline.pageNumber,
+      argb: argb,
+      bounds: underline.bounds,
+      quads: underline.quads,
+    );
+    return AnnotationEdit(
+      label: 'Add highlight',
+      changes: [AnnotationChange(id: highlight.id, after: highlight)],
+    );
   }
 
   List<AnnotationRecord> _targets(
