@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -8,6 +9,7 @@ import 'package:synchronized/synchronized.dart';
 
 import '../data/pdf_document_lease.dart';
 import '../editing/annotation_edit.dart';
+import '../editing/annotation_hit_test.dart';
 import '../editing/document_history.dart';
 import '../editing/editable_pdf_document.dart';
 import '../editing/pdf_annotation_adapter.dart';
@@ -39,6 +41,7 @@ class PdfSession {
   final int _historyByteLimit, _historyEntryLimit;
   DocumentHistory? _history;
   Map<String, AnnotationRecord>? _model;
+  Future<void>? _annotationLoad;
   String? _editingFailure;
   bool get dirty => _history?.dirty ?? false;
   bool get canUndo => _editingFailure == null && (_history?.canUndo ?? false);
@@ -47,6 +50,31 @@ class PdfSession {
   String? get redoLabel => _history?.redoLabel;
   int get retainedHistoryBytes => _history?.retainedBytes ?? 0;
   String get cacheKey => '$_fingerprint-$revision';
+
+  bool get annotationsReady => _model != null;
+
+  /// Share the initial scan without making subsequent hit tests wait for edits
+  /// or saves. An empty loaded model is distinct from one that is not ready.
+  Future<void> prepareAnnotations() =>
+      _annotationLoad ??= _lock.synchronized(() async {
+        await _ensureHistory();
+      });
+
+  /// Read only committed Dart records. Native access still uses the session lock.
+  AnnotationRecord? annotationAt(int pageNumber, double x, double y) {
+    lease.document;
+    if (_editingFailure case final failure?) throw StateError(failure);
+    final model = _model;
+    if (model == null) throw StateError('Annotations are not ready.');
+    return textMarkupAt(
+      model.values
+          .where((a) => a.pageNumber == pageNumber)
+          .map(_adapter.located),
+      pageNumber,
+      x,
+      y,
+    );
+  }
 
   Future<DocumentHistory> _ensureHistory() async {
     lease.document;
@@ -88,7 +116,7 @@ class PdfSession {
         sourceName: path,
         useProgressiveLoading: false,
       );
-      return PdfSession._(
+      final session = PdfSession._(
         path,
         PdfDocumentLease(EditablePdfDocument(pdf)),
         sha256.convert(bytes).toString(),
@@ -97,6 +125,10 @@ class PdfSession {
         historyEntryLimit,
         annotationAdapter ?? PdfAnnotationAdapter(),
       );
+      // Opening the reader does not wait for the annotation scan. Consumers of
+      // prepareAnnotations still receive its error if a PDF cannot be scanned.
+      unawaited(session.prepareAnnotations().catchError((Object _) {}));
+      return session;
     } finally {
       await access.release();
     }

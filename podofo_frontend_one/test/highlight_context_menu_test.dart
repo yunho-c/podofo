@@ -91,6 +91,7 @@ void main() {
 
         final document = container.read(currentDocumentProvider)!;
         final session = document.session;
+        await waitForNative(tester, () => session.annotationsReady);
         final notifier = container.read(loadedDocumentsProvider.notifier);
         final viewer = container.read(pdfViewerControllerProvider);
         const rects = [PdfRect(30, 135, 110, 110), PdfRect(170, 135, 230, 110)];
@@ -144,10 +145,8 @@ void main() {
             kind: PointerDeviceKind.mouse,
           );
           await tester.pump();
-          await waitForNative(
-            tester,
-            () => find.text('Remove highlight').evaluate().isNotEmpty,
-          );
+          expect(find.text('Loading annotation…'), findsNothing);
+          expect(find.text('Remove highlight'), findsOneWidget);
           await tester.pump();
         }
 

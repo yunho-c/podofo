@@ -340,7 +340,8 @@ void main() {
     final items = await session.lease.use(
       (pdf) => PdfHighlights.listPage(pdf, 1),
     );
-    expect(items.single.text, 'Saved note');
+    // Selected text is geometry input, not an annotation comment.
+    expect(items.single.text, isEmpty);
     await expectLater(
       session.removeHighlight(items.single, 99),
       throwsStateError,

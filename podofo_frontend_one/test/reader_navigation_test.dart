@@ -470,7 +470,10 @@ class _Reader {
   Future<void> ready() async {
     await waitForNative(
       tester,
-      () => container.read(pdfTextSearcherProvider) != null,
+      () =>
+          container.read(pdfTextSearcherProvider) != null &&
+          container.read(currentDocumentProvider)?.session.annotationsReady ==
+              true,
     );
     await tester.pump(const Duration(milliseconds: 300));
   }
