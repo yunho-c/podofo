@@ -179,6 +179,45 @@ void main() {
     return session;
   }
 
+  test(
+    'synchronous hit tests use committed state and current overlap order',
+    () async {
+      final s = await open(spacedTextPdf(), historyEntryLimit: 1);
+      await s.prepareAnnotations();
+      expect(s.annotationsReady, true);
+      expect(s.annotationAt(1, 60, 110), isNull);
+      final release = Completer<void>();
+      final entered = Completer<void>();
+      final locked = s.readLocked((_) {
+        entered.complete();
+        return release.future;
+      });
+      await entered.future;
+      try {
+        expect(s.annotationAt(1, 60, 110), isNull);
+      } finally {
+        release.complete();
+        await locked;
+      }
+      await s.highlight(regions, 0x66ffff00);
+      final first = s.annotationAt(1, 60, 110)!;
+      await s.underline(regions);
+      final underline = s.annotationAt(1, 60, 110)!;
+      expect(underline.kind, AnnotationKind.underline);
+      await s.removeAnnotations({first.id}, s.revision);
+      // Reclaiming the earlier slot changes the underline's native index.
+      await s.highlight(regions, 0x660000ff);
+      expect(s.annotationAt(1, 60, 110)!.argb, 0x660000ff);
+      await s.undo();
+      expect(s.annotationAt(1, 60, 110)!.id, underline.id);
+      await s.redo();
+      expect(s.annotationAt(1, 60, 110)!.argb, 0x660000ff);
+      expect(s.annotationAt(2, 60, 110), isNull);
+      await s.close(discard: true);
+      expect(() => s.annotationAt(1, 60, 110), throwsStateError);
+    },
+  );
+
   test('create/recolor/delete and saved undo preserve ID, pixels and viewer identity', () async {
     final s = await open(spacedTextPdf());
     final document = s.lease.document;

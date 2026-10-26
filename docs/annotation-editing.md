@@ -164,6 +164,14 @@ foreign text markup shows a read-only menu rather than targeting a mark beneath
 it. The menu captures the document, annotation ID, and revision; stale targets
 cannot edit a different document or newer model.
 
+Opening a session starts the annotation scan in the background. Once ready,
+context menus hit-test the committed Dart model synchronously, without waiting
+behind native edits or saves. No second annotation cache is kept. Until that
+initial scan finishes, the menu paints no popup; Escape and outside clicks still
+cancel it. It then opens with its final contents instead of briefly displaying
+a loading row. Failed scans show an unavailable message, and replaced or
+dismissed requests cannot reopen a menu when their scan completes.
+
 Recoloring uses the annotation's current color and leaves the default creation
 color unchanged. Each color change or removal uses the session command path,
 including undo/redo, redraw, and auto-save. Choosing the current color is a no-op.

@@ -8,7 +8,6 @@ import 'package:shadcn_flutter/shadcn_flutter.dart' hide colorToHex;
 import '../../providers/document_provider.dart';
 import '../../data/document_data.dart';
 import '../../editing/annotation_edit.dart';
-import '../../editing/annotation_hit_test.dart';
 import '../../utils/color_utils.dart';
 import '../../services/document_actions.dart';
 import '../../services/narration_actions.dart';
@@ -41,12 +40,11 @@ class AnnotationMenuRequest {
   final int pageNumber, revision;
   final PdfPoint point;
 
-  Future<AnnotationRecord?> resolve() async {
-    final records = await document.session.annotations();
+  AnnotationRecord? resolve() {
     if (document.session.revision != revision) {
       throw StateError('Annotations changed. Open the menu again.');
     }
-    return textMarkupAt(records, pageNumber, point.x, point.y);
+    return document.session.annotationAt(pageNumber, point.x, point.y);
   }
 }
 
@@ -76,19 +74,62 @@ class PdfSelectionMenu extends ConsumerStatefulWidget {
 }
 
 class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
-  Future<AnnotationRecord?>? _target;
+  AnnotationRecord? _target;
+  bool _pending = false, _failed = false, _dismissed = false;
   final _menuFocus = FocusNode(debugLabel: 'PDF context menu');
 
   @override
   void initState() {
     super.initState();
-    _target = widget.annotationRequest?.resolve();
+    _resolveTarget();
+    _focusMenu();
+  }
+
+  void _resolveTarget() {
+    _target = null;
+    _pending = false;
+    _failed = false;
+    _dismissed = false;
+    final request = widget.annotationRequest;
+    if (request == null) return;
+    if (request.document.session.annotationsReady) {
+      try {
+        _target = request.resolve();
+      } catch (_) {
+        _failed = true;
+      }
+      return;
+    }
+    _pending = true;
+    request.document.session.prepareAnnotations().then(
+      (_) => _finishTarget(request),
+      onError: (Object _) => _finishTarget(request, failed: true),
+    );
+  }
+
+  void _finishTarget(AnnotationMenuRequest request, {bool failed = false}) {
+    if (!mounted ||
+        _dismissed ||
+        !identical(widget.annotationRequest, request)) {
+      return;
+    }
+    setState(() {
+      _pending = false;
+      _failed = failed;
+      if (!failed) {
+        try {
+          _target = request.resolve();
+        } catch (_) {
+          _failed = true;
+        }
+      }
+    });
     _focusMenu();
   }
 
   void _focusMenu() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) _menuFocus.requestFocus();
+      if (mounted && !_dismissed) _menuFocus.requestFocus();
     });
   }
 
@@ -102,7 +143,7 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
   void didUpdateWidget(covariant PdfSelectionMenu oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.annotationRequest != widget.annotationRequest) {
-      _target = widget.annotationRequest?.resolve();
+      _resolveTarget();
     }
     if (oldWidget.annotationRequest != widget.annotationRequest ||
         oldWidget.params.anchorA != widget.params.anchorA) {
@@ -111,26 +152,40 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
   }
 
   void _dismiss() {
+    _dismissed = true;
     widget.onDismiss?.call();
     widget.params.dismissContextMenu();
   }
 
   @override
-  Widget build(BuildContext context) => FutureBuilder<AnnotationRecord?>(
-    future: _target,
-    builder: (context, snapshot) => _menu(context, snapshot),
-  );
+  Widget build(BuildContext context) {
+    // While the first scan finishes, keep dismissal active but paint no popup.
+    // Once loaded, both hit and no-hit menus render in their final form first.
+    if (_pending) {
+      return TapRegion(
+        onTapOutside: (_) => _dismiss(),
+        child: Focus(
+          focusNode: _menuFocus,
+          onKeyEvent: (_, event) {
+            if (event is KeyDownEvent &&
+                event.logicalKey == LogicalKeyboardKey.escape) {
+              _dismiss();
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: const SizedBox.shrink(),
+        ),
+      );
+    }
+    return _menu(context);
+  }
 
-  Widget _menu(
-    BuildContext context,
-    AsyncSnapshot<AnnotationRecord?> snapshot,
-  ) {
+  Widget _menu(BuildContext context) {
     final params = widget.params;
     final request = widget.annotationRequest;
     final document = ref.watch(currentDocumentProvider);
-    final existing = request == null ? null : snapshot.data;
-    final pending =
-        request != null && snapshot.connectionState != ConnectionState.done;
+    final existing = request == null ? null : _target;
     final stale =
         request != null &&
         (document?.session != request.document.session ||
@@ -138,15 +193,13 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
             request.document.session.revision != request.revision);
     final canEdit =
         !stale &&
-        !pending &&
-        !snapshot.hasError &&
+        !_failed &&
         existing?.canEdit == true &&
         document?.pdfDocument.permissions?.allowsModifyAnnotations != false;
     final selection = params.textSelectionDelegate;
     final copy = selection.hasSelectedText && selection.isCopyAllowed;
     final canMarkSelection =
-        !pending &&
-        !snapshot.hasError &&
+        !_failed &&
         !stale &&
         selection.hasSelectedText &&
         document != null &&
@@ -269,18 +322,11 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
                 ),
               ),
             ],
-            if (request != null && (pending || snapshot.hasError || stale))
-              MenuLabel(
-                child: Text(
-                  pending
-                      ? 'Loading annotation…'
-                      : 'Annotation unavailable. Reopen menu.',
-                ),
+            if (request != null && (_failed || stale))
+              const MenuLabel(
+                child: Text('Annotation unavailable. Reopen menu.'),
               ),
-            if (existing != null &&
-                !stale &&
-                !pending &&
-                !snapshot.hasError) ...[
+            if (existing != null && !stale && !_failed) ...[
               const MenuDivider(),
               MenuLabel(
                 child: Text(
@@ -302,10 +348,11 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
                 MenuLabel(
                   child: Text('This ${existing.kind.name} is read-only'),
                 ),
-              MenuButton(
-                onPressed: canEdit ? (_) => edit() : null,
-                child: Text('Remove ${existing.kind.name}'),
-              ),
+              if (canEdit)
+                MenuButton(
+                  onPressed: (_) => edit(),
+                  child: Text('Remove ${existing.kind.name}'),
+                ),
             ],
             if (underline)
               MenuButton(
