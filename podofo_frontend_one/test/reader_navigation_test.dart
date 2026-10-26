@@ -18,6 +18,7 @@ import 'package:podofo_one/src/providers/data_provider.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/narration_provider.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
+import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 import 'package:podofo_one/src/widgets/components/pdf_back_button.dart';
 import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
@@ -33,6 +34,154 @@ void main() {
   final platform = Platform.isMacOS
       ? TargetPlatform.macOS
       : TargetPlatform.windows;
+
+  testWidgets(
+    'internal link hover fades, fits the window, and passes clicks through',
+    (tester) async {
+      final reader = await _Reader.open(tester);
+      await reader.position(1, zoom: 2);
+      final viewer = reader.viewer;
+      final link = await reader.linkRectangle(1);
+      final point = viewer.documentToGlobal(link.center)!;
+      final original = viewer.value.clone();
+      final card = find.byKey(const ValueKey('pdf-link-hover-card'));
+
+      await reader.mouse.moveTo(point);
+      await tester.pump(const Duration(milliseconds: 299));
+      expect(card, findsNothing);
+      await tester.pump(const Duration(milliseconds: 1));
+      await waitForNative(tester, () => card.evaluate().isNotEmpty);
+      // Waiting for the native link lookup can advance the first fade frame.
+      final initialOpacity = _hoverOpacity(tester);
+      expect(initialOpacity, inInclusiveRange(0, .4));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(_hoverOpacity(tester), closeTo(initialOpacity + .5, .01));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(_hoverOpacity(tester), 1);
+      expect(tester.getTopLeft(card), point + const Offset(15, 15));
+      _expectMatrix(viewer.value, original);
+      await captureReader(tester, 'page-tooltip-light');
+
+      // The full-window overlay must remain transparent to PDF pointer input,
+      // even where the card itself overlaps the link annotation.
+      await reader.click(point + const Offset(20, 20));
+      await tester.pump(const Duration(milliseconds: 250));
+      expect(viewer.pageNumber, 2);
+      expect(card, findsNothing);
+
+      await tester.runAsync(
+        () => reader.container
+            .read(userPreferenceProvider.notifier)
+            .setThemeMode(shadcn.ThemeMode.dark),
+      );
+      await tester.pump();
+      final localTarget = Offset(
+        viewer.viewSize.width - 10,
+        viewer.viewSize.height - 10,
+      );
+      await viewer.goTo(
+        viewer.calcMatrixFor(
+          link.center + (viewer.viewSize.center(Offset.zero) - localTarget) / 6,
+          zoom: 6,
+        ),
+        duration: Duration.zero,
+      );
+      await tester.pump();
+      final cornerPoint = viewer.documentToGlobal(link.center)!;
+      await reader.mouse.moveTo(cornerPoint);
+      await tester.pump(const Duration(milliseconds: 300));
+      await waitForNative(tester, () => card.evaluate().isNotEmpty);
+      await tester.pump(const Duration(milliseconds: 100));
+      final cardRect = tester.getRect(card);
+      final window = tester.getRect(
+        find.byKey(const ValueKey('reader-capture')),
+      );
+      expect(cardRect.left, greaterThanOrEqualTo(window.left));
+      expect(cardRect.top, greaterThanOrEqualTo(window.top));
+      expect(cardRect.right, lessThanOrEqualTo(window.right));
+      expect(cardRect.bottom, lessThanOrEqualTo(window.bottom));
+      expect(cardRect.left, lessThan(cornerPoint.dx + 15));
+      expect(cardRect.top, lessThan(cornerPoint.dy + 15));
+      await captureReader(tester, 'page-tooltip-dark-edge');
+
+      await reader.mouse.moveTo(Offset.zero);
+      await tester.pump();
+      expect(_hoverOpacity(tester), 1);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(_hoverOpacity(tester), closeTo(.5, .01));
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(_hoverOpacity(tester), 0);
+      // Flutter reports animation completion on the frame after the endpoint.
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(card, findsNothing);
+
+      // Reduced motion keeps the hover delay but skips both fades.
+      tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
+          const FakeAccessibilityFeatures(disableAnimations: true);
+      addTearDown(
+        tester.binding.platformDispatcher.clearAccessibilityFeaturesTestValue,
+      );
+      await tester.pump();
+      await reader.mouse.moveTo(cornerPoint);
+      await tester.pump(const Duration(milliseconds: 299));
+      expect(card, findsNothing);
+      await tester.pump(const Duration(milliseconds: 1));
+      await waitForNative(tester, () => card.evaluate().isNotEmpty);
+      expect(_hoverOpacity(tester), 1);
+      await reader.mouse.moveTo(Offset.zero);
+      await tester.pump();
+      expect(card, findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(platform),
+  );
+
+  testWidgets(
+    'hover dismissal handles rapid reentry and document close during a fade',
+    (tester) async {
+      final reader = await _Reader.open(tester);
+      await reader.position(1, zoom: 2);
+      final point = reader.viewer.documentToGlobal(
+        (await reader.linkRectangle(1)).center,
+      )!;
+      final card = find.byKey(const ValueKey('pdf-link-hover-card'));
+      await reader.mouse.moveTo(point);
+      await tester.pump(const Duration(milliseconds: 300));
+      await waitForNative(tester, () => card.evaluate().isNotEmpty);
+      await tester.pump(const Duration(milliseconds: 100));
+
+      // Repeated movements inside the reader must not restart the fade-out.
+      await reader.mouse.moveTo(point + const Offset(0, 60));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      await reader.mouse.moveTo(point + const Offset(0, 70));
+      await reader.mouse.moveTo(point);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(_hoverOpacity(tester), 0);
+      await tester.pump(const Duration(milliseconds: 1));
+      expect(card, findsNothing);
+      await tester.pump(const Duration(milliseconds: 248));
+      expect(card, findsNothing);
+      await tester.pump(const Duration(milliseconds: 1));
+      await waitForNative(tester, () => card.evaluate().isNotEmpty);
+      expect(card, findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(_hoverOpacity(tester), allOf(greaterThan(0), lessThan(1)));
+
+      await tester.runAsync(
+        () => reader.documents.removeDocument(reader.session.path),
+      );
+      await tester.pump();
+      // Disposing the reader removes its entry during the frame; Overlay
+      // applies that removal on the next frame.
+      await tester.pump();
+      expect(card, findsNothing);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(card, findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+    variant: TargetPlatformVariant.only(platform),
+  );
 
   testWidgets(
     'two-page menus preserve playback and page-relative citation history',
@@ -367,6 +516,12 @@ void main() {
 
 final _back = find.byKey(const ValueKey('pdf-link-back'));
 
+double _hoverOpacity(WidgetTester tester) => tester
+    .element(find.byKey(const ValueKey('pdf-link-hover-card')))
+    .findAncestorWidgetOfExactType<FadeTransition>()!
+    .opacity
+    .value;
+
 double _opacity(WidgetTester tester) => tester
     .widget<AnimatedOpacity>(
       find
@@ -507,6 +662,17 @@ class _Reader {
     );
     await tester.pump(const Duration(milliseconds: 300));
     expect(find.byType(PdfSelectionMenu), findsNothing);
+  }
+
+  Future<Rect> linkRectangle(int pageNumber) async {
+    final page = session.lease.document.pages[pageNumber - 1];
+    final links = (await tester.runAsync(
+      () => session.lease.use((_) => page.loadLinks()),
+    ))!;
+    return links.single.rects.single.toRectInDocument(
+      page: page,
+      pageRect: viewer.layout.pageLayouts[pageNumber - 1],
+    );
   }
 
   Future<void> clickLink(int pageNumber, {bool settle = true}) async {

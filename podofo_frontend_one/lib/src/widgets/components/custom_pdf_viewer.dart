@@ -33,10 +33,11 @@ class CustomPdfViewer extends ConsumerStatefulWidget {
 }
 
 class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   static final _disabledFilter = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
 
   OverlayEntry? _overlay;
+  late final AnimationController _hoverAnimation;
   Timer? _hoverTimer;
   int _generation = 0;
   final _selectionPointers = <int>{};
@@ -205,6 +206,13 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   @override
   void initState() {
     super.initState();
+    _hoverAnimation =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 100),
+        )..addStatusListener((status) {
+          if (status == AnimationStatus.dismissed) _removeHoverOverlay();
+        });
     _linkAnimation = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -336,9 +344,24 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     unawaited(DocumentActions.highlight(ref));
   }
 
-  void _clearHover() {
+  void _clearHover({bool immediately = false}) {
     _generation++;
     _hoverTimer?.cancel();
+    _hoverTimer = null;
+    if (_overlay == null) return;
+    if (immediately ||
+        MediaQuery.disableAnimationsOf(context) ||
+        _hoverAnimation.isDismissed) {
+      _hoverAnimation.stop();
+      _removeHoverOverlay();
+    } else if (_hoverAnimation.status != AnimationStatus.reverse) {
+      // Keep the entry mounted until its fade finishes. Repeated pointer moves
+      // must not restart the dismissal or leave an invisible overlay behind.
+      _hoverAnimation.reverse();
+    }
+  }
+
+  void _removeHoverOverlay() {
     _overlay?.remove();
     _overlay?.dispose();
     _overlay = null;
@@ -349,7 +372,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     _linkAnimation.dispose();
     _narration.removeListener(_onNarrationChanged);
     _narration.scrubPreview.removeListener(_onScrubPreviewChanged);
-    _clearHover();
+    _clearHover(immediately: true);
+    _hoverAnimation.dispose();
     super.dispose();
   }
 
@@ -639,48 +663,79 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       useDocumentLayoutCoordinates: false,
     );
     if (hit == null) return;
-    _hoverTimer = Timer(const Duration(milliseconds: 350), () async {
+    _hoverTimer = Timer(const Duration(milliseconds: 300), () async {
       try {
         final links = await document.session.lease.use(
           (_) => hit.page.loadLinks(),
         );
         if (!mounted || generation != _generation) return;
         for (final link in links) {
+          if (!link.isNavigable) continue;
           if (!link.rects.any((rect) => rect.containsPoint(hit.offset))) {
             continue;
           }
-          final label = link.url == null
+          final internal = link.url == null;
+          final label = internal
               ? 'Page ${link.dest?.pageNumber ?? ''}'
               : linkPreviewLabel(link.url!);
-          final size = MediaQuery.sizeOf(context);
           final overlayBox =
               Overlay.of(context).context.findRenderObject() as RenderBox;
           final position = overlayBox.globalToLocal(event.position);
+          final disableAnimations = MediaQuery.disableAnimationsOf(context);
+          _removeHoverOverlay();
+          _hoverAnimation.value = disableAnimations ? 1 : 0;
           _overlay = OverlayEntry(
-            builder: (context) => Positioned(
-              left: (position.dx + 15).clamp(
-                0,
-                (size.width - 340).clamp(0, double.infinity),
-              ),
-              top: (position.dy + 15).clamp(
-                0,
-                (size.height - 110).clamp(0, double.infinity),
-              ),
+            // Overlay uses Flutter's parent data, not shadcn's patched Stack.
+            builder: (context) => flutter.Positioned.fill(
               child: IgnorePointer(
-                child: SizedBox(
-                  width: 320,
-                  child: Card(
-                    child: Text(
-                      label,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                    ).small(),
+                child: CustomSingleChildLayout(
+                  delegate: _LinkHoverCardLayout(
+                    position,
+                    maxWidth: internal ? 400 : 320,
+                  ),
+                  child: FadeTransition(
+                    opacity: _hoverAnimation,
+                    child: SizedBox(
+                      width: internal ? null : 320,
+                      child: Card(
+                        key: const ValueKey('pdf-link-hover-card'),
+                        boxShadow: internal
+                            ? [
+                                BoxShadow(
+                                  color: Theme.of(context).colorScheme.primary
+                                      .withAlpha(50),
+                                  offset: const Offset(0, 2),
+                                  blurRadius: 2,
+                                ),
+                              ]
+                            : null,
+                        child: internal
+                            ? Padding(
+                                padding: const EdgeInsets.all(1),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      label,
+                                      style: Theme.of(context).typography.small,
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Text(
+                                label,
+                                maxLines: 4,
+                                overflow: TextOverflow.ellipsis,
+                              ).small(),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           );
           Overlay.of(context).insert(_overlay!);
+          if (!disableAnimations) _hoverAnimation.forward();
           break;
         }
       } catch (_) {
@@ -688,4 +743,30 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       }
     });
   }
+}
+
+/// Clamp the actual card size, so a short page label stays beside the pointer
+/// even near the right edge instead of reserving the full maximum width.
+class _LinkHoverCardLayout extends SingleChildLayoutDelegate {
+  const _LinkHoverCardLayout(this.position, {required this.maxWidth});
+
+  final Offset position;
+  final double maxWidth;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
+      BoxConstraints(
+        maxWidth: math.min(maxWidth, constraints.maxWidth),
+        maxHeight: constraints.maxHeight,
+      );
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) => Offset(
+    (position.dx + 15).clamp(0, math.max(0, size.width - childSize.width)),
+    (position.dy + 15).clamp(0, math.max(0, size.height - childSize.height)),
+  );
+
+  @override
+  bool shouldRelayout(_LinkHoverCardLayout oldDelegate) =>
+      oldDelegate.position != position || oldDelegate.maxWidth != maxWidth;
 }
