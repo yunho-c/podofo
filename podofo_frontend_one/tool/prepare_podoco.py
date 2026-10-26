@@ -33,8 +33,7 @@ def prepare():
         "-p",
         "podoco-ffi",
     ]
-    if coreml:
-        command += ["--features", "coreml"]
+    command += ["--features", "coreml,math" if coreml else "math"]
     env = dict(os.environ)
     if system == "Darwin":
         env["MACOSX_DEPLOYMENT_TARGET"] = "15.0"
@@ -54,6 +53,7 @@ def prepare():
                 "system": system,
                 "architecture": platform.machine(),
                 "coreml": coreml,
+                "math": True,
                 "sha256": hashlib.sha256(
                     (target / "podoco_ffi").read_bytes()
                 ).hexdigest(),

@@ -9,8 +9,9 @@ import 'package:podoco/podoco.dart' as podoco;
 import '../services/pdf_session.dart';
 import 'pdf_image_input.dart';
 
-/// Layout-only experimental raster policy. Formula resolution is qualified
-/// separately. pdfrx already applies CropBox and page rotation.
+/// Experimental raster policy shared by layout and detected formula crops.
+/// pdfrx already applies CropBox and page rotation. Corpus quality is documented
+/// separately from renderer handoff and native execution parity.
 const layoutRenderProfile =
     'pdfrx-0.6.1-white-no-annotations-144dpi-edge2048-v1';
 

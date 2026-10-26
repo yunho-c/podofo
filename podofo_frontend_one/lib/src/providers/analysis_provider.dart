@@ -6,14 +6,27 @@ import 'package:path_provider/path_provider.dart';
 
 import '../analysis/analysis_controller.dart';
 import '../analysis/analysis_store.dart';
+import '../analysis/equation_controller.dart';
 import 'document_provider.dart';
+import 'narration_provider.dart';
+
+final equationControllerProvider = Provider<EquationController?>((ref) {
+  final analysis = ref.watch(analysisControllerProvider).asData?.value;
+  if (analysis == null) return null;
+  final controller = EquationController(
+    analysis: analysis,
+    narration: ref.read(narrationControllerProvider),
+  );
+  ref.onDispose(controller.dispose);
+  return controller;
+});
 
 final analysisControllerProvider = FutureProvider<AnalysisController>((
   ref,
 ) async {
   final root = await getApplicationSupportDirectory();
   final controller = AnalysisController(
-    store: AnalysisStore(Directory(p.join(root.path, 'podoco', 'pages-v1'))),
+    store: AnalysisStore(Directory(p.join(root.path, 'podoco', 'pages-v2'))),
   );
   if (!ref.mounted) {
     controller.dispose();

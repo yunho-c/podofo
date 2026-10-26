@@ -58,6 +58,11 @@ class NarrationController extends ChangeNotifier {
   Object? _pendingDocumentId;
   bool _closed = false, _pauseWhenReady = false;
   NarrationSource? source;
+
+  /// Optional caller identity, allowing a feature to dismiss only its own work.
+  /// Other read requests replace this identity before asynchronous resolution.
+  Object? _requestOwner;
+  Object? get requestOwner => _requestOwner;
   NarrationSnapshot? snapshot;
   PaperSequence? _timedSequence;
   _DocumentSeek? _documentSeek;
@@ -249,6 +254,7 @@ class NarrationController extends ChangeNotifier {
     Object documentId,
     Future<NarrationSource> Function() resolve, {
     bool keepSequence = false,
+    Object? owner,
   }) async {
     if (_closed) return;
     if (!available) {
@@ -257,6 +263,7 @@ class NarrationController extends ChangeNotifier {
       return;
     }
     final generation = ++_generation;
+    _requestOwner = owner;
     _finishMovement();
     _remember();
     if (!keepSequence) {
@@ -788,6 +795,7 @@ class NarrationController extends ChangeNotifier {
         previous.documentId,
         () async => replacement,
         keepSequence: true,
+        owner: requestOwner,
       );
       _pauseWhenReady = keepPaused;
       await work;
@@ -845,7 +853,14 @@ class NarrationController extends ChangeNotifier {
     if (_closed) return;
     if (terminal && !preparing && source != null) {
       final saved = source!;
-      unawaited(read(saved.documentId, () async => saved, keepSequence: true));
+      unawaited(
+        read(
+          saved.documentId,
+          () async => saved,
+          keepSequence: true,
+          owner: requestOwner,
+        ),
+      );
       return;
     }
     _pauseWhenReady = !paused;
@@ -938,6 +953,7 @@ class NarrationController extends ChangeNotifier {
 
   /// Dismisses narration without disposing the reusable speech engine.
   Future<void> dismiss() async {
+    _requestOwner = null;
     final stopping = stop();
     final generation = _generation;
     source?.sequence?.close();
@@ -970,6 +986,7 @@ class NarrationController extends ChangeNotifier {
     await stop();
     sequence?.close();
     if (_generation != generation) return;
+    _requestOwner = null;
     source = null;
     _listenDocument(null);
     _lastAnchor = null;

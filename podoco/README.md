@@ -4,7 +4,7 @@ A Rust-first library for efficient document analysis with ergonomic language
 bindings. Podoco lives alongside the PoDoFo application in this Git repository,
 with its own Cargo workspace and development checks.
 
-**Status: M5 app layout, M6 formula analysis, M7 optional math conversion, and M8 native renderer leases implemented.** Rust provides checked
+**Status: document/formula analysis, optional math conversion, renderer leases, and experimental app Copy/Listen implemented.** Rust provides checked
 page images, portable results, offline model bundles, and reusable Core ML
 `LayoutSession` execution for PP-DocLayoutV3. `Analyzer` adds eager document jobs,
 lazy rendering, bounded sinks, and cancellation. See [document jobs](docs/jobs.md),
@@ -13,14 +13,17 @@ experimental; its known export differences are recorded in the qualification.
 
 The [C ABI](docs/ffi.md) and [Dart SDK](bindings/dart/README.md) expose document
 jobs, copied images, controlled native leases, typed results, and draining
-cancellation. PoDoFo now has an [experimental layout integration](../docs/document-analysis.md).
+cancellation. PoDoFo has an [experimental document/equation integration](../docs/document-analysis.md).
 PP-FormulaNet_plus-L has a [qualified blocking Rust crop recognizer](docs/formula.md).
 Its [progressive document pipeline](docs/internal/m6-document-validation.md) is also
 qualified against the deployed reference; detector recall and recognition quality
 limits remain explicit. [Optional math conversion](docs/math.md) exposes isolated
 MathML/plain-speech workers through Rust/C/Dart. The app now uses
 [qualified native renderer leases](docs/internal/m8-renderer-validation.md), with
-a copied fallback. Copy/Listen integration is the next milestone.
+a copied fallback. The app merges progressive formula results, preserves recognized
+LaTeX for Copy, and sends optional MathCAT plain speech into its existing MLSR
+player. [M9 evidence](docs/internal/m9-integration-validation.md) distinguishes
+automated integration checks from outstanding model promotion and human acceptance.
 Core ML via cidre is the first backend, with QNN planned for Qualcomm Windows.
 [Observer exclusion and coexistence](docs/coreml.md) remain the packaging policy.
 The packages are private while the complete analysis contract is established.

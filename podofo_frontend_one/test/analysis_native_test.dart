@@ -7,7 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:podoco/podoco.dart' as podoco;
 import 'package:podofo_one/src/analysis/analysis_controller.dart';
 import 'package:podofo_one/src/analysis/analysis_store.dart';
-import 'package:podofo_one/src/analysis/layout_engine.dart';
+import 'package:podofo_one/src/analysis/analysis_engine.dart';
 import 'package:podofo_one/src/analysis/pdf_analysis_source.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 
@@ -148,17 +148,33 @@ void main() {
         await engine.started.future;
         final original = analysisDocumentRef(first);
         await engine.sink(analysisFixture(original));
-        expect(controller.visibleUpdate, isA<podoco.PageLayoutReady>());
+        expect(
+          controller.visibleSnapshot,
+          isA<AnalysisPageSnapshot>().having(
+            (s) => s.complete,
+            'complete',
+            false,
+          ),
+        );
         controller.select(second, 0);
         expect(engine.job.cancelled, true);
         await engine.sink(analysisFixture(original, finished: true));
-        expect(controller.visibleUpdate, isNull);
+        expect(controller.visibleSnapshot, isNull);
         engine.job.finish();
         await operation;
-        final key = analysisCacheKey(original, fixtureManifest, fixtureProfile);
+        final key = analysisCacheKey(
+          original,
+          [fixtureManifest],
+          fixtureProfile,
+          podoco.ComputePolicy.cpuOnly,
+        );
         expect(
           await store.read(key, 0, original),
-          isA<podoco.PageLayoutReady>(),
+          isA<AnalysisPageSnapshot>().having(
+            (s) => s.complete,
+            'complete',
+            false,
+          ),
         );
         await first.close();
         final reopened = await PdfSession.open(first.path);
@@ -211,11 +227,12 @@ void main() {
             await pdf.close();
           }
           await engine.sink(analysisFixture(original, finished: true));
-          expect(controller.visibleUpdate, isNull);
+          expect(controller.visibleSnapshot, isNull);
           final key = analysisCacheKey(
             original,
-            fixtureManifest,
+            [fixtureManifest],
             fixtureProfile,
+            podoco.ComputePolicy.cpuOnly,
           );
           expect(await store.read(key, 0, original), isNull);
           engine.job.finish();
@@ -268,7 +285,7 @@ void main() {
   test(
     'repeated close waits for a model still opening and disposes it once',
     () async {
-      final opened = Completer<LayoutEngine>();
+      final opened = Completer<AnalysisEngine>();
       final engine = ControlledEngine();
       engine.job.completion.future.ignore();
       final controller = AnalysisController(
@@ -287,6 +304,63 @@ void main() {
   );
 
   final bundle = Platform.environment['PODOCO_M2_BUNDLE'];
+  final formulaBundle = Platform.environment['PODOCO_M6_BUNDLE'];
+  final formulaPdf = Platform.environment['PODOCO_M8_PDF'];
+  test(
+    'real formulas become usable before the final page and restore from the combined cache',
+    () async {
+      final file = await File(formulaPdf!)
+          .copy('${temporary.path}/formula-page.pdf');
+      final pdf = await PdfSession.open(file.path);
+      final directory = Directory('${temporary.path}/formula-cache');
+      final controller = AnalysisController(store: AnalysisStore(directory));
+      var partialRecognitions = 0;
+      controller.addListener(() {
+        final page = controller.visiblePage;
+        if (page != null &&
+            !controller.pageComplete &&
+            page.formulas.any((f) => f.state is podoco.FormulaFinishedState)) {
+          partialRecognitions++;
+        }
+      });
+      try {
+        controller.select(pdf, 0);
+        await controller.configure(bundle!, formulaDirectory: formulaBundle!);
+        expect(controller.recognizesFormulas, isTrue);
+        await controller.analyze();
+        expect(controller.error, isNull);
+        expect(controller.outcome?.status, podoco.CompletionStatus.completed);
+        expect(partialRecognitions, greaterThan(0));
+        expect(controller.pageComplete, true);
+        final snapshot = controller.visibleSnapshot!;
+        expect(snapshot.page.provenance.pipeline.models.length, 2);
+        expect(
+          snapshot.page.formulas.where(
+            (f) => f.state is podoco.FormulaFinishedState,
+          ),
+          isNotEmpty,
+        );
+        final pipeline = snapshot.page.provenance.pipeline;
+        final key = analysisCacheKey(
+          snapshot.page.page.key.document,
+          pipeline.models.map((m) => m.manifestSha256).toList(),
+          pipeline.profile,
+          pipeline.computePolicy,
+        );
+        final reopened = await AnalysisStore(directory)
+            .read(key, 0, analysisDocumentRef(pdf));
+        expect(reopened!.toJson(), snapshot.toJson());
+      } finally {
+        await controller.close();
+        controller.dispose();
+        await pdf.close();
+      }
+      expect(podoco.nativeLiveHandles, 0);
+    },
+    skip: bundle == null || formulaBundle == null || formulaPdf == null
+        ? 'Requires explicit real formula document qualification'
+        : false,
+  );
   test(
     'real PDF source and persistent app controller complete and reopen three pages',
     () async {
@@ -386,17 +460,21 @@ Future<void> waitFor(bool Function() condition) async {
   }
 }
 
-class ControlledEngine implements LayoutEngine {
+class ControlledEngine implements AnalysisEngine {
   int closeCount = 0;
   final started = Completer<void>();
   final job = ControlledJob();
   late Future<void> Function(podoco.AnalysisUpdate) sink;
   @override
-  String get manifest => fixtureManifest;
+  List<String> get manifests => [fixtureManifest];
+  @override
+  podoco.ComputePolicy get computePolicy => podoco.ComputePolicy.cpuOnly;
+  @override
+  bool get recognizesFormulas => false;
   @override
   String get profile => fixtureProfile;
   @override
-  LayoutJob analyze(
+  DocumentAnalysisJob analyze(
     podoco.PageSource pages,
     Future<void> Function(podoco.AnalysisUpdate) sink,
   ) {
@@ -412,7 +490,7 @@ class ControlledEngine implements LayoutEngine {
   }
 }
 
-class ControlledJob implements LayoutJob {
+class ControlledJob implements DocumentAnalysisJob {
   final completion = Completer<podoco.AnalysisOutcome>();
   bool cancelled = false;
   @override

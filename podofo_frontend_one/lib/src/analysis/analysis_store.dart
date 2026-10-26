@@ -7,19 +7,24 @@ import 'package:podoco/podoco.dart' as podoco;
 import 'package:synchronized/synchronized.dart';
 
 import 'pdf_analysis_source.dart';
+import 'analysis_snapshot.dart';
+
+export 'analysis_snapshot.dart';
 
 String analysisCacheKey(
   podoco.DocumentRef document,
-  String manifest,
+  List<String> manifests,
   String profile,
+  podoco.ComputePolicy computePolicy,
 ) => sha256
     .convert(
       utf8.encode(
         jsonEncode([
-          1,
+          2,
           document.toJson(),
-          manifest,
+          manifests,
           profile,
+          computePolicy.name,
           layoutRenderProfile,
         ]),
       ),
@@ -33,7 +38,7 @@ class AnalysisStore {
   AnalysisStore(
     this.directory, {
     this.maxBytes = 64 * 1024 * 1024,
-    this.maxPageBytes = 256 * 1024,
+    this.maxPageBytes = 4 * 1024 * 1024,
   });
   final Directory directory;
   final int maxBytes, maxPageBytes;
@@ -46,11 +51,17 @@ class AnalysisStore {
     return File(p.join(directory.path, '$key-$pageIndex.json'));
   }
 
-  Future<podoco.AnalysisUpdate?> read(
+  Future<AnalysisPageSnapshot?> read(
     String key,
     int pageIndex,
     podoco.DocumentRef document,
-  ) => _lock.synchronized(() async {
+  ) => _lock.synchronized(() => _read(key, pageIndex, document));
+
+  Future<AnalysisPageSnapshot?> _read(
+    String key,
+    int pageIndex,
+    podoco.DocumentRef document,
+  ) async {
     final file = _file(key, pageIndex);
     try {
       if (!await file.exists() || await file.length() > maxPageBytes) {
@@ -58,24 +69,16 @@ class AnalysisStore {
       }
       final decoded =
           jsonDecode(await file.readAsString()) as Map<String, dynamic>;
-      if (decoded['cache_version'] != 1 || decoded['key'] != key) return null;
-      final update = podoco.AnalysisUpdate.fromJson(
-        Map<String, Object?>.from(decoded['update'] as Map),
+      if (decoded['cache_version'] != 2 || decoded['key'] != key) return null;
+      final snapshot = AnalysisPageSnapshot.fromJson(
+        Map<String, Object?>.from(decoded['snapshot'] as Map),
       );
-      final page = pageOfUpdate(update);
-      if (page == null ||
-          page.page.key.document != document ||
-          page.page.key.pageIndex != pageIndex ||
-          page.provenance.renderProfile != layoutRenderProfile ||
-          analysisCacheKey(
-                document,
-                page.provenance.pipeline.models.first.manifestSha256,
-                page.provenance.pipeline.profile,
-              ) !=
-              key) {
+      if (snapshot.page.page.key.document != document ||
+          snapshot.page.page.key.pageIndex != pageIndex ||
+          !_matches(key, snapshot)) {
         return null;
       }
-      return update;
+      return snapshot;
     } on FileSystemException {
       return null;
     } on FormatException {
@@ -85,18 +88,67 @@ class AnalysisStore {
     } on ArgumentError {
       return null;
     }
-  });
+  }
+
+  bool _matches(String key, AnalysisPageSnapshot snapshot) {
+    final page = snapshot.page;
+    final pipeline = page.provenance.pipeline;
+    return page.provenance.renderProfile == layoutRenderProfile &&
+        analysisCacheKey(
+              page.page.key.document,
+              pipeline.models.map((m) => m.manifestSha256).toList(),
+              pipeline.profile,
+              pipeline.computePolicy,
+            ) ==
+            key;
+  }
 
   Future<bool> write(
     String key,
     podoco.AnalysisUpdate update,
     bool Function() isCurrent,
+  ) async => await apply(key, update, isCurrent) != null;
+
+  /// Persist one accepted transition and return the derived snapshot. Formula
+  /// updates merge only into the same analysis/page and never create fake SDK events.
+  Future<AnalysisPageSnapshot?> apply(
+    String key,
+    podoco.AnalysisUpdate update,
+    bool Function() isCurrent,
   ) => _lock.synchronized(() async {
-    final page = pageOfUpdate(update);
-    if (page == null || !isCurrent()) return false;
-    final file = _file(key, page.page.key.pageIndex);
+    if (!isCurrent()) return null;
+    final int index;
+    if (update is podoco.FormulaFinished) {
+      index = update.pageKey.pageIndex;
+    } else {
+      final page = pageOfUpdate(update);
+      if (page == null) return null;
+      index = page.page.key.pageIndex;
+    }
+    final previous = await _read(key, index, update.document);
+    if (previous?.analysisId == update.analysisId &&
+        update.sequence <= previous!.sequence) {
+      return null;
+    }
+    final AnalysisPageSnapshot snapshot;
+    if (update is podoco.FormulaFinished) {
+      if (previous == null) {
+        throw StateError('Formula update is missing its initial layout');
+      }
+      snapshot = previous.merge(update);
+    } else {
+      snapshot = AnalysisPageSnapshot.fromUpdate(update);
+    }
+    if (!_matches(key, snapshot)) {
+      throw StateError('Unexpected cached analysis provenance');
+    }
+    final file = _file(key, index);
     final bytes = utf8.encode(
-      jsonEncode({'cache_version': 1, 'key': key, 'update': update.toJson()}),
+      jsonEncode({
+        'cache_version': 2,
+        'key': key,
+        'snapshot': snapshot.toJson(),
+      }),
     );
     if (bytes.length > maxPageBytes || bytes.length > maxBytes) {
       throw StateError('Analysis page exceeds cache budget');
@@ -106,10 +158,10 @@ class AnalysisStore {
     try {
       final temporary = File(p.join(staging.path, 'page'));
       await temporary.writeAsBytes(bytes, flush: true);
-      if (!isCurrent()) return false;
+      if (!isCurrent()) return null;
       temporary.renameSync(file.path);
       await _prune();
-      return isCurrent();
+      return isCurrent() ? snapshot : null;
     } finally {
       await staging.delete(recursive: true);
     }

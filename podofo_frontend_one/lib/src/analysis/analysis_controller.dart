@@ -5,7 +5,7 @@ import 'package:podoco/podoco.dart' as podoco;
 
 import '../services/pdf_session.dart';
 import 'analysis_store.dart';
-import 'layout_engine.dart';
+import 'analysis_engine.dart';
 import 'pdf_analysis_source.dart';
 
 /// One analysis lane shared by reader tabs, with only the visible page retained.
@@ -13,12 +13,13 @@ import 'pdf_analysis_source.dart';
 class AnalysisController extends ChangeNotifier {
   AnalysisController({
     required this.store,
-    this.open = NativeLayoutEngine.open,
+    this.open = NativeAnalysisEngine.open,
   });
   final AnalysisStore store;
-  final Future<LayoutEngine> Function(String) open;
-  LayoutEngine? _engine;
-  LayoutJob? _job;
+  final Future<AnalysisEngine> Function(AnalysisModelPaths) open;
+  AnalysisModelPaths? modelPaths;
+  AnalysisEngine? _engine;
+  DocumentAnalysisJob? _job;
   Future<void>? _operation;
   Future<void>? _configuration;
   Future<void>? _closing;
@@ -27,20 +28,25 @@ class AnalysisController extends ChangeNotifier {
   int _generation = 0, _viewGeneration = 0, _pageIndex = 0;
   bool _disposed = false;
   bool showRegions = true;
-  podoco.AnalysisUpdate? visibleUpdate;
+  AnalysisPageSnapshot? visibleSnapshot;
   podoco.AnalysisProgress? progress;
   podoco.AnalysisOutcome? outcome;
   String? error;
   bool get ready => _engine != null;
+  bool get recognizesFormulas => _engine?.recognizesFormulas ?? false;
   bool get opening => _configuration != null;
   bool get running => _operation != null;
-  podoco.PageAnalysis? get visiblePage =>
-      visibleUpdate == null ? null : pageOfUpdate(visibleUpdate!);
-  bool get pageComplete => visibleUpdate is podoco.PageFinished;
+  podoco.PageAnalysis? get visiblePage => visibleSnapshot?.page;
+  bool get pageComplete => visibleSnapshot?.complete ?? false;
   PdfSession? get session => _session;
   String? get _key => _document == null || _engine == null
       ? null
-      : analysisCacheKey(_document!, _engine!.manifest, _engine!.profile);
+      : analysisCacheKey(
+          _document!,
+          _engine!.manifests,
+          _engine!.profile,
+          _engine!.computePolicy,
+        );
 
   void _notify() {
     if (!_disposed) notifyListeners();
@@ -74,7 +80,7 @@ class AnalysisController extends ChangeNotifier {
     }
     if (changed || _pageIndex != pageIndex) {
       _pageIndex = pageIndex;
-      visibleUpdate = null;
+      visibleSnapshot = null;
       unawaited(_restore());
       _notify();
     }
@@ -89,31 +95,33 @@ class AnalysisController extends ChangeNotifier {
     if (key == null || session == null || document == null) return;
     final cached = await store.read(key, index, document);
     if (view == _viewGeneration && _current(generation, session, document)) {
-      visibleUpdate = cached;
+      visibleSnapshot = cached;
       _notify();
     }
   }
 
-  Future<void> configure(String directory) {
+  Future<void> configure(String directory, {String? formulaDirectory}) {
     if (_disposed) throw StateError('Analysis controller is closed');
     if (_configuration != null) return _configuration!;
-    final task = _configure(directory);
+    final paths = AnalysisModelPaths(directory, formula: formulaDirectory);
+    modelPaths = paths;
+    final task = _configure(paths);
     _configuration = task;
     _notify();
     return task;
   }
 
-  Future<void> _configure(String directory) async {
+  Future<void> _configure(AnalysisModelPaths paths) async {
     _generation++;
     _job?.cancel();
     error = null;
-    visibleUpdate = null;
+    visibleSnapshot = null;
     try {
       await _operation;
       final previous = _engine;
       _engine = null;
       await previous?.close();
-      final candidate = await open(directory);
+      final candidate = await open(paths);
       if (_disposed) {
         await candidate.close();
         return;
@@ -151,7 +159,7 @@ class AnalysisController extends ChangeNotifier {
     outcome = null;
     progress = null;
     StreamSubscription<podoco.AnalysisProgress>? subscription;
-    LayoutJob? job;
+    DocumentAnalysisJob? job;
     try {
       final source = await PdfAnalysisSource.create(session);
       if (!_current(generation, session, document)) return;
@@ -161,21 +169,13 @@ class AnalysisController extends ChangeNotifier {
             update.document == document &&
             update.analysisId == job!.id;
         if (!current()) return;
-        final page = pageOfUpdate(update);
-        if (page != null) {
-          if (page.provenance.pipeline.profile != engine.profile ||
-              !page.provenance.pipeline.models.any(
-                (m) => m.manifestSha256 == engine.manifest,
-              ) ||
-              page.provenance.renderProfile != layoutRenderProfile) {
-            throw StateError('Unexpected analysis provenance');
-          }
-          final saved = await store.write(key, update, current);
-          if (saved && current() && page.page.key.pageIndex == _pageIndex) {
-            ++_viewGeneration; // A pending old disk read must not replace this update.
-            visibleUpdate = update;
-            _notify();
-          }
+        final saved = await store.apply(key, update, current);
+        if (saved != null &&
+            current() &&
+            saved.page.page.key.pageIndex == _pageIndex) {
+          ++_viewGeneration; // A pending old disk read must not replace this update.
+          visibleSnapshot = saved;
+          _notify();
         }
       });
       _job = job;

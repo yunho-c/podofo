@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../../providers/analysis_provider.dart';
+import 'equation_controls.dart';
 
 /// Deliberately in Developer mode until the selected model profile is promoted.
 class LayoutAnalysisControls extends ConsumerWidget {
@@ -36,7 +37,7 @@ class LayoutAnalysisControls extends ConsumerWidget {
         builder: (context, _) => Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const Text('Document layout (experimental)'),
+            const Text('Document analysis (experimental)'),
             const SizedBox(height: 8),
             Button(
               style: ButtonStyle.outline(),
@@ -47,11 +48,37 @@ class LayoutAnalysisControls extends ConsumerWidget {
                         confirmButtonText: 'Open layout model',
                       );
                       if (directory != null && context.mounted) {
-                        await controller.configure(directory);
+                        await controller.configure(
+                          directory,
+                          formulaDirectory: controller.modelPaths?.formula,
+                        );
                       }
                     },
               child: Text(
                 controller.opening ? 'Opening model…' : 'Open layout model…',
+              ),
+            ),
+            const SizedBox(height: 8),
+            Button(
+              style: ButtonStyle.outline(),
+              onPressed:
+                  controller.ready && !controller.opening && !controller.running
+                  ? () async {
+                      final directory = await getDirectoryPath(
+                        confirmButtonText: 'Open formula model',
+                      );
+                      if (directory != null && context.mounted) {
+                        await controller.configure(
+                          controller.modelPaths!.layout,
+                          formulaDirectory: directory,
+                        );
+                      }
+                    }
+                  : null,
+              child: Text(
+                controller.recognizesFormulas
+                    ? 'Change formula model…'
+                    : 'Open formula model…',
               ),
             ),
             const SizedBox(height: 8),
@@ -64,7 +91,11 @@ class LayoutAnalysisControls extends ConsumerWidget {
                       controller.session != null
                   ? () => unawaited(controller.analyze())
                   : null,
-              child: const Text('Analyze document layout'),
+              child: Text(
+                controller.recognizesFormulas
+                    ? 'Analyze document and equations'
+                    : 'Analyze document layout',
+              ),
             ),
             if (controller.running) ...[
               const SizedBox(height: 8),
@@ -96,6 +127,10 @@ class LayoutAnalysisControls extends ConsumerWidget {
                 '${controller.pageComplete ? 'complete' : 'partial'}',
               ).small(),
             if (controller.error case final error?) Text(error).small(),
+            if (controller.recognizesFormulas) ...[
+              const SizedBox(height: 16),
+              const EquationControls(),
+            ],
           ],
         ),
       ),

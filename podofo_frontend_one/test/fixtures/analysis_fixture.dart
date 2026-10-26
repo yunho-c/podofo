@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:podoco/podoco.dart' as podoco;
 import 'package:podofo_one/src/analysis/pdf_analysis_source.dart';
 
@@ -53,3 +55,68 @@ podoco.AnalysisUpdate analysisFixture(
     },
   },
 });
+
+podoco.AnalysisUpdate formulaFixture(
+  podoco.DocumentRef document, {
+  int stage = 0,
+  String analysisId = 'formula-job',
+  String latex = r'\frac{x+1}{2}',
+  String? formulaManifest,
+}) {
+  final json = jsonDecode(
+    jsonEncode(analysisFixture(document, analysisId: analysisId).toJson()),
+  ) as Map<String, dynamic>;
+  json['sequence'] = stage;
+  final page = json['payload']['page'] as Map<String, dynamic>;
+  final pipeline = page['provenance']['pipeline'] as Map<String, dynamic>;
+  if (formulaManifest != null) {
+    (pipeline['models'] as List).add({
+      'model_id': 'recognizer',
+      'manifest_sha256': formulaManifest,
+      'artifacts': {'fixture': 'b' * 64},
+    });
+  }
+  final outcome = {
+    'status': 'recognized',
+    'formula': {
+      'latex': latex,
+      'display_kind': 'displayed',
+      'score': null,
+      'provenance': pipeline,
+    },
+  };
+  page['formula_scope'] = 'all';
+  page['regions'] = [
+    {
+      'id': 17,
+      'model_class_id': 5,
+      'category': 'formula',
+      'model_label': 'formula',
+      'native_subtype': null,
+      'display_kind': 'displayed',
+      'bounds': [20, 25, 180, 75],
+      'polygon': null,
+      'score': 0.9,
+      'diagnostics': [],
+    },
+  ];
+  page['formulas'] = [
+    {
+      'region_id': 17,
+      'state': stage == 2
+          ? {'state': 'finished', 'outcome': outcome}
+          : {'state': 'pending'},
+    },
+  ];
+  if (stage == 1) {
+    json['payload'] = {
+      'type': 'formula_finished',
+      'page_key': podoco.PageKey(document, 0).toJson(),
+      'region_id': 17,
+      'outcome': outcome,
+    };
+  } else if (stage == 2) {
+    json['payload']['type'] = 'page_finished';
+  }
+  return podoco.AnalysisUpdate.fromJson(json);
+}

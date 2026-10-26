@@ -10,7 +10,10 @@ conversion. M1 implements the [Rust data/ownership contracts](../contracts.md)
 and offline model verification. M2 adds a [blocking layout session](../layout.md),
 private page pipeline, and thread-confined Core ML runtime. M3 adds
 [bounded document jobs](../jobs.md). M4 implements [C transport](../ffi.md)
-and the [typed Dart SDK](../../bindings/dart/README.md).
+and the [typed Dart SDK](../../bindings/dart/README.md). M6 adds PP-FormulaNet_plus-L
+to the same bounded job lane. M7 provides isolated optional math workers; M8
+qualifies renderer-owned image leases. M9 connects progressive Copy/Listen in
+PoDoFo, with model quality and human acceptance tracked separately.
 
 ## Dependency direction
 
@@ -21,7 +24,7 @@ PoDoFo / other Dart clients -> Dart API -> podoco-ffi -> podoco
 
 The core provides validated domain types, image copying, bounded JSON results,
 and local bundle verification. C handles and Dart pumps translate foreign
-ownership, lazy source requests, bounded result delivery, and control notifications. The optional `coreml` feature implements real page-layout
+ownership, lazy source requests, bounded result delivery, and control notifications. The optional `coreml` feature implements layout and formula
 inference, with Rust-owned scheduling in `jobs`. PDF rendering remains the
 caller's responsibility.
 
@@ -70,15 +73,20 @@ time, peak memory, and output quality on pinned inputs; device/kernel timing
 alone does not establish application throughput. Retain reference outputs and
 coordinate/reading-order checks alongside model-specific quality metrics.
 
-## Next implementation milestone
+## Application integration and remaining gates
 
-M1–M4 establish domain/ownership contracts, real layout inference, bounded
-jobs, and C/Dart APIs. M5 connects [PoDoFo rendering and persistence](../../../docs/document-analysis.md). Formula deployment follows its selection handoff. Optional math
-conversion can be developed independently. PoDoFo integration is done when real
-pages produce qualified results and Copy/Listen work through the public APIs;
-a placeholder `analyze` method would not meet that gate.
+M1–M8 establish domain/ownership contracts, real model execution, bounded jobs,
+C/Dart APIs, [PoDoFo rendering and persistence](../../../docs/document-analysis.md),
+and optional MathCAT conversion. The app now merges progressive formula results
+into its own immutable snapshots, caches both model identities and compute policy,
+and owns whole-equation selection and playback intent. Caller identity in the
+shared narrator prevents stale equation work from cancelling a newer prose request.
 
 The [implementation plan](../../../docs/podoco-implementation.md) gives the
 concrete dependency order and completion gates. PP-DocLayoutV3 is selected for
-layout and PP-FormulaNet_plus-L for recognition. The latter still requires a
-pinned conversion handoff and native qualification.
+layout and PP-FormulaNet_plus-L for recognition. Their pinned conversions and
+native parity are recorded alongside corpus accuracy limits. M9 automated
+integration, model-profile promotion, and human listening acceptance are separate
+claims; see the [integration report](m9-integration-validation.md).
+The queued, cancellable explicit-crop analyzer API from the design remains to be
+added across Rust/C/Dart; direct Rust callers currently use `FormulaSession`.

@@ -6,8 +6,11 @@ the agreed architecture and proposed interfaces. M1 now implements the
 M2 implements the blocking [Rust layout session](../podoco/docs/layout.md).
 M3 implements [Rust document jobs](../podoco/docs/jobs.md); the Rust analyzer
 example below now matches that API. M4 implements the
-[C/Dart layout SDK](../podoco/bindings/dart/README.md); optional math examples
-remain proposed. See the [current architecture](../podoco/docs/internal/architecture.md)
+[C/Dart SDK](../podoco/bindings/dart/README.md). M6–M8 implement progressive formula
+recognition, optional math conversion, and qualified renderer leases. M9 connects
+experimental app Copy/Listen. The queued explicit-crop analyzer convenience API
+remains outstanding; the blocking Rust `FormulaSession` is available now.
+See the [current architecture](../podoco/docs/internal/architecture.md)
 and [Core ML qualification boundary](../podoco/docs/coreml.md).
 
 The first complete pipeline analyzes a document's pages, detects layout, and
@@ -16,8 +19,8 @@ and individual formula results as they become available. Detection can miss
 formulas; “all” describes which detections are processed, not guaranteed recall.
 PoDoFo can copy recognized LaTeX immediately and ask the optional math module for
 speech text to submit to MLSR. PP-DocLayoutV3 is the selected layout model;
-PP-FormulaNet_plus-L is selected for formula recognition. Its conversion and
-deployed-model qualification remain M6 gates.
+PP-FormulaNet_plus-L is selected for formula recognition; its deployed-model
+parity is qualified, with [measured accuracy limitations](../podoco/docs/internal/m6-document-validation.md).
 The [implementation plan](podoco-implementation.md) sequences the work around
 the selected models and explicit qualification gates.
 
@@ -125,9 +128,9 @@ document lease covers the render operation independently of the analysis image
 lease. A source revision change terminates that job as `SourceChanged`; inputs
 from different revisions must never be combined under one document reference.
 
-### Dart orchestration and proposed math usage
+### Dart orchestration and optional math usage
 
-The document orchestration uses implemented M4 types; the math section remains proposed. `PageSource`,
+The document orchestration and optional math boundary are implemented. `PageSource`,
 the persistent store callback, qualified options, and existing MLSR `Tts` are
 supplied by the application. They do not hide a PDF parser or a selected model.
 
@@ -177,8 +180,8 @@ Future<mlsr.Speech> listenToEquation({
   required mlsr.Tts tts,
 }) async {
   final speech = await math.toSpeech(
-    MathInput.latex(formula.latex, display: formula.display),
-    options: options,
+    MathInput.latex(formula.latex, displayKind: formula.displayKind),
+    options,
   );
   // The caller configures MLSR's voice/locale and owns the returned Speech.
   return tts.speak(speech.text);
@@ -254,7 +257,7 @@ pub fn equation_for_tts(
     formula: &RecognizedFormula,
     options: MathSpeechOptions,
 ) -> Result<String> {
-    let speech = math.to_speech(MathInput::latex(&formula.latex, formula.display), options)?;
+    let speech = math.to_speech(MathInput::latex(&formula.latex, formula.display_kind), options)?;
     Ok(speech.text)
 }
 ```
@@ -262,8 +265,9 @@ pub fn equation_for_tts(
 The document-job facade is implemented; the complete
 [PNG document example](../podoco/crates/podoco/examples/document_layout.rs) is
 compiled by the development checks. The [Dart document example](../podoco/bindings/dart/example/document_layout.dart)
-is also analyzed and exercised with real model assets. Optional math examples
-still describe future APIs and must be type-checked before complete API v0 availability.
+is also analyzed and exercised with real model assets. See the compiled
+[math example](../podoco/crates/podoco/examples/math.rs) and the
+[optional math SDK](../podoco/docs/math.md) for explicit rule preparation and ownership.
 
 ## 3. Images, coordinate systems, and ownership
 
