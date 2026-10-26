@@ -7,7 +7,10 @@ with its own Cargo workspace and development checks.
 **Status: initialized scaffold.** Rust, C, and Dart expose library identity;
 the Dart package builds and bundles the native library for desktop host builds.
 Model loading, inference, OCR, layout detection, reading order, and table
-recognition are not implemented. No model or inference backend has been selected.
+recognition are not implemented. Core ML via cidre is the selected first backend;
+QNN is planned for Qualcomm Windows targets. No model has been selected yet.
+An optional [Core ML dependency](docs/coreml.md) is wired with observer exclusion
+and a real-model coexistence check; the document-analysis runtime remains future work.
 The packages are private while the first analysis contract is established.
 
 ## Quick start
@@ -41,6 +44,7 @@ bindings/dart/         Dart API, generated FFI, and native build hook
 model-manifests/        Model contract policy; no model is selected yet
 examples/              Index of executable examples
 tests/integration/     Actual C caller checks
+third_party/cidre/     Pinned MIT-licensed Apple bindings with observer exclusion
 tools/codegen/         Pinned C header generator
 tools/dev.py           Build, generation, and validation commands
 docs/                  Consumer setup and API contracts
@@ -72,5 +76,6 @@ and [validation scope](docs/internal/validation.md) for platform boundaries.
 
 ## License
 
-Apache-2.0, matching the repository. See [LICENSE](LICENSE). Future model weights
+Apache-2.0, matching the repository. See [LICENSE](LICENSE). The vendored cidre
+dependency retains its [MIT license](third_party/cidre/LICENSE.txt). Future model weights
 retain their own licenses and provenance, recorded separately in YAML manifests.

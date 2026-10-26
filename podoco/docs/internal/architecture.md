@@ -13,7 +13,14 @@ PoDoFo / other Dart clients -> Dart API -> podoco-ffi -> podoco
 
 The initial core exposes library identity only. The C ABI and Dart native hook
 are executable plumbing, not a substitute for a real analysis implementation.
-No model, inference runtime, PDF parser, or GPU/NPU dependency is included.
+No document model, inference runtime, or PDF parser is included. The optional
+`coreml` feature selects the native Apple bindings for the first runtime slice.
+
+The selected backend direction is Core ML via cidre first, followed by QNN for
+Qualcomm Windows targets. The [cidre coexistence investigation](cidre-coexistence.md)
+provides tested observer-exclusion and namespacing candidates for native
+packaging alongside MLSR. The pinned cidre dependency adopts observer exclusion;
+namespacing remains a fallback if KVO is later needed. See [Core ML setup](../coreml.md).
 
 ## Responsibilities
 

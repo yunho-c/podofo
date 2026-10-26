@@ -1,5 +1,6 @@
 [workspace]
 members = ["crates/*", "tools/codegen"]
+exclude = ["third_party/cidre"]
 default-members = ["crates/podoco", "crates/podoco-ffi"]
 resolver = "3"
 
@@ -12,6 +13,12 @@ repository = "https://github.com/yunho-c/podofo"
 
 [workspace.dependencies]
 podoco = { path = "crates/podoco", version = "0.1.0" }
+# Use a path dependency so external Podoco consumers also receive the patch.
+cidre = { path = "third_party/cidre", version = "=0.29.0", default-features = false, features = ["ml", "macos_15_0", "ios_18_0"] }
+
+# Unify registry users of cidre when they join this workspace's build graph.
+[patch.crates-io]
+cidre = { path = "third_party/cidre" }
 
 # Keep native libraries loadable on macOS, matching the qualified MLSR setup.
 [profile.dev]

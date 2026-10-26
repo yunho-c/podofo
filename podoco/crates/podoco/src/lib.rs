@@ -13,5 +13,8 @@
 
 #![forbid(unsafe_code)]
 
+#[cfg(all(feature = "coreml", not(any(target_os = "macos", target_os = "ios"))))]
+compile_error!("Podoco's coreml feature requires macOS or iOS.");
+
 /// The version of the Podoco Rust library.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

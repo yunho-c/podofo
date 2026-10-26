@@ -1,0 +1,73 @@
+--- a/build.rs
++++ b/build.rs
+@@ -62,6 +62,19 @@
+ 
+     let mut build = cc::Build::new();
+     build.file(&src);
++    if name == "ns" {
++        println!("cargo:rerun-if-env-changed=CIDRE_OBJC_CLASS_PREFIX");
++        if let Ok(prefix) = env::var("CIDRE_OBJC_CLASS_PREFIX") {
++            let mut chars = prefix.chars();
++            assert!(
++                chars.next().is_some_and(|c| c.is_ascii_alphabetic())
++                    && chars.all(|c| c.is_ascii_alphanumeric() || c == '_'),
++                "CIDRE_OBJC_CLASS_PREFIX must be a nonempty ASCII identifier starting with a letter"
++            );
++            let class_name = format!("{prefix}_CidreObserver");
++            build.define("CIDRE_OBSERVER_CLASS", Some(class_name.as_str()));
++        }
++    }
+     build.flag("-fobjc-arc");
+     build.flag("-fobjc-weak");
+     build.flag("-fno-common");
+--- a/pomace/ns/ns.h
++++ b/pomace/ns/ns.h
+@@ -92,6 +92,10 @@
+ Class NS_USER_ACTIVITY;
+ Class NS_USER_DEFAULTS;
+ 
++#ifndef CIDRE_OBSERVER_CLASS
++#define CIDRE_OBSERVER_CLASS CidreObserver
++#endif
++
+ typedef void cidre_change(
+                           void * _Nullable,
+                           NSString * _Nullable,
+@@ -99,7 +103,7 @@
+                           NSDictionary<NSKeyValueChangeKey,id> * _Nullable
+                           );
+ 
+-@interface CidreObserver : NSObject
++@interface CIDRE_OBSERVER_CLASS : NSObject
+ - (instancetype)initWithObject: (NSObject *)obj
+                        keyPath: (NSString *)keyPath
+                        options: (NSKeyValueObservingOptions)options
+@@ -109,7 +113,7 @@
+ - (void)invalidate;
+ @end
+ 
+-NS_RETURNS_RETAINED CidreObserver *
++NS_RETURNS_RETAINED CIDRE_OBSERVER_CLASS *
+ cidre_create_observer(
+                       NSObject * obj,
+                       NSString * keyPath,
+@@ -117,7 +121,7 @@
+                       void * context,
+                       cidre_change * fn_ptr
+                       ) {
+-    return [[CidreObserver alloc] initWithObject:obj keyPath:keyPath options:options context:context fnPtr:fn_ptr];
++    return [[CIDRE_OBSERVER_CLASS alloc] initWithObject:obj keyPath:keyPath options:options context:context fnPtr:fn_ptr];
+ }
+ 
+ void cidre_log(NSString * str) {
+--- a/pomace/ns/ns.m
++++ b/pomace/ns/ns.m
+@@ -8,7 +8,7 @@
+ #import "ns.h"
+ 
+ 
+-@implementation CidreObserver {
++@implementation CIDRE_OBSERVER_CLASS {
+     __weak NSObject * _obj;
+     NSString *_keyPath;
+     void * _context;

@@ -12,6 +12,8 @@ import sys
 import tempfile
 import tomllib
 
+from verify_cidre import verify as verify_cidre
+
 ROOT = Path(__file__).resolve().parents[1]
 DART = ROOT / "bindings/dart"
 TARGET = ROOT / "target"
@@ -167,6 +169,7 @@ def test_standalone():
 
 
 def check():
+    verify_cidre()
     run("cargo", "fmt", "--all", "--check")
     run(
         "cargo",

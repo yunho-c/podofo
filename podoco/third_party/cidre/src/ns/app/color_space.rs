@@ -1,0 +1,88 @@
+use crate::{arc, cg, define_obj_type, ns, objc};
+
+define_obj_type!(
+    #[doc(alias = "NSColorSpace")]
+    pub ColorSpace(ns::Id),
+    NS_COLOR_SPACE
+);
+
+unsafe impl Send for ColorSpace {}
+unsafe impl Sync for ColorSpace {}
+
+impl ColorSpace {
+    #[objc::init(initWithCGColorSpace:)]
+    pub fn init_with_cg_color_space(self, val: &cg::ColorSpace) -> Option<arc::R<ColorSpace>>;
+
+    pub fn with_cg_color_space(val: &cg::ColorSpace) -> Option<arc::R<Self>> {
+        Self::alloc().init_with_cg_color_space(val)
+    }
+
+    // NOTE: `CGColorSpace` is not `CF_RETURNS_RETAINED`, so this is really a +0
+    // return. It cannot use the retain-autoreleased path because that requires
+    // `objc::Obj`, which a CoreFoundation type does not implement, so the
+    // pointer is taken as owned. Harmless today only because CoreGraphics hands
+    // back immortal colour spaces.
+    #[objc::msg_send(CGColorSpace)]
+    pub fn cg_color_space(&self) -> Option<arc::Retained<cg::ColorSpace>>;
+
+    #[objc::msg_send(numberOfColorComponents)]
+    pub fn number_of_color_components(&self) -> ns::Integer;
+
+    #[objc::msg_send(localizedName)]
+    pub fn localized_name(&self) -> Option<arc::R<ns::String>>;
+
+    #[objc::msg_send(sRGBColorSpace)]
+    pub fn srgb() -> arc::R<Self>;
+
+    #[objc::msg_send(genericGamma22GrayColorSpace)]
+    pub fn generic_gamma22_gray() -> arc::R<Self>;
+
+    #[objc::msg_send(extendedSRGBColorSpace)]
+    pub fn extended_srgb() -> arc::R<Self>;
+
+    #[objc::msg_send(extendedGenericGamma22GrayColorSpace)]
+    pub fn extended_generic_gamma22_gray() -> arc::R<Self>;
+
+    #[objc::msg_send(displayP3ColorSpace)]
+    pub fn display_p3() -> arc::R<Self>;
+
+    #[objc::msg_send(adobeRGB1998ColorSpace)]
+    pub fn adobe_rgb1998() -> arc::R<Self>;
+
+    #[objc::msg_send(genericRGBColorSpace)]
+    pub fn generic_rgb() -> arc::R<Self>;
+
+    #[objc::msg_send(genericGrayColorSpace)]
+    pub fn generic_gray() -> arc::R<Self>;
+
+    #[objc::msg_send(genericCMYKColorSpace)]
+    pub fn generic_cmyk() -> arc::R<Self>;
+
+    #[objc::msg_send(deviceRGBColorSpace)]
+    pub fn device_rgb() -> arc::R<Self>;
+
+    #[objc::msg_send(deviceGrayColorSpace)]
+    pub fn device_gray() -> arc::R<Self>;
+
+    #[objc::msg_send(deviceCMYKColorSpace)]
+    pub fn device_cmyk() -> arc::R<Self>;
+}
+
+unsafe extern "C" {
+    static NS_COLOR_SPACE: &'static objc::Class<ColorSpace>;
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{cg, ns};
+    #[test]
+    fn basics() {
+        let cg_cspace = cg::ColorSpace::device_rgb().unwrap();
+        let ns_cspace = ns::ColorSpace::with_cg_color_space(&cg_cspace).unwrap();
+
+        let _val = ns_cspace.cg_color_space().unwrap();
+
+        let ns_cspace = ns::ColorSpace::device_rgb();
+        let _val = ns_cspace.cg_color_space().unwrap();
+    }
+}

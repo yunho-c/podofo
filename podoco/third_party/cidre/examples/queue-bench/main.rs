@@ -1,0 +1,28 @@
+use std::{
+    ffi::c_void,
+    sync::{Arc, Mutex},
+};
+
+use cidre::{blocks, dispatch};
+
+extern "C" fn block_fn(_ctx: *const c_void) {}
+
+fn main() {
+    let q = dispatch::Queue::global(0).unwrap();
+    let c = Arc::new(Mutex::new(0));
+
+    let cc = c.clone();
+
+    let mut block = dispatch::Block::<blocks::Send>::new0(move || {
+        let mut v = cc.lock().unwrap();
+        *v += 1;
+    });
+
+    for _ in 0..1_000_000_000 {
+        q.async_b(&mut block);
+        q.async_fn(block_fn);
+        q.sync_b(&mut block.as_noesc_mut());
+    }
+
+    println!("{:?}", c)
+}

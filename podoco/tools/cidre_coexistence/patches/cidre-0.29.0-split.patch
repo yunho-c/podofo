@@ -1,0 +1,168 @@
+--- a/build.rs
++++ b/build.rs
+@@ -62,6 +62,9 @@
+ 
+     let mut build = cc::Build::new();
+     build.file(&src);
++    if name == "ns" {
++        build.file(format!("{manifest_dir}/pomace/ns/observer.m"));
++    }
+     build.flag("-fobjc-arc");
+     build.flag("-fobjc-weak");
+     build.flag("-fno-common");
+--- a/pomace/ns/ns.h
++++ b/pomace/ns/ns.h
+@@ -92,33 +92,6 @@
+ Class NS_USER_ACTIVITY;
+ Class NS_USER_DEFAULTS;
+ 
+-typedef void cidre_change(
+-                          void * _Nullable,
+-                          NSString * _Nullable,
+-                          id _Nullable,
+-                          NSDictionary<NSKeyValueChangeKey,id> * _Nullable
+-                          );
+-
+-@interface CidreObserver : NSObject
+-- (instancetype)initWithObject: (NSObject *)obj
+-                       keyPath: (NSString *)keyPath
+-                       options: (NSKeyValueObservingOptions)options
+-                       context: (void *)context
+-                         fnPtr: (cidre_change *)fn_ptr;
+-
+-- (void)invalidate;
+-@end
+-
+-NS_RETURNS_RETAINED CidreObserver *
+-cidre_create_observer(
+-                      NSObject * obj,
+-                      NSString * keyPath,
+-                      NSKeyValueObservingOptions options,
+-                      void * context,
+-                      cidre_change * fn_ptr
+-                      ) {
+-    return [[CidreObserver alloc] initWithObject:obj keyPath:keyPath options:options context:context fnPtr:fn_ptr];
+-}
+ 
+ void cidre_log(NSString * str) {
+     NSLog(@"%@", str);
+--- a/pomace/ns/ns.m
++++ b/pomace/ns/ns.m
+@@ -8,35 +8,3 @@
+ #import "ns.h"
+ 
+ 
+-@implementation CidreObserver {
+-    __weak NSObject * _obj;
+-    NSString *_keyPath;
+-    void * _context;
+-    cidre_change * _fn_ptr;
+-}
+-
+-- (instancetype)initWithObject: (NSObject *)obj
+-                       keyPath: (NSString *)keyPath
+-                       options: (NSKeyValueObservingOptions)options
+-                       context: (void *)context
+-                         fnPtr: (cidre_change *)fn_ptr
+-{
+-    if (self = [super init]) {
+-        _obj = obj;
+-        _keyPath = keyPath;
+-        _context = context;
+-        _fn_ptr = fn_ptr;
+-        [_obj addObserver:self forKeyPath:keyPath options:options context:context];
+-    }
+-    return self;
+-}
+-
+-- (void)observeValueForKeyPath:(nullable NSString *)keyPath ofObject:(nullable id)object change:(nullable NSDictionary<NSKeyValueChangeKey,id> *)change context:(nullable void *)context {
+-    _fn_ptr(context, keyPath, object, change);
+-}
+-
+-- (void)invalidate {
+-    [_obj removeObserver:self forKeyPath:_keyPath context:_context];
+-}
+-
+-@end
+--- /dev/null
++++ b/pomace/ns/observer.h
+@@ -0,0 +1,31 @@
++#import <Foundation/Foundation.h>
++
++NS_ASSUME_NONNULL_BEGIN
++
++typedef void cidre_change(
++                          void * _Nullable,
++                          NSString * _Nullable,
++                          id _Nullable,
++                          NSDictionary<NSKeyValueChangeKey,id> * _Nullable
++                          );
++
++@interface CidreObserver : NSObject
++- (instancetype)initWithObject: (NSObject *)obj
++                       keyPath: (NSString *)keyPath
++                       options: (NSKeyValueObservingOptions)options
++                       context: (void *)context
++                         fnPtr: (cidre_change *)fn_ptr;
++
++- (void)invalidate;
++@end
++
++NS_RETURNS_RETAINED CidreObserver *
++cidre_create_observer(
++                      NSObject * obj,
++                      NSString * keyPath,
++                      NSKeyValueObservingOptions options,
++                      void * context,
++                      cidre_change * fn_ptr
++                      );
++
++NS_ASSUME_NONNULL_END
+--- /dev/null
++++ b/pomace/ns/observer.m
+@@ -0,0 +1,45 @@
++#import "observer.h"
++
++NS_RETURNS_RETAINED CidreObserver *
++cidre_create_observer(
++                      NSObject * obj,
++                      NSString * keyPath,
++                      NSKeyValueObservingOptions options,
++                      void * context,
++                      cidre_change * fn_ptr
++                      ) {
++    return [[CidreObserver alloc] initWithObject:obj keyPath:keyPath options:options context:context fnPtr:fn_ptr];
++}
++
++@implementation CidreObserver {
++    __weak NSObject * _obj;
++    NSString *_keyPath;
++    void * _context;
++    cidre_change * _fn_ptr;
++}
++
++- (instancetype)initWithObject: (NSObject *)obj
++                       keyPath: (NSString *)keyPath
++                       options: (NSKeyValueObservingOptions)options
++                       context: (void *)context
++                         fnPtr: (cidre_change *)fn_ptr
++{
++    if (self = [super init]) {
++        _obj = obj;
++        _keyPath = keyPath;
++        _context = context;
++        _fn_ptr = fn_ptr;
++        [_obj addObserver:self forKeyPath:keyPath options:options context:context];
++    }
++    return self;
++}
++
++- (void)observeValueForKeyPath:(nullable NSString *)keyPath ofObject:(nullable id)object change:(nullable NSDictionary<NSKeyValueChangeKey,id> *)change context:(nullable void *)context {
++    _fn_ptr(context, keyPath, object, change);
++}
++
++- (void)invalidate {
++    [_obj removeObserver:self forKeyPath:_keyPath context:_context];
++}
++
++@end

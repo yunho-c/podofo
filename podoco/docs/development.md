@@ -28,6 +28,7 @@ python3 tools/dev.py test-dart         # Host native-asset build and Dart checks
 python3 tools/dev.py test-standalone   # Relocated package and incompatible ABI
 python3 tools/dev.py generate          # Update C header and Dart bindings
 python3 tools/dev.py check-generated   # Compare regenerated files
+python3 tools/check_coreml.py           # macOS: real Core ML and class coexistence
 cargo +1.88.0 test --locked -p podoco -p podoco-ffi
 ```
 
@@ -47,5 +48,6 @@ source files. cbindgen and ffigen versions are pinned in their manifests.
 
 The repository-root workflow `.github/workflows/podoco.yml` runs only for Podoco
 or its workflow changes, plus explicit manual dispatch. It configures desktop
-Rust/C/Dart jobs, generated-binding checks, and a minimum-Rust check. The Flutter
+Rust/C/Dart jobs, a macOS Core ML coexistence check, generated-binding checks,
+and a minimum-Rust check. Vendored cidre hashes are checked on every host. The Flutter
 application's existing workflow remains separate.

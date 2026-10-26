@@ -11,6 +11,10 @@ publish = false
 [lib]
 crate-type = ["cdylib", "staticlib"]
 
+[features]
+default = []
+coreml = ["podoco/coreml"]
+
 [dependencies]
 podoco.workspace = true
 

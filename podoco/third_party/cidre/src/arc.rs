@@ -1,0 +1,658 @@
+#[cfg(feature = "objc")]
+use crate::objc;
+
+use std::ptr::NonNull;
+
+#[cfg(feature = "objc")]
+use std::{
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+};
+
+pub trait Release {
+    /// Releases one ownership reference represented by `ptr`.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must carry one live ownership reference that has not already been
+    /// released. The pointee must not be accessed through this ownership
+    /// reference after the call.
+    unsafe fn release(ptr: NonNull<Self>);
+}
+
+pub trait Retain: Sized + Release {
+    fn retained(&self) -> Retained<Self>;
+}
+
+#[repr(transparent)]
+pub struct Allocated<T: Release + 'static>(NonNull<T>);
+
+#[repr(transparent)]
+pub struct Retained<T: Release + 'static>(NonNull<T>);
+
+impl<T: Release + std::fmt::Debug> std::fmt::Debug for Allocated<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Allocated")
+            .field(unsafe { self.0.as_ref() })
+            .finish()
+    }
+}
+
+impl<T: Release + std::fmt::Debug> std::fmt::Debug for Retained<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Retained").field(self.as_ref()).finish()
+    }
+}
+
+unsafe impl<T: Release + Send> Send for Allocated<T> {}
+unsafe impl<T: Release + Sync> Sync for Allocated<T> {}
+unsafe impl<T: Release + Send> Send for Retained<T> {}
+unsafe impl<T: Release + Sync> Sync for Retained<T> {}
+
+impl<T: Release + 'static> Allocated<T> {
+    #[inline]
+    pub fn as_ptr(&self) -> *mut T {
+        self.0.as_ptr()
+    }
+}
+
+impl<T: Release + 'static> Retained<T> {
+    /// Takes ownership of a non-null retained object pointer.
+    ///
+    /// # Safety
+    ///
+    /// `ptr` must point to a valid `T` carrying one ownership retain that this
+    /// value may consume with [`Release::release`].
+    #[inline]
+    pub unsafe fn from_raw(ptr: *mut T) -> Self {
+        Self(NonNull::new(ptr).expect("retained object must not be null"))
+    }
+
+    #[inline]
+    pub fn as_ptr(&self) -> *mut T {
+        self.0.as_ptr()
+    }
+
+    #[inline]
+    pub fn into_raw(self) -> *mut T {
+        let ptr = self.as_ptr();
+        std::mem::forget(self);
+        ptr
+    }
+}
+
+impl<T: Release + std::error::Error> std::error::Error for Retained<T> {}
+
+impl<T: Release + std::fmt::Display> std::fmt::Display for Retained<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.as_ref().fmt(f)
+    }
+}
+
+impl<T: Retain + PartialEq> PartialEq for Retained<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.as_ref() == other.as_ref()
+    }
+}
+
+impl<T: Retain + PartialEq> PartialEq<T> for Retained<T> {
+    fn eq(&self, other: &T) -> bool {
+        self.as_ref() == other
+    }
+}
+
+impl<T: Retain + PartialOrd> PartialOrd for Retained<T> {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.as_ref().partial_cmp(other.as_ref())
+    }
+}
+
+impl<T: Release> AsRef<T> for Retained<T> {
+    #[inline]
+    fn as_ref(&self) -> &T {
+        unsafe { self.0.as_ref() }
+    }
+}
+
+impl<T: Release> AsMut<T> for Retained<T> {
+    #[inline]
+    fn as_mut(&mut self) -> &mut T {
+        unsafe { self.0.as_mut() }
+    }
+}
+
+impl<T: Retain> Retained<T> {
+    #[inline]
+    pub fn retained(&self) -> Self {
+        self.as_ref().retained()
+    }
+}
+#[cfg(feature = "objc")]
+#[inline]
+#[must_use]
+pub unsafe fn return_opt_ar<T: objc::Obj>(val: Option<&T>) -> Option<Rar<T>> {
+    unsafe {
+        let res = objc::objc_autoreleaseReturnValue(std::mem::transmute(val));
+        std::mem::transmute(res)
+    }
+}
+
+#[cfg(feature = "objc")]
+#[inline]
+#[must_use]
+pub unsafe fn return_rar<T: objc::Obj>(val: &T) -> Rar<T> {
+    unsafe {
+        let res = objc::objc_retainAutoreleaseReturnValue(std::mem::transmute(val));
+        std::mem::transmute(res)
+    }
+}
+
+#[cfg(feature = "objc")]
+#[inline]
+#[must_use]
+pub unsafe fn return_opt_rar<T: objc::Obj>(val: Option<&T>) -> Option<Rar<T>> {
+    unsafe {
+        let res = objc::objc_retainAutoreleaseReturnValue(std::mem::transmute(val));
+        std::mem::transmute(res)
+    }
+}
+
+#[cfg(feature = "objc")]
+impl<T: Retain> Retained<T> {
+    #[must_use]
+    pub fn autoreleased<'ar>(self) -> &'ar mut T
+    where
+        T: objc::Obj,
+    {
+        unsafe {
+            let res = objc::Id::autorelease(std::mem::transmute(self));
+            std::mem::transmute(res)
+        }
+    }
+
+    #[must_use]
+    pub unsafe fn return_ar(self) -> Rar<T>
+    where
+        T: objc::Obj,
+    {
+        unsafe {
+            let res = objc::objc_autoreleaseReturnValue(std::mem::transmute(self));
+            std::mem::transmute(res)
+        }
+    }
+
+    // /// #Safety
+    // /// Use `return_ar` macro
+    // #[inline]
+    // pub unsafe fn return_ar(self) -> crate::arc::Rar<T>
+    // where
+    //     T: objc::Obj,
+    // {
+    //     unsafe { std::mem::transmute(objc::objc_autoreleaseReturnValue(std::mem::transmute(self))) }
+    // }
+}
+
+impl<T: Release> Drop for Allocated<T> {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe { T::release(self.0) }
+    }
+}
+
+impl<T: Release> Drop for Retained<T> {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe { T::release(self.0) }
+    }
+}
+
+impl<T: Release> std::ops::Deref for Retained<T> {
+    type Target = T;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        unsafe { self.0.as_ref() }
+    }
+}
+
+impl<T: Release> std::ops::DerefMut for Retained<T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { self.0.as_mut() }
+    }
+}
+
+#[macro_export]
+macro_rules! return_ar {
+    ($r:path) => {
+        return unsafe { $r.return_ar() }
+    };
+}
+
+/// return objc_autoreleaseReturnValue(objc_retain(value))
+#[macro_export]
+macro_rules! return_rar {
+    ($r:expr) => {
+        return unsafe { $crate::arc::return_rar($r) }
+    };
+}
+
+#[macro_export]
+macro_rules! return_opt_ar {
+    ($r:expr) => {
+        return unsafe { $crate::arc::return_opt_ar($r) }
+    };
+}
+
+#[macro_export]
+macro_rules! return_opt_rar {
+    ($r:expr) => {
+        return unsafe { $crate::arc::return_opt_rar($r) }
+    };
+}
+
+/// ```
+/// use cidre::cf;
+///
+/// let n = cf::Number::from_i8(10);
+///
+/// let f = {
+///     n.clone()
+/// };
+///
+/// assert!(f.equal(&n));
+/// ```
+impl<T: Retain> Clone for Retained<T> {
+    #[inline]
+    fn clone(&self) -> Self {
+        self.retained()
+    }
+}
+
+#[cfg(feature = "objc")]
+#[derive(Debug)]
+pub struct Weak<T: objc::Obj> {
+    slot: Box<*mut objc::Id>,
+    marker: PhantomData<T>,
+}
+
+#[cfg(feature = "objc")]
+impl<T: objc::Obj> Weak<T> {
+    #[inline]
+    fn slot_ptr(&self) -> *mut *mut objc::Id {
+        self.slot.as_ref() as *const *mut objc::Id as *mut *mut objc::Id
+    }
+
+    #[inline]
+    pub fn new() -> Self {
+        let slot = Box::new(std::ptr::null_mut());
+        // unsafe {
+        //     objc::objc_storeWeak(&mut *slot, None);
+        // }
+        Self {
+            slot,
+            marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn from_retained(val: &Retained<T>) -> Self {
+        let mut slot = Box::new(std::ptr::null_mut());
+        unsafe {
+            objc::objc_storeWeak(&mut *slot, Some(val.as_id_ref()));
+        }
+        Self {
+            slot,
+            marker: PhantomData,
+        }
+    }
+
+    #[inline]
+    pub fn upgrade(&self) -> Option<Retained<T>> {
+        unsafe { std::mem::transmute(objc::objc_loadWeakRetained(self.slot_ptr())) }
+    }
+}
+
+#[cfg(feature = "objc")]
+impl<T: objc::Obj> Default for Weak<T> {
+    #[inline]
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+#[cfg(feature = "objc")]
+impl<T: objc::Obj> Clone for Weak<T> {
+    #[inline]
+    fn clone(&self) -> Self {
+        let mut weak = Self {
+            slot: Box::new(std::ptr::null_mut()),
+            marker: PhantomData,
+        };
+
+        unsafe {
+            objc::objc_copyWeak(&mut *weak.slot, self.slot_ptr());
+        }
+
+        weak
+    }
+}
+
+#[cfg(feature = "objc")]
+impl<T: objc::Obj> Drop for Weak<T> {
+    #[inline]
+    fn drop(&mut self) {
+        unsafe {
+            objc::objc_storeWeak(&mut *self.slot, None);
+        }
+    }
+}
+
+#[cfg(feature = "objc")]
+unsafe impl<T: objc::Obj + Sync> Sync for Weak<T> {}
+
+#[cfg(feature = "objc")]
+unsafe impl<T: objc::Obj + Send> Send for Weak<T> {}
+
+#[cfg(feature = "objc")]
+#[repr(transparent)]
+pub struct ReturnedAutoReleased<T: objc::Obj>(NonNull<T>);
+
+#[cfg(feature = "objc")]
+impl<T: objc::Obj> Deref for ReturnedAutoReleased<T> {
+    type Target = T;
+
+    #[inline]
+    fn deref(&self) -> &Self::Target {
+        unsafe { self.0.as_ref() }
+    }
+}
+
+#[cfg(feature = "objc")]
+impl<T: objc::Obj> DerefMut for ReturnedAutoReleased<T> {
+    #[inline]
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { self.0.as_mut() }
+    }
+}
+
+pub type A<T> = Allocated<T>;
+pub type R<T> = Retained<T>;
+#[cfg(feature = "objc")]
+pub type Rar<T> = ReturnedAutoReleased<T>;
+
+#[cfg(feature = "objc")]
+#[inline]
+pub fn downgrade<T: objc::Obj>(val: &Retained<T>) -> Weak<T> {
+    Weak::from_retained(val)
+}
+
+impl<T: Release> std::borrow::Borrow<T> for R<T> {
+    fn borrow(&self) -> &T {
+        &self
+    }
+}
+
+#[cfg(feature = "objc")]
+impl<T: objc::Obj> std::borrow::BorrowMut<T> for R<T> {
+    fn borrow_mut(&mut self) -> &mut T {
+        self.as_mut()
+    }
+}
+
+#[cfg(target_arch = "aarch64")]
+#[cfg(feature = "objc")]
+#[inline(always)]
+pub fn rar_retain_option<T: objc::Obj>(id: Option<Rar<T>>) -> Option<R<T>> {
+    #[cfg(any(
+        all(target_os = "macos", feature = "macos_13_0"),
+        all(target_os = "ios", feature = "ios_16_0"),
+        all(target_os = "tvos", feature = "tvos_16_0"),
+        all(target_os = "watchos", feature = "watchos_9_0"),
+        all(target_os = "visionos", feature = "visionos_1_0"),
+    ))]
+    {
+        unsafe {
+            std::mem::transmute(objc::objc_claimAutoreleasedReturnValue(
+                std::mem::transmute(id),
+            ))
+        }
+    }
+    #[cfg(not(any(
+        all(target_os = "macos", feature = "macos_13_0"),
+        all(target_os = "ios", feature = "ios_16_0"),
+        all(target_os = "tvos", feature = "tvos_16_0"),
+        all(target_os = "watchos", feature = "watchos_9_0"),
+        all(target_os = "visionos", feature = "visionos_1_0"),
+    )))]
+    {
+        unsafe {
+            // see comments in rar_retain
+            std::arch::asm!("mov x29, x29");
+
+            std::mem::transmute(objc::objc_retainAutoreleasedReturnValue(
+                std::mem::transmute(id),
+            ))
+        }
+    }
+}
+
+/// Accept a value returned through a +0 autoreleasing convention for use at +1,
+/// without a NOP in the caller on ARM64.
+#[cfg(any(
+    all(target_os = "macos", feature = "macos_13_0"),
+    all(target_os = "ios", feature = "ios_16_0"),
+    all(target_os = "tvos", feature = "tvos_16_0"),
+    all(target_os = "watchos", feature = "watchos_9_0"),
+    all(target_os = "visionos", feature = "visionos_1_0"),
+))]
+#[doc(alias = "objc_claimAutoreleasedReturnValue")]
+#[cfg(target_arch = "aarch64")]
+#[cfg(feature = "objc")]
+#[inline]
+pub fn rar_claim_value<T: objc::Obj>(obj: Option<&T>) -> Option<R<T>> {
+    unsafe {
+        std::mem::transmute(objc::objc_claimAutoreleasedReturnValue(
+            std::mem::transmute(obj),
+        ))
+    }
+}
+
+#[cfg(target_arch = "x86_64")]
+#[cfg(feature = "objc")]
+#[inline(always)]
+pub fn rar_retain_option<T: objc::Obj>(id: Option<Rar<T>>) -> Option<R<T>> {
+    // since we can't insert marker right before actual `objc_msgSend` we fallback to retain
+    unsafe { std::mem::transmute(objc::objc_retain(std::mem::transmute(id))) }
+}
+
+#[cfg(feature = "objc")]
+#[cfg(target_arch = "aarch64")]
+#[inline]
+pub fn rar_retain<T: objc::Obj>(id: Rar<T>) -> R<T> {
+    #[cfg(any(
+        all(target_os = "macos", feature = "macos_13_0"),
+        all(target_os = "ios", feature = "ios_16_0"),
+        all(target_os = "tvos", feature = "tvos_16_0"),
+        all(target_os = "watchos", feature = "watchos_9_0"),
+        all(target_os = "visionos", feature = "visionos_1_0"),
+    ))]
+    {
+        unsafe {
+            std::mem::transmute(objc::objc_claimAutoreleasedReturnValue(
+                std::mem::transmute(id),
+            ))
+        }
+    }
+    #[cfg(not(any(
+        all(target_os = "macos", feature = "macos_13_0"),
+        all(target_os = "ios", feature = "ios_16_0"),
+        all(target_os = "tvos", feature = "tvos_16_0"),
+        all(target_os = "watchos", feature = "watchos_9_0"),
+        all(target_os = "visionos", feature = "visionos_1_0"),
+    )))]
+    {
+        unsafe {
+            // latest runtimes don't need this marker anymore.
+            // see https://developer.apple.com/videos/play/wwdc2022/110363/ at 13:24
+            // but benchmarks show that on macos it is not a case yet
+            // (see alloc_with_ar_retain bench).
+            // Need to check on iOS.
+            std::arch::asm!("mov x29, x29");
+
+            std::mem::transmute(objc::objc_retainAutoreleasedReturnValue(
+                std::mem::transmute(id),
+            ))
+        }
+    }
+}
+
+#[cfg(feature = "objc")]
+#[cfg(target_arch = "x86_64")]
+#[inline]
+pub fn rar_retain<T: objc::Obj>(id: Rar<T>) -> R<T> {
+    // asm!("mov rax, rdi");
+    // since we can't insert marker right before actual `objc_msgSend` we fallback to retain
+    unsafe { std::mem::transmute(objc::objc_retain(std::mem::transmute(id))) }
+}
+
+#[cfg(all(test, feature = "objc"))]
+mod tests {
+    use crate::{arc, objc};
+    use std::sync::{
+        Arc, Once,
+        atomic::{AtomicBool, Ordering},
+    };
+
+    struct D(Arc<AtomicBool>);
+
+    impl Drop for D {
+        fn drop(&mut self) {
+            self.0.store(true, Ordering::SeqCst);
+        }
+    }
+
+    crate::define_obj_type!(WeakTestObj, D, WEAK_TEST_OBJ);
+
+    static INIT: Once = Once::new();
+
+    fn init_cls() {
+        INIT.call_once(|| {
+            let _ = WeakTestObj::cls();
+        });
+    }
+
+    #[test]
+    fn owner_pointer_layout() {
+        assert_eq!(
+            std::mem::size_of::<arc::A<WeakTestObj>>(),
+            std::mem::size_of::<*mut WeakTestObj>()
+        );
+        assert_eq!(
+            std::mem::size_of::<Option<arc::A<WeakTestObj>>>(),
+            std::mem::size_of::<*mut WeakTestObj>()
+        );
+        assert_eq!(
+            std::mem::size_of::<arc::R<WeakTestObj>>(),
+            std::mem::size_of::<*mut WeakTestObj>()
+        );
+        assert_eq!(
+            std::mem::size_of::<Option<arc::R<WeakTestObj>>>(),
+            std::mem::size_of::<*mut WeakTestObj>()
+        );
+    }
+
+    #[test]
+    fn retained_raw_round_trip() {
+        init_cls();
+        let dropped = Arc::new(AtomicBool::new(false));
+        let retained = WeakTestObj::with(D(Arc::clone(&dropped)));
+        let ptr = retained.into_raw();
+
+        let retained = unsafe { arc::R::from_raw(ptr) };
+        assert_eq!(ptr, retained.as_ptr());
+        assert!(!dropped.load(Ordering::SeqCst));
+
+        drop(retained);
+        assert!(dropped.load(Ordering::SeqCst));
+    }
+
+    #[test]
+    fn weak_upgrades_while_strong_exists() {
+        init_cls();
+        let dropped = Arc::new(AtomicBool::new(false));
+        let o = WeakTestObj::with(D(Arc::clone(&dropped)));
+        let w = arc::Weak::from_retained(&o);
+
+        let strong = w.upgrade();
+        assert!(strong.is_some());
+    }
+
+    #[test]
+    fn weak_clears_after_drop() {
+        init_cls();
+        let dropped = Arc::new(AtomicBool::new(false));
+        let dropped_in = Arc::clone(&dropped);
+        let w = objc::ar_pool(|| {
+            let o = WeakTestObj::with(D(dropped_in));
+            let w = arc::Weak::from_retained(&o);
+            assert!(w.upgrade().is_some());
+            w
+        });
+
+        assert!(dropped.load(Ordering::SeqCst));
+        assert!(w.upgrade().is_none());
+    }
+
+    #[test]
+    fn weak_clears_after_drop_no_ar_pool() {
+        init_cls();
+        let dropped = Arc::new(AtomicBool::new(false));
+        let dropped_in = Arc::clone(&dropped);
+        let w = {
+            let o = WeakTestObj::with(D(dropped_in));
+            let w = arc::Weak::from_retained(&o);
+            assert!(w.upgrade().is_some());
+            w
+        };
+
+        assert!(dropped.load(Ordering::SeqCst));
+        assert!(w.upgrade().is_none());
+    }
+
+    #[test]
+    fn weak_new_is_empty() {
+        init_cls();
+        let w: arc::Weak<WeakTestObj> = arc::Weak::new();
+        assert!(w.upgrade().is_none());
+    }
+
+    #[test]
+    fn weak_default_is_empty() {
+        init_cls();
+        let w: arc::Weak<WeakTestObj> = Default::default();
+        assert!(w.upgrade().is_none());
+    }
+
+    #[test]
+    fn weak_clone_tracks_slot() {
+        init_cls();
+        let dropped = Arc::new(AtomicBool::new(false));
+        let dropped_in = Arc::clone(&dropped);
+        let w = objc::ar_pool(|| {
+            let o = WeakTestObj::with(D(dropped_in));
+            let w = arc::Weak::from_retained(&o);
+            let w2 = w.clone();
+
+            assert!(w.upgrade().is_some());
+            assert!(w2.upgrade().is_some());
+
+            (w, w2)
+        });
+
+        let (w1, w2) = w;
+        assert!(dropped.load(Ordering::SeqCst));
+        assert!(w1.upgrade().is_none());
+        assert!(w2.upgrade().is_none());
+    }
+}
