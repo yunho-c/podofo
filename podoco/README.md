@@ -14,6 +14,10 @@ experimental; its known export differences are recorded in the qualification.
 The [C ABI](docs/ffi.md) and [Dart SDK](bindings/dart/README.md) expose document
 jobs, copied images, controlled native leases, typed results, and draining
 cancellation. PoDoFo has an [experimental document/equation integration](../docs/document-analysis.md).
+The reusable [Flutter integration](bindings/flutter/README.md) loads pinned
+models directly from application resources. The [offline packager](crates/podoco-models/README.md)
+creates the asset package; PoDoFo's default Analyze/Copy/Listen flow needs no model
+folder selection. See [bundled release evidence](docs/internal/bundled-assets-validation.md).
 PP-FormulaNet_plus-L has a [qualified blocking Rust crop recognizer](docs/formula.md)
 and queued [explicit-crop jobs across Rust/C/Dart](docs/formula.md#queued-explicit-crops)
 that share the analyzer's document lane without running detection.
@@ -59,8 +63,10 @@ or downloaded. [Offline model preparation](tools/pp_doclayout_v3/README.md) is e
 Cargo.toml             Podoco's Cargo workspace, independent of the app
 crates/podoco/          Public Rust API, model pipelines, and runtime
 crates/podoco-ffi/      Shared C ABI adapter; dynamic and static libraries
+crates/podoco-models/   Verified offline Flutter asset packaging
 include/podoco.h        Generated C header
 bindings/dart/         Dart API, generated FFI, and native build hook
+bindings/flutter/      App resource discovery and lazy model loader
 model-manifests/        Pinned experimental layout and formula YAML contracts
 examples/              Index of executable examples
 tests/integration/     Actual C caller checks
@@ -74,10 +80,9 @@ docs/internal/         Maintainer architecture and validation scope
 ```
 
 Rust callers depend directly on `podoco`. Other languages use `podoco-ffi`.
-PoDoFo consumes the public Dart package through its analysis adapter. A reusable
-Flutter-specific adapter belongs under `bindings/flutter/`
-when it has concrete model/resource integration to own. Additional language
-bindings can use the same C ABI.
+PoDoFo consumes the public Dart package through its analysis adapter and uses
+`bindings/flutter/` for bundled resources. Additional language bindings can use
+the same C ABI.
 
 ## Development
 
@@ -99,5 +104,5 @@ and [validation scope](docs/internal/validation.md) for platform boundaries.
 ## License
 
 Apache-2.0, matching the repository. See [LICENSE](LICENSE). The vendored cidre
-dependency retains its [MIT license](third_party/cidre/LICENSE.txt). Future model weights
+dependency retains its [MIT license](third_party/cidre/LICENSE.txt). Model weights
 retain their own licenses and provenance, recorded separately in YAML manifests.

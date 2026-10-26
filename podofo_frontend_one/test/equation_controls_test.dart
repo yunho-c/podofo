@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -18,7 +19,7 @@ import 'support/fake_narrator.dart';
 
 void main() {
   testWidgets(
-    'pending formulas become actionable and Copy survives speech failure',
+    'Listen prepares bundled rules lazily and Copy survives speech failure',
     (tester) async {
       final temporary = (await tester.runAsync(
         () => Directory.systemTemp.createTemp('equation-controls-'),
@@ -34,13 +35,18 @@ void main() {
       final audio = FakeNarratorSession();
       final narration = NarrationController(open: (_) async => audio);
       final copied = <String>[];
+      var opens = 0;
+      final ready = Completer<FakeMath>();
       final equations = EquationController(
         analysis: analysis,
         narration: narration,
-        open: (_) async => math,
+        openBundled: (progress) {
+          opens++;
+          progress('Preparing equation speech…');
+          return ready.future;
+        },
         copy: (text) async => copied.add(text),
       );
-      await equations.configureRules('rules');
       analysis.publish(formulaFixture(analysisDocumentRef(document)));
       final container = ProviderContainer(
         overrides: [equationControllerProvider.overrideWithValue(equations)],
@@ -71,7 +77,13 @@ void main() {
         await tester.tap(find.text('Copy LaTeX'));
         await tester.pump();
         expect(copied, [r'\frac{x+1}{2}']);
+        expect(opens, 0);
+        expect(find.text('Open math speech rules…'), findsNothing);
         await tester.tap(find.text('Listen to equation'));
+        await tester.pump();
+        expect(opens, 1);
+        expect(find.text('Preparing equation speech…'), findsOneWidget);
+        ready.complete(math);
         await tester.pump();
         expect(find.textContaining('Unsupported expression'), findsOneWidget);
         expect(audio.texts, isEmpty);

@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:podoco/podoco.dart' as podoco;
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -60,31 +59,13 @@ class EquationControls extends ConsumerWidget {
           ],
         ],
         const SizedBox(height: 12),
-        Button(
-          style: ButtonStyle.outline(),
-          onPressed: controller.opening
-              ? null
-              : () async {
-                  final path = await getDirectoryPath(
-                    confirmButtonText: 'Open math speech rules',
-                  );
-                  if (path != null && context.mounted) {
-                    await controller.configureRules(path);
-                  }
-                },
-          child: Text(
-            controller.opening
-                ? 'Opening math speech…'
-                : controller.ready
-                ? 'Change math speech rules…'
-                : 'Open math speech rules…',
-          ),
-        ),
-        if (controller.ready) ...[
+        if (controller.preparation case final preparation?)
+          Text(preparation).small(),
+        if (controller.canPrepareSpeech) ...[
           const SizedBox(height: 8),
           Text('Speech language: ${controller.narration.settings.language}')
               .small(),
-          if (controller.availableStyles.isEmpty)
+          if (controller.ready && controller.availableStyles.isEmpty)
             const Text(
               'Math speech is unavailable in this language. Choose a supported language in the audio settings.',
             ).small(),
@@ -107,9 +88,10 @@ class EquationControls extends ConsumerWidget {
             style: ButtonStyle.primary(),
             onPressed:
                 selected?.recognized != null &&
-                    controller.availableStyles.contains(
-                      controller.speechStyle,
-                    ) &&
+                    (!controller.ready ||
+                        controller.availableStyles.contains(
+                          controller.speechStyle,
+                        )) &&
                     !controller.opening &&
                     !controller.speaking &&
                     controller.narration.available

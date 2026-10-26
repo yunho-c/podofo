@@ -18,6 +18,7 @@ void main() {
       );
       final container = ProviderContainer(
         overrides: [
+          equationControllerProvider.overrideWithValue(null),
           analysisControllerProvider.overrideWith((ref) async {
             if (++attempts == 1) throw StateError('cache unavailable');
             return controller;
@@ -41,6 +42,14 @@ void main() {
         await tester.pump();
         await tester.pump();
         expect(attempts, 2);
+        expect(find.text('Open layout model…'), findsNothing);
+        await tester.tap(
+          find.descendant(
+            of: find.byType(CollapsibleTrigger),
+            matching: find.byType(GhostButton),
+          ),
+        );
+        await tester.pumpAndSettle();
         expect(find.text('Open layout model…'), findsOneWidget);
         expect(tester.takeException(), isNull);
       } finally {

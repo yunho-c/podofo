@@ -1,6 +1,10 @@
 import 'dart:convert';
 
 import 'package:podoco/podoco.dart' as podoco;
+import 'package:podoco_flutter/podoco_flutter.dart';
+import 'package:podoco_app_models/app_models.dart';
+
+import 'analysis_engine.dart' show analysisPreparationText;
 
 class EquationSpeechText {
   EquationSpeechText(
@@ -29,6 +33,14 @@ abstract interface class MathSpeechEngine {
 class NativeMathSpeechEngine implements MathSpeechEngine {
   NativeMathSpeechEngine._(this._processor);
   final podoco.MathProcessor _processor;
+  static Future<MathSpeechEngine> openBundled(
+    void Function(String) progress,
+  ) async => NativeMathSpeechEngine._(
+    await FlutterPodoco.openMathProcessor(
+      pack: AppAnalysisPacks.documentAnalysis,
+      onProgress: (value) => progress(analysisPreparationText(value)),
+    ),
+  );
   static Future<MathSpeechEngine> open(String directory) async =>
       NativeMathSpeechEngine._(
         await podoco.MathProcessor.open(

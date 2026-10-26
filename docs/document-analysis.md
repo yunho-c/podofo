@@ -9,85 +9,71 @@ promotion gates. See the [measured corpus limits](../podoco/docs/internal/m6-doc
 
 ## Build and use
 
-Prepare the existing [MLSR dependency](tts-implementation.md#build-preparation),
-then run from `podofo_frontend_one/` with the pinned Flutter 3.47.5 toolchain:
+Prepare the existing [MLSR dependency](tts-implementation.md#build-preparation)
+and the local [layout](../podoco/tools/pp_doclayout_v3/README.md),
+[formula](../podoco/docs/formula.md) and [math](../podoco/docs/math.md) bundles.
+Then run from `podofo_frontend_one/` with pinned Flutter 3.47.5:
 
 ```sh
-python3.13 tool/prepare_podoco.py
+CARGO_INCREMENTAL=0 python3.13 tool/prepare_podoco.py
 flutter pub get --enforce-lockfile
 bash tool/build_macos_local.sh release
 ```
 
-The new helper builds this checkout's Rust SDK into ignored `.podoco/native/`.
-It enables Core ML on macOS arm64 and optional math conversion on all supported
-desktop hosts. It does not fetch models. The local build helper keeps
-the application at the host architecture and signs it locally; no global Flutter
-configuration change is needed. Re-run native preparation after Rust SDK changes.
+Preparation builds the native SDK and creates `.podoco/model_assets` from the
+exact manifest pins in `podoco-models.yaml`. It materializes linked source files
+and verifies all payloads before Flutter packages them. It does not fetch models.
+Re-run preparation after native SDK changes; use `--replace-models` explicitly
+when changing a previously generated pack's pins. Missing or corrupt required
+assets fail preparation on macOS arm64. Other desktop hosts generate a small
+unavailable pack, so ordinary reader builds do not need these models.
+See [bundled asset architecture and release checks](podoco-bundled-assets.md).
 
-Prepare the explicit [M2 local layout bundle](../podoco/tools/pp_doclayout_v3/README.md).
-In the reader's **Debug** pane, enable **Developer mode**, choose **Open layout
-model…**, and select the directory containing `podoco-bundle.yaml`. This opens
-and verifies local files for the current application session. Then choose
-**Analyze document layout**. The pane shows page progress, the final outcome,
-and whether the visible page is complete or partial. **Cancel analysis** drains
-work already in flight. **Show layout regions** toggles blue region outlines;
-formula outlines use orange.
+In the reader's **Debug** pane, enable **Developer mode**, find **Document
+analysis (experimental)**, then choose **Analyze document and equations**. Models are included
+in the application: no folder selection or download is required. First use shows
+resource verification and model preparation; subsequent analysis reuses the warm
+engine. The pane shows page progress, final outcome, and whether the visible page
+is complete or partial. **Cancel analysis** drains in-flight work and suppresses
+analysis after pending model initialization. **Show layout regions** toggles blue
+region outlines; formula outlines use orange.
 
-For a sandboxed macOS app, prepare a **self-contained** layout bundle with the
-layout tool's `--copy` option. Its default symlink mode is useful for command-line
-research, but selecting a folder does not grant access to link targets elsewhere
-in the research checkout or model cache. Existing linked bundles can be materialized
-with the same verified manifest (run from `podoco/`, using a new destination):
-
-```sh
-cargo run --locked -p podoco --example model_bundle -- prepare \
-  model-assets/pp-doclayout-v3-m2/podoco-bundle.yaml \
-  model-assets/pp-doclayout-v3-m2 \
-  model-assets/pp-doclayout-v3-m2/checkpoint \
-  model-assets/pp-doclayout-v3-m2-sandbox --copy
-```
-
-The copy path uses Rust's native file-copy implementation, which attempts APFS
-cloning on macOS. Model bytes and manifest identity remain unchanged. The formula
-and math preparation tools already produce self-contained folders.
-
-In this development checkout, choose these individual folders under
-`podoco/model-assets/`, **not their shared `model-assets` parent**:
-
-| Picker | Folder | File directly inside it |
-| --- | --- | --- |
-| Open layout model | `pp-doclayout-v3-m2-sandbox` | `podoco-bundle.yaml` |
-| Open formula model | `pp-formulanet-plus-l-m6` | `podoco-bundle.yaml` |
-| Open math speech rules | `mathcat-0.7.7-m7` | `podoco-rules.yaml` |
-
-Use **⌘⇧G** in the picker to enter a full directory path. A missing-manifest error
-usually means the parent or an inner artifact directory was selected. An
-operation-not-permitted error on a linked payload requires a self-contained
-bundle; broad filesystem permission is unnecessary.
-
-To recognize equations, also prepare the [formula bundle](../podoco/docs/formula.md)
-and choose **Open formula model…** before **Analyze document and equations**.
-Select a pending or completed equation in the current-page list. A successful
-result enables **Copy LaTeX**, which copies the original recognition verbatim.
-Incomplete and failed results stay visible but do not enable Copy or Listen.
-
-For speech, prepare the [optional math rules](../podoco/docs/math.md), choose
-**Open math speech rules…**, then choose a supported style and **Listen to equation**.
-The audio settings provide the language, voice, and speed; the existing audio
-player provides pause/resume and Stop. A language without an exact installed
-MathCAT entry is unavailable; there is no silent regional-language fallback.
-Conversion failures keep the original LaTeX available for Copy. The pane shows
-the converted plain text and any conversion diagnostics.
+Select a pending or completed equation in the current-page list. Successful
+recognition enables **Copy LaTeX**, preserving its original text verbatim.
+Incomplete and failed results remain visible without enabling Copy or Listen.
+**Listen to equation** automatically loads the bundled MathCAT rules on first use,
+then submits converted plain text to the shared MLSR player. The audio settings
+provide language, voice and speed; the existing player provides pause/resume and
+Stop. Once rules are ready, supported styles are available in the equation pane.
+A language without an exact MathCAT entry stays unavailable; there is no silent
+regional-language fallback. Math initialization or conversion failure leaves Copy
+usable and shows an error. A subsequent explicit Listen retries preparation.
 
 Selection highlights the entire equation in orange, or purple during its audio
 request. It remains visible when other layout outlines are hidden. This does
 not imply word/subexpression alignment. Selecting another equation, changing
 page/document/revision, changing math language/style, or replacing rules retires
-only that equation's speech. A newer prose request in the same player is preserved.
+only that equation's speech. Newer prose in the same player is preserved even
+while math rules are still loading.
 
-The debug slice requires selecting models and rules again after restarting the app.
-It does not install a downloaded model or make a machine-specific directory a
-shipping default. Cached pages can be restored after choosing the same bundle.
+### Developer overrides
+
+The collapsed **Model overrides** section retains folder selection for local
+experiments. These choices last only for the current app session. Choose the
+individual directory containing the manifest, not its shared parent:
+
+| Picker | Local folder under `podoco/model-assets/` | Manifest |
+| --- | --- | --- |
+| Open layout model | `pp-doclayout-v3-m2-sandbox` | `podoco-bundle.yaml` |
+| Open formula model | `pp-formulanet-plus-l-m6` | `podoco-bundle.yaml` |
+| Open math speech rules | `mathcat-0.7.7-m7` | `podoco-rules.yaml` |
+
+Select the custom layout first to enable a custom formula model. Use self-contained
+bundles: macOS folder access does not grant permission to symlink targets outside
+the selected folder. Use the layout preparation tool's `--copy` option for manual
+overrides. **Use bundled models** retires custom engines and restores automatic,
+lazy loading on the next Analyze/Listen. It does not immediately reload models or
+modify source folders. Restarting the application also restores bundled defaults.
 
 ## Ownership and coordinates
 

@@ -1,4 +1,6 @@
 import 'package:podoco/podoco.dart' as podoco;
+import 'package:podoco_flutter/podoco_flutter.dart';
+import 'package:podoco_app_models/app_models.dart';
 
 class AnalysisModelPaths {
   const AnalysisModelPaths(this.layout, {this.formula});
@@ -37,6 +39,29 @@ class NativeAnalysisEngine implements AnalysisEngine {
   bool get recognizesFormulas => _analyzer.capabilities.formulaRecognition;
   @override
   String get profile => _analyzer.profile;
+  static Future<AnalysisEngine> openBundled(
+    void Function(String) progress,
+  ) async => NativeAnalysisEngine._(
+    await FlutterPodoco.openAnalyzer(
+      pack: AppAnalysisPacks.documentAnalysis,
+      options: _options(true),
+      onProgress: (value) => progress(analysisPreparationText(value)),
+    ),
+  );
+
+  static podoco.AnalyzerOptions _options(bool formula) =>
+      podoco.AnalyzerOptions(
+        computePolicy: podoco.ComputePolicy.cpuAndNeuralEngine,
+        limits: podoco.ResourceLimits(
+          queuedJobs: 2,
+          inputBytes: 16 * 1024 * 1024,
+          pendingUpdates: 2,
+          resultBytes: 4 * 1024 * 1024,
+          maxUpdateBytes: 2 * 1024 * 1024,
+          tensorBytes: 128 * 1024 * 1024,
+          decoderCacheBytes: formula ? 48 * 1024 * 1024 : 1,
+        ),
+      );
   static Future<AnalysisEngine> open(AnalysisModelPaths paths) async {
     final bundle = await podoco.ModelBundle.verify(paths.layout);
     final formula = paths.formula == null
@@ -46,18 +71,7 @@ class NativeAnalysisEngine implements AnalysisEngine {
       await podoco.Analyzer.open(
         bundle,
         formulaBundle: formula,
-        options: podoco.AnalyzerOptions(
-          computePolicy: podoco.ComputePolicy.cpuAndNeuralEngine,
-          limits: podoco.ResourceLimits(
-            queuedJobs: 2,
-            inputBytes: 16 * 1024 * 1024,
-            pendingUpdates: 2,
-            resultBytes: 4 * 1024 * 1024,
-            maxUpdateBytes: 2 * 1024 * 1024,
-            tensorBytes: 128 * 1024 * 1024,
-            decoderCacheBytes: formula == null ? 1 : 48 * 1024 * 1024,
-          ),
-        ),
+        options: _options(formula != null),
       ),
     );
   }
@@ -82,6 +96,16 @@ class NativeAnalysisEngine implements AnalysisEngine {
   @override
   Future<void> close() => _analyzer.dispose();
 }
+
+String analysisPreparationText(ModelLoadProgress progress) =>
+    switch (progress.stage) {
+      ModelLoadStage.locating => 'Locating bundled analysis assets…',
+      ModelLoadStage.verifying => 'Verifying ${progress.component} assets…',
+      ModelLoadStage.opening =>
+        progress.component == 'math'
+            ? 'Preparing equation speech…'
+            : 'Opening document analysis…',
+    };
 
 class _NativeDocumentAnalysisJob implements DocumentAnalysisJob {
   _NativeDocumentAnalysisJob(this.job);

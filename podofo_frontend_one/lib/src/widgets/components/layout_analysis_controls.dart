@@ -2,12 +2,12 @@ import 'dart:async';
 import 'dart:io';
 import 'dart:ffi';
 
-import 'package:file_selector/file_selector.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../../providers/analysis_provider.dart';
 import 'equation_controls.dart';
+import 'model_overrides_controls.dart';
 
 /// Deliberately in Developer mode until the selected model profile is promoted.
 class LayoutAnalysisControls extends ConsumerWidget {
@@ -40,63 +40,22 @@ class LayoutAnalysisControls extends ConsumerWidget {
             const Text('Document analysis (experimental)'),
             const SizedBox(height: 8),
             Button(
-              style: ButtonStyle.outline(),
-              onPressed: controller.opening || controller.running
-                  ? null
-                  : () async {
-                      final directory = await getDirectoryPath(
-                        confirmButtonText: 'Open layout model',
-                      );
-                      if (directory != null && context.mounted) {
-                        await controller.configure(
-                          directory,
-                          formulaDirectory: controller.modelPaths?.formula,
-                        );
-                      }
-                    },
-              child: Text(
-                controller.opening ? 'Opening model…' : 'Open layout model…',
-              ),
-            ),
-            const SizedBox(height: 8),
-            Button(
-              style: ButtonStyle.outline(),
-              onPressed:
-                  controller.ready && !controller.opening && !controller.running
-                  ? () async {
-                      final directory = await getDirectoryPath(
-                        confirmButtonText: 'Open formula model',
-                      );
-                      if (directory != null && context.mounted) {
-                        await controller.configure(
-                          controller.modelPaths!.layout,
-                          formulaDirectory: directory,
-                        );
-                      }
-                    }
-                  : null,
-              child: Text(
-                controller.recognizesFormulas
-                    ? 'Change formula model…'
-                    : 'Open formula model…',
-              ),
-            ),
-            const SizedBox(height: 8),
-            Button(
               style: ButtonStyle.primary(),
               onPressed:
-                  controller.ready &&
+                  controller.canAnalyze &&
                       !controller.opening &&
                       !controller.running &&
                       controller.session != null
                   ? () => unawaited(controller.analyze())
                   : null,
               child: Text(
-                controller.recognizesFormulas
+                controller.recognizesFormulas || controller.usingBundledModels
                     ? 'Analyze document and equations'
                     : 'Analyze document layout',
               ),
             ),
+            if (controller.preparation case final preparation?)
+              Text(preparation).small(),
             if (controller.running) ...[
               const SizedBox(height: 8),
               Button(
@@ -131,6 +90,8 @@ class LayoutAnalysisControls extends ConsumerWidget {
               const SizedBox(height: 16),
               const EquationControls(),
             ],
+            const SizedBox(height: 12),
+            const ModelOverridesControls(),
           ],
         ),
       ),

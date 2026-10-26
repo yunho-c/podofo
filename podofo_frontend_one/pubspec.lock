@@ -783,6 +783,20 @@ packages:
       relative: true
     source: path
     version: "0.1.0"
+  podoco_app_models:
+    dependency: "direct main"
+    description:
+      path: ".podoco/model_assets"
+      relative: true
+    source: path
+    version: "0.1.0"
+  podoco_flutter:
+    dependency: "direct main"
+    description:
+      path: "../podoco/bindings/flutter"
+      relative: true
+    source: path
+    version: "0.1.0"
   pointycastle:
     dependency: transitive
     description:
@@ -1230,4 +1244,4 @@ packages:
     version: "3.1.4"
 sdks:
   dart: ">=3.13.0 <4.0.0"
-  flutter: ">=3.47.0"
+  flutter: ">=3.47.5"

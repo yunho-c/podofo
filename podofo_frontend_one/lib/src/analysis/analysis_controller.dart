@@ -14,9 +14,11 @@ class AnalysisController extends ChangeNotifier {
   AnalysisController({
     required this.store,
     this.open = NativeAnalysisEngine.open,
+    this.openBundled,
   });
   final AnalysisStore store;
   final Future<AnalysisEngine> Function(AnalysisModelPaths) open;
+  final Future<AnalysisEngine> Function(void Function(String))? openBundled;
   AnalysisModelPaths? modelPaths;
   AnalysisEngine? _engine;
   DocumentAnalysisJob? _job;
@@ -32,6 +34,11 @@ class AnalysisController extends ChangeNotifier {
   podoco.AnalysisProgress? progress;
   podoco.AnalysisOutcome? outcome;
   String? error;
+  String? preparation;
+  bool get hasBundledModels => openBundled != null;
+  bool get usingBundledModels => modelPaths == null && hasBundledModels;
+  bool get canAnalyze =>
+      _session != null && (ready || modelPaths != null || hasBundledModels);
   bool get ready => _engine != null;
   bool get recognizesFormulas => _engine?.recognizesFormulas ?? false;
   bool get opening => _configuration != null;
@@ -105,25 +112,49 @@ class AnalysisController extends ChangeNotifier {
     if (_configuration != null) return _configuration!;
     final paths = AnalysisModelPaths(directory, formula: formulaDirectory);
     modelPaths = paths;
-    final task = _configure(paths);
+    final task = _configure(() => open(paths));
     _configuration = task;
     _notify();
     return task;
   }
 
-  Future<void> _configure(AnalysisModelPaths paths) async {
-    _generation++;
-    _job?.cancel();
+  Future<void> useBundledModels() {
+    if (_disposed || !hasBundledModels) {
+      throw StateError('Bundled analysis is unavailable');
+    }
+    if (_configuration != null) return _configuration!;
+    modelPaths = null;
+    final task = _configure(() async => null);
+    _configuration = task;
+    _notify();
+    return task;
+  }
+
+  void _preparing(String value) {
+    if (!_disposed) {
+      preparation = value;
+      _notify();
+    }
+  }
+
+  Future<void> _configure(
+    Future<AnalysisEngine?> Function() create, {
+    bool retireAnalysis = true,
+  }) async {
+    if (retireAnalysis) {
+      _generation++;
+      _job?.cancel();
+    }
     error = null;
     visibleSnapshot = null;
     try {
-      await _operation;
+      if (retireAnalysis) await _operation;
       final previous = _engine;
       _engine = null;
       await previous?.close();
-      final candidate = await open(paths);
+      final candidate = await create();
       if (_disposed) {
-        await candidate.close();
+        await candidate?.close();
         return;
       }
       _engine = candidate;
@@ -132,23 +163,45 @@ class AnalysisController extends ChangeNotifier {
       if (!_disposed) error = e.toString();
     } finally {
       _configuration = null;
+      preparation = null;
       _notify();
     }
   }
 
   Future<void> analyze() {
+    if (_operation != null) return _operation!;
     if (_disposed ||
-        _engine == null ||
+        !canAnalyze ||
         opening ||
         _session == null ||
         _document == null) {
-      throw StateError('Select a PDF and open a layout model first');
+      throw StateError('Select a PDF and an available analysis source first');
     }
-    if (_operation != null) return _operation!;
-    final task = _analyze();
+    final task = _prepareAndAnalyze();
     _operation = task;
     _notify();
     return task;
+  }
+
+  Future<void> _prepareAndAnalyze() async {
+    final session = _session!, document = _document!, generation = _generation;
+    try {
+      if (_engine == null) {
+        final paths = modelPaths;
+        final task = _configure(
+          () => paths != null ? open(paths) : openBundled!(_preparing),
+          retireAnalysis: false,
+        );
+        _configuration = task;
+        _notify();
+        await task;
+      }
+      if (_engine == null || !_current(generation, session, document)) return;
+      await _analyze();
+    } finally {
+      _operation = null;
+      _notify();
+    }
   }
 
   Future<void> _analyze() async {
@@ -198,7 +251,6 @@ class AnalysisController extends ChangeNotifier {
     } finally {
       await subscription?.cancel();
       if (identical(_job, job)) _job = null;
-      _operation = null;
       _notify();
     }
   }

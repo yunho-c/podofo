@@ -45,6 +45,7 @@ class EquationController extends ChangeNotifier {
     required this.analysis,
     required this.narration,
     this.open = NativeMathSpeechEngine.open,
+    this.openBundled,
     Future<void> Function(String)? copy,
   }) : _copy = copy ?? _clipboard {
     analysis.addListener(_analysisChanged);
@@ -54,6 +55,7 @@ class EquationController extends ChangeNotifier {
   final AnalysisController analysis;
   final NarrationController narration;
   final Future<MathSpeechEngine> Function(String) open;
+  final Future<MathSpeechEngine> Function(void Function(String))? openBundled;
   final Future<void> Function(String) _copy;
   MathSpeechEngine? _math;
   Future<void>? _configuration, _closing, _listening;
@@ -66,6 +68,10 @@ class EquationController extends ChangeNotifier {
   String? _requestKey;
   String _style = 'ClearSpeak', _language = 'en';
   String? rulesDirectory, error, lastSpeechText;
+  String? preparation;
+  bool get hasBundledRules => openBundled != null;
+  bool get canPrepareSpeech =>
+      ready || rulesDirectory != null || hasBundledRules;
   List<String> diagnostics = const [];
   final _cache = <String, EquationSpeechText>{};
   int _cacheBytes = 0;
@@ -187,14 +193,37 @@ class EquationController extends ChangeNotifier {
   Future<void> configureRules(String directory) {
     if (_disposed) throw StateError('Equation controller is closed');
     if (_configuration != null) return _configuration!;
-    final task = _configure(directory);
+    rulesDirectory = directory;
+    final task = _configure(() => open(directory));
     _configuration = task;
     _notify();
     return task;
   }
 
-  Future<void> _configure(String directory) async {
-    _invalidateSpeech();
+  Future<void> useBundledRules() {
+    if (_disposed || !hasBundledRules) {
+      throw StateError('Bundled math rules are unavailable');
+    }
+    if (_configuration != null) return _configuration!;
+    rulesDirectory = null;
+    final task = _configure(() async => null);
+    _configuration = task;
+    _notify();
+    return task;
+  }
+
+  void _preparing(String value) {
+    if (!_disposed) {
+      preparation = value;
+      _notify();
+    }
+  }
+
+  Future<void> _configure(
+    Future<MathSpeechEngine?> Function() create, {
+    bool retireSpeech = true,
+  }) async {
+    if (retireSpeech) _invalidateSpeech();
     error = null;
     final previous = _math;
     _math = null;
@@ -202,17 +231,17 @@ class EquationController extends ChangeNotifier {
     _cacheBytes = 0;
     try {
       await previous?.close();
-      final next = await open(directory);
+      final next = await create();
       if (_disposed) {
-        await next.close();
+        await next?.close();
         return;
       }
       _math = next;
-      rulesDirectory = directory;
     } catch (e) {
       if (!_disposed) error = e.toString();
     } finally {
       _configuration = null;
+      preparation = null;
       _notify();
     }
   }
@@ -232,15 +261,15 @@ class EquationController extends ChangeNotifier {
   }
 
   Future<void> listen() {
-    final selection = selected, math = _math;
+    final selection = selected;
+    var math = _math;
     final formula = selection?.recognized;
     if (_disposed ||
         selection == null ||
         formula == null ||
-        math == null ||
-        opening) {
+        !canPrepareSpeech) {
       throw StateError(
-        'Select a recognized equation and open math rules first',
+        'Select a recognized equation and an available math speech source',
       );
     }
     final options = podoco.MathSpeechOptions(
@@ -252,7 +281,7 @@ class EquationController extends ChangeNotifier {
       formula.latex,
       options.toJson(),
       narration.settings.key,
-      math.identity,
+      rulesDirectory ?? 'bundled',
     ]);
     if (_requestKey == requestKey && ownsNarration && narration.active) {
       return _listening ?? Future.value();
@@ -268,15 +297,37 @@ class EquationController extends ChangeNotifier {
         generation == _generation &&
         identical(narration.requestOwner, owner) &&
         narration.active &&
-        identical(math, _math) &&
+        (math == null || identical(math, _math)) &&
         selected?.identity == selection.identity &&
         narration.settings.language == options.language;
     final work = narration.read(selection.session, () async {
+      if (math == null) {
+        if (_configuration == null) {
+          final directory = rulesDirectory;
+          final task = _configure(
+            () =>
+                directory != null ? open(directory) : openBundled!(_preparing),
+            retireSpeech: false,
+          );
+          _configuration = task;
+          _notify();
+        }
+        await _configuration;
+        math = _math;
+      }
+      if (!current()) throw StateError('Equation selection changed');
+      final activeMath = math;
+      if (activeMath == null) {
+        throw podoco.PodocoException(
+          'invalid_asset',
+          error ?? 'Math speech preparation failed',
+        );
+      }
       final key = sha256
           .convert(
             utf8.encode(
               jsonEncode([
-                math.identity,
+                activeMath.identity,
                 formula.latex,
                 formula.displayKind.name,
                 options.toJson(),
@@ -285,13 +336,16 @@ class EquationController extends ChangeNotifier {
           )
           .toString();
       try {
-        if (!math.stylesFor(options.language).contains(options.speechStyle)) {
+        if (!activeMath
+            .stylesFor(options.language)
+            .contains(options.speechStyle)) {
           throw const podoco.PodocoException(
             'unsupported_capability',
             'Math speech does not support this narration language and style.',
           );
         }
-        final speech = _cache[key] ?? await math.convert(formula, options);
+        final speech =
+            _cache[key] ?? await activeMath.convert(formula, options);
         if (!current()) throw StateError('Equation selection changed');
         if (speech.text.trim().isEmpty ||
             utf8.encode(speech.text).length > 64 * 1024) {

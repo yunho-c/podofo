@@ -11,6 +11,30 @@ permissions:
   contents: read
 
 jobs:
+  flutter:
+    name: Flutter bundled resource contract (no models)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install pinned Flutter
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open(".fvmrc"))["flutter"])')
+          git clone --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - name: Resource loader and portable preparation
+        working-directory: podoco/bindings/flutter
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter analyze --no-pub
+          flutter test --no-pub
+          python3 ../../../podofo_frontend_one/tool/test_prepare_podoco.py
+
   native:
     name: Rust, C, and Dart (${{ matrix.os }})
     strategy:
@@ -82,3 +106,4 @@ jobs:
       - uses: dtolnay/rust-toolchain@1.88.0
       - run: cargo +1.88.0 test --locked -p podoco -p podoco-ffi
       - run: cargo +1.88.0 test --locked -p podoco -p podoco-ffi --features math
+      - run: cargo +1.88.0 test --locked -p podoco-models

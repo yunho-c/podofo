@@ -5,6 +5,8 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 
 import '../analysis/analysis_controller.dart';
+import '../analysis/analysis_engine.dart';
+import '../analysis/math_speech_engine.dart';
 import '../analysis/analysis_store.dart';
 import '../analysis/equation_controller.dart';
 import 'document_provider.dart';
@@ -16,6 +18,7 @@ final equationControllerProvider = Provider<EquationController?>((ref) {
   final controller = EquationController(
     analysis: analysis,
     narration: ref.read(narrationControllerProvider),
+    openBundled: NativeMathSpeechEngine.openBundled,
   );
   ref.onDispose(controller.dispose);
   return controller;
@@ -27,6 +30,7 @@ final analysisControllerProvider = FutureProvider<AnalysisController>((
   final root = await getApplicationSupportDirectory();
   final controller = AnalysisController(
     store: AnalysisStore(Directory(p.join(root.path, 'podoco', 'pages-v2'))),
+    openBundled: NativeAnalysisEngine.openBundled,
   );
   if (!ref.mounted) {
     controller.dispose();
