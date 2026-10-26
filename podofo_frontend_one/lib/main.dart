@@ -46,6 +46,8 @@ class MyApp extends ConsumerWidget {
         data: material.ThemeData(brightness: brightness),
         child: material.Material(
           type: material.MaterialType.transparency,
+          // Preserve Shadcn's typography instead of Material's bodyMedium.
+          textStyle: DefaultTextStyle.of(context).style,
           child: child,
         ),
       ),
