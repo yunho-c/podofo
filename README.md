@@ -5,7 +5,8 @@ PDF highlights, and local MLSR paper narration on macOS Apple Silicon.
 
 The repository also contains [Podoco](podoco/README.md), an independent
 Rust-first document analysis SDK. Its initial scaffold includes Rust, C, and
-Dart APIs and development checks; model inference is not implemented yet.
+Dart APIs and development checks. Its experimental Core ML layout SDK supports
+bounded document jobs; formula recognition and reader integration are in progress.
 
 The app lives in `podofo_frontend_one`. Use Flutter **3.47.5** and see
 [development and verification](docs/development.md) for setup, tests, and controls.

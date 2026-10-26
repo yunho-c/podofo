@@ -13,7 +13,9 @@ offline bundle tooling, and reference fixtures are implemented. See
 [its qualification](../podoco/docs/internal/m2-validation.md). M3 adds
 [bounded Rust document jobs](../podoco/docs/jobs.md) with
 [lifecycle and native parity checks](../podoco/docs/internal/m3-validation.md).
-M4–M9 remain planned; the starting-point inventory below records the original baseline.
+M4 adds the [C/Dart layout SDK](../podoco/bindings/dart/README.md) with
+[native and portable qualification](../podoco/docs/internal/m4-validation.md).
+M5–M9 remain planned; the starting-point inventory below records the original baseline.
 
 PP-DocLayoutV3 is the selected layout model. PP-FormulaNet_plus-L is the selected
 formula recognizer (2026-10-26). Its conversion and native qualification remain
@@ -383,7 +385,7 @@ by the design and should not need to change for a conventional crop recognizer.
 
 ## Execution and review policy
 
-M1–M3 are implemented. Advance into M4 and consume the explicit
+M1–M4 are implemented. Advance into M5 and consume the explicit
 PP-FormulaNet_plus-L handoff for M6 without repeating model-family selection.
 M5 gives an integration checkpoint before the complete formula workflow;
 M7 and M8 remain separable from model-specific decoding.

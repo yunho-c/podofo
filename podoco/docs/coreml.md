@@ -2,7 +2,7 @@
 
 The optional `coreml` feature selects a pinned, patched cidre 0.29.0 dependency
 on macOS/iOS. M2 implements [blocking Rust page-layout inference](layout.md).
-C/Dart still expose identity only. macOS 15 and iOS 18 are the selected
+M4 exposes layout jobs through C/Dart. macOS 15 and iOS 18 are the selected
 deployment floors; only macOS arm64 has been exercised locally.
 
 ```sh
@@ -26,7 +26,10 @@ probe against the affine fixture. These are separate from speech synthesis. Logs
 
 The `coreml_probe` example is not a public C ABI. Its output is not a document
 quality, ANE performance, minimum-OS, or iOS qualification. The default Dart
-hook continues to build the identity-only library without `coreml`.
+hook builds the portable library without `coreml`. Set `coreml: true` in the
+[Dart native hook configuration](../bindings/dart/README.md) for macOS layout inference.
+[M4 validation](internal/m4-validation.md) separately exercises the actual SDK
+beside MLSR in both load orders.
 
 ## Rust consumers
 

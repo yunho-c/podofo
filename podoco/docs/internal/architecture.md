@@ -9,7 +9,8 @@ document/formula pipeline, image ownership, progressive jobs, and optional math
 conversion. M1 implements the [Rust data/ownership contracts](../contracts.md)
 and offline model verification. M2 adds a [blocking layout session](../layout.md),
 private page pipeline, and thread-confined Core ML runtime. M3 adds
-[bounded document jobs](../jobs.md). Binding-level analysis remains planned.
+[bounded document jobs](../jobs.md). M4 implements [C transport](../ffi.md)
+and the [typed Dart SDK](../../bindings/dart/README.md).
 
 ## Dependency direction
 
@@ -19,8 +20,8 @@ PoDoFo / other Dart clients -> Dart API -> podoco-ffi -> podoco
 ```
 
 The core provides validated domain types, image copying, bounded JSON results,
-and local bundle verification. The C ABI and Dart native hook still expose
-identity only. The optional `coreml` feature implements real page-layout
+and local bundle verification. C handles and Dart pumps translate foreign
+ownership, lazy source requests, bounded result delivery, and control notifications. The optional `coreml` feature implements real page-layout
 inference, with Rust-owned scheduling in `jobs`. PDF rendering remains the
 caller's responsibility.
 
@@ -71,8 +72,8 @@ coordinate/reading-order checks alongside model-specific quality metrics.
 
 ## Next implementation milestone
 
-M1–M3 establish domain/ownership contracts, real Rust layout inference, and
-bounded jobs. M4 connects the C/Dart API. Formula deployment follows its selection handoff. Optional math
+M1–M4 establish domain/ownership contracts, real layout inference, bounded
+jobs, and C/Dart APIs. M5 connects PoDoFo rendering and persistence. Formula deployment follows its selection handoff. Optional math
 conversion can be developed independently. PoDoFo integration is done when real
 pages produce qualified results and Copy/Listen work through the public APIs;
 a placeholder `analyze` method would not meet that gate.

@@ -15,5 +15,8 @@ Run these from `podoco/`:
 - [Dart identity](../bindings/dart/example/version.dart): run `dart run
   example/version.dart` from `bindings/dart/` after installing locked dependencies.
 
-Dart analysis APIs arrive in M4. `coreml_probe` is a development-only library for
+- [Dart document layout](../bindings/dart/example/document_layout.dart): lazy raw
+  page files and JSONL results through the public SDK; [setup and manifest](../bindings/dart/README.md).
+
+ `coreml_probe` is a development-only library for
 native coexistence checks, not an application C ABI.

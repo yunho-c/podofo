@@ -3,7 +3,9 @@ use super::{ImageDescriptor, PageImage, Storage, validate_storage};
 use crate::Error;
 use std::{ptr::NonNull, sync::Arc};
 
-pub(super) struct NativeLease {
+/// Ownership of stable initialized native pixels with all writes excluded.
+/// Construction is unsafe; importing the lease validates its image descriptor.
+pub struct NativeLease {
     pointer: NonNull<u8>,
     initialized: usize,
     retained: usize,
@@ -16,12 +18,14 @@ unsafe impl Send for NativeLease {}
 // after the final Arc reader. The callback is never accessed through &self.
 unsafe impl Sync for NativeLease {}
 impl NativeLease {
+    /// Adopt native storage and its exactly-once release action.
+    ///
     /// # Safety
     /// `pointer` covers `initialized` initialized bytes (including padding) in
     /// one live allocation; length is at most isize::MAX. No writes or freeing
     /// may occur until release. `retained` accounts for the entire allocation.
     /// `release` must not panic and must be safe on any final-owner thread.
-    pub(super) unsafe fn new(
+    pub unsafe fn new(
         pointer: NonNull<u8>,
         initialized: usize,
         retained: usize,
@@ -49,11 +53,15 @@ impl Drop for NativeLease {
         }
     }
 }
-pub(super) struct RejectedLease {
+/// A rejected import retains its owner, so callers can retry or drop it.
+pub struct RejectedLease {
+    /// Validation failure.
     pub error: Error,
+    /// Original lease, not yet released.
     pub lease: NativeLease,
 }
-pub(super) fn import(
+/// Validate storage, returning the original lease on rejection. No input copy.
+pub fn import(
     descriptor: ImageDescriptor,
     lease: NativeLease,
     budget: u64,

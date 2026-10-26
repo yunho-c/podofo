@@ -11,9 +11,386 @@ import 'dart:ffi' as ffi;
 /// Returns the C ABI compatibility version.
 ///
 /// Bindings must check compatibility before calling other entry points.
-/// Version 1 currently contains library identity queries only.
+/// Version 2 adds owned handles, images, and the analysis transport. Identity-only
+/// version-1 libraries must be rejected before resolving version-2 symbols.
 @ffi.Native<ffi.Uint32 Function()>()
 external int podoco_abi_version();
+
+/// Cancel and drain analyzer jobs/native work. Blocks; keep source/result pumps
+/// running until it returns. Repeated calls succeed. Release the handle later.
+/// # Safety
+/// The optional error output satisfies podoco_buffer_view's contract.
+@ffi.Native<ffi.Int32 Function(ffi.Uint64, ffi.Pointer<ffi.Uint64>)>()
+external int podoco_analyzer_close(int analyzer, ffi.Pointer<ffi.Uint64> error);
+
+/// Read schema-v0 loaded-model capabilities and the exact analysis profile ID.
+/// # Safety
+/// Outputs satisfy podoco_buffer_view's contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_analyzer_info(
+  int analyzer,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Verify an existing offline bundle and open one persistent analyzer. Blocks;
+/// bindings must call on a worker. Metadata is UTF-8 JSON with schema_version=0,
+/// bundle_directory, and the complete Rust AnalyzerOptions representation.
+/// # Safety
+/// Config covers readable bytes for this call; outputs satisfy the standard
+/// disjoint writable contract. Normal builds never download models.
+@ffi.Native<
+  ffi.Int32 Function(
+    PodocoBytes,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_analyzer_open(
+  PodocoBytes config,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Borrow bytes from a result/error buffer until its handle is released. Copy
+/// before invoking async caller code. Never release concurrently with this view.
+/// # Safety
+/// Outputs are aligned, writable, and disjoint; error may be null. Handle IDs
+/// themselves may be arbitrary. All pointer APIs use this output contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Pointer<PodocoBytes>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_buffer_view(
+  int handle,
+  ffi.Pointer<PodocoBytes> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Verify an existing offline bundle and return schema-v0 identity/profile,
+/// manifest hash, and declared capabilities. This blocks on local hashing; use a
+/// worker. Analyzer opening verifies again before loading immutable artifacts.
+/// # Safety
+/// Directory is length-delimited readable UTF-8; outputs follow the standard
+/// contract. No download/compilation occurs during verification.
+@ffi.Native<
+  ffi.Int32 Function(
+    PodocoBytes,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_bundle_verify(
+  PodocoBytes directory,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Built features; model-specific capabilities are queried on the analyzer.
+@ffi.Native<ffi.Uint32 Function()>()
+external int podoco_features();
+
+/// Copy the complete initialized view, including supplied padding/trailing
+/// bytes. Caller storage can be modified/freed immediately after return.
+/// # Safety
+/// Descriptor and bytes cover their stated initialized readable storage for this
+/// call. Outputs follow podoco_buffer_view's disjoint writable contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<PodocoImageDescriptor>,
+    PodocoBytes,
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_image_copy(
+  ffi.Pointer<PodocoImageDescriptor> description,
+  PodocoBytes bytes,
+  int byte_budget,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Import a native image without copying its pixels. On success all writes and
+/// freeing are forbidden until release(token); on rejection ownership stays
+/// with the caller and the release callback is NOT invoked. Retained bytes
+/// account for the whole allocation, not just the initialized view.
+/// # Safety
+/// Descriptor/outputs satisfy podoco_image_copy's contract. The pixel pointer
+/// covers one allocation with bytes.len initialized bytes (including padding),
+/// and remains valid and immutable until release. The callback is non-null,
+/// thread-safe, nonblocking, cannot unwind, and stays callable through release.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Pointer<PodocoImageDescriptor>,
+    PodocoBytes,
+    ffi.Uint64,
+    ffi.Uint64,
+    ffi.Pointer<ffi.NativeFunction<ffi.Void Function(ffi.Uint64 token)>>,
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_image_import(
+  ffi.Pointer<PodocoImageDescriptor> description,
+  PodocoBytes bytes,
+  int retained_bytes,
+  int byte_budget,
+  ffi.Pointer<ffi.NativeFunction<ffi.Void Function(ffi.Uint64 token)>> release,
+  int token,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Return schema-v0 image metadata without exposing writable pixels.
+/// # Safety
+/// Outputs satisfy podoco_buffer_view's contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_image_info(
+  int image,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Emergency transport failure: cancel work and reject further source/results,
+/// unblocking a sink whose binding cannot decode/ack it. Nonblocking. Keep the
+/// handle and wake callback alive until outcome is ready, then drain the reported
+/// wake_count before closing the callback. This is not successful delivery.
+/// # Safety
+/// Optional error output follows the standard contract.
+@ffi.Native<ffi.Int32 Function(ffi.Uint64, ffi.Pointer<ffi.Uint64>)>()
+external int podoco_job_abandon(int job, ffi.Pointer<ffi.Uint64> error);
+
+/// Request cancellation without waiting for rendering, native inference, or a
+/// sink. Safe while result capacity is exhausted. Keep all pumps running.
+/// # Safety
+/// Optional error output follows the standard contract.
+@ffi.Native<ffi.Int32 Function(ffi.Uint64, ffi.Pointer<ffi.Uint64>)>()
+external int podoco_job_cancel(int job, ffi.Pointer<ffi.Uint64> error);
+
+/// Cancel and wait for native work/source/sink drain; idempotent. This blocks,
+/// so bindings run it on a separate worker and keep source/result pumps alive.
+/// Release the handle only afterward. Last-handle release without close abandons
+/// delivery as an emergency cleanup path, rather than claiming accepted results.
+/// # Safety
+/// Optional error output follows the standard contract.
+@ffi.Native<ffi.Int32 Function(ffi.Uint64, ffi.Pointer<ffi.Uint64>)>()
+external int podoco_job_close(int job, ffi.Pointer<ffi.Uint64> error);
+
+/// Independent callback-lifetime control, even if a client cannot decode outcome
+/// JSON. PENDING means producers may still run. OK writes the frozen number of
+/// scalar wake calls after native work/callbacks have drained. Consume that many
+/// binding notifications before closing PodocoWake. This does not acknowledge
+/// semantic results or claim delivery success.
+/// # Safety
+/// Count/error outputs are aligned, writable, non-null (count), and disjoint.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_job_drain_state(
+  int job,
+  ffi.Pointer<ffi.Uint64> count,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Read the immutable schema-v0 authoritative outcome after native callbacks
+/// have drained; PENDING returns output=0. A binding must additionally await its
+/// own cancelled/late async renderer before completing disposal and closing wake
+/// callbacks. Use this control poll even after the terminal result was acked.
+/// # Safety
+/// Outputs follow podoco_buffer_view's contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_job_outcome(
+  int job,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Read coalesced schema-v0 progress and stopping state. Stopping also includes
+/// internal failure, so a binding can cancel an outstanding renderer when a
+/// sink fails. Observation neither starts nor consumes result delivery.
+/// # Safety
+/// Outputs follow podoco_buffer_view's contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_job_progress(
+  int job,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Eagerly queue a document. Metadata: schema_version=0, document, ordered pages,
+/// and AnalysisOptions. A required native sink is installed immediately; the
+/// client must drain/ack results even without subscribing to progress.
+/// # Safety
+/// Metadata/outputs obey podoco_analyzer_open's contract. The optional wake
+/// callback obeys PodocoWake's lifetime/thread contract. It may run before this
+/// function returns, so it must enqueue a scalar notification, not reenter/wait.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    PodocoBytes,
+    ffi.Pointer<ffi.NativeFunction<ffi.Void Function(ffi.Uint64 token)>>,
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_job_start(
+  int analyzer,
+  PodocoBytes metadata,
+  ffi.Pointer<ffi.NativeFunction<ffi.Void Function(ffi.Uint64 token)>> wake,
+  int wake_token,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Live registry entries, for leak diagnostics. This is not process memory.
+@ffi.Native<ffi.Uint64 Function()>()
+external int podoco_live_handles();
+
+/// Release any owned handle; zero is a no-op, stale nonzero handles fail.
+/// Last-owner release can block while an analyzer/job drains. Do not call from
+/// its source/sink wake callback or a UI thread. No registry lock is held while
+/// dropping the resource or invoking an image release notification.
+@ffi.Native<ffi.Int32 Function(ffi.Uint64)>()
+external int podoco_release(int handle);
+
+/// Acknowledge a previously polled update sequence. Empty failure bytes mean
+/// success; otherwise provide Error JSON (at most 16 KiB) and delivery fails.
+/// Cancellation does not fabricate an acknowledgement: keep the sink pump alive
+/// until its active callback and terminal processing notice have drained.
+/// # Safety
+/// Failure/error follow the standard input/output contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Uint64,
+    PodocoBytes,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_result_ack(
+  int job,
+  int sequence,
+  PodocoBytes failure,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Pull the next semantic AnalysisUpdate buffer, or PENDING with output=0.
+/// There is one in-flight foreign sink call. Copy/decode and release the buffer
+/// before invoking user code; acknowledge its sequence only after the async sink
+/// completes. Source/control polling remains independent of this acknowledgement.
+/// # Safety
+/// Outputs follow podoco_buffer_view's contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_result_next(
+  int job,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Fail a polled source request with a UTF-8 JSON Error {code,message} (at most
+/// 16 KiB). Use page_source for render failure or source_changed for revision
+/// change; the Rust job determines whether analysis may continue.
+/// # Safety
+/// Failure/error follow the standard readable-input/writable-output contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Uint64,
+    PodocoBytes,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_source_fail(
+  int job,
+  int token,
+  PodocoBytes failure,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Pull one lazy source request as an owned schema-v0 JSON buffer. PENDING
+/// returns output=0. Request JSON includes token, page, requirements, byte_budget.
+/// Polling never performs rendering or waits for a worker. Once polled, every
+/// request requires a completion reply, including after cancellation; its input
+/// reservation remains held until that reply. Unpolled requests may be withdrawn.
+/// # Safety
+/// Outputs follow podoco_buffer_view's contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_source_next(
+  int job,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Reply to a polled source token with an image and schema-v0 page/map/profile
+/// metadata. This borrows the image HANDLE and retains its pixels on success;
+/// the caller always releases its own image handle afterward. Stale/duplicate
+/// replies fail without consuming ownership. A cancelled polled request accepts
+/// a late reply solely for release, without prediction. Never write into an imported image.
+/// # Safety
+/// Metadata/error follow podoco_analyzer_open's input/output contract.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Uint64,
+    ffi.Uint64,
+    PodocoBytes,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_source_reply(
+  int job,
+  int token,
+  int image,
+  PodocoBytes metadata,
+  ffi.Pointer<ffi.Uint64> error,
+);
 
 /// Returns the library version as a borrowed, NUL-terminated UTF-8 string.
 ///
@@ -21,3 +398,88 @@ external int podoco_abi_version();
 /// Do not modify or free it. This function is thread-safe.
 @ffi.Native<ffi.Pointer<ffi.Char> Function()>()
 external ffi.Pointer<ffi.Char> podoco_version();
+
+const int PODOCO_ERROR = -1;
+
+const int PODOCO_FEATURE_COREML = 2;
+
+const int PODOCO_FEATURE_IMAGES = 1;
+
+const int PODOCO_FEATURE_JOBS = 4;
+
+const int PODOCO_MAX_METADATA_BYTES = 4194304;
+
+const int PODOCO_OK = 0;
+
+const int PODOCO_PENDING = 1;
+
+const int PODOCO_SCHEMA_VERSION = 0;
+
+/// Borrowed bytes for one call; output bytes live until their owning buffer is
+/// released. Null is valid only for zero length. Inputs are copied before return.
+final class PodocoBytes extends ffi.Struct {
+  /// First readable initialized byte.
+  external ffi.Pointer<ffi.Uint8> data;
+
+  /// Byte length, excluding any terminator.
+  @ffi.Uint64()
+  external int len;
+
+  static ffi.Pointer<PodocoBytes> $allocate(
+    ffi.Allocator $allocator, {
+    required ffi.Pointer<ffi.Uint8> data,
+    required int len,
+  }) => $allocator<PodocoBytes>()
+    ..ref.data = data
+    ..ref.len = len;
+}
+
+/// Raw BGRA/RGBA image description. Initialize every field. This ABI fixes the
+/// layout; struct_size must equal sizeof(PodocoImageDescriptor).
+final class PodocoImageDescriptor extends ffi.Struct {
+  /// Exact struct size, in bytes.
+  @ffi.Uint32()
+  external int struct_size;
+
+  /// Width in pixels.
+  @ffi.Uint32()
+  external int width;
+
+  /// Height in pixels.
+  @ffi.Uint32()
+  external int height;
+
+  /// 0: BGRA8; 1: RGBA8.
+  @ffi.Uint32()
+  external int pixel_format;
+
+  /// 0: opaque; 1: straight; 2: premultiplied.
+  @ffi.Uint32()
+  external int alpha_mode;
+
+  /// Must be zero.
+  @ffi.Uint32()
+  external int reserved;
+
+  /// Bytes between rows, including padding.
+  @ffi.Uint64()
+  external int row_bytes;
+
+  static ffi.Pointer<PodocoImageDescriptor> $allocate(
+    ffi.Allocator $allocator, {
+    required int struct_size,
+    required int width,
+    required int height,
+    required int pixel_format,
+    required int alpha_mode,
+    required int reserved,
+    required int row_bytes,
+  }) => $allocator<PodocoImageDescriptor>()
+    ..ref.struct_size = struct_size
+    ..ref.width = width
+    ..ref.height = height
+    ..ref.pixel_format = pixel_format
+    ..ref.alpha_mode = alpha_mode
+    ..ref.reserved = reserved
+    ..ref.row_bytes = row_bytes;
+}

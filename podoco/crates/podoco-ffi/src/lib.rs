@@ -3,6 +3,16 @@
 //! Version queries allocate nothing and cannot panic. Regenerate the checked-in
 //! C header and Dart bindings after changing the exported API.
 
+mod api;
+mod handles;
+mod jobs;
+mod transport;
+mod types;
+pub use jobs::*;
+mod wire;
+pub use api::*;
+pub use types::*;
+
 use std::ffi::c_char;
 
 const VERSION_C: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
@@ -10,11 +20,12 @@ const VERSION_C: &str = concat!(env!("CARGO_PKG_VERSION"), "\0");
 /// Returns the C ABI compatibility version.
 ///
 /// Bindings must check compatibility before calling other entry points.
-/// Version 1 currently contains library identity queries only.
+/// Version 2 adds owned handles, images, and the analysis transport. Identity-only
+/// version-1 libraries must be rejected before resolving version-2 symbols.
 // SAFETY: This uniquely named exported symbol uses the C calling convention.
 #[unsafe(no_mangle)]
 pub extern "C" fn podoco_abi_version() -> u32 {
-    1
+    2
 }
 
 /// Returns the library version as a borrowed, NUL-terminated UTF-8 string.
@@ -41,3 +52,7 @@ mod tests {
         assert_eq!(version.to_str().unwrap(), podoco::VERSION);
     }
 }
+
+#[cfg(test)]
+#[path = "tests.rs"]
+mod analysis_tests;

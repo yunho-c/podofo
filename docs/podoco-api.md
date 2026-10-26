@@ -5,8 +5,9 @@ the agreed architecture and proposed interfaces. M1 now implements the
 [Rust data/ownership contracts and offline bundles](../podoco/docs/contracts.md).
 M2 implements the blocking [Rust layout session](../podoco/docs/layout.md).
 M3 implements [Rust document jobs](../podoco/docs/jobs.md); the Rust analyzer
-example below now matches that API. Dart analysis and optional math examples
-remain proposed. C/Dart still expose identity only. See the [current architecture](../podoco/docs/internal/architecture.md)
+example below now matches that API. M4 implements the
+[C/Dart layout SDK](../podoco/bindings/dart/README.md); optional math examples
+remain proposed. See the [current architecture](../podoco/docs/internal/architecture.md)
 and [Core ML qualification boundary](../podoco/docs/coreml.md).
 
 The first complete pipeline analyzes a document's pages, detects layout, and
@@ -124,9 +125,9 @@ document lease covers the render operation independently of the analysis image
 lease. A source revision change terminates that job as `SourceChanged`; inputs
 from different revisions must never be combined under one document reference.
 
-### Proposed Dart usage
+### Dart orchestration and proposed math usage
 
-These are complete orchestration examples using proposed types. `PageSource`,
+The document orchestration uses implemented M4 types; the math section remains proposed. `PageSource`,
 the persistent store callback, qualified options, and existing MLSR `Tts` are
 supplied by the application. They do not hide a PDF parser or a selected model.
 
@@ -260,8 +261,9 @@ pub fn equation_for_tts(
 
 The document-job facade is implemented; the complete
 [PNG document example](../podoco/crates/podoco/examples/document_layout.rs) is
-compiled by the development checks. Optional math and Dart examples still
-describe future APIs and must be type-checked before complete API v0 availability.
+compiled by the development checks. The [Dart document example](../podoco/bindings/dart/example/document_layout.dart)
+is also analyzed and exercised with real model assets. Optional math examples
+still describe future APIs and must be type-checked before complete API v0 availability.
 
 ## 3. Images, coordinate systems, and ownership
 

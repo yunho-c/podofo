@@ -8,7 +8,7 @@ int main(int argc, char **argv) {
     fprintf(stderr, "usage: ffi-smoke EXPECTED_VERSION\n");
     return 2;
   }
-  if (podoco_abi_version() != 1) {
+  if (podoco_abi_version() != 2) {
     fprintf(stderr, "unsupported Podoco ABI\n");
     return 1;
   }

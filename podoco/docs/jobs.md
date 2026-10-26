@@ -119,5 +119,5 @@ close jobs owned by their analyzer; those waits return `InvalidInput` to avoid
 self-deadlock. Keep blocking construction/wait/close off UI and executor threads.
 
 [M3 validation](internal/m3-validation.md) records lifecycle tests and real-model
-comparison. C/Dart analysis transport is M4; model promotion and recognition
+comparison. [C/Dart transport](ffi.md) is implemented in M4; model promotion and recognition
 quality remain separate gates.

@@ -1,0 +1,73 @@
+{
+  "gate": "m4-c-dart-sdk-v1",
+  "date": "2026-10-26",
+  "base_commit": "6af6fc31924ee4155572ac3477a9c238fc8d48f9",
+  "abi": 2,
+  "schema": 0,
+  "dart": {
+    "gate": "m4-dart-document-v1",
+    "passed": true,
+    "fixture_rgba_sha256": {
+      "columns": "7474add3afa5d1dba6494566606c0445319cb56ece67a384c3bab0f928543fcf",
+      "equations": "c5156a6da45004875292d6fe1efb7a743d5b27932020f7edbe6b24a79fda0e22",
+      "raster": "56bac26433d459841de7369be7d50a42215da53b324c634d2225d8c99e37cefb"
+    },
+    "reference_sha256": "093f7b7179f215559fef5de4cf03d6fa6c3d7778931032b0a9f3a2314c094fc4",
+    "native_sha256": "2b5a0047a5b536b3c1088ccfa8f88c9b69c194a858c7ed52b0d3becc1797c4a5",
+    "dart_tests": 14,
+    "cli_updates": 7,
+    "hook_build": {
+      "minimum_macos": [
+        "15.0"
+      ],
+      "native_sha256": "02233fda27a539180ed305490bc00f6ab25099a6034d0d837cbf25a39fc85e00"
+    }
+  },
+  "coexistence": {
+    "gate": "m4-actual-sdk-coexistence-v1",
+    "cases": [
+      {
+        "load_order": [
+          "libpodoco_ffi.dylib",
+          "libmlsr_ffi.dylib"
+        ],
+        "predictions": 1,
+        "updates": 3,
+        "live_handles": 0,
+        "status": "completed"
+      },
+      {
+        "load_order": [
+          "libmlsr_ffi.dylib",
+          "libpodoco_ffi.dylib"
+        ],
+        "predictions": 1,
+        "updates": 3,
+        "live_handles": 0,
+        "status": "completed"
+      }
+    ],
+    "sha256": {
+      "podoco": "2b5a0047a5b536b3c1088ccfa8f88c9b69c194a858c7ed52b0d3becc1797c4a5",
+      "mlsr": "a56bd49744d64be2fbae1d5c458ad214f771ef92b8905897ea1ce38d6fba1d81"
+    }
+  },
+  "source_sha256": {
+    "bindings/dart/hook/build.dart": "d5aecb52b40ee2e6718494fc1ce00f9eb21b692819b24fef5c7de3987a8d8bf2",
+    "bindings/dart/lib/src/analysis.dart": "770b680ed128a07a2f32ddab698abbc9d8f350f357506e45b80ef871565982b3",
+    "bindings/dart/lib/src/analysis_jobs.dart": "8a297a6c6a1184f679ff52ea81f2bc0cf5eb30f3e70f15c38663474aa8566a1a",
+    "bindings/dart/lib/src/analysis_native.dart": "99c5f475f69ef19b66ce25a6c2679460d63f8c0a22ee3d38517754c3be80bd36",
+    "bindings/dart/lib/src/analysis_types.dart": "1f1168a8db96ac97d9e9c6b12c2f70c2d1aa12a62903c2d77a22544dbec76b60",
+    "crates/podoco-ffi/src/api.rs": "78fad26b2a5710d6b1ac356b3e3150a15c8b0dd6933fe6bde097f72de3caaf94",
+    "crates/podoco-ffi/src/handles.rs": "8576b92e61ba5d6106c33d142db0c1b113caebd94bc9c487a4b4784a573b1272",
+    "crates/podoco-ffi/src/jobs.rs": "3c72ab489a94855ddc7e0484d26a8e1fa54502974ff3dbe2ed538c028657c3af",
+    "crates/podoco-ffi/src/lib.rs": "0813fb2ee46e59c4ea1a79390cf15d98e1c0df378ea2bb719ead05cb68c1eb78",
+    "crates/podoco-ffi/src/tests.rs": "f57a9ca867ec21d93a5fecffed6a41f2fd39a73e22698ab484dbe9491cd1c836",
+    "crates/podoco-ffi/src/transport.rs": "b549865c9e73d22bf3fa9504f8d953aca0a1d754d59ed731bae2a3768642e33e",
+    "crates/podoco-ffi/src/types.rs": "3c7455f71a0672bad66bdb575f1fa1bdfdd6980cfa48cf86da9d01044335d644",
+    "crates/podoco-ffi/src/wire.rs": "8bc7c7a2382bfbd359607937ccf965ec70e71eadd0aefd481ac2cb4e36768696",
+    "include/podoco.h": "843a44e74a68b22c44d5e9a46ee8b1eb2e992498a5e04eedf60312257254246e",
+    "tools/check_dart_jobs.py": "f832cce690dd5a281298bdd8c341bb9c095911054dd68c24187cc4197b074678",
+    "tools/check_ffi_jobs.py": "37d78616d726401c9bab8a1b124a3beec6260ae4c85d4131cbf1d9f144b1ea37"
+  }
+}

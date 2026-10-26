@@ -35,6 +35,9 @@ Future<void> main(List<String> args) async {
     visitors: [
       Visitor(
         func: (node) => node.isIncluded = node.name.startsWith('podoco_'),
+        struct: (node) => node.isIncluded = node.name.startsWith('Podoco'),
+        macroConstant: (node) =>
+            node.isIncluded = node.name.startsWith('PODOCO_'),
       ),
     ],
   ).generate(
@@ -46,5 +49,20 @@ Future<void> main(List<String> args) async {
       'Dart bindings are stale; run python3 tools/dev.py generate.',
     );
     exitCode = 1;
+  }
+  final fixture = File.fromUri(
+    packageRoot.resolve('../../tests/fixtures/domain/updates.json'),
+  );
+  final mirror = File.fromUri(
+    packageRoot.resolve('test/fixtures/updates.json'),
+  );
+  if (check) {
+    if (!await mirror.exists() ||
+        await fixture.readAsString() != await mirror.readAsString()) {
+      throw StateError('Dart schema fixture is stale; regenerate bindings.');
+    }
+  } else {
+    await mirror.parent.create(recursive: true);
+    await fixture.copy(mirror.path);
   }
 }

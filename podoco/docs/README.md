@@ -13,11 +13,11 @@
   leases, progressive jobs, and optional math-to-speech-text conversion.
 - [Implementation plan](../../docs/podoco-implementation.md): independently
   testable milestones using PP-DocLayoutV3 and PP-FormulaNet_plus-L.
-- [Validation scope](internal/validation.md): what the scaffold checks establish.
+- [Validation scope](internal/validation.md): milestone evidence and platform limits.
 - [cidre coexistence](internal/cidre-coexistence.md): observer exclusion and
   namespacing experiments for loading Podoco alongside MLSR.
 
 M1 implements Rust data/ownership contracts and offline verification. M2 adds
-Core ML layout inference; M3 adds bounded document jobs. C/Dart analysis APIs
-remain planned. The concrete
+Core ML layout inference; M3 adds bounded document jobs. M4 exposes the
+[C/Dart layout SDK](internal/m4-validation.md). The concrete
 PP-DocLayoutV3 bundle remains experimental, not production-qualified.

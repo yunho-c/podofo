@@ -1,13 +1,10 @@
-//! Immutable copied images and an isolated internal native ownership boundary.
+//! Immutable copied images and an isolated native ownership boundary.
 use crate::{Affine, Error, ErrorCode, PageDescriptor, ProfileId, Rect, Result};
 use serde::{Deserialize, Serialize};
 use std::{fmt, sync::Arc};
 
-// The future FFI adapter will use this boundary. Until M4 its callers are the
-// ownership tests; allowing dead code here does not expose an unqualified API.
 #[allow(unsafe_code)]
-#[cfg_attr(not(test), allow(dead_code))]
-mod native;
+pub mod native;
 
 /// Byte order of each four-byte pixel.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]

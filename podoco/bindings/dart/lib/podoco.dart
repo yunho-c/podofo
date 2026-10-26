@@ -1,15 +1,16 @@
 /// Dart bindings for Podoco's Rust-owned document analysis library.
 ///
-/// The initial scaffold exposes library identity only. Document analysis and
-/// model loading are not implemented yet.
+/// Rust owns model loading, bounded jobs, and semantic results.
 library;
+
+export 'src/analysis.dart';
 
 import 'package:ffi/ffi.dart';
 
 import 'src/bindings.g.dart' as native;
 
 /// The C ABI version understood by this package.
-const supportedAbiVersion = 1;
+const supportedAbiVersion = 2;
 
 /// The ABI version reported by the bundled native library.
 int get nativeAbiVersion => native.podoco_abi_version();

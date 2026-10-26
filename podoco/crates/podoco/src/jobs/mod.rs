@@ -19,7 +19,7 @@ use std::{
 
 /// Rendering requirements; resolution is chosen by the source's qualified
 /// render profile subject to the reservation, never silently downscaled by jobs.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Serialize)]
 pub struct RasterRequirements {
     /// Preferred renderer format. Both BGRA8 and RGBA8 remain accepted.
     pub preferred_format: PixelFormat,
@@ -175,6 +175,11 @@ impl AnalysisJob {
     /// Latest coalesced progress; no subscription is needed for completion.
     pub fn progress(&self) -> AnalysisProgress {
         self.shared.lock().progress.clone()
+    }
+    /// Nonblocking authoritative completion snapshot, once callbacks have drained.
+    /// Transport pumps may poll this independently of result delivery.
+    pub fn try_outcome(&self) -> Option<AnalysisOutcome> {
+        self.shared.lock().outcome.clone()
     }
     /// Wait for the authoritative immutable outcome, including sink failures.
     pub fn wait(&self) -> Result<AnalysisOutcome> {

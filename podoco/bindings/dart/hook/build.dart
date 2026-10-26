@@ -7,6 +7,13 @@ Future<void> main(List<String> args) async {
   await build(args, (input, output) async {
     if (!input.config.buildCodeAssets) return;
     final config = input.config.code;
+    final coreml = input.userDefines['coreml'] ?? false;
+    if (coreml is! bool) {
+      throw FormatException('Podoco coreml must be true or false.');
+    }
+    if (coreml && config.targetOS != OS.macOS) {
+      throw UnsupportedError('Podoco Core ML host builds require macOS.');
+    }
     if (config.linkModePreference == LinkModePreference.static) {
       throw UnsupportedError('Podoco currently bundles a shared library.');
     }
@@ -52,8 +59,11 @@ Future<void> main(List<String> args) async {
       final environment = Map<String, String>.of(Platform.environment);
       if (config.targetOS == OS.macOS) {
         environment.remove('IPHONEOS_DEPLOYMENT_TARGET');
+        environment.remove('SDKROOT');
         environment['MACOSX_DEPLOYMENT_TARGET'] =
-            '${config.macOS.targetVersion}.0';
+            coreml && config.macOS.targetVersion < 15
+            ? '15.0'
+            : '${config.macOS.targetVersion}.0';
       }
       final result = await Process.run(
         'cargo',
@@ -65,6 +75,7 @@ Future<void> main(List<String> args) async {
           '--release',
           '--package',
           'podoco-ffi',
+          if (coreml) ...['--features', 'coreml'],
           '--target',
           target,
           '--target-dir',
@@ -93,6 +104,26 @@ Future<void> main(List<String> args) async {
         followLinks: false,
       )) {
         output.dependencies.add(entry.uri);
+      }
+      // The Rust bundle module embeds the pinned profiles with include_str!.
+      final manifests = Directory.fromUri(root.resolve('model-manifests/'));
+      output.dependencies.add(manifests.uri);
+      await for (final entry in manifests.list(
+        recursive: true,
+        followLinks: false,
+      )) {
+        output.dependencies.add(entry.uri);
+      }
+      if (coreml) {
+        final vendored = Directory.fromUri(root.resolve('third_party/cidre/'));
+        output.dependencies.add(vendored.uri);
+        await for (final entry in vendored.list(
+          recursive: true,
+          followLinks: false,
+        )) {
+          output.dependencies.add(entry.uri);
+        }
+        output.dependencies.add(root.resolve('third_party/cidre-source.json'));
       }
     }
     if (!File.fromUri(source).existsSync()) {

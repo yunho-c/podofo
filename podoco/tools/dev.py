@@ -160,7 +160,7 @@ def test_standalone():
             capture_output=True,
             text=True,
         )
-        message = "Podoco ABI 2 is incompatible with ABI 1."
+        message = "Podoco ABI 1 is incompatible with ABI 2."
         if result.returncode == 0 or message not in result.stderr:
             raise RuntimeError(
                 f"Incompatible ABI was not rejected:\n{result.stdout}\n{result.stderr}"

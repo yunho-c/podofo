@@ -1,5 +1,6 @@
 # Validation scope
 
+M4 adds C/Dart document analysis; see [M4 validation](m4-validation.md).
 M3 adds bounded Rust document jobs; see [M3 validation](m3-validation.md).
 M2's layout integration is recorded in [M2 validation](m2-validation.md).
 The records below describe earlier milestones, not the current runtime surface.
