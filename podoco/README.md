@@ -4,7 +4,7 @@ A Rust-first library for efficient document analysis with ergonomic language
 bindings. Podoco lives alongside the PoDoFo application in this Git repository,
 with its own Cargo workspace and development checks.
 
-**Status: M4 C/Dart layout SDK implemented.** Rust provides checked
+**Status: M5 layout application integration and M6 single-crop recognition implemented.** Rust provides checked
 page images, portable results, offline model bundles, and reusable Core ML
 `LayoutSession` execution for PP-DocLayoutV3. `Analyzer` adds eager document jobs,
 lazy rendering, bounded sinks, and cancellation. See [document jobs](docs/jobs.md),
@@ -14,8 +14,8 @@ experimental; its known export differences are recorded in the qualification.
 The [C ABI](docs/ffi.md) and [Dart SDK](bindings/dart/README.md) expose document
 jobs, copied images, controlled native leases, typed results, and draining
 cancellation. PoDoFo now has an [experimental layout integration](../docs/document-analysis.md).
-Formula recognition and Copy/Listen remain subsequent milestones. PP-FormulaNet_plus-L is
-selected for recognition; its native conversion and qualification remain work.
+PP-FormulaNet_plus-L has a [qualified blocking Rust crop recognizer](docs/formula.md).
+Progressive formula jobs, their C/Dart exposure, and Copy/Listen remain subsequent work.
 Core ML via cidre is the first backend, with QNN planned for Qualcomm Windows.
 [Observer exclusion and coexistence](docs/coreml.md) remain the packaging policy.
 The packages are private while the complete analysis contract is established.
@@ -51,13 +51,14 @@ crates/podoco/          Public Rust API, model pipelines, and runtime
 crates/podoco-ffi/      Shared C ABI adapter; dynamic and static libraries
 include/podoco.h        Generated C header
 bindings/dart/         Dart API, generated FFI, and native build hook
-model-manifests/        Pinned experimental PP-DocLayoutV3 YAML contract
+model-manifests/        Pinned experimental layout and formula YAML contracts
 examples/              Index of executable examples
 tests/integration/     Actual C caller checks
 third_party/cidre/     Pinned MIT-licensed Apple bindings with observer exclusion
 tools/codegen/         Pinned C header generator
 tools/dev.py           Build, generation, and validation commands
 tools/pp_doclayout_v3/  Original fixture generation and offline reference tooling
+tools/pp_formulanet/    Offline formula preparation and deployment qualification
 docs/                  Consumer setup and API contracts
 docs/internal/         Maintainer architecture and validation scope
 ```

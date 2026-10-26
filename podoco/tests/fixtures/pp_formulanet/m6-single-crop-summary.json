@@ -1,0 +1,60 @@
+{
+  "started": "2026-10-26T08:33:50.878265+00:00",
+  "macos": "27.0.1",
+  "hardware": "Apple M4 Pro",
+  "power_start": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=23003235)\t90%; AC attached; not charging present: true\n",
+  "binary_sha256": "c4712c6a877a1c0418073cf1153ad67445acc02df6ae57c5d9bbf283423dc222",
+  "manifest_sha256": "f122877f62b7e03e4a80c9e85fdca274f1d49e97ae84c37119119b793c3e1140",
+  "reference_sha256": "2e8434caae57016880fa562906fbdfd8eeddc7a52a0cecc98ae3e0fa7128d2b9",
+  "sources": {
+    "Cargo.lock": "511e6392f2af05f01bc7fd0b0c54f03fbd9baaaef2ae8b4113610b73fec9e47f",
+    "crates/podoco/Cargo.toml": "44f7223900b49ba639c940ca5406fef74479927d91c284cdd6ec5805ce019434",
+    "crates/podoco/src/formula/bundle.rs": "c3063c1b2a3a64bb66d5bd28c7f1151c5012c6de0d2b212dc069862b3c225f85",
+    "crates/podoco/src/formula/mod.rs": "3a554b11046e53bc322078ec24265bccf4cb336b9a8af3ad78d177104f705bb6",
+    "crates/podoco/src/formula/preprocess.rs": "fb79bcb33cc998aa4b71032fe9580513ac1b00ec73e3da776e875f0731b02608",
+    "crates/podoco/src/formula/session.rs": "f340260738fe73494846ee78fd9e580a8b2626e2ee0b3e85f9177e70003114cb",
+    "crates/podoco/src/formula/tests.rs": "ec2e3cf7998b79a2deac68f6b195a3d6a08af737567c2c7c0bc3b7a56f2e43ba",
+    "crates/podoco/src/formula/text.rs": "ad99c9b4d89f90c6c2dc87b7493bc62d9fe36308cb0ae23fba374ef9bab1b36a",
+    "crates/podoco/src/runtime/coreml/formula.rs": "7c8b6e65715a89c7db70ee173165d1833357ab95a8ea91ad5f7ef9db66249721",
+    "crates/podoco/src/runtime/coreml/tensor.rs": "2f59873463392bba13544ed41bede8c65c566313ceeae078855dc177851a9e99",
+    "tools/pp_formulanet/check.py": "55747768b6b8c2e7699936aca909737925806e7059c043ac9faa81748927417d"
+  },
+  "runs": [
+    {
+      "policy": "cpu",
+      "exit_code": 0,
+      "expected": 811,
+      "completed": 811,
+      "mismatches": [],
+      "output_sha256": "4dabb07ba571341c57c0993d1bab45ccb24c633bbf3fd71bf32aede44ea2440e",
+      "cache_peak": 40108032,
+      "tensor_peak": 33074240
+    },
+    {
+      "policy": "cpu-ne",
+      "exit_code": 0,
+      "expected": 811,
+      "completed": 811,
+      "mismatches": [],
+      "output_sha256": "91992a8a8feb0d70eb702dec588fddf70ece9f0ccab932c5b9112c5a9dbb98f3",
+      "cache_peak": 40108032,
+      "tensor_peak": 33074240
+    }
+  ],
+  "boundary": "Parity qualification, one serial process per policy; active host, no performance comparison or placement claim.",
+  "completed": "2026-10-26T08:43:35.074636+00:00",
+  "failures": [],
+  "power_end": "Now drawing from 'AC Power'\n -InternalBattery-0 (id=23003235)\t90%; AC attached; not charging present: true\n",
+  "portable": {
+    "images": 823,
+    "text_sequences": 1622,
+    "special_text_cases": 8,
+    "rgb_combinations": 16777216,
+    "rgb_grayscale_sha256": "2f0816f62de428889e63ae82c7ed0fedf2607ddc4b63726de003d1016aa0ccf6",
+    "tensor_hashes_exact": true,
+    "corpus_sha256": "00856f617cc050bba6459a9cc86b84eb297ff04d9f1d76730340d09e372deccc",
+    "generator_sha256": "9d146286d6a55ae616c54139d5ed75519dadd2be30500516b369c5d9b684f9ad"
+  },
+  "reference_generator": "tools/pp_formulanet/reference.py",
+  "reproduce": "python3.13 tools/pp_formulanet/check.py --bundle model-assets/pp-formulanet-plus-l-m6 --reference evaluation-output/m6-reference-v2 --output evaluation-output/m6-native-repeat"
+}

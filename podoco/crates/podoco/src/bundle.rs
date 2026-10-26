@@ -219,7 +219,7 @@ fn manifest_error(message: impl Into<String>) -> Error {
 fn asset_error(message: impl Into<String>) -> Error {
     Error::new(ErrorCode::InvalidAsset, message)
 }
-fn safe_path(value: &str) -> Result<()> {
+pub(crate) fn safe_path(value: &str) -> Result<()> {
     if value.is_empty()
         || value.contains(['\\', ':', '\0'])
         || value
@@ -380,7 +380,7 @@ fn verify_artifact(root: &Path, artifact: &Artifact) -> Result<()> {
     }
     Ok(())
 }
-fn inventory(root: &Path, directory: &Path, files: &mut HashSet<String>) -> Result<()> {
+pub(crate) fn inventory(root: &Path, directory: &Path, files: &mut HashSet<String>) -> Result<()> {
     for entry in fs::read_dir(directory).map_err(|e| Error::io(directory, e))? {
         let path = entry.map_err(|e| Error::io(directory, e))?.path();
         let meta = fs::symlink_metadata(&path).map_err(|e| Error::io(&path, e))?;
@@ -410,7 +410,7 @@ fn inventory(root: &Path, directory: &Path, files: &mut HashSet<String>) -> Resu
     }
     Ok(())
 }
-fn verify_file(path: &Path, expected: &LockedFile) -> Result<()> {
+pub(crate) fn verify_file(path: &Path, expected: &LockedFile) -> Result<()> {
     if !fs::metadata(path)
         .map_err(|e| Error::io(path, e))?
         .is_file()

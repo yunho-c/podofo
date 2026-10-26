@@ -187,6 +187,26 @@ pub enum FormulaOutcome {
     },
 }
 impl FormulaOutcome {
+    /// Validate and encode a formula using a bounded output allocation.
+    pub fn to_json(&self, max_bytes: usize) -> Result<Vec<u8>> {
+        self.validate()?;
+        let mut writer = BoundedWriter {
+            bytes: Vec::new(),
+            limit: max_bytes,
+            exceeded: false,
+        };
+        serde_json::to_writer(&mut writer, self).map_err(|e| {
+            Error::new(
+                if writer.exceeded {
+                    ErrorCode::LimitExceeded
+                } else {
+                    ErrorCode::InvalidResult
+                },
+                e.to_string(),
+            )
+        })?;
+        Ok(writer.bytes)
+    }
     fn validate(&self) -> Result<()> {
         match self {
             Self::Recognized { formula } => {

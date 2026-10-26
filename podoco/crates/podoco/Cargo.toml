@@ -18,6 +18,9 @@ serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = { version = "=1.0.154", features = ["float_roundtrip"] }
 serde_yaml_ng = "=0.10.0"
 sha2 = "=0.10.9"
+half = { version = "=2.7.1", default-features = false, features = ["std"] }
+fancy-regex = "=0.16.2"
+plsfix = "=0.1.8"
 
 [dev-dependencies]
 tempfile = "=3.27.0"

@@ -8,6 +8,8 @@ Run these from `podoco/`:
   `cargo run --locked -p podoco --example contracts` (no model required).
 - [PNG layout inference](../crates/podoco/examples/page_layout.rs): real sequential
   page analysis through one session; [setup and arguments](../docs/layout.md).
+- [PNG formula recognition](../crates/podoco/examples/formula.rs): reusable
+  single-crop recognition with token and timing diagnostics; [setup](../docs/formula.md).
 - [PNG document jobs](../crates/podoco/examples/document_layout.rs): lazy input,
   progressive JSONL updates, and authoritative completion; [instructions](../docs/jobs.md).
 - [Offline bundles](../crates/podoco/examples/model_bundle.rs): local verification

@@ -42,3 +42,14 @@ patterns are adapted from the Apache-2.0 MLSR runtime at
 `14ff251eb7e9011801945233cf91ef8b444cd734`, with attribution in the Rust modules.
 The SDK has no MLSR runtime dependency. PP-DocLayoutV3 decoding follows the
 Apache-2.0 PaddlePaddle/Hugging Face processor pinned by the model manifest.
+
+Formula preprocessing also adapts PyTorch's antialiased uint8 linear/cubic
+resampling from that same commit, with the license above. Margin cropping,
+thumbnail/padding, normalization, and formula text rules follow Transformers
+5.8.1's Apache-2.0 PPFormulaNet processors (Copyright 2026 The PaddlePaddle Team
+and The HuggingFace Inc. team), whose exact files are hashed in the
+[formula contract](../model-manifests/pp-formulanet-plus-l-coreml-v1.yaml).
+The ByteLevel decoder implements the pinned tokenizer's reversible byte
+alphabet; the SDK does not load a BPE encoder. Registry dependencies `half`
+(MIT/Apache-2.0), `fancy-regex` (MIT), and `plsfix` (MIT) are version pinned in
+Cargo.toml/Cargo.lock. Their published packages retain their own license files.

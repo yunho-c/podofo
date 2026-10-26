@@ -16,6 +16,7 @@
 pub mod bundle;
 pub mod domain;
 pub mod error;
+pub mod formula;
 pub mod geometry;
 pub mod image;
 pub mod jobs;

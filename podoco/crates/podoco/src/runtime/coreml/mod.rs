@@ -1,5 +1,6 @@
 //! Native objects stay on their creating thread. Patterns adapted from MLSR's
 //! Apache-2.0 runtime/coreml at the source revision recorded in M2 validation.
+pub(crate) mod formula;
 mod tensor;
 
 use crate::{Error, ErrorCode, ModelBundle, Result, options::ComputePolicy};
