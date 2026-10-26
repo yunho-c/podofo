@@ -1,9 +1,8 @@
 # Core ML dependency and coexistence
 
 The optional `coreml` feature selects a pinned, patched cidre 0.29.0 dependency
-on macOS/iOS. It establishes the native dependency and build policy; Podoco's
-public APIs still expose identity only. A document-model runtime and Dart
-inference API have not been implemented. macOS 15 and iOS 18 are the selected
+on macOS/iOS. M2 implements [blocking Rust page-layout inference](layout.md).
+C/Dart still expose identity only. macOS 15 and iOS 18 are the selected
 deployment floors; only macOS arm64 has been exercised locally.
 
 ```sh
@@ -19,12 +18,14 @@ CPU-only predictions through a development-only dynamic-library example. It
 checks both output arrays, reuses the model for three predictions per call,
 and runs concurrent independent calls in fresh processes. Release, debug, and
 `-ObjC` builds must omit the observer class and coexist with a library where the
-observer is enabled. The optional MLSR check calls its identity API alongside
-Podoco's inference probe. Logs, symbols, and results are saved under
+observer is enabled. The optional MLSR library check calls its identity API alongside
+Podoco's inference probe. `--layout-bundle PATH` also exercises the actual public
+layout session, and `--mlsr-probe PATH` runs an existing MLSR Core ML runtime
+probe against the affine fixture. These are separate from speech synthesis. Logs, symbols, and results are saved under
 `target/coreml-check/` by default. No model download or Python packages are used.
 
 The `coreml_probe` example is not a public C ABI. Its output is not a document
-analysis, ANE performance, minimum-OS, or iOS qualification. The default Dart
+quality, ANE performance, minimum-OS, or iOS qualification. The default Dart
 hook continues to build the identity-only library without `coreml`.
 
 ## Rust consumers

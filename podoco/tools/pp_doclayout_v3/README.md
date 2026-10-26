@@ -108,3 +108,56 @@ The box/order decode operations follow the Apache-2.0 Transformers 5.8.1
 The implementation/source hashes and upstream model-card license declaration are
 preserved in the manifest. Model weights retain their upstream license; the SDK
 license does not relicense external documents or datasets.
+
+## M2 runtime qualification
+
+The M1 `reference.py`, original manifest, and captures remain unchanged.
+`m2_reference.py` adds a separate replay path with deterministic v1 tie handling.
+Use the existing Python 3.13 ML environment; no package installation or virtual
+environment is required. Start with a new output directory:
+
+```sh
+python3.13 tools/pp_doclayout_v3/m2_reference.py prepare \
+  --checkpoint /path/to/pinned-checkpoint --output evaluation-output/m2-local
+python3.13 tools/pp_doclayout_v3/m2_reference.py append-corpus \
+  --checkpoint /path/to/pinned-checkpoint --output evaluation-output/m2-local \
+  --research /path/to/docling-layout-heron-coreml \
+  --corpus /path/to/IBEM-v1-math-detection-sample
+python3.13 tools/pp_doclayout_v3/m2_reference.py rust --output evaluation-output/m2-local
+python3.13 tools/pp_doclayout_v3/m2_reference.py compare --output evaluation-output/m2-local
+python3.13 tools/pp_doclayout_v3/m2_reference.py classify-ties \
+  --checkpoint /path/to/pinned-checkpoint --output evaluation-output/m2-local
+```
+
+`prepare` checks the retained M1 captures (override `--capture` when relocated).
+The corpus command checks image/archive hashes and gives both implementations
+identical Pillow-decoded RGBA, keeping JPEG decoder differences out of the test.
+The explicit disk exchange uses ignored Rust qualification tests; it is not a
+public tensor-file interface. No weights or corpus images enter ordinary tests.
+The full exchange retains roughly a gigabyte of generated inputs and outputs;
+keep it under ignored `evaluation-output/`.
+
+Prepare a v1 runtime bundle as described in [layout setup](../../docs/layout.md).
+Run `native-python`, `native-rust`, and `native-compare` sequentially with:
+
+```sh
+python3.13 tools/pp_doclayout_v3/m2_reference.py native-python \
+  --output evaluation-output/m2-local --bundle model-assets/layout-v1 --policy cpu-ne
+python3.13 tools/pp_doclayout_v3/m2_reference.py native-rust \
+  --output evaluation-output/m2-local --bundle model-assets/layout-v1 --policy cpu-ne
+python3.13 tools/pp_doclayout_v3/m2_reference.py native-compare \
+  --output evaluation-output/m2-local --policy cpu-ne
+```
+
+If Core ML tools is stored in the research checkout's existing package directory,
+prefix the Python control command with `PYTHONPATH=/path/to/python-packages`.
+Repeat these three commands for `--policy cpu` and `--policy all`. CPU+ANE covers
+53 pages; the other policies cover the three synthetic and two known exception
+pages. Each implementation predicts twice through one reused model per policy.
+The comparison requires raw errors to remain within repeated-control variability
+and decoded pairs/order to match, with `1e-6` score/normalized-box tolerance.
+Qualification scans mask finiteness without retaining the full masks; its timing
+includes that extra work. Use the release CLI for normal pipeline timing.
+
+M2's [tracked evidence](../../docs/internal/m2-validation.md) records the precise
+scope and the unchanged experimental-model promotion restrictions.

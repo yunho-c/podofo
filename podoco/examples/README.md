@@ -1,11 +1,17 @@
 # Examples
 
-These examples execute the public identity API; they do not perform analysis.
+Run these from `podoco/`:
 
-- [Rust version](../crates/podoco/examples/version.rs): from `podoco/`, run
+- [Rust identity](../crates/podoco/examples/version.rs):
   `cargo run --locked -p podoco --example version`.
-- [Dart version](../bindings/dart/example/version.dart): from
-  `podoco/bindings/dart/`, run `dart pub get --enforce-lockfile`, then
-  `dart run example/version.dart`.
+- [Rust contracts](../crates/podoco/examples/contracts.rs):
+  `cargo run --locked -p podoco --example contracts` (no model required).
+- [PNG layout inference](../crates/podoco/examples/page_layout.rs): real sequential
+  page analysis through one session; [setup and arguments](../docs/layout.md).
+- [Offline bundles](../crates/podoco/examples/model_bundle.rs): local verification
+  and preparation; [instructions](../tools/pp_doclayout_v3/README.md).
+- [Dart identity](../bindings/dart/example/version.dart): run `dart run
+  example/version.dart` from `bindings/dart/` after installing locked dependencies.
 
-Add a document-analysis example when the first real model pipeline is available.
+Dart analysis APIs arrive in M4. `coreml_probe` is a development-only library for
+native coexistence checks, not an application C ABI.

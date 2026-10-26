@@ -18,17 +18,30 @@ from verify_cidre import verify
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def load_pair(model, libraries):
+def load_pair(model, libraries, layout_bundle=None):
     """Run in a fresh child so Objective-C registration warnings are observable."""
     loaded = [ctypes.CDLL(str(path), mode=ctypes.RTLD_LOCAL) for path in libraries]
     probes = []
+    layout_probes = []
     for library in loaded:
         if hasattr(library, "podoco_coreml_probe"):
             probe = library.podoco_coreml_probe
             probe.argtypes = [ctypes.c_char_p]
             probe.restype = ctypes.c_int
             probes.append(probe)
-        else:
+        if layout_bundle and hasattr(library, "podoco_layout_probe"):
+            layout = library.podoco_layout_probe
+            layout.argtypes = [ctypes.c_char_p]
+            layout.restype = ctypes.c_int
+            layout_probes.append(layout)
+        if hasattr(library, "mlsr_coreml_probe"):
+            native = library.mlsr_coreml_probe
+            native.argtypes = [ctypes.c_char_p, ctypes.c_void_p, ctypes.c_size_t]
+            native.restype = ctypes.c_int
+            diagnostic = ctypes.create_string_buffer(4096)
+            if native(os.fsencode(model), diagnostic, len(diagnostic)):
+                raise RuntimeError(diagnostic.value.decode())
+        if hasattr(library, "mlsr_version"):
             version = library.mlsr_version
             version.argtypes = []
             version.restype = ctypes.c_char_p
@@ -38,10 +51,24 @@ def load_pair(model, libraries):
         results = list(pool.map(lambda probe: probe(os.fsencode(model)), probes * 4))
     if not probes or any(results):
         raise RuntimeError(f"Core ML inference failed: {results}")
-    print(json.dumps({"probe_calls": len(results), "predictions": len(results) * 3}))
+    for layout in layout_probes:
+        if layout(os.fsencode(layout_bundle)):
+            raise RuntimeError("PP-DocLayoutV3 session coexistence failed")
+    print(
+        json.dumps(
+            {
+                "probe_calls": len(results),
+                "predictions": len(results) * 3,
+                "layout_predictions": len(layout_probes) * 2,
+                "mlsr_runtime_probes": sum(
+                    hasattr(lib, "mlsr_coreml_probe") for lib in loaded
+                ),
+            }
+        )
+    )
 
 
-def check(output, mlsr_library):
+def check(output, mlsr_library, layout_bundle=None, mlsr_probe=None):
     if sys.platform != "darwin":
         raise RuntimeError("The Core ML coexistence check requires macOS and Xcode")
     verify()
@@ -151,6 +178,7 @@ def check(output, mlsr_library):
                     "--load",
                     str(model),
                     *map(str, paths),
+                    *(["--layout-bundle", str(layout_bundle)] if layout_bundle else []),
                 ],
             )
             if " is implemented in both " in result.stderr:
@@ -167,9 +195,18 @@ def check(output, mlsr_library):
         records["mlsr_library_sha256"] = hashlib.sha256(
             mlsr_library.read_bytes()
         ).hexdigest()
+    if mlsr_probe:
+        pair("mlsr-runtime", [candidates[0], mlsr_probe.resolve(strict=True)])
+        records["mlsr_probe_sha256"] = hashlib.sha256(
+            mlsr_probe.read_bytes()
+        ).hexdigest()
+    if layout_bundle:
+        records["layout_manifest_sha256"] = hashlib.sha256(
+            (layout_bundle / "podoco-bundle.yaml").read_bytes()
+        ).hexdigest()
     records["status"] = "passed"
     records["scope"] = (
-        "CPU-only affine fixture; existing MLSR identity only when supplied"
+        "CPU affine controls; optional PP-DocLayoutV3 session and MLSR runtime probes; no speech synthesis"
     )
     (output / "results.json").write_text(json.dumps(records, indent=2) + "\n")
     print(f"Core ML coexistence checks passed. Evidence: {output}", flush=True)
@@ -179,13 +216,24 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, default=ROOT / "target/coreml-check")
     parser.add_argument("--mlsr-library", type=Path)
+    parser.add_argument("--layout-bundle", type=Path)
+    parser.add_argument("--mlsr-probe", type=Path)
     parser.add_argument("--load", nargs="+", help=argparse.SUPPRESS)
     args = parser.parse_args()
     try:
         if args.load:
-            load_pair(Path(args.load[0]), [Path(path) for path in args.load[1:]])
+            load_pair(
+                Path(args.load[0]),
+                [Path(path) for path in args.load[1:]],
+                args.layout_bundle,
+            )
         else:
-            check(args.output.resolve(), args.mlsr_library)
+            check(
+                args.output.resolve(),
+                args.mlsr_library,
+                args.layout_bundle.resolve() if args.layout_bundle else None,
+                args.mlsr_probe,
+            )
     except (OSError, RuntimeError, subprocess.SubprocessError) as error:
         parser.exit(1, f"Core ML check failed: {error}\n")
 

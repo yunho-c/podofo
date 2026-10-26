@@ -25,3 +25,20 @@ the [Core ML coexistence check](../docs/coreml.md). Updating a hash alone is not
 evidence that a new upstream version still excludes the observer. Keep this
 temporary copy until an upstream solution can replace it. No upstream proposal
 has been submitted yet.
+
+## Ported interpolation and reduction algorithms
+
+`crates/podoco/src/pipelines/layout/preprocess.rs` and the order-vote reduction in
+`pipelines/layout/mod.rs` adapt the native uint8 bicubic and Float32 summation
+algorithms from PyTorch commit `7661cd9c6b841b62b7f411aa52ec51f05457263b`:
+[`UpSampleKernel.cpp`](https://github.com/pytorch/pytorch/blob/7661cd9c6b841b62b7f411aa52ec51f05457263b/aten/src/ATen/native/cpu/UpSampleKernel.cpp),
+[`UpSample.h`](https://github.com/pytorch/pytorch/blob/7661cd9c6b841b62b7f411aa52ec51f05457263b/aten/src/ATen/native/UpSample.h), and
+[`SumKernel.cpp`](https://github.com/pytorch/pytorch/blob/7661cd9c6b841b62b7f411aa52ec51f05457263b/aten/src/ATen/native/cpu/SumKernel.cpp).
+The upstream [license and notices](pytorch-LICENSE) are retained. There is no
+PyTorch dependency in the Rust library.
+
+The Core ML ownership, exception, autorelease-pool, and checked tensor-access
+patterns are adapted from the Apache-2.0 MLSR runtime at
+`14ff251eb7e9011801945233cf91ef8b444cd734`, with attribution in the Rust modules.
+The SDK has no MLSR runtime dependency. PP-DocLayoutV3 decoding follows the
+Apache-2.0 PaddlePaddle/Hugging Face processor pinned by the model manifest.

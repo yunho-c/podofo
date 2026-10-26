@@ -7,8 +7,8 @@ object alone is insufficient when consumers pass `-ObjC`.
 
 This investigation produced reviewable patches and a runnable experiment.
 Podoco now adopts the observer feature patch in its pinned, optional cidre
-dependency. No upstream change has been submitted. Podoco's document inference
-backend remains unimplemented; see [Core ML setup and checks](../coreml.md).
+dependency. No upstream change has been submitted. M2 subsequently implemented
+layout inference and extended coexistence qualification; see [Core ML setup and checks](../coreml.md).
 
 ## Why the class is present
 

@@ -1,5 +1,8 @@
 # Validation scope
 
+M2 implements and qualifies Rust layout integration; see [M2 validation](m2-validation.md).
+The records below describe earlier milestones, not the current runtime surface.
+
 M1 adds portable contracts, ownership tests, result-schema fixtures, local bundle
 verification, and small eager-reference captures. Its specific evidence is
 recorded in [M1 validation](m1-validation.md); the initialization and Core ML

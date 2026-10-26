@@ -214,3 +214,32 @@ fn file_links_verify_target_bytes_but_directory_cycles_are_rejected() {
     .unwrap();
     assert!(ModelBundle::verify(bundle.directory()).is_err());
 }
+
+#[test]
+fn runtime_profile_keeps_v0_verifiable_and_requires_explicit_revision() {
+    let old = BundleManifest::parse(PP_DOCLAYOUT_V3_MANIFEST.as_bytes()).unwrap();
+    let new = BundleManifest::parse(PP_DOCLAYOUT_V3_V1_MANIFEST.as_bytes()).unwrap();
+    assert_eq!(old.artifacts, new.artifacts);
+    assert_eq!(old.source, new.source);
+    assert_ne!(old.profile.id, new.profile.id);
+    let mut mixed = new;
+    mixed.profile = old.profile;
+    assert!(BundleManifest::parse(serde_yaml_ng::to_string(&mixed).unwrap().as_bytes()).is_err());
+}
+#[cfg(not(feature = "coreml"))]
+#[test]
+fn portable_session_reports_unavailable_backend_before_native_load() {
+    let fixture = Fixture::new();
+    let bundle = fixture.prepare("bundle", PrepareMode::Copy).unwrap();
+    let options = podoco::AnalyzerOptions {
+        compute_policy: podoco::options::ComputePolicy::CpuOnly,
+        limits: podoco::ResourceLimits::new(1, 1, 1, 1, 1, 1, 1).unwrap(),
+    };
+    assert_eq!(
+        podoco::LayoutSession::open(bundle, options)
+            .err()
+            .unwrap()
+            .code,
+        ErrorCode::UnsupportedCapability
+    );
+}

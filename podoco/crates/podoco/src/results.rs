@@ -249,6 +249,26 @@ pub struct PageAnalysis {
     pub diagnostics: Vec<Diagnostic>,
 }
 impl PageAnalysis {
+    /// Validate and encode a final page using a bounded output allocation.
+    pub fn to_json(&self, max_bytes: usize) -> Result<Vec<u8>> {
+        self.validate(true)?;
+        let mut writer = BoundedWriter {
+            bytes: Vec::new(),
+            limit: max_bytes,
+            exceeded: false,
+        };
+        serde_json::to_writer(&mut writer, self).map_err(|e| {
+            Error::new(
+                if writer.exceeded {
+                    ErrorCode::LimitExceeded
+                } else {
+                    ErrorCode::InvalidResult
+                },
+                e.to_string(),
+            )
+        })?;
+        Ok(writer.bytes)
+    }
     /// Validate local consistency; final snapshots cannot contain pending work.
     pub fn validate(&self, final_snapshot: bool) -> Result<()> {
         self.provenance.pipeline.validate()?;

@@ -2,8 +2,8 @@
 
 M1 implements portable Rust identities, page geometry, image copying, result
 serialization, and local bundle verification. The C and Dart packages still
-expose identity only. `Analyzer`, document jobs, layout inference, recognition,
-and MathCAT execution remain later milestones.
+expose identity only. M2 adds [blocking layout inference](layout.md). `Analyzer`,
+document jobs, recognition, and MathCAT execution remain later milestones.
 
 Run the complete public-API example without model assets:
 
@@ -46,7 +46,8 @@ and releases it after the final reader. Its callback must be non-panicking and
 safe on the final owner's thread. Tests cover rejection, cross-thread final
 release, and unwind cleanup. This is not yet a public native-import API or a
 qualified renderer integration; C/Dart transport and renderer leases remain M4/M8.
-The rest of the Rust core denies unsafe code.
+The native image lease and Core ML tensor-access modules contain the reviewed
+unsafe boundaries. The rest of the Rust core denies unsafe code.
 
 ## Results and schema
 
@@ -108,7 +109,7 @@ and reading-order differences are retained as promotion gates. Declared bundle
 capabilities describe the planned adapter contract, not a loaded or qualified
 inference runtime. Integrity is checked against a trusted manifest; hashes do
 not authenticate a publisher. Do not modify verified payloads or link targets
-while a future runtime uses them.
+while a runtime uses them.
 
 See [model preparation](../tools/pp_doclayout_v3/README.md) for exact commands,
 local asset requirements, source attribution, and reference replay.

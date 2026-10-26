@@ -3,9 +3,9 @@
 **Status: proposed implementation contract, 2026-10-25.** This document records
 the agreed architecture and proposed interfaces. M1 now implements the
 [Rust data/ownership contracts and offline bundles](../podoco/docs/contracts.md).
+M2 implements the blocking [Rust layout session](../podoco/docs/layout.md).
 The analyzer/job execution and Dart examples below remain proposed APIs. C/Dart
-still expose identity only; the optional Core ML affine probe does not implement
-document analysis. See the [current architecture](../podoco/docs/internal/architecture.md)
+still expose identity only. See the [current architecture](../podoco/docs/internal/architecture.md)
 and [Core ML qualification boundary](../podoco/docs/coreml.md).
 
 The first complete pipeline analyzes a document's pages, detects layout, and
@@ -14,9 +14,10 @@ and individual formula results as they become available. Detection can miss
 formulas; “all” describes which detections are processed, not guaranteed recall.
 PoDoFo can copy recognized LaTeX immediately and ask the optional math module for
 speech text to submit to MLSR. PP-DocLayoutV3 is the selected layout model;
-formula-model selection and deployed-model qualification remain separate gates.
+PP-FormulaNet_plus-L is selected for formula recognition. Its conversion and
+deployed-model qualification remain M6 gates.
 The [implementation plan](podoco-implementation.md) sequences the work around
-that pending formula decision.
+the selected models and explicit qualification gates.
 
 ## 1. Ownership and dependency direction
 
@@ -651,8 +652,9 @@ Its evidence is in the sibling `docling-layout-heron-coreml` repository under
 `results/ppdoclayoutv3-coreml-20261025/REPORT.md`; keep the pinned report/artifact
 provenance when promoting a model. Heron experience also demonstrates why output
 stride handling and detection-versus-recognition qualification must stay explicit.
-Formula recognition selection is ongoing. This design does not freeze the
-recognizer or unqualified model-specific defaults.
+PP-FormulaNet_plus-L is selected for recognition. Its native artifacts, decoder
+contract, and measured limits still require qualification; selection alone does
+not establish a runnable deployment.
 
 ### Decision record
 

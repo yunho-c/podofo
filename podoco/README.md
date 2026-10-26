@@ -4,17 +4,18 @@ A Rust-first library for efficient document analysis with ergonomic language
 bindings. Podoco lives alongside the PoDoFo application in this Git repository,
 with its own Cargo workspace and development checks.
 
-**Status: M1 Rust contracts and offline bundles implemented.** Rust provides
-validated identities/geometry, copied images, portable analysis results, and
-local model-bundle verification. See [Rust contracts](docs/contracts.md).
-C and Dart still expose identity only; the Dart package bundles the native
-library for desktop host builds. Model loading, inference, job scheduling,
-and application integration remain future work. Core ML via cidre is the selected first backend;
-QNN is planned for Qualcomm Windows targets. PP-DocLayoutV3 is selected for layout
-detection; formula-recognition model selection is ongoing.
-An optional [Core ML dependency](docs/coreml.md) is wired with observer exclusion
-and a real-model coexistence check; the document-analysis runtime remains future work.
-The packages are private while the first analysis contract is established.
+**Status: M2 blocking Rust layout inference implemented.** Rust provides checked
+page images, portable results, offline model bundles, and reusable Core ML
+`LayoutSession` execution for PP-DocLayoutV3. See [layout inference](docs/layout.md)
+and [Rust contracts](docs/contracts.md). The mixed-precision model profile remains
+experimental; its known export differences are recorded in the qualification.
+
+C and Dart currently expose identity only. Document jobs, formula recognition,
+and application integration are subsequent milestones. PP-FormulaNet_plus-L is
+selected for recognition; its native conversion and qualification remain work.
+Core ML via cidre is the first backend, with QNN planned for Qualcomm Windows.
+[Observer exclusion and coexistence](docs/coreml.md) remain the packaging policy.
+The packages are private while the complete analysis contract is established.
 
 ## Quick start
 
@@ -43,7 +44,7 @@ or downloaded. [Offline model preparation](tools/pp_doclayout_v3/README.md) is e
 
 ```text
 Cargo.toml             Podoco's Cargo workspace, independent of the app
-crates/podoco/          Public Rust API and future analysis implementation
+crates/podoco/          Public Rust API, model pipelines, and runtime
 crates/podoco-ffi/      Shared C ABI adapter; dynamic and static libraries
 include/podoco.h        Generated C header
 bindings/dart/         Dart API, generated FFI, and native build hook

@@ -27,6 +27,12 @@ pub const PP_DOCLAYOUT_V3_MANIFEST: &str = include_str!(concat!(
 ));
 const MANIFEST_LIMIT: u64 = 1024 * 1024;
 
+/// Experimental runtime profile with deterministic candidate and order ties.
+pub const PP_DOCLAYOUT_V3_V1_MANIFEST: &str = include_str!(concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/../../model-manifests/pp-doclayout-v3-coreml-v1.yaml"
+));
+
 /// Exact portable tensor interface.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -245,7 +251,12 @@ impl BundleManifest {
     }
     fn validate(&self) -> Result<()> {
         let baseline: Self =
-            serde_yaml_ng::from_str(PP_DOCLAYOUT_V3_MANIFEST).expect("checked-in profile");
+            serde_yaml_ng::from_str(if self.id == "pp-doclayout-v3-coreml-mixed-v1" {
+                PP_DOCLAYOUT_V3_V1_MANIFEST
+            } else {
+                PP_DOCLAYOUT_V3_MANIFEST
+            })
+            .expect("checked-in profile");
         if self.schema_version != 1
             || self.id != baseline.id
             || self.qualification != "experimental"

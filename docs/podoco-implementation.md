@@ -8,12 +8,14 @@ that the proposed APIs or models are integrated.
 **Implementation update:** M1's Rust contracts, image ownership boundary,
 offline bundle tooling, and reference fixtures are implemented. See
 [M1 contracts](../podoco/docs/contracts.md) and
-[validation evidence](../podoco/docs/internal/m1-validation.md). M2–M9 remain
+[validation evidence](../podoco/docs/internal/m1-validation.md). M2 now adds
+[blocking Rust layout inference](../podoco/docs/layout.md); see
+[its qualification](../podoco/docs/internal/m2-validation.md). M3–M9 remain
 planned; the starting-point inventory below records the original baseline.
 
-PP-DocLayoutV3 is the selected layout model. Formula-recognition selection is
-ongoing and expected later today; the implementation sequence does not depend on
-that timing. Model selection, availability of a converted artifact, and qualified
+PP-DocLayoutV3 is the selected layout model. PP-FormulaNet_plus-L is the selected
+formula recognizer (2026-10-26). Its conversion and native qualification remain
+M6 work. Model selection, availability of a converted artifact, and qualified
 Podoco execution are separate gates.
 
 ## Starting point and constraints
@@ -174,12 +176,12 @@ No inference API is claimed complete at this stage.
   reads. Use MLSR's inspected runtime as a reviewed implementation reference;
   adapt only necessary parts, preserve attribution for copied code, and introduce
   no dependency on the TTS crate or shared-runtime extraction in this milestone.
-- Prepare verified local assets for loading, including compilation/cache reuse
-  where needed. Keep preparation failures distinct from inference failures and
+- Prepare verified local assets for loading, using the verified compiled artifact; M2 performs no implicit compilation
+  or download. Keep preparation failures distinct from inference failures and
   record cold preparation separately from warm predictions.
 - Implement and verify the exact preprocessing and box/order postprocessing
-  against saved Python inputs/outputs. Preserve source query IDs and numerical
-  tie behavior; do not assume a generic bicubic resize is equivalent.
+  against saved Python inputs/outputs. Preserve source query IDs and untied ordering, with the approved v1 query-ID
+  tie-break profile; do not assume a generic bicubic resize is equivalent.
 - Add a headless Rust page-layout example that emits canonical page-space results
   and provenance. It exercises the real library pipeline, with image decoding
   outside the core's raw-image boundary.
@@ -379,9 +381,9 @@ by the design and should not need to change for a conventional crop recognizer.
 
 ## Execution and review policy
 
-Start with M1, then advance M2 and M3 into M4. Consume tonight's recognizer handoff
-when available, without pausing the layout work or rerunning the model-selection
-study. M5 gives an integration checkpoint before the complete formula workflow;
+M1 and M2 are implemented. Advance M3 into M4 and consume the explicit
+PP-FormulaNet_plus-L handoff for M6 without repeating model-family selection.
+M5 gives an integration checkpoint before the complete formula workflow;
 M7 and M8 remain separable from model-specific decoding.
 
 Keep each milestone in one or a few cohesive, reviewable changes with its gate

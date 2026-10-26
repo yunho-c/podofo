@@ -7,8 +7,9 @@ atomic library/application changes; Podoco must remain usable by other clients.
 The [proposed API v0 contract](../../../docs/podoco-api.md) records the agreed
 document/formula pipeline, image ownership, progressive jobs, and optional math
 conversion. M1 implements the [Rust data/ownership contracts](../contracts.md)
-and offline model verification. Runtime/job execution and binding-level analysis
-remain proposed, alongside the existing qualified Core ML dependency.
+and offline model verification. M2 adds a [blocking layout session](../layout.md),
+private page pipeline, and thread-confined Core ML runtime. Document jobs and
+binding-level analysis remain proposed.
 
 ## Dependency direction
 
@@ -19,8 +20,8 @@ PoDoFo / other Dart clients -> Dart API -> podoco-ffi -> podoco
 
 The core provides validated domain types, image copying, bounded JSON results,
 and local bundle verification. The C ABI and Dart native hook still expose
-identity only. No inference runtime, scheduler, or PDF parser is included. The optional
-`coreml` feature selects the native Apple bindings for the first runtime slice.
+identity only. The optional `coreml` feature implements real page-layout
+inference; document scheduling and PDF rendering belong to later layers.
 
 The selected backend direction is Core ML via cidre first, followed by QNN for
 Qualcomm Windows targets. The [cidre coexistence investigation](cidre-coexistence.md)

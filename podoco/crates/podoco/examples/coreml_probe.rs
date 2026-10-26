@@ -70,4 +70,67 @@ mod apple {
         });
         i32::from(result.is_err())
     }
+
+    /// Exercise the public blocking session against a verified PP-DocLayoutV3
+    /// bundle. Development-only symbol, never included in podoco-ffi's ABI.
+    ///
+    /// # Safety
+    /// `path` must be a live NUL-terminated UTF-8 bundle path for the call.
+    #[unsafe(no_mangle)]
+    pub unsafe extern "C" fn podoco_layout_probe(path: *const c_char) -> i32 {
+        if path.is_null() {
+            return 1;
+        }
+        let result = std::panic::catch_unwind(|| -> podoco::Result<()> {
+            use podoco::*;
+            // SAFETY: The caller owns the C string for the complete blocking call.
+            let path = unsafe { CStr::from_ptr(path) }
+                .to_str()
+                .map_err(|e| Error::new(ErrorCode::InvalidInput, e.to_string()))?;
+            let bundle = ModelBundle::verify(path)?;
+            let mut options = AnalysisOptions::new(ProfileId::new(&bundle.manifest().profile.id)?);
+            options.formula_scope = FormulaScope::None;
+            let mut session = LayoutSession::open(
+                bundle,
+                AnalyzerOptions {
+                    compute_policy: options::ComputePolicy::CpuOnly,
+                    limits: ResourceLimits::new(1, 4, 1, 2_000_000, 2_000_000, 96_000_000, 1)?,
+                },
+            )?;
+            for _ in 0..2 {
+                let input = PageInput::new(
+                    PageDescriptor {
+                        key: PageKey {
+                            document: DocumentRef::new("coexistence", "1")?,
+                            page_index: 0,
+                        },
+                        space: PageSpace::new(1., 1.)?,
+                    },
+                    PageImage::copy(
+                        ImageDescriptor::new(1, 1, 4, PixelFormat::Rgba8, AlphaMode::Opaque)?,
+                        &[255; 4],
+                        4,
+                    )?,
+                    Affine::new([1., 0., 0., 1., 0., 0.])?,
+                    ProfileId::new("coexistence-white-v1")?,
+                )
+                .map_err(|e| e.error)?;
+                session
+                    .analyze_page(input, options.clone())?
+                    .validate(true)?;
+            }
+            assert_eq!(session.stats().model_loads, 1);
+            assert_eq!(session.stats().predictions, 2);
+            session.close()?;
+            session.close()
+        });
+        match result {
+            Ok(Ok(())) => 0,
+            Ok(Err(e)) => {
+                eprintln!("{e}");
+                1
+            }
+            Err(_) => 1,
+        }
+    }
 }
