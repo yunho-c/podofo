@@ -1,7 +1,8 @@
 # Podoco architecture and API v0
 
-**Status: proposed implementation contract, 2026-10-25.** This document records
-the agreed architecture and proposed interfaces. M1 now implements the
+**Design baseline: 2026-10-25; implementation status updated 2026-10-26.** This
+document records the agreed architecture and its implemented experimental API.
+M1 implements the
 [Rust data/ownership contracts and offline bundles](../podoco/docs/contracts.md).
 M2 implements the blocking [Rust layout session](../podoco/docs/layout.md).
 M3 implements [Rust document jobs](../podoco/docs/jobs.md); the Rust analyzer
@@ -660,15 +661,16 @@ a usable layout-only path before the formula model is ready.
 | D. Optional math module | Qualify/pin converter, MathCAT, and rule assets; pass syntax, state-isolation, error, and speech-text fixtures; preserve Copy when Listen conversion fails. It can proceed independently of B/C. |
 | E. PoDoFo integration | Integrate the page source/store and renderer lease extension, verify geometry/revision safety, and exercise Copy/Listen through actual MLSR playback. Publish separate correctness, memory/copy, and performance evidence. |
 
-PP-DocLayoutV3 is the selected layout model. Its local Core ML/ANE prototype is
-an integration baseline, not yet a qualified Podoco bundle or formula recognizer.
-Its evidence is in the sibling `docling-layout-heron-coreml` repository under
-`results/ppdoclayoutv3-coreml-20261025/REPORT.md`; keep the pinned report/artifact
-provenance when promoting a model. Heron experience also demonstrates why output
-stride handling and detection-versus-recognition qualification must stay explicit.
-PP-FormulaNet_plus-L is selected for recognition. Its native artifacts, decoder
-contract, and measured limits still require qualification; selection alone does
-not establish a runnable deployment.
+PP-DocLayoutV3 and PP-FormulaNet_plus-L are selected and run through verified
+local bundles. [M2](../podoco/docs/internal/m2-validation.md) and
+[M6](../podoco/docs/internal/m6-document-validation.md) record actual Rust/C/Dart
+deployment parity, pinned source/artifact provenance and measured quality limits.
+The selected export's two extra detections and reading-order differences from
+eager FP32, plus the document pipeline's measured detection/recognition errors,
+still prevent production promotion. These limits are distinct from whether the
+SDK runs the selected deployment correctly. The original conversion evidence
+remains in the sibling `docling-layout-heron-coreml` repository under
+`results/ppdoclayoutv3-coreml-20261025/REPORT.md`.
 
 ### Decision record
 

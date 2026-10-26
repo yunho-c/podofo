@@ -117,7 +117,10 @@ python3.13 tools/check_formula_jobs.py \
   --output evaluation-output/m6-dart-new --dart /path/to/pinned/dart
 ```
 
-Standalone crop recognition is currently the blocking Rust `FormulaSession`.
-Document recognition uses the existing analyzer queue across Rust/C/Dart. Math
-conversion, renderer-owned native leases, application formula caching/actions,
-concurrent MLSR use, and human listening/UI acceptance remain M7–M9 work.
+At this milestone, standalone crop recognition used the blocking Rust
+`FormulaSession`. Later [explicit-crop jobs](explicit-crop-validation.md) add the
+same analyzer queue across Rust/C/Dart without detection. Subsequent
+[M7](m7-math-validation.md), [M8](m8-renderer-validation.md), and
+[M9](m9-integration-validation.md) records cover optional math conversion,
+renderer leases, application formula caching/actions and concurrent MLSR use.
+Production model promotion and human listening/UI acceptance remain separate.
