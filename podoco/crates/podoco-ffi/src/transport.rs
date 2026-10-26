@@ -5,8 +5,8 @@ use crate::{
     wire::{encode, invalid},
 };
 use podoco::{
-    AnalysisJob, AnalysisUpdate, CancellationHandle, DocumentRef, Error, ErrorCode, PageDescriptor,
-    PageInput, PageRequest, PageSource, Result,
+    AnalysisJob, AnalysisUpdate, DocumentRef, Error, ErrorCode, FormulaCrop, FormulaJob,
+    FormulaRequest, PageDescriptor, PageInput, PageRequest, PageSource, RasterRequirements, Result,
 };
 use std::sync::{Arc, Condvar, Mutex, MutexGuard};
 use std::time::Duration;
@@ -73,6 +73,28 @@ impl Bridge {
     }
     pub fn load(&self, r: PageRequest) -> Result<PageInput> {
         let cancel = r.cancellation;
+        self.load_source(r.page, r.requirements, r.byte_budget, None, || {
+            cancel.is_cancelled()
+        })
+    }
+    pub fn load_crop(&self, r: FormulaRequest) -> Result<PageInput> {
+        let cancel = r.cancellation;
+        self.load_source(
+            r.crop.page.clone(),
+            r.requirements,
+            r.byte_budget,
+            Some(r.crop),
+            || cancel.is_cancelled(),
+        )
+    }
+    fn load_source(
+        &self,
+        page: PageDescriptor,
+        requirements: RasterRequirements,
+        byte_budget: u64,
+        crop: Option<FormulaCrop>,
+        cancel: impl Fn() -> bool,
+    ) -> Result<PageInput> {
         {
             let mut s = self.lock();
             if s.abandoned {
@@ -83,11 +105,13 @@ impl Bridge {
                 .checked_add(1)
                 .ok_or_else(|| invalid("source token exhausted"))?;
             s.next_source = token;
-            let bytes = encode(
-                &serde_json::json!({"schema_version":0,"token":token,
-                "page":r.page,"requirements":r.requirements,"byte_budget":r.byte_budget}),
-                PODOCO_MAX_METADATA_BYTES,
-            )?;
+            let mut metadata = serde_json::json!({"schema_version":0,"token":token,
+                "page":page,"requirements":requirements,"byte_budget":byte_budget});
+            if let Some(crop) = crop {
+                metadata["crop"] =
+                    serde_json::to_value(crop).map_err(|e| invalid(e.to_string()))?;
+            }
+            let bytes = encode(&metadata, PODOCO_MAX_METADATA_BYTES)?;
             s.source = Some(SourceRequest {
                 token,
                 bytes: Some(bytes),
@@ -95,13 +119,13 @@ impl Bridge {
             });
         }
         self.notify();
-        self.wait_source(&cancel)
+        self.wait_source(cancel)
     }
-    fn wait_source(&self, cancel: &CancellationHandle) -> Result<PageInput> {
+    fn wait_source(&self, cancel: impl Fn() -> bool) -> Result<PageInput> {
         let mut s = self.lock();
         let mut cancellation_notified = false;
         loop {
-            let cancelling = cancel.is_cancelled();
+            let cancelling = cancel();
             if cancelling && !cancellation_notified && !s.abandoned {
                 cancellation_notified = true;
                 drop(s);
@@ -158,6 +182,12 @@ impl Bridge {
         let bytes = u
             .to_json(max.min(isize::MAX as u64) as usize)?
             .into_boxed_slice();
+        self.deliver_bytes(token, bytes)
+    }
+    pub fn drain_crop(&self) -> Result<()> {
+        self.deliver_bytes(0, encode(&serde_json::json!({"schema_version":0,"sequence":0,"type":"formula_input_drained"}), PODOCO_MAX_METADATA_BYTES)?)
+    }
+    fn deliver_bytes(&self, token: u64, bytes: Box<[u8]>) -> Result<()> {
         {
             let mut s = self.lock();
             if s.abandoned {
@@ -227,8 +257,66 @@ impl PageSource for ForeignSource {
     }
 }
 pub(crate) struct OwnedJob {
-    pub job: AnalysisJob,
+    pub job: NativeJob,
     pub bridge: Arc<Bridge>,
+    pub outcome_limit: u64,
+}
+pub(crate) enum NativeJob {
+    Document(AnalysisJob),
+    Formula(FormulaJob),
+}
+impl NativeJob {
+    pub fn id(&self) -> &podoco::AnalysisId {
+        match self {
+            Self::Document(j) => j.id(),
+            Self::Formula(j) => j.id(),
+        }
+    }
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Self::Document(_) => "document",
+            Self::Formula(_) => "formula",
+        }
+    }
+    pub fn cancel(&self) {
+        match self {
+            Self::Document(j) => j.cancel(),
+            Self::Formula(j) => j.cancel(),
+        }
+    }
+    pub fn stopping(&self) -> bool {
+        match self {
+            Self::Document(j) => j.cancellation().is_cancelled(),
+            Self::Formula(j) => j.cancellation().is_cancelled(),
+        }
+    }
+    pub fn close(&self) -> Result<()> {
+        match self {
+            Self::Document(j) => j.close(),
+            Self::Formula(j) => j.close(),
+        }
+    }
+    pub fn finished(&self) -> bool {
+        match self {
+            Self::Document(j) => j.try_outcome().is_some(),
+            Self::Formula(j) => j.progress().phase == podoco::JobPhase::Finished,
+        }
+    }
+    pub fn progress(&self) -> Result<serde_json::Value> {
+        match self {
+            Self::Document(j) => serde_json::to_value(j.progress()),
+            Self::Formula(j) => serde_json::to_value(j.progress()),
+        }
+        .map_err(|e| invalid(e.to_string()))
+    }
+    pub fn try_outcome(&self) -> Result<Option<serde_json::Value>> {
+        match self {
+            Self::Document(j) => j.try_outcome().map(serde_json::to_value),
+            Self::Formula(j) => j.try_outcome().map(serde_json::to_value),
+        }
+        .transpose()
+        .map_err(|e| invalid(e.to_string()))
+    }
 }
 impl Drop for OwnedJob {
     fn drop(&mut self) {

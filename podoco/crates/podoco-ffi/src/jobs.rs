@@ -1,6 +1,6 @@
 use crate::{
     handles::{self, Entry, Kind},
-    transport::{Bridge, ForeignSource, OwnedJob},
+    transport::{Bridge, ForeignSource, NativeJob, OwnedJob},
     types::*,
     wire::*,
 };
@@ -72,7 +72,77 @@ pub unsafe extern "C" fn podoco_job_start(
                 config.options,
                 move |update| sink.deliver(update, max),
             )?;
-            handles::publish(handle, Entry::Job(OwnedJob { job, bridge }));
+            handles::publish(
+                handle,
+                Entry::Job(OwnedJob {
+                    job: NativeJob::Document(job),
+                    bridge,
+                    outcome_limit: PODOCO_MAX_METADATA_BYTES,
+                }),
+            );
+            output.write(handle);
+            Ok(PODOCO_OK)
+        })
+    }
+}
+#[derive(Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FormulaStart {
+    schema_version: u32,
+    crop: podoco::FormulaCrop,
+}
+
+/// Queue an explicit formula crop without layout detection. Metadata contains
+/// schema_version=0 and crop (page, region_id, bounds, display_kind). Uses the
+/// same source/control calls as a document job. Its sole result-pump message is
+/// {schema_version:0,sequence:0,type:"formula_input_drained"}; acknowledge it only
+/// after the binding's renderer and image-release acknowledgements drain, even
+/// on cancellation/failure. Read the formula outcome through podoco_job_outcome
+/// afterward. Outcome JSON is bounded by max_update_bytes plus 4 MiB metadata.
+/// # Safety
+/// The metadata, output, and wake callback contracts are those of podoco_job_start.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn podoco_formula_job_start(
+    analyzer: PodocoHandle,
+    metadata: PodocoBytes,
+    wake: PodocoWake,
+    wake_token: u64,
+    output: *mut PodocoHandle,
+    error: *mut PodocoHandle,
+) -> PodocoStatus {
+    // SAFETY: Exported metadata/output/callback contracts cover these accesses.
+    unsafe {
+        guard(error, || {
+            clear(output)?;
+            let config: FormulaStart = json(metadata)?;
+            schema(config.schema_version)?;
+            let entry = handles::get(analyzer, Kind::Analyzer)?;
+            let Entry::Analyzer(a) = entry.as_ref() else {
+                unreachable!()
+            };
+            let outcome_limit = a
+                .limits
+                .max_update_bytes()
+                .checked_add(PODOCO_MAX_METADATA_BYTES)
+                .filter(|v| *v <= isize::MAX as u64)
+                .ok_or_else(|| invalid("formula outcome budget exceeds host limits"))?;
+            let bridge = Arc::new(Bridge::new(wake, wake_token));
+            let source = bridge.clone();
+            let drain = bridge.clone();
+            let handle = handles::reserve()?;
+            let job = a.analyzer.recognize_formula_with_drain(
+                config.crop,
+                move |request| source.load_crop(request),
+                move || drain.drain_crop(),
+            )?;
+            handles::publish(
+                handle,
+                Entry::Job(OwnedJob {
+                    job: NativeJob::Formula(job),
+                    bridge,
+                    outcome_limit,
+                }),
+            );
             output.write(handle);
             Ok(PODOCO_OK)
         })
@@ -259,7 +329,7 @@ pub unsafe extern "C" fn podoco_job_progress(
             with_job(job, |j| {
                 output.write(buffer(
                     &serde_json::json!({"schema_version":0,
-                "analysis_id":j.job.id(),"progress":j.job.progress(),"stopping":j.job.cancellation().is_cancelled()}),
+                "analysis_id":j.job.id(),"kind":j.job.kind(),"progress":j.job.progress()?,"stopping":j.job.stopping()}),
                     PODOCO_MAX_METADATA_BYTES,
                 )?);
                 Ok(PODOCO_OK)
@@ -284,10 +354,10 @@ pub unsafe extern "C" fn podoco_job_outcome(
         guard(error, || {
             clear(output)?;
             with_job(job, |j| {
-                if let Some(outcome) = j.job.try_outcome() {
+                if let Some(outcome) = j.job.try_outcome()? {
                     output.write(buffer(
-                    &serde_json::json!({"schema_version":0,"outcome":outcome,"wake_count":j.bridge.wake_count()}),
-                        PODOCO_MAX_METADATA_BYTES,
+                    &serde_json::json!({"schema_version":0,"kind":j.job.kind(),"outcome":outcome,"wake_count":j.bridge.wake_count()}),
+                        j.outcome_limit,
                     )?);
                     Ok(PODOCO_OK)
                 } else {
@@ -359,7 +429,7 @@ pub unsafe extern "C" fn podoco_job_drain_state(
         guard(error, || {
             clear(count)?;
             with_job(job, |j| {
-                if j.job.try_outcome().is_some() {
+                if j.job.finished() {
                     count.write(j.bridge.wake_count());
                     Ok(PODOCO_OK)
                 } else {

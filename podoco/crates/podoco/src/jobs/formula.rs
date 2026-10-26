@@ -117,4 +117,11 @@ impl Pipeline for FormulaPipeline {
     fn failed(&self) -> bool {
         self.layout.failed() || self.formula.failed()
     }
+    fn recognize_crop(
+        &mut self,
+        input: FormulaInput,
+        cancel: crate::formula::FormulaCancellation,
+    ) -> Result<FormulaOutcome> {
+        self.formula.recognize(input, self.options, cancel)
+    }
 }

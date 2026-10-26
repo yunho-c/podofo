@@ -87,6 +87,12 @@ thread throughout. No native object is made `Send` or moved across threads.
 semantics. Use `LayoutSession` for already-rendered blocking single-page calls.
 The lazy interface prevents queued input rasters from escaping the byte budget.
 
+`recognize_formula` submits an explicitly identified crop through that same FIFO,
+without detection. It returns a `FormulaJob` with one ordinary `FormulaOutcome`
+inside its completion; there is no update sink. Document and crop jobs count
+against the same queue and cannot overlap model execution. See the
+[crop contract and example](formula.md#queued-explicit-crops).
+
 ## Budgets and backpressure
 
 The scheduler reserves the full input budget before calling the source. The

@@ -251,6 +251,43 @@ fn formula_extension_rejects_invalid_metadata_before_assets_or_models() {
     }
 }
 
+#[test]
+fn explicit_crop_extension_rejects_bad_schema_and_wrong_kind_without_rendering() {
+    assert_ne!(podoco_features() & PODOCO_FEATURE_FORMULA_JOBS, 0);
+    let (mut image, mut output, mut error) = (0, 123, 0);
+    let crop = serde_json::json!({"page":{"key":{"document":{"id":"crop","revision":"1"},"page_index":0},"space":[2,2]},"region_id":1,"bounds":[0,0,2,2],"display_kind":"inline"});
+    // SAFETY: Borrowed JSON/pixels and all disjoint output scalars remain live.
+    unsafe {
+        assert_eq!(
+            podoco_image_copy(&descriptor(), bytes(&[255; 16]), 16, &mut image, &mut error),
+            PODOCO_OK
+        );
+        for (value, code) in [
+            (
+                serde_json::json!({"schema_version":9,"crop":crop}),
+                "unsupported_schema",
+            ),
+            (
+                serde_json::json!({"schema_version":0,"crop":crop}),
+                "invalid_input",
+            ),
+            (
+                serde_json::json!({"schema_version":0,"crop":{}}),
+                "invalid_input",
+            ),
+        ] {
+            let metadata = serde_json::to_vec(&value).unwrap();
+            assert_eq!(
+                podoco_formula_job_start(image, bytes(&metadata), None, 0, &mut output, &mut error),
+                PODOCO_ERROR
+            );
+            assert_eq!(output, 0);
+            assert_eq!(take_json(error)["code"], code);
+        }
+        assert_eq!(podoco_release(image), PODOCO_OK);
+    }
+}
+
 #[cfg(feature = "coreml")]
 #[test]
 #[ignore = "requires explicit verified M2 bundle; native C ABI job qualification"]

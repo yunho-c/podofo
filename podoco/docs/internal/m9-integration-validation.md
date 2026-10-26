@@ -3,8 +3,9 @@
 Date: 2026-10-26. Host: M4 Pro, macOS 27.0.1, Flutter 3.47.5 / Dart 3.13.4.
 This report covers implemented application behavior and automated plumbing.
 Production model promotion, sandbox-folder-picker acceptance, and human listening
-acceptance are **not** claimed. The queued explicit-crop analyzer convenience API
-also remains an API-completion task; this report exercises document jobs.
+acceptance are **not** claimed. This report exercises document jobs; the later
+[explicit-crop qualification](explicit-crop-validation.md) records the completed
+Rust/C/Dart convenience API, app regression and sandbox asset correction.
 
 ## Implemented boundary
 

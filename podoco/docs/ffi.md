@@ -18,6 +18,10 @@ libraries lack this extension and may ignore unknown configuration fields.
 The formula flag means these APIs exist; Core ML support and a loaded formula
 bundle are additionally required for inference. Dart performs both guards.
 
+Queued explicit-crop jobs are a separate additive extension. Require
+`PODOCO_FEATURE_FORMULA_JOBS` (32) before resolving `podoco_formula_job_start`.
+An older library may support formula document jobs without this convenience API.
+
 The independent optional math extension requires `PODOCO_FEATURE_MATH` (16)
 before resolving `podoco_math_*`. `podoco_math_rules_verify` takes a UTF-8 rules
 directory. `podoco_math_open` takes schema-v0 `{rules_directory,limits}` and
@@ -99,6 +103,30 @@ failure. It preserves the handle for cleanup. `podoco_job_drain_state` reports
 native producer completion and a frozen wake count without depending on JSON
 schema decoding. Native sources observe cooperative cancellation on a 20 ms
 control wait; this is not a total cancellation-latency promise.
+
+### Explicit formula jobs
+
+Call `podoco_formula_job_start` with schema-v0
+`{crop:{page,region_id,bounds,display_kind}}`. Supply all four crop fields; bounds
+use canonical page coordinates and display kind is `inline` or `displayed`.
+Source/control calls and ownership are the same as for document jobs. The source
+request additionally includes the snapshotted `crop`. Return the owning page
+descriptor even for a bitmap containing only the crop.
+
+Drain the result pump even after cancellation or failure. Its sole message is
+`{schema_version:0,sequence:0,type:"formula_input_drained"}`. This is an internal
+release barrier, not an `AnalysisUpdate`. Acknowledge sequence 0 **only after**
+the renderer has returned, its image handle is released and every deferred image
+release callback has been consumed. This keeps the shared inference lane and
+input reservation occupied until foreign pixels are actually released.
+
+After acknowledgement, `podoco_job_outcome` returns
+`{schema_version:0,kind:"formula",outcome,wake_count}`. The outcome contains
+`analysis_id,crop,status,outcome,error,progress`; see the
+[typed contract](formula.md#queued-explicit-crops). Progress also carries
+`kind:"formula"` and omits document/page counts. Document envelopes now include
+`kind:"document"` as an additive field. Formula completions permit up to the
+analyzer's `max_update_bytes` plus 4 MiB metadata. Release their buffer normally.
 
 ## Wakeup and async-render lifetimes
 

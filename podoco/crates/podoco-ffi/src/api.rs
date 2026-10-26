@@ -22,6 +22,7 @@ pub extern "C" fn podoco_features() -> u32 {
     PODOCO_FEATURE_IMAGES
         | PODOCO_FEATURE_JOBS
         | PODOCO_FEATURE_FORMULA
+        | PODOCO_FEATURE_FORMULA_JOBS
         | if cfg!(feature = "math") {
             PODOCO_FEATURE_MATH
         } else {

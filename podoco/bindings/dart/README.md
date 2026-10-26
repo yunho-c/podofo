@@ -115,6 +115,35 @@ optional partial LaTeX and its limit diagnostic. Cancellation and failed later
 pages leave already delivered results usable. The final page snapshot and job
 outcome distinguish completed, partial, cancelled and failed work.
 
+For a known equation region, submit a lazy crop directly:
+
+```dart
+final job = analyzer.recognizeFormula(
+  crop: FormulaCrop(
+    page: page,
+    regionId: regionId,
+    bounds: bounds,
+    displayKind: FormulaDisplayKind.inline,
+  ),
+  loadCrop: (request) async => renderFormula(request),
+);
+final result = await job.done;
+if (result.outcome case FormulaRecognized(:final formula)) {
+  print(formula.latex);
+}
+```
+
+`renderFormula` returns a `PageInput` under `request.byteBudget`, transferring its
+image to the pump. Keep the owning page/revision and map the full-page or crop
+bitmap into canonical page coordinates; it must cover all supplied bounds.
+`request.cancellation` supports cooperative renderer shutdown. The same FIFO and
+native sessions serve document and formula jobs; no detection or synthetic page
+events run for a crop. `job.cancel()` is nonblocking; `done` includes late image
+release. `result.toJson()` is deeply immutable for caller-managed persistence.
+The binding probes `PODOCO_FEATURE_FORMULA_JOBS` before resolving its new ABI-2
+symbol; an older formula-enabled library fails with `unsupported_capability`.
+See the [complete crop contract](../../docs/formula.md#queued-explicit-crops).
+
 The [runnable example](example/document_layout.dart) analyzes raw RGBA/BGRA files
 listed by a small JSON manifest. Arguments are bundle, compute policy, input
 bytes, tensor bytes, total result bytes, maximum update bytes, pending update
@@ -157,5 +186,6 @@ for layout-only work; no fake LaTeX result is produced.
 From this package: `dart pub get --enforce-lockfile`, `dart analyze`, and
 `dart test`. Native document tests are opt-in through
 [`tools/check_dart_jobs.py`](../../tools/check_dart_jobs.py) and
-[`tools/check_formula_jobs.py`](../../tools/check_formula_jobs.py). The package is
-private; PoDoFo currently uses its layout integration while Copy/Listen is developed.
+[`tools/check_formula_jobs.py`](../../tools/check_formula_jobs.py). Explicit-crop
+and compatibility checks use [`tools/check_formula_crops.py`](../../tools/check_formula_crops.py).
+The package is private; PoDoFo uses it for experimental layout and Copy/Listen.

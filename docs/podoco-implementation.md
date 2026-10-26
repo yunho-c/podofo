@@ -358,9 +358,9 @@ performance reports; Core ML tensors and preprocessing still have their own cost
 **Current state:** the Developer-mode workflow is implemented and automated
 integration is exercised in the [M9 report](../podoco/docs/internal/m9-integration-validation.md).
 This does not waive the model promotion dependency or human acceptance gate.
-The original API also promises queued explicit-crop recognition across Rust/C/Dart;
-that remaining convenience API must use the existing job lane, rather than fake
-a layout detection around a supplied crop.
+The original API's queued explicit-crop recognition is implemented across
+Rust/C/Dart using the existing job lane, with preserved caller identity and
+release-drain ordering; see the [crop contract](../podoco/docs/formula.md#queued-explicit-crops).
 
 - Enable Copy LaTeX from successful formula outcomes and Listen through
   `MathProcessor` into the existing MLSR narrator/controller. PoDoFo owns playback
@@ -410,7 +410,7 @@ parity on 1,356 conversions/errors and explicit unsupported syntax; see its
 actual PDFium lease/copy parity through both models and lifetime checks; see its
 [qualification](../podoco/docs/internal/m8-renderer-validation.md). M9 now connects
 progressive Copy/Listen and has muted concurrent analysis/playback evidence.
-Continue with the queued explicit-crop API, sandbox-picker/human acceptance,
+Continue with sandbox-picker/human acceptance,
 and the documented model promotion issues, retaining the selected model handoff.
 Keep the measured detector/crop quality limitations visible during M9;
 deployment parity alone does not promote a profile.

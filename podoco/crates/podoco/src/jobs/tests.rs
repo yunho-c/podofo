@@ -88,6 +88,384 @@ fn analyzer() -> Analyzer {
     .unwrap()
 }
 
+mod explicit_crops {
+    use super::*;
+    use crate::{
+        FormulaCrop, FormulaRequest, Rect, RegionId,
+        formula::{FormulaCancellation, FormulaInput},
+    };
+
+    fn crop(id: u32) -> FormulaCrop {
+        FormulaCrop {
+            page: descriptor(0),
+            region_id: RegionId(id),
+            bounds: Rect::new(0., 0., 2., 2.).unwrap(),
+            display_kind: FormulaDisplayKind::Inline,
+        }
+    }
+    fn render(r: FormulaRequest) -> Result<PageInput> {
+        tracked_crop(r, Arc::new(AtomicUsize::new(0)))
+    }
+    fn tracked_crop(r: FormulaRequest, counter: Arc<AtomicUsize>) -> Result<PageInput> {
+        PageInput::new(
+            r.crop.page,
+            PageImage::owned_for_test(
+                ImageDescriptor::new(2, 2, 8, PixelFormat::Rgba8, AlphaMode::Opaque)?,
+                vec![255; 16],
+                Box::new(move || {
+                    counter.fetch_add(1, Ordering::SeqCst);
+                }),
+            ),
+            Affine::new([1., 0., 0., 1., 0., 0.])?,
+            ProfileId::new("test-crop")?,
+        )
+        .map_err(|e| e.error)
+    }
+    struct Pipeline {
+        calls: Arc<Mutex<Vec<String>>>,
+        gate: Option<(mpsc::Sender<()>, mpsc::Receiver<()>)>,
+    }
+    impl engine::Pipeline for Pipeline {
+        fn capabilities(&self) -> Capabilities {
+            Capabilities {
+                formula_recognition: true,
+                ..engine::Pipeline::capabilities(&Fake)
+            }
+        }
+        fn layout(
+            &mut self,
+            input: &PageInput,
+            options: &AnalysisOptions,
+        ) -> Result<crate::PageAnalysis> {
+            self.calls.lock().unwrap().push("layout".into());
+            engine::Pipeline::layout(&mut Fake, input, options)
+        }
+        fn recognize_crop(
+            &mut self,
+            input: FormulaInput,
+            _: FormulaCancellation,
+        ) -> Result<FormulaOutcome> {
+            self.calls
+                .lock()
+                .unwrap()
+                .push(format!("crop:{}", input.region_id.0));
+            if let Some((entered, release)) = self.gate.take() {
+                entered.send(()).unwrap();
+                release.recv_timeout(DEADLINE).unwrap();
+            }
+            let provenance = engine::Pipeline::layout(&mut Fake, &input.page, &options())?
+                .provenance
+                .pipeline;
+            Ok(match input.region_id.0 {
+                2 => FormulaOutcome::Failed {
+                    error: Error::new(ErrorCode::Recognition, "failed"),
+                },
+                3 => FormulaOutcome::Truncated {
+                    partial_latex: Some("x{".into()),
+                    error: Error::new(ErrorCode::LimitExceeded, "cap"),
+                    provenance,
+                },
+                5 => panic!("crop native panic"),
+                6 => return Err(Error::new(ErrorCode::Backend, "crop native failure")),
+                id => FormulaOutcome::Recognized {
+                    formula: RecognizedFormula {
+                        latex: if id == 8 {
+                            "x".repeat(200_000)
+                        } else {
+                            "x+1".into()
+                        },
+                        display_kind: if id == 4 {
+                            FormulaDisplayKind::Displayed
+                        } else {
+                            input.display_kind
+                        },
+                        score: None,
+                        provenance,
+                    },
+                },
+            })
+        }
+    }
+    fn create(
+        gate: Option<(mpsc::Sender<()>, mpsc::Receiver<()>)>,
+    ) -> (Analyzer, Arc<Mutex<Vec<String>>>) {
+        let calls = Arc::new(Mutex::new(vec![]));
+        (
+            Analyzer::start(
+                Box::new(Pipeline {
+                    calls: calls.clone(),
+                    gate,
+                }),
+                "test-profile".into(),
+                AnalyzerOptions {
+                    compute_policy: ComputePolicy::CpuOnly,
+                    limits: limits(),
+                },
+            )
+            .unwrap(),
+            calls,
+        )
+    }
+
+    #[test]
+    fn explicit_crop_has_no_layout_updates_and_preserves_identity() {
+        let (analyzer, calls) = create(None);
+        let job = analyzer.recognize_formula(crop(1), render).unwrap();
+        let result = job.wait().unwrap();
+        assert_eq!(result.analysis_id, *job.id());
+        assert_eq!(result.crop, crop(1));
+        assert_eq!(result.status, CompletionStatus::Completed);
+        assert!(matches!(
+            result.outcome,
+            Some(FormulaOutcome::Recognized { .. })
+        ));
+        assert_eq!(result.progress.input_bytes, 0);
+        assert_eq!(result.progress.peak_input_bytes, 16);
+        assert!(result.progress.peak_result_bytes > 0);
+        assert_eq!(*calls.lock().unwrap(), ["crop:1"]);
+        job.cancellation().cancel();
+        assert_eq!(
+            job.progress().cancellation_requested,
+            result.progress.cancellation_requested
+        );
+        assert_eq!(job.wait().unwrap().status, CompletionStatus::Completed);
+    }
+
+    #[test]
+    fn crop_and_document_share_fifo_capacity_without_eager_rendering() {
+        let (analyzer, calls) = create(None);
+        let (entered, start) = mpsc::channel();
+        let (release, gate) = mpsc::channel();
+        let first = analyzer
+            .analyze_page(
+                descriptor(0),
+                options(),
+                move |r| {
+                    entered.send(()).unwrap();
+                    gate.recv_timeout(DEADLINE).unwrap();
+                    pixels(r)
+                },
+                |_| Ok(()),
+            )
+            .unwrap();
+        start.recv_timeout(DEADLINE).unwrap();
+        let second = analyzer.recognize_formula(crop(1), render).unwrap();
+        let third = analyzer
+            .analyze_page(descriptor(1), options(), pixels, |_| Ok(()))
+            .unwrap();
+        let full = analyzer.recognize_formula(crop(1), |_| panic!("rejected loader ran"));
+        assert_eq!(full.err().unwrap().code, ErrorCode::LimitExceeded);
+        assert_eq!(second.progress().phase, JobPhase::Queued);
+        assert_eq!(second.progress().input_bytes, 0);
+        release.send(()).unwrap();
+        assert_eq!(first.wait().unwrap().status, CompletionStatus::Completed);
+        assert_eq!(second.wait().unwrap().status, CompletionStatus::Completed);
+        assert_eq!(third.wait().unwrap().status, CompletionStatus::Completed);
+        assert_eq!(*calls.lock().unwrap(), ["layout", "crop:1", "layout"]);
+    }
+
+    #[test]
+    fn queued_crop_cancel_releases_captures_before_completion() {
+        struct Capture(Arc<AtomicUsize>);
+        impl Drop for Capture {
+            fn drop(&mut self) {
+                self.0.fetch_add(1, Ordering::SeqCst);
+            }
+        }
+        let (entered, start) = mpsc::channel();
+        let (release, gate) = mpsc::channel();
+        let (analyzer, calls) = create(Some((entered, gate)));
+        let first = analyzer.recognize_formula(crop(1), render).unwrap();
+        start.recv_timeout(DEADLINE).unwrap();
+        let dropped = Arc::new(AtomicUsize::new(0));
+        let capture = Capture(dropped.clone());
+        let later = analyzer
+            .recognize_formula(crop(2), move |_| {
+                drop(capture);
+                panic!("cancelled loader ran")
+            })
+            .unwrap();
+        later.cancel();
+        assert_eq!(dropped.load(Ordering::SeqCst), 0);
+        release.send(()).unwrap();
+        first.wait().unwrap();
+        assert_eq!(later.wait().unwrap().status, CompletionStatus::Cancelled);
+        assert_eq!(dropped.load(Ordering::SeqCst), 1);
+        assert_eq!(*calls.lock().unwrap(), ["crop:1"]);
+    }
+
+    #[test]
+    fn crop_cancel_during_prediction_drains_pixels_then_reuses_session() {
+        let (entered, start) = mpsc::channel();
+        let (release, gate) = mpsc::channel();
+        let (analyzer, _) = create(Some((entered, gate)));
+        let released = Arc::new(AtomicUsize::new(0));
+        let counter = released.clone();
+        let job = analyzer
+            .recognize_formula(crop(1), move |r| tracked_crop(r, counter))
+            .unwrap();
+        start.recv_timeout(DEADLINE).unwrap();
+        job.cancel();
+        assert!(job.try_outcome().is_none());
+        assert_eq!(job.progress().input_bytes, 16);
+        assert_eq!(released.load(Ordering::SeqCst), 0);
+        release.send(()).unwrap();
+        let outcome = job.wait().unwrap();
+        assert_eq!(outcome.status, CompletionStatus::Cancelled);
+        assert!(outcome.outcome.is_none());
+        assert_eq!(released.load(Ordering::SeqCst), 1);
+        assert_eq!(
+            analyzer
+                .recognize_formula(crop(1), render)
+                .unwrap()
+                .wait()
+                .unwrap()
+                .status,
+            CompletionStatus::Completed
+        );
+    }
+
+    #[test]
+    fn crop_source_errors_context_mismatch_and_result_budget_are_owned() {
+        let (analyzer, _) = create(None);
+        for id in [2, 3] {
+            let outcome = analyzer
+                .recognize_formula(crop(id), render)
+                .unwrap()
+                .wait()
+                .unwrap();
+            assert_eq!(outcome.status, CompletionStatus::Partial);
+            assert!(outcome.error.is_none());
+        }
+        for (id, expected) in [(4, ErrorCode::InvalidResult), (8, ErrorCode::LimitExceeded)] {
+            let outcome = analyzer
+                .recognize_formula(crop(id), render)
+                .unwrap()
+                .wait()
+                .unwrap();
+            assert_eq!(outcome.status, CompletionStatus::Failed);
+            assert_eq!(outcome.error.unwrap().code, expected);
+        }
+        let wrong = analyzer
+            .recognize_formula(crop(1), |mut r| {
+                r.crop.page.key.page_index = 9;
+                render(r)
+            })
+            .unwrap()
+            .wait()
+            .unwrap();
+        assert_eq!(wrong.error.unwrap().code, ErrorCode::SourceChanged);
+        let panicked = analyzer
+            .recognize_formula(crop(1), |_| panic!("loader panic"))
+            .unwrap()
+            .wait()
+            .unwrap();
+        assert_eq!(panicked.error.unwrap().code, ErrorCode::PageSource);
+        assert_eq!(
+            analyzer
+                .recognize_formula(crop(1), render)
+                .unwrap()
+                .wait()
+                .unwrap()
+                .status,
+            CompletionStatus::Completed
+        );
+        let mut outside = crop(1);
+        outside.bounds = Rect::new(-1., 0., 1., 1.).unwrap();
+        assert_eq!(
+            analyzer
+                .recognize_formula(outside, render)
+                .err()
+                .unwrap()
+                .code,
+            ErrorCode::InvalidInput
+        );
+        assert_eq!(
+            super::analyzer()
+                .recognize_formula(crop(1), render)
+                .err()
+                .unwrap()
+                .code,
+            ErrorCode::UnsupportedCapability
+        );
+    }
+
+    #[test]
+    fn crop_native_panic_or_failure_drains_and_fails_queued_documents() {
+        for id in [5, 6] {
+            let (entered, start) = mpsc::channel();
+            let (release, gate) = mpsc::channel();
+            let (analyzer, _) = create(Some((entered, gate)));
+            let first = analyzer.recognize_formula(crop(id), render).unwrap();
+            start.recv_timeout(DEADLINE).unwrap();
+            let next = analyzer
+                .analyze_page(
+                    descriptor(1),
+                    options(),
+                    |_| panic!("failed lane rendered"),
+                    |_| Ok(()),
+                )
+                .unwrap();
+            release.send(()).unwrap();
+            assert_eq!(first.wait().unwrap().status, CompletionStatus::Failed);
+            assert_eq!(next.wait().unwrap().status, CompletionStatus::Failed);
+            assert!(analyzer.recognize_formula(crop(1), render).is_err());
+        }
+    }
+
+    #[test]
+    fn crop_drain_barrier_holds_shared_lane_until_foreign_release_acknowledgement() {
+        let (analyzer, calls) = create(None);
+        let released = Arc::new(AtomicUsize::new(0));
+        let counter = released.clone();
+        let (entered, started) = mpsc::channel();
+        let (release, gate) = mpsc::channel();
+        let job = analyzer
+            .recognize_formula_with_drain(
+                crop(1),
+                move |r| tracked_crop(r, counter),
+                move || {
+                    entered.send(()).unwrap();
+                    gate.recv_timeout(DEADLINE).unwrap();
+                    Ok(())
+                },
+            )
+            .unwrap();
+        started.recv_timeout(DEADLINE).unwrap();
+        assert_eq!(released.load(Ordering::SeqCst), 1);
+        assert_eq!(job.progress().phase, JobPhase::Finishing);
+        assert_eq!(job.progress().input_bytes, 16);
+        assert!(job.try_outcome().is_none());
+        let next = analyzer
+            .analyze_page(descriptor(0), options(), pixels, |_| Ok(()))
+            .unwrap();
+        assert_eq!(next.progress().phase, JobPhase::Queued);
+        assert_eq!(*calls.lock().unwrap(), ["crop:1"]);
+        release.send(()).unwrap();
+        assert_eq!(job.wait().unwrap().status, CompletionStatus::Completed);
+        assert_eq!(next.wait().unwrap().status, CompletionStatus::Completed);
+    }
+
+    #[test]
+    fn crop_drain_failure_is_authoritative_and_callback_wait_is_rejected() {
+        let (analyzer, _) = create(None);
+        let analyzer = Arc::new(analyzer);
+        let job = analyzer
+            .recognize_formula_with_drain(crop(1), render, || panic!("drain panic"))
+            .unwrap();
+        assert_eq!(job.wait().unwrap().error.unwrap().code, ErrorCode::Delivery);
+        let owner = analyzer.clone();
+        let next = analyzer
+            .recognize_formula_with_drain(crop(1), render, move || {
+                assert_eq!(owner.close().unwrap_err().code, ErrorCode::InvalidInput);
+                Ok(())
+            })
+            .unwrap();
+        assert_eq!(next.wait().unwrap().status, CompletionStatus::Cancelled);
+        analyzer.close().unwrap();
+    }
+}
+
 #[test]
 fn eager_job_completes_without_progress_subscription() {
     let analyzer = analyzer();

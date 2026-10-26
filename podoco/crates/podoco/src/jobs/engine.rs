@@ -25,6 +25,16 @@ pub(super) trait Pipeline: Send {
     fn failed(&self) -> bool {
         false
     }
+    fn recognize_crop(
+        &mut self,
+        _input: crate::formula::FormulaInput,
+        _cancel: crate::formula::FormulaCancellation,
+    ) -> Result<FormulaOutcome> {
+        Err(Error::new(
+            ErrorCode::UnsupportedCapability,
+            "no explicit-crop recognizer loaded",
+        ))
+    }
 }
 pub(super) struct LayoutPipeline {
     pub(super) session: crate::LayoutSession,
@@ -83,23 +93,33 @@ impl Analyzer {
                         let Some(job) = state.queue.pop_front() else {
                             break;
                         };
-                        state.active = Some(job.shared.clone());
+                        state.active = Some(job.control());
                         (job, state.failure.clone())
                     };
-                    let shared = job.shared.clone();
-                    let result = catch_unwind(AssertUnwindSafe(|| {
-                        run_job(job, pipeline.as_mut(), limits, failure)
+                    let control = job.control();
+                    let result = catch_unwind(AssertUnwindSafe(|| match job {
+                        QueuedJob::Document(job) => {
+                            run_job(job, pipeline.as_mut(), limits, failure)
+                        }
+                        QueuedJob::Formula(job) => {
+                            crop::run(job, pipeline.as_mut(), limits, failure)
+                        }
                     }));
                     let fatal = match result {
                         Ok(fatal) => fatal,
                         Err(_) => {
                             let error =
                                 Error::new(ErrorCode::WorkerFailed, "document worker panicked");
-                            finish(
-                                &shared,
-                                summary(&shared, CompletionStatus::Failed, Some(&error)),
-                                Some(error.clone()),
-                            );
+                            match &control {
+                                JobControl::Document(shared) => finish(
+                                    shared,
+                                    summary(shared, CompletionStatus::Failed, Some(&error)),
+                                    Some(error.clone()),
+                                ),
+                                JobControl::Formula(shared) => {
+                                    shared.finish(None, Some(error.clone()))
+                                }
+                            }
                             Some(error)
                         }
                     };
@@ -109,10 +129,7 @@ impl Analyzer {
                         state.failure = Some(error);
                         state.closed = true;
                         for job in &state.queue {
-                            CancellationHandle {
-                                shared: job.shared.clone(),
-                            }
-                            .cancel();
+                            job.control().cancel();
                         }
                     }
                     worker_queue.changed.notify_all();
@@ -682,12 +699,12 @@ impl Drop for Pumps {
 }
 
 fn run_job(
-    job: QueuedJob,
+    job: DocumentJob,
     pipeline: &mut dyn Pipeline,
     limits: ResourceLimits,
     prior_failure: Option<Error>,
 ) -> Option<Error> {
-    let QueuedJob {
+    let DocumentJob {
         shared,
         pages,
         source,

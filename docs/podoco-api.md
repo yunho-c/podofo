@@ -8,8 +8,10 @@ M3 implements [Rust document jobs](../podoco/docs/jobs.md); the Rust analyzer
 example below now matches that API. M4 implements the
 [C/Dart SDK](../podoco/bindings/dart/README.md). M6–M8 implement progressive formula
 recognition, optional math conversion, and qualified renderer leases. M9 connects
-experimental app Copy/Listen. The queued explicit-crop analyzer convenience API
-remains outstanding; the blocking Rust `FormulaSession` is available now.
+experimental app Copy/Listen. Queued explicit-crop recognition is now available
+across Rust/C/Dart through the same analyzer lane; see the
+[crop API](../podoco/docs/formula.md#queued-explicit-crops). The blocking Rust
+`FormulaSession` remains available for callers that own their scheduling.
 See the [current architecture](../podoco/docs/internal/architecture.md)
 and [Core ML qualification boundary](../podoco/docs/coreml.md).
 
@@ -83,7 +85,7 @@ are proposed v0 names, to be checked together when implementing the interfaces.
 | `Analyzer.capabilities` | Report the loaded pipeline's supported operations and execution policy, separately from device-execution measurements. |
 | `Analyzer.analyzeDocument` | Snapshot options, accept a page source and required update sink, return an eager `AnalysisJob`, and start its pumps. |
 | `Analyzer.analyzePage` | Use the same pipeline and update contract for one page. `FormulaScope.none` provides layout-only analysis. |
-| `Analyzer.recognizeFormula` | Recognize an explicitly supplied image crop without running detection; require its page/region identity and geometry. Use the same scheduler/ownership rules, accept a cancellation token, and return the same formula outcome type. |
+| `Analyzer.recognizeFormula` | Recognize an explicitly supplied image crop without running detection; require its page/region identity and geometry. Use the same scheduler/ownership rules; return a cancellable `FormulaJob` with the same `FormulaOutcome` inside its authoritative completion. |
 | `AnalysisJob` | Expose immutable identity, progress snapshots, cancellation, a final outcome, and idempotent disposal. |
 | `MathProcessor.open` | Open verified converter/rule assets independently of an analyzer or ML model. |
 | `MathProcessor.toMathml` / `toSpeech` | Convert an expression, or return plain speech text plus conversion provenance. |
@@ -246,7 +248,11 @@ Rust callers. The caller writes the clipboard string through its platform API
 and submits the speech string to its existing MLSR controller.
 
 ```rust
-use podoco::{MathInput, MathProcessor, MathSpeechOptions, RecognizedFormula, Result};
+use podoco::{
+    math::{MathInput, MathProcessor, MathSpeechOptions},
+    results::RecognizedFormula,
+    Result,
+};
 
 pub fn equation_for_clipboard(formula: &RecognizedFormula) -> String {
     formula.latex.clone()

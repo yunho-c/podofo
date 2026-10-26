@@ -1,6 +1,8 @@
 //! Eager, bounded document jobs with lazy sources and required serial sinks.
+mod crop;
 mod engine;
 mod formula;
+pub use crop::{FormulaCrop, FormulaJob, FormulaJobOutcome, FormulaJobProgress, FormulaRequest};
 #[cfg(test)]
 mod tests;
 
@@ -240,18 +242,46 @@ impl JobShared {
         self.lock().progress.cancellation_requested
     }
 }
-struct QueuedJob {
+struct DocumentJob {
     shared: Arc<JobShared>,
     pages: Vec<PageDescriptor>,
     source: Box<dyn PageSource>,
     sink: Sink,
     options: AnalysisOptions,
 }
+enum QueuedJob {
+    Document(DocumentJob),
+    Formula(crop::QueuedFormula),
+}
+#[derive(Clone)]
+enum JobControl {
+    Document(Arc<JobShared>),
+    Formula(Arc<crop::Shared>),
+}
+impl JobControl {
+    fn cancel(&self) {
+        match self {
+            Self::Document(shared) => CancellationHandle {
+                shared: shared.clone(),
+            }
+            .cancel(),
+            Self::Formula(shared) => shared.cancel(),
+        }
+    }
+}
+impl QueuedJob {
+    fn control(&self) -> JobControl {
+        match self {
+            Self::Document(job) => JobControl::Document(job.shared.clone()),
+            Self::Formula(job) => JobControl::Formula(job.shared.clone()),
+        }
+    }
+}
 struct QueueState {
     closed: bool,
     failure: Option<Error>,
     queue: VecDeque<QueuedJob>,
-    active: Option<Arc<JobShared>>,
+    active: Option<JobControl>,
 }
 struct QueueShared {
     state: Mutex<QueueState>,
@@ -376,13 +406,13 @@ impl Analyzer {
                 "analyzer job queue is full",
             ));
         }
-        queue.queue.push_back(QueuedJob {
+        queue.queue.push_back(QueuedJob::Document(DocumentJob {
             shared: shared.clone(),
             pages,
             source: Box::new(source),
             sink: Box::new(sink),
             options,
-        });
+        }));
         self.queue.changed.notify_all();
         Ok(AnalysisJob { shared })
     }
@@ -433,16 +463,10 @@ impl Analyzer {
         let mut queue = self.queue.lock();
         queue.closed = true;
         if let Some(active) = &queue.active {
-            CancellationHandle {
-                shared: active.clone(),
-            }
-            .cancel();
+            active.cancel();
         }
         for job in &queue.queue {
-            CancellationHandle {
-                shared: job.shared.clone(),
-            }
-            .cancel();
+            job.control().cancel();
         }
         self.queue.changed.notify_all();
     }

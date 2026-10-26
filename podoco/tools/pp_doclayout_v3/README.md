@@ -28,6 +28,12 @@ links individual files by default to avoid duplicating weights; add `--copy`
 for an independently relocatable copy, including hosts without symlink support.
 Sources and link targets must stay immutable. Existing destinations are rejected.
 
+Use `--copy` for PoDoFo's sandboxed macOS folder picker: granting access to a
+bundle directory does not authorize external symlink targets. The native Rust
+copy path attempts APFS cloning on macOS. An existing linked bundle can supply
+the export root and its `checkpoint/` child for a fresh self-contained copy;
+see the [application setup](../../../docs/document-analysis.md).
+
 The tool verifies staging first, reserves a new destination, moves artifacts,
 and publishes the manifest last. It removes its own newly created incomplete
 destination/staging on handled errors. A process kill may leave staging or an

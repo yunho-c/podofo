@@ -4,7 +4,7 @@
 PP-FormulaNet_plus-L Core ML profile. Use it off UI/executor threads. For
 progressive document analysis, open `Analyzer::open_with_formula` with both
 verified bundles; see [document jobs](jobs.md). The [Dart SDK](../bindings/dart/README.md)
-exposes the same document pipeline through the C ABI. Opening a layout-only
+exposes both document and queued explicit-crop jobs through the C ABI. Opening a layout-only
 analyzer still leaves formula recognition unavailable.
 
 ```rust,no_run
@@ -52,6 +52,62 @@ partial text looks usable. The default cap is 2,048 generated tokens; explicit
 caps of 1–2,048 are supported and lower caps appear in provenance. No confidence
 score is invented from greedy decoder logits. `FormulaOutcome::to_json` validates
 and encodes a bounded result; the session also enforces its result byte limit.
+
+## Queued explicit crops
+
+Use `Analyzer::recognize_formula(crop, loader)` in Rust or
+`analyzer.recognizeFormula(crop: ..., loadCrop: ...)` in Dart when the caller
+already knows which region to recognize. No layout prediction runs. This API
+currently requires an analyzer opened with both bundles; callers needing only a
+formula model can use the blocking Rust `FormulaSession` above.
+
+`FormulaCrop` contains the owning `PageDescriptor`, local `RegionId`, canonical
+`Rect`, and explicit inline/displayed context. The loader receives that exact
+crop, preferred raster requirements, byte budget and cooperative cancellation
+signal. It may return the original page or a cropped bitmap. In either case,
+preserve the **full owning page descriptor** and map pixel edges into that page's
+coordinates. For a crop beginning at `(17, 23)` with one pixel per page unit, the
+map is `[1, 0, 0, 1, 17, 23]`. The supplied raster must cover the whole region;
+incomplete coverage, changed page/revision, and oversized allocations fail.
+
+```rust,no_run
+use podoco::{Analyzer, FormulaCrop, FormulaJobOutcome, FormulaRequest, PageInput, Result};
+
+fn recognize<L>(analyzer: &Analyzer, crop: FormulaCrop, loader: L)
+    -> Result<FormulaJobOutcome>
+where L: FnOnce(FormulaRequest) -> Result<PageInput> + Send + 'static {
+    let job = analyzer.recognize_formula(crop, loader)?;
+    // Clone job.cancellation() for another thread, or call job.cancel().
+    job.wait() // Blocking; keep this off a UI/executor thread.
+}
+```
+
+The job shares FIFO admission, persistent models and shutdown with document
+jobs. Queued renderers do not run until the lane reserves input capacity. Keep
+pixels out of queued callback captures if they need to count against that budget.
+The returned `FormulaJob` provides identity, cancellation, optional progress and
+authoritative completion after the loader, native readers and foreign release
+notifications drain. There are no synthetic layout/page updates or sink callback.
+
+`FormulaJobOutcome` preserves `analysis_id` and the exact crop. Successful
+recognition yields `Completed`; ordinary recognition errors or token truncation
+yield `Partial` with the existing `FormulaOutcome`. Cancellation yields
+`Cancelled` without a formula. Source, geometry, transport and fatal backend
+failures yield `Failed` with an owned error. A native backend failure closes the
+shared analyzer; ordinary input errors leave it reusable. Cancellation never
+publishes partial decoder text as a successful recognition.
+
+The input reservation stays charged through late-render/release drain, including
+cancellation. `peak_result_bytes` records the bounded serialized formula result;
+it excludes fixed job metadata, decoded results retained by callers, foreign
+transport buffers and opaque Core ML storage. `max_update_bytes` bounds the
+formula payload even though this job does not emit semantic updates. The C
+transport permits an additional 4 MiB for completion metadata. Rust foreign-
+runtime adapters can use `recognize_formula_with_drain` to consume deferred
+release acknowledgements before the next queued job begins rendering; ordinary
+Rust callers use `recognize_formula`. The Dart binding performs this handshake.
+See [qualification evidence](internal/explicit-crop-validation.md) for copied/
+leased reference parity, lifecycle checks and older-native-library compatibility.
 
 ## Pinned deployment
 

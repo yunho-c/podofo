@@ -88,5 +88,8 @@ layout and PP-FormulaNet_plus-L for recognition. Their pinned conversions and
 native parity are recorded alongside corpus accuracy limits. M9 automated
 integration, model-profile promotion, and human listening acceptance are separate
 claims; see the [integration report](m9-integration-validation.md).
-The queued, cancellable explicit-crop analyzer API from the design remains to be
-added across Rust/C/Dart; direct Rust callers currently use `FormulaSession`.
+The queued, cancellable [explicit-crop API](../formula.md#queued-explicit-crops)
+shares the document job lane across Rust/C/Dart. It preserves caller page/region
+identity without invoking layout, and drains foreign image releases before the
+next queued renderer. Direct Rust callers can also use `FormulaSession` with
+their own scheduling.

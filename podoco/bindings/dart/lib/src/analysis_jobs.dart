@@ -56,7 +56,7 @@ class Analyzer {
   /// Authoritative verified manifest hashes, in pipeline order. Include these,
   /// [profile] and compute policy in derived-result cache identities.
   final List<String> modelManifests;
-  final Set<AnalysisJob> _jobs = {};
+  final Set<_JobLifecycle> _jobs = {};
   Future<void>? _closing;
   Analyzer._(
     this._handle,
@@ -144,6 +144,29 @@ class Analyzer {
     options: options,
     onUpdate: onUpdate,
   );
+
+  /// Recognize a supplied crop without detection, through this analyzer's queue.
+  /// The loader runs only after an input reservation; return a PageInput whose
+  /// mapping covers the crop in its owning page's coordinates. Await done even
+  /// when progress is not observed. Disposal drains late renders and native leases.
+  FormulaJob recognizeFormula({
+    required FormulaCrop crop,
+    required Future<PageInput> Function(FormulaRequest) loadCrop,
+  }) {
+    if (_closing != null || _handle == 0) {
+      throw StateError('Analyzer is closed');
+    }
+    _requireFormulaJobs();
+    final source = _OnePage(
+      crop.page,
+      (request) => loadCrop(FormulaRequest._(crop, request)),
+    );
+    final job = FormulaJob._(this, source, crop);
+    job._start({'schema_version': 0, 'crop': crop.toJson()});
+    _jobs.add(job);
+    return job;
+  }
+
   Future<void> dispose() {
     _canWait(this);
     return _closing ??= _dispose();
@@ -156,7 +179,7 @@ class Analyzer {
     final id = _handle;
     try {
       await Future.wait(
-        _jobs.toList().map((j) => j._completion.future),
+        _jobs.toList().map((j) => j._settled),
         eagerError: false,
       );
     } finally {
@@ -195,21 +218,46 @@ JsonObject _failure(String code, Object error) {
 
 /// Eager job with independent source, serial result, and control pumps. Done is
 /// authoritative after native drain, late renders, leases, and wake notifications.
-class AnalysisJob {
+class AnalysisJob extends _NativeJob<AnalysisOutcome, AnalysisProgress> {
+  AnalysisJob._(
+    super.analyzer,
+    PageSource super.source,
+    super.document,
+    Future<void> Function(AnalysisUpdate) super.sink,
+  ) : super._(
+        formula: false,
+        decodeProgress: AnalysisProgress._,
+        decodeOutcome: AnalysisOutcome.fromJson,
+        outcomeProgress: (outcome) => outcome.progress,
+        outcomeStatus: (outcome) => outcome.status,
+      );
+}
+
+abstract interface class _JobLifecycle {
+  void cancel();
+  Future<Object?> get _settled;
+}
+
+class _NativeJob<O, P> implements _JobLifecycle {
   final Analyzer _analyzer;
   PageSource? _source;
   Future<void> Function(AnalysisUpdate)? _sink;
   final DocumentRef _document;
   final CancellationToken _cancellation = CancellationToken();
-  final Completer<AnalysisOutcome> _completion = Completer();
+  final Completer<O> _completion = Completer();
+  final bool _formula;
+  final P Function(JsonObject) _decodeProgress;
+  final O Function(JsonObject) _decodeOutcome;
+  final P Function(O) _outcomeProgress;
+  final CompletionStatus Function(O) _outcomeStatus;
   late final NativeCallable<Void Function(Uint64)> _wake;
   Timer? _timer;
   Future<void>? _renderTask;
   int _handle = 0, _wakeReceived = 0, _wakeExpected = 0;
   int? _lastSequence;
   String? _analysisId;
-  AnalysisProgress? _latest;
-  AnalysisOutcome? _outcome;
+  P? _latest;
+  O? _outcome;
   Object? _fatalError;
   StackTrace? _fatalStack;
   bool _nativeDrained = false;
@@ -217,7 +265,17 @@ class AnalysisJob {
       _delivering = false,
       _driving = false,
       _finished = false;
-  AnalysisJob._(this._analyzer, this._source, this._document, this._sink) {
+  _NativeJob._(
+    this._analyzer,
+    this._source,
+    this._document,
+    this._sink, {
+    required this._formula,
+    required this._decodeProgress,
+    required this._decodeOutcome,
+    required this._outcomeProgress,
+    required this._outcomeStatus,
+  }) {
     _completion.future.ignore();
     _wake = NativeCallable<Void Function(Uint64)>.listener((int token) {
       _wakeReceived++;
@@ -226,9 +284,12 @@ class AnalysisJob {
   }
   void _start(JsonObject metadata) {
     try {
+      final start = _formula
+          ? native.podoco_formula_job_start
+          : native.podoco_job_start;
       _handle = using(
         (arena) => _newHandle(
-          (out, error) => native.podoco_job_start(
+          (out, error) => start(
             _analyzer._handle,
             _jsonBytes(arena, metadata),
             _wake.nativeFunction,
@@ -250,16 +311,19 @@ class AnalysisJob {
   /// Unique opaque analysis identity, including retries.
   String get id =>
       _analysisId ?? (throw StateError('Native job identity unavailable'));
-  Future<AnalysisOutcome> get done {
+  Future<O> get done {
     _canWait(_analyzer);
     return _completion.future;
   }
 
-  AnalysisProgress? get latestProgress => _latest;
+  @override
+  Future<Object?> get _settled => _completion.future;
+
+  P? get latestProgress => _latest;
 
   /// Coalesced snapshots. A paused listener retains at most one yielded value;
   /// native completion and delivery do not depend on this optional stream.
-  Stream<AnalysisProgress> get progress async* {
+  Stream<P> get progress async* {
     while (true) {
       final snapshot = _latest;
       if (snapshot != null) yield snapshot;
@@ -268,6 +332,7 @@ class AnalysisJob {
     }
   }
 
+  @override
   void cancel() {
     if (_finished) return;
     _cancellation._cancel();
@@ -303,20 +368,31 @@ class AnalysisJob {
           (out, error) => native.podoco_job_progress(_handle, out, error),
         )!;
         _schema(progress);
+        if (_formula && progress['kind'] != 'formula') {
+          throw const FormatException('Expected an explicit formula job');
+        }
         _analysisId ??= _text(progress['analysis_id']);
-        _latest = AnalysisProgress._(_map(progress['progress']));
+        _latest = _decodeProgress(_map(progress['progress']));
         if (progress['stopping'] as bool) _cancellation._cancel();
         final finished = _poll(
           (out, error) => native.podoco_job_outcome(_handle, out, error),
+          maxBytes: _formula
+              ? _analyzer.options.limits.maxUpdateBytes + 4 * 1024 * 1024
+              : 4 * 1024 * 1024,
         );
         if (finished != null) {
           _schema(finished);
+          final raw = _map(finished['outcome']);
+          if (_formula &&
+              (finished['kind'] != 'formula' || raw['analysis_id'] != id)) {
+            throw const FormatException('Mismatched formula completion');
+          }
           _nativeDrained = true;
-          _outcome = AnalysisOutcome.fromJson(_map(finished['outcome']));
-          _latest = _outcome!.progress;
+          _outcome = _decodeOutcome(raw);
+          _latest = _outcomeProgress(_outcome as O);
           _wakeExpected = _uint(finished['wake_count']);
-          if (_outcome!.status == CompletionStatus.failed ||
-              _outcome!.status == CompletionStatus.cancelled) {
+          if (_outcomeStatus(_outcome as O) == CompletionStatus.failed ||
+              _outcomeStatus(_outcome as O) == CompletionStatus.cancelled) {
             _cancellation._cancel();
           }
         }
@@ -436,25 +512,40 @@ class AnalysisJob {
     int? sequence;
     try {
       sequence = _uint(raw['sequence']);
-      final update = AnalysisUpdate.fromJson(raw);
-      if (update.document != _document ||
-          update.analysisId != id ||
-          (_lastSequence != null && sequence <= _lastSequence!)) {
-        throw const FormatException('Mismatched or unordered update');
-      }
-      // Do not acknowledge the terminal processing notice while the source
-      // pump still owns an image-release notification. This keeps the Rust
-      // scheduler's document boundary aligned with foreign allocation lifetime.
-      if (update is DocumentFinished) {
+      if (_formula) {
+        _schema(raw);
+        if (sequence != 0 ||
+            _lastSequence != null ||
+            raw['type'] != 'formula_input_drained') {
+          throw const FormatException('Invalid formula drain handshake');
+        }
+        // This acknowledgement holds the shared native lane until deferred
+        // renderer disposal and lease-release callbacks have finished.
         await _renderTask;
+        if (_fatalError != null) {
+          throw StateError('Formula image cleanup failed');
+        }
+      } else {
+        final update = AnalysisUpdate.fromJson(raw);
+        if (update.document != _document ||
+            update.analysisId != id ||
+            (_lastSequence != null && sequence <= _lastSequence!)) {
+          throw const FormatException('Mismatched or unordered update');
+        }
+        // Do not acknowledge the terminal processing notice while the source
+        // pump still owns an image-release notification. This keeps the Rust
+        // scheduler's document boundary aligned with foreign allocation lifetime.
+        if (update is DocumentFinished) {
+          await _renderTask;
+        }
+        if (_fatalError != null) {
+          throw StateError('Source transport cleanup failed');
+        }
+        await runZoned(
+          () => _sink!(update),
+          zoneValues: {_callbackOwner: _analyzer},
+        );
       }
-      if (_fatalError != null) {
-        throw StateError('Source transport cleanup failed');
-      }
-      await runZoned(
-        () => _sink!(update),
-        zoneValues: {_callbackOwner: _analyzer},
-      );
       _lastSequence = sequence;
     } catch (e, s) {
       if (sequence == null) {
@@ -508,7 +599,7 @@ class AnalysisJob {
     if (_fatalError != null) {
       _completion.completeError(_fatalError!, _fatalStack);
     } else {
-      _completion.complete(_outcome!);
+      _completion.complete(_outcome as O);
     }
   }
 }

@@ -33,6 +33,38 @@ and whether the visible page is complete or partial. **Cancel analysis** drains
 work already in flight. **Show layout regions** toggles blue region outlines;
 formula outlines use orange.
 
+For a sandboxed macOS app, prepare a **self-contained** layout bundle with the
+layout tool's `--copy` option. Its default symlink mode is useful for command-line
+research, but selecting a folder does not grant access to link targets elsewhere
+in the research checkout or model cache. Existing linked bundles can be materialized
+with the same verified manifest (run from `podoco/`, using a new destination):
+
+```sh
+cargo run --locked -p podoco --example model_bundle -- prepare \
+  model-assets/pp-doclayout-v3-m2/podoco-bundle.yaml \
+  model-assets/pp-doclayout-v3-m2 \
+  model-assets/pp-doclayout-v3-m2/checkpoint \
+  model-assets/pp-doclayout-v3-m2-sandbox --copy
+```
+
+The copy path uses Rust's native file-copy implementation, which attempts APFS
+cloning on macOS. Model bytes and manifest identity remain unchanged. The formula
+and math preparation tools already produce self-contained folders.
+
+In this development checkout, choose these individual folders under
+`podoco/model-assets/`, **not their shared `model-assets` parent**:
+
+| Picker | Folder | File directly inside it |
+| --- | --- | --- |
+| Open layout model | `pp-doclayout-v3-m2-sandbox` | `podoco-bundle.yaml` |
+| Open formula model | `pp-formulanet-plus-l-m6` | `podoco-bundle.yaml` |
+| Open math speech rules | `mathcat-0.7.7-m7` | `podoco-rules.yaml` |
+
+Use **⌘⇧G** in the picker to enter a full directory path. A missing-manifest error
+usually means the parent or an inner artifact directory was selected. An
+operation-not-permitted error on a linked payload requires a self-contained
+bundle; broad filesystem permission is unnecessary.
+
 To recognize equations, also prepare the [formula bundle](../podoco/docs/formula.md)
 and choose **Open formula model…** before **Analyze document and equations**.
 Select a pending or completed equation in the current-page list. A successful

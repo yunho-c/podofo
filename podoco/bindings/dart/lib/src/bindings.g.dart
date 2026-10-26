@@ -119,6 +119,34 @@ external int podoco_formula_bundle_verify(
   ffi.Pointer<ffi.Uint64> error,
 );
 
+/// Queue an explicit formula crop without layout detection. Metadata contains
+/// schema_version=0 and crop (page, region_id, bounds, display_kind). Uses the
+/// same source/control calls as a document job. Its sole result-pump message is
+/// {schema_version:0,sequence:0,type:"formula_input_drained"}; acknowledge it only
+/// after the binding's renderer and image-release acknowledgements drain, even
+/// on cancellation/failure. Read the formula outcome through podoco_job_outcome
+/// afterward. Outcome JSON is bounded by max_update_bytes plus 4 MiB metadata.
+/// # Safety
+/// The metadata, output, and wake callback contracts are those of podoco_job_start.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    PodocoBytes,
+    ffi.Pointer<ffi.NativeFunction<ffi.Void Function(ffi.Uint64 token)>>,
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_formula_job_start(
+  int analyzer,
+  PodocoBytes metadata,
+  ffi.Pointer<ffi.NativeFunction<ffi.Void Function(ffi.Uint64 token)>> wake,
+  int wake_token,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
 /// Copy the complete initialized view, including supplied padding/trailing
 /// bytes. Caller storage can be modified/freed immediately after return.
 /// # Safety
@@ -501,6 +529,8 @@ const int PODOCO_ERROR = -1;
 const int PODOCO_FEATURE_COREML = 2;
 
 const int PODOCO_FEATURE_FORMULA = 8;
+
+const int PODOCO_FEATURE_FORMULA_JOBS = 32;
 
 const int PODOCO_FEATURE_IMAGES = 1;
 

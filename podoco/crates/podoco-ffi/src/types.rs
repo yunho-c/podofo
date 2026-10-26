@@ -19,6 +19,9 @@ pub const PODOCO_FEATURE_COREML: u32 = 2;
 pub const PODOCO_FEATURE_FORMULA: u32 = 8;
 /// Optional independent MathCAT/MathML conversion support.
 pub const PODOCO_FEATURE_MATH: u32 = 16;
+/// Queued explicit formula crops share analyzer admission and image ownership.
+/// Probe this additive ABI-2 extension before resolving the crop entry point.
+pub const PODOCO_FEATURE_FORMULA_JOBS: u32 = 32;
 /// Current semantic result and FFI metadata schema.
 pub const PODOCO_SCHEMA_VERSION: u32 = 0;
 /// Maximum input metadata JSON bytes (4 MiB), independent of image size.

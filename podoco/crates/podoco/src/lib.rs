@@ -36,7 +36,8 @@ pub use geometry::{Affine, PageSpace, Point, Polygon, Rect};
 pub use image::{AlphaMode, ImageDescriptor, PageImage, PageInput, PixelFormat};
 pub use jobs::{
     AnalysisJob, AnalysisOutcome, AnalysisProgress, Analyzer, CancellationHandle, DeliveryCounts,
-    JobPhase, PageRequest, PageSource, RasterRequirements,
+    FormulaCrop, FormulaJob, FormulaJobOutcome, FormulaJobProgress, FormulaRequest, JobPhase,
+    PageRequest, PageSource, RasterRequirements,
 };
 pub use options::{AnalysisOptions, AnalyzerOptions, Capabilities, FormulaScope, ResourceLimits};
 pub use results::{AnalysisUpdate, FormulaOutcome, LayoutRegion, PageAnalysis};

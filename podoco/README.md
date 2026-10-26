@@ -14,7 +14,9 @@ experimental; its known export differences are recorded in the qualification.
 The [C ABI](docs/ffi.md) and [Dart SDK](bindings/dart/README.md) expose document
 jobs, copied images, controlled native leases, typed results, and draining
 cancellation. PoDoFo has an [experimental document/equation integration](../docs/document-analysis.md).
-PP-FormulaNet_plus-L has a [qualified blocking Rust crop recognizer](docs/formula.md).
+PP-FormulaNet_plus-L has a [qualified blocking Rust crop recognizer](docs/formula.md)
+and queued [explicit-crop jobs across Rust/C/Dart](docs/formula.md#queued-explicit-crops)
+that share the analyzer's document lane without running detection.
 Its [progressive document pipeline](docs/internal/m6-document-validation.md) is also
 qualified against the deployed reference; detector recall and recognition quality
 limits remain explicit. [Optional math conversion](docs/math.md) exposes isolated

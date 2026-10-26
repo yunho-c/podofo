@@ -30,6 +30,12 @@
 #define PODOCO_FEATURE_MATH 16
 
 /**
+ * Queued explicit formula crops share analyzer admission and image ownership.
+ * Probe this additive ABI-2 extension before resolving the crop entry point.
+ */
+#define PODOCO_FEATURE_FORMULA_JOBS 32
+
+/**
  * Current semantic result and FFI metadata schema.
  */
 #define PODOCO_SCHEMA_VERSION 0
@@ -285,6 +291,24 @@ PodocoStatus podoco_job_start(PodocoHandle analyzer,
                               uint64_t wake_token,
                               PodocoHandle *output,
                               PodocoHandle *error);
+
+/**
+ * Queue an explicit formula crop without layout detection. Metadata contains
+ * schema_version=0 and crop (page, region_id, bounds, display_kind). Uses the
+ * same source/control calls as a document job. Its sole result-pump message is
+ * {schema_version:0,sequence:0,type:"formula_input_drained"}; acknowledge it only
+ * after the binding's renderer and image-release acknowledgements drain, even
+ * on cancellation/failure. Read the formula outcome through podoco_job_outcome
+ * afterward. Outcome JSON is bounded by max_update_bytes plus 4 MiB metadata.
+ * # Safety
+ * The metadata, output, and wake callback contracts are those of podoco_job_start.
+ */
+PodocoStatus podoco_formula_job_start(PodocoHandle analyzer,
+                                      PodocoBytes metadata,
+                                      PodocoWake wake,
+                                      uint64_t wake_token,
+                                      PodocoHandle *output,
+                                      PodocoHandle *error);
 
 /**
  * Pull one lazy source request as an owned schema-v0 JSON buffer. PENDING
