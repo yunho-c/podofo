@@ -43,7 +43,10 @@ class MyApp extends ConsumerWidget {
         material.DefaultMaterialLocalizations.delegate,
       ],
       builder: (context, child) => material.Theme(
-        data: material.ThemeData(brightness: brightness),
+        data: material.ThemeData(
+          brightness: brightness,
+          iconTheme: IconTheme.of(context),
+        ),
         child: material.Material(
           type: material.MaterialType.transparency,
           // Preserve Shadcn's typography instead of Material's bodyMedium.

@@ -98,16 +98,19 @@ class _SearchPaneState extends ConsumerState<_SearchResults> {
               IconButton(
                 icon: const Icon(Icons.arrow_upward),
                 variance: ButtonStyle.ghostIcon(),
+                size: ButtonSize.small,
                 onPressed: _searcher.hasMatches ? () => _navigate(false) : null,
               ),
               IconButton(
                 icon: const Icon(Icons.arrow_downward),
                 variance: ButtonStyle.ghostIcon(),
+                size: ButtonSize.small,
                 onPressed: _searcher.hasMatches ? () => _navigate(true) : null,
               ),
               IconButton(
                 icon: const Icon(Icons.close),
                 variance: ButtonStyle.ghostIcon(),
+                size: ButtonSize.small,
                 onPressed: _query.text.isEmpty
                     ? null
                     : () {
