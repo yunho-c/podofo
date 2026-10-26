@@ -18,14 +18,17 @@ M4 adds the [C/Dart layout SDK](../podoco/bindings/dart/README.md) with
 M5 adds [PoDoFo layout integration](document-analysis.md) with
 [application validation](../podoco/docs/internal/m5-validation.md). M6's first part,
 [single-crop recognition](../podoco/docs/formula.md), is implemented and
-[qualified](../podoco/docs/internal/m6-single-crop-validation.md). Its document-job
-integration and M7–M9 remain in progress/planned; the starting-point inventory
+[qualified](../podoco/docs/internal/m6-single-crop-validation.md). M6 also adds
+[progressive Rust/C/Dart formula jobs](../podoco/docs/internal/m6-document-validation.md),
+with exact deployed-reference parity and explicitly measured detector/crop
+quality limits. M7–M9 remain in progress/planned; the starting-point inventory
 below records the original baseline.
 
 PP-DocLayoutV3 is the selected layout model. PP-FormulaNet_plus-L is the selected
 formula recognizer (2026-10-26). Its native single-crop adapter reproduces the
 selected export's CPU and CPU+ANE outputs. Detector-crop and document-pipeline
-qualification remain the second part of M6. Model selection, availability of a
+checks also pass; the combined profile remains experimental, including 59.93%
+IoU-0.5 detection recall on the 50-page convenience sample. Model selection, availability of a
 converted artifact, and qualified Podoco execution are separate gates.
 
 ## Starting point and constraints
@@ -391,10 +394,10 @@ by the design and should not need to change for a conventional crop recognizer.
 
 ## Execution and review policy
 
-M1–M5 are implemented. Advance into M6 and consume the explicit
-PP-FormulaNet_plus-L handoff for M6 without repeating model-family selection.
-The single-crop part is complete; continue with progressive document jobs and
-C/Dart exposure before marking M6 complete.
+M1–M6 are implemented as experimental profiles. Continue with optional math
+conversion and renderer leases, retaining the PP-FormulaNet_plus-L handoff.
+Keep the measured detector/crop quality limitations visible during M9;
+deployment parity alone does not promote a profile.
 M5 gives an integration checkpoint before the complete formula workflow;
 M7 and M8 remain separable from model-specific decoding.
 

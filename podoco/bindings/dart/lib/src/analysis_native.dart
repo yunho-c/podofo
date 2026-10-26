@@ -127,6 +127,31 @@ JsonObject _verifyNative(String directory) {
   );
 }
 
+void _requireFormulaExtension() {
+  _checkNative();
+  if (native.podoco_features() & native.PODOCO_FEATURE_FORMULA == 0) {
+    throw const PodocoException(
+      'unsupported_capability',
+      'This native library predates the formula extension.',
+    );
+  }
+}
+
+JsonObject _verifyFormulaNative(String directory) {
+  _requireFormulaExtension();
+  return using(
+    (arena) => _takeJson(
+      _newHandle(
+        (out, error) => native.podoco_formula_bundle_verify(
+          _bytes(arena, utf8.encode(directory)),
+          out,
+          error,
+        ),
+      ),
+    ),
+  );
+}
+
 Future<void> _releaseAsync(int handle) =>
     Isolate.run(() => native.podoco_release(handle)).then((_) {});
 final _handleFinalizer = Finalizer<int>((handle) {
@@ -147,6 +172,30 @@ class ModelBundle {
     final result = await Isolate.run(() => _verifyNative(directory));
     _schema(result);
     return ModelBundle._(directory, result);
+  }
+}
+
+/// Verified formula assets. Opening rechecks all hashes before loading models.
+class FormulaBundle {
+  final String directory, id, profile, manifestSha256;
+  FormulaBundle._(this.directory, JsonObject j)
+    : id = _text(j['id']),
+      profile = _text(j['profile']),
+      manifestSha256 = _sha(j['manifest_sha256']);
+  static Future<FormulaBundle> verify(String directory) async {
+    final result = await Isolate.run(() => _verifyFormulaNative(directory));
+    _schema(result);
+    return FormulaBundle._(directory, result);
+  }
+}
+
+/// Greedy generation cap, excluding the start token. Capped output is truncated.
+class FormulaOptions {
+  final int maxNewTokens;
+  FormulaOptions({this.maxNewTokens = 2048}) {
+    if (maxNewTokens < 1 || maxNewTokens > 2048) {
+      throw RangeError.range(maxNewTokens, 1, 2048, 'maxNewTokens');
+    }
   }
 }
 

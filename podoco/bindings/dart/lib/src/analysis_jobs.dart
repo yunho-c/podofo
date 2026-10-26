@@ -52,21 +52,42 @@ class Analyzer {
   final AnalyzerOptions options;
   final Capabilities capabilities;
   final String profile;
+
+  /// Authoritative verified manifest hashes, in pipeline order. Include these,
+  /// [profile] and compute policy in derived-result cache identities.
+  final List<String> modelManifests;
   final Set<AnalysisJob> _jobs = {};
   Future<void>? _closing;
-  Analyzer._(this._handle, this.options, JsonObject info)
-    : capabilities = Capabilities._(_map(info['capabilities'])),
+  Analyzer._(
+    this._handle,
+    this.options,
+    JsonObject info,
+    String fallbackManifest,
+  ) : capabilities = Capabilities._(_map(info['capabilities'])),
+      modelManifests = List.unmodifiable(
+        _list(info['model_manifests'] ?? [fallbackManifest]).map(_sha),
+      ),
       profile = _text(info['profile']) {
     _handleFinalizer.attach(this, _handle, detach: this);
   }
   static Future<Analyzer> open(
     ModelBundle bundle, {
     required AnalyzerOptions options,
+    FormulaBundle? formulaBundle,
+    FormulaOptions? formulaOptions,
   }) async {
+    if (formulaOptions != null && formulaBundle == null) {
+      throw ArgumentError('formulaOptions requires a formulaBundle');
+    }
+    if (formulaBundle != null) _requireFormulaExtension();
     final config = {
       'schema_version': 0,
       'bundle_directory': bundle.directory,
       'options': options.toJson(),
+      if (formulaBundle != null)
+        'formula_bundle_directory': formulaBundle.directory,
+      if (formulaOptions != null)
+        'formula_options': formulaOptions.maxNewTokens,
     };
     final handle = await Isolate.run(() => _openNative(config));
     try {
@@ -76,7 +97,14 @@ class Analyzer {
         ),
       );
       _schema(info);
-      return Analyzer._(handle, options, info);
+      if (formulaBundle != null &&
+          (_list(info['model_manifests']).length != 2 ||
+              _map(info['capabilities'])['formula_recognition'] != true)) {
+        throw const FormatException(
+          'Native analyzer did not enable the requested formula pipeline',
+        );
+      }
+      return Analyzer._(handle, options, info, bundle.manifestSha256);
     } catch (_) {
       await _releaseAsync(handle);
       rethrow;

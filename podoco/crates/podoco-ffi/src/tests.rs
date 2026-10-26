@@ -212,6 +212,45 @@ fn invalid_layout_pointers_lengths_and_schema_fail_before_use() {
     );
 }
 
+#[test]
+fn formula_extension_rejects_invalid_metadata_before_assets_or_models() {
+    assert_ne!(podoco_features() & PODOCO_FEATURE_FORMULA, 0);
+    let (mut output, mut error) = (123, 0);
+    let options = podoco::AnalyzerOptions {
+        compute_policy: podoco::options::ComputePolicy::CpuOnly,
+        limits: podoco::ResourceLimits::new(
+            1,
+            16,
+            1,
+            100_000,
+            100_000,
+            128 * 1024 * 1024,
+            48 * 1024 * 1024,
+        )
+        .unwrap(),
+    };
+    // SAFETY: Borrowed byte arrays and disjoint output scalars live for each call.
+    unsafe {
+        assert_eq!(
+            podoco_formula_bundle_verify(bytes(&[0xff]), &mut output, &mut error),
+            PODOCO_ERROR
+        );
+        assert_eq!(output, 0);
+        assert_eq!(take_json(error)["code"], "invalid_input");
+        for cap in [0u64, 2049, u64::MAX, 2048] {
+            let config = serde_json::to_vec(&serde_json::json!({"schema_version": 0,
+                "bundle_directory": "must-not-read", "options": options, "formula_options": cap}))
+            .unwrap();
+            assert_eq!(
+                podoco_analyzer_open(bytes(&config), &mut output, &mut error),
+                PODOCO_ERROR
+            );
+            assert_eq!(output, 0);
+            assert_eq!(take_json(error)["code"], "invalid_input");
+        }
+    }
+}
+
 #[cfg(feature = "coreml")]
 #[test]
 #[ignore = "requires explicit verified M2 bundle; native C ABI job qualification"]

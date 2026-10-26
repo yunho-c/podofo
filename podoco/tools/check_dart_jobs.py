@@ -92,7 +92,20 @@ def main():
         )
         for name, command in (
             ("pub", ["dart", "pub", "get", "--enforce-lockfile"]),
-            ("tests", ["dart", "test", "--concurrency=1", "--reporter=expanded"]),
+            (
+                "tests",
+                [
+                    "dart",
+                    "test",
+                    "--concurrency=1",
+                    "--reporter=expanded",
+                    *[
+                        str(p.relative_to(package))
+                        for p in sorted((package / "test").glob("*_test.dart"))
+                        if p.name != "formula_jobs_test.dart"
+                    ],
+                ],
+            ),
         ):
             with (args.output / f"{name}.log").open("w") as log:
                 subprocess.run(

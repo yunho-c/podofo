@@ -1,5 +1,6 @@
 //! Eager, bounded document jobs with lazy sources and required serial sinks.
 mod engine;
+mod formula;
 #[cfg(test)]
 mod tests;
 
@@ -273,6 +274,22 @@ pub struct Analyzer {
     options: AnalyzerOptions,
 }
 impl Analyzer {
+    /// Open layout and formula models in one bounded document lane. Both bundles
+    /// remain immutable throughout use. No page preprocessing is shared between
+    /// models: formula crops read the original page at its original resolution.
+    pub fn open_with_formula(
+        layout: ModelBundle,
+        formula: crate::formula::FormulaBundle,
+        options: AnalyzerOptions,
+        formula_options: crate::formula::FormulaOptions,
+    ) -> Result<Self> {
+        let (pipeline, profile) = formula::open(layout, formula, options.clone(), formula_options)?;
+        Self::start(pipeline, profile, options)
+    }
+    /// Effective versioned pipeline profile, including an explicit formula cap.
+    pub fn profile(&self) -> &str {
+        &self.profile
+    }
     /// Load the selected native layout pipeline and start its scheduler.
     pub fn open(bundle: ModelBundle, options: AnalyzerOptions) -> Result<Self> {
         let profile = bundle.manifest().profile.id.clone();

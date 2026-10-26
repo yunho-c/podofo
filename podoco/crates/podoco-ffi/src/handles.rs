@@ -10,9 +10,10 @@ pub(crate) struct OwnedAnalyzer {
     pub analyzer: podoco::Analyzer,
     pub limits: podoco::ResourceLimits,
     pub profile: String,
+    pub model_manifests: Vec<podoco::domain::Sha256Digest>,
 }
 pub(crate) enum Entry {
-    Analyzer(OwnedAnalyzer),
+    Analyzer(Box<OwnedAnalyzer>),
     Job(crate::transport::OwnedJob),
     Image(PageImage),
     Buffer(Box<[u8]>),

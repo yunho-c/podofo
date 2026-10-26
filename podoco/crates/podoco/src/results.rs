@@ -84,7 +84,8 @@ pub struct PipelineProvenance {
     pub adapter: ProfileId,
     /// Versioned preprocessing/decoding profile and effective options.
     pub profile: ProfileId,
-    /// Exact models that participated.
+    /// Exact models selected for the pipeline. A progressive layout snapshot
+    /// can precede recognition; formula outcomes identify their own recognizer.
     pub models: Vec<ModelProvenance>,
 }
 impl PipelineProvenance {

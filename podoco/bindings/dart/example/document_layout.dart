@@ -53,9 +53,21 @@ class RawPages implements PageSource {
 }
 
 Future<void> main(List<String> args) async {
+  FormulaBundle? formula;
+  FormulaOptions? formulaOptions;
+  var cacheBytes = 1;
+  if (args.isNotEmpty && args.first == '--formula') {
+    if (args.length < 4) {
+      throw ArgumentError('--formula needs BUNDLE TOKEN_CAP CACHE_BYTES');
+    }
+    formula = await FormulaBundle.verify(args[1]);
+    formulaOptions = FormulaOptions(maxNewTokens: int.parse(args[2]));
+    cacheBytes = int.parse(args[3]);
+    args = args.sublist(4);
+  }
   if (args.length != 8) {
     throw ArgumentError(
-      'usage: document_layout.dart BUNDLE cpu|cpu-ne|all INPUT_BYTES TENSOR_BYTES RESULT_BYTES MAX_UPDATE_BYTES PENDING_UPDATES PAGES.json',
+      'usage: document_layout.dart [--formula FORMULA_BUNDLE TOKEN_CAP CACHE_BYTES] BUNDLE cpu|cpu-ne|all INPUT_BYTES TENSOR_BYTES RESULT_BYTES MAX_UPDATE_BYTES PENDING_UPDATES PAGES.json',
     );
   }
   final policy = switch (args[1]) {
@@ -72,6 +84,8 @@ Future<void> main(List<String> args) async {
   final bundle = await ModelBundle.verify(args[0]);
   final analyzer = await Analyzer.open(
     bundle,
+    formulaBundle: formula,
+    formulaOptions: formulaOptions,
     options: AnalyzerOptions(
       computePolicy: policy,
       limits: ResourceLimits(
@@ -81,7 +95,7 @@ Future<void> main(List<String> args) async {
         resultBytes: int.parse(args[4]),
         maxUpdateBytes: int.parse(args[5]),
         pendingUpdates: int.parse(args[6]),
-        decoderCacheBytes: 1,
+        decoderCacheBytes: cacheBytes,
       ),
     ),
   );
@@ -89,8 +103,8 @@ Future<void> main(List<String> args) async {
     final job = analyzer.analyzeDocument(
       pages: source,
       options: AnalysisOptions(
-        profile: bundle.profile,
-        formulaScope: FormulaScope.none,
+        profile: analyzer.profile,
+        formulaScope: formula == null ? FormulaScope.none : FormulaScope.all,
       ),
       onUpdate: (update) async {
         stdout.writeln(jsonEncode(update.toJson()));

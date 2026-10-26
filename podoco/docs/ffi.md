@@ -6,10 +6,17 @@ exports**. ABI 1 contains identity only and is deliberately rejected by the new
 Dart package. `podoco_version()` still returns borrowed static NUL-terminated
 UTF-8. ABI, package version, and JSON schema version are independent.
 
-`podoco_features()` reports compiled image/job/Core ML support. Loaded-model
+`podoco_features()` reports image/job/Core ML support and additive API extensions. Loaded-model
 capabilities come from `podoco_analyzer_info`; a Core ML build does not imply
 formula recognition or polygon support. Default portable builds provide image,
 JSON, and transport contracts but cannot open the Core ML layout pipeline.
+
+Formula bundle/configuration support is an additive ABI-2 extension. Require
+`podoco_features() & PODOCO_FEATURE_FORMULA` **before resolving**
+`podoco_formula_bundle_verify` or sending formula configuration. Earlier ABI-2
+libraries lack this extension and may ignore unknown configuration fields.
+The formula flag means these APIs exist; Core ML support and a loaded formula
+bundle are additionally required for inference. Dart performs both guards.
 
 ## Handles and buffers
 
@@ -41,6 +48,13 @@ tensors never enter JSON. Every polled buffer owns its payload until release.
    `podoco_analyzer_open` accepts `{schema_version:0,bundle_directory,options}`;
    options are the complete Rust `AnalyzerOptions` representation. These calls
    block on local verification/model loading and belong on a worker.
+   For recognition, optionally verify with `podoco_formula_bundle_verify`, then
+   include `formula_bundle_directory` and optionally `formula_options` (a token
+   cap integer from 1 through 2048, default 2048) in the open object. A cap without
+   a formula bundle is invalid. Opening re-verifies both bundles. Analyzer info
+   returns the effective `profile`, capabilities, and authoritative
+   `model_manifests` in layout/recognizer order. Use that effective profile in
+   jobs and all hashes plus compute policy in cache keys.
 2. Read analyzer info, then call `podoco_job_start` with
    `{schema_version:0,document,pages,options}`. Pages are ordered metadata only;
    options are `AnalysisOptions`, with `formula_scope:"none"` for layout-only

@@ -19,6 +19,12 @@
 #define PODOCO_FEATURE_COREML 2
 
 /**
+ * Formula bundle verification and analyzer formula configuration are available.
+ * Probe this additive ABI-2 extension before resolving formula entry points.
+ */
+#define PODOCO_FEATURE_FORMULA 8
+
+/**
  * Current semantic result and FFI metadata schema.
  */
 #define PODOCO_SCHEMA_VERSION 0
@@ -215,6 +221,8 @@ PodocoStatus podoco_image_info(PodocoHandle image, PodocoHandle *output, PodocoH
  * Verify an existing offline bundle and open one persistent analyzer. Blocks;
  * bindings must call on a worker. Metadata is UTF-8 JSON with schema_version=0,
  * bundle_directory, and the complete Rust AnalyzerOptions representation.
+ * With PODOCO_FEATURE_FORMULA, optional formula_bundle_directory enables
+ * recognition; formula_options is a token cap integer (1..=2048, default 2048).
  * # Safety
  * Config covers readable bytes for this call; outputs satisfy the standard
  * disjoint writable contract. Normal builds never download models.
@@ -245,6 +253,17 @@ PodocoStatus podoco_analyzer_close(PodocoHandle analyzer, PodocoHandle *error);
  * contract. No download/compilation occurs during verification.
  */
 PodocoStatus podoco_bundle_verify(PodocoBytes directory, PodocoHandle *output, PodocoHandle *error);
+
+/**
+ * Verify the pinned formula bundle offline and return schema-v0 identity/profile
+ * and manifest hash. Probe PODOCO_FEATURE_FORMULA before using this ABI-2 extension.
+ * # Safety
+ * Directory is readable UTF-8 for this call; output/error handles are writable,
+ * aligned and disjoint. This blocks on hashing and never downloads or compiles.
+ */
+PodocoStatus podoco_formula_bundle_verify(PodocoBytes directory,
+                                          PodocoHandle *output,
+                                          PodocoHandle *error);
 
 /**
  * Eagerly queue a document. Metadata: schema_version=0, document, ordered pages,

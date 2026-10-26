@@ -3,8 +3,9 @@
 `Analyzer` runs bounded, eager document jobs through the same PP-DocLayoutV3
 pipeline as [`LayoutSession`](layout.md). Sources render lazily and every job
 requires a serial update sink. Calling `wait()` completes without subscribing
-to progress. Formula recognition is unavailable until the selected
-PP-FormulaNet_plus-L adapter is qualified; request `FormulaScope::None` now.
+to progress. Open both verified bundles with `Analyzer::open_with_formula` to
+recognize PP-DocLayoutV3 detections using PP-FormulaNet_plus-L. The combined
+profile remains experimental; layout-only analyzers require `FormulaScope::None`.
 
 ## Run a document
 
@@ -29,6 +30,34 @@ The [complete example](../crates/podoco/examples/document_layout.rs) implements
 `PageSource`, inspects only headers before submission, decodes on demand, and
 writes updates as the sink accepts them. PNG decoding and the sink's own JSON
 buffer are caller storage, separate from SDK reservations.
+
+For progressive formula recognition, prepend
+`--formula FORMULA_BUNDLE TOKEN_CAP CACHE_BYTES` to those arguments. For example:
+
+```sh
+target/release/examples/document_layout \
+  --formula model-assets/formula-v1 2048 50331648 \
+  model-assets/layout-v1 cpu-ne 16777216 134217728 4194304 2097152 2 \
+  page-1.png page-2.png > updates.jsonl 2> outcome.json
+```
+
+Use `Analyzer::profile()` when constructing `AnalysisOptions`: the combined
+profile differs from each bundle's profile and includes any lower token cap.
+`PageLayoutReady` exposes pending formula IDs, each `FormulaFinished` supplies
+one owned outcome, and `PageFinished` contains the final snapshot. Both bundles
+remain loaded across jobs; each formula starts with fresh decoder state.
+Cancellation is checked between decoder predictions and preserves acknowledged
+results. Formula decoding errors/truncation remain explicit in the final status.
+
+The combined pipeline requires at least **96 MiB tensor bytes** and **40,108,032
+decoder-cache bytes**. Each active stage reserves 32 MiB for the inactive
+session's retained host/tensor storage. The example gives additional scratch
+space and larger bounded updates for pages with many formulas and their full
+provenance. Core ML weights/workspaces are outside these SDK-visible limits.
+All stages currently use the same explicit compute policy. A progressive page's
+provenance lists both configured models before recognition runs; each recognized
+formula records its own recognizer provenance. Include all model hashes, the
+effective analyzer profile and compute policy in persistent cache identities.
 
 ## Ownership and scheduling
 

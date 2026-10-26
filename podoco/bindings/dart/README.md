@@ -1,10 +1,10 @@
 # Podoco for Dart
 
-A typed Dart SDK for Rust-owned document layout analysis. `Analyzer` provides
+A typed Dart SDK for Rust-owned document layout and formula analysis. `Analyzer` provides
 lazy rendering, eager jobs, serial async update sinks, cancellation, and owned
-results. PP-DocLayoutV3 runs through Core ML on macOS; request
-`FormulaScope.none` until the selected PP-FormulaNet_plus-L recognizer is added.
-The layout export remains experimental with the known M2 conversion differences.
+results. PP-DocLayoutV3 and PP-FormulaNet_plus-L run through Core ML on macOS.
+Profiles remain experimental with documented detector recall, recognition errors
+and M2 conversion differences. Layout-only analyzers require `FormulaScope.none`.
 
 ## Native build
 
@@ -76,6 +76,34 @@ The sealed update types are `PageLayoutReady`, `FormulaFinished`, `PageFinished`
 `PageFailed`, and `DocumentFinished`; unknown required variants/schema versions
 fail explicitly. Persist the deeply immutable `update.toJson()` envelope.
 
+To recognize detected formulas, pass an independently verified formula bundle:
+
+```dart
+final formula = await FormulaBundle.verify(formulaDirectory);
+final analyzer = await Analyzer.open(
+  bundle,
+  formulaBundle: formula,
+  formulaOptions: FormulaOptions(maxNewTokens: 2048),
+  options: analyzerOptions,
+);
+final options = AnalysisOptions(profile: analyzer.profile); // FormulaScope.all
+```
+
+Use at least 96 MiB for `tensorBytes` and 40,108,032 for `decoderCacheBytes`;
+128 MiB/48 MiB with a 2 MiB maximum update and 4 MiB result queue are the
+qualified document-example limits. These counters exclude opaque Core ML
+weights/workspaces and application-owned results. The same compute policy applies
+to both models. `analyzer.modelManifests` contains freshly verified hashes in
+pipeline order; cache against all hashes, `analyzer.profile`, and compute policy.
+The wrapper probes the additive formula feature before resolving its ABI-2
+symbol, so older layout-only native artifacts fail explicitly.
+
+`FormulaFinished` arrives as each detected crop completes. A `FormulaRecognized`
+contains nonempty LaTeX and no invented confidence; `FormulaTruncated` preserves
+optional partial LaTeX and its limit diagnostic. Cancellation and failed later
+pages leave already delivered results usable. The final page snapshot and job
+outcome distinguish completed, partial, cancelled and failed work.
+
 The [runnable example](example/document_layout.dart) analyzes raw RGBA/BGRA files
 listed by a small JSON manifest. Arguments are bundle, compute policy, input
 bytes, tensor bytes, total result bytes, maximum update bytes, pending update
@@ -83,6 +111,7 @@ count, and manifest path. Each manifest page has `pixels` (path or file URI),
 `page` (key/space), `image` (descriptor), `pixel_to_page`, and `render_profile`;
 the root also has `document`. This example keeps decoding/rendering outside the
 SDK. For PDFs, PoDoFo supplies its own renderer/coordinate adapter in M5.
+Prepend `--formula FORMULA_BUNDLE TOKEN_CAP CACHE_BYTES` to enable recognition.
 
 ## Lifetime and results
 
@@ -116,5 +145,6 @@ for layout-only work; no fake LaTeX result is produced.
 
 From this package: `dart pub get --enforce-lockfile`, `dart analyze`, and
 `dart test`. Native document tests are opt-in through
-[`tools/check_dart_jobs.py`](../../tools/check_dart_jobs.py). The package is private
-and is not yet added to PoDoFo's application dependencies.
+[`tools/check_dart_jobs.py`](../../tools/check_dart_jobs.py) and
+[`tools/check_formula_jobs.py`](../../tools/check_formula_jobs.py). The package is
+private; PoDoFo currently uses its layout integration while Copy/Listen is developed.

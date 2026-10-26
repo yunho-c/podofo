@@ -21,6 +21,7 @@ use std::{
 pub extern "C" fn podoco_features() -> u32 {
     PODOCO_FEATURE_IMAGES
         | PODOCO_FEATURE_JOBS
+        | PODOCO_FEATURE_FORMULA
         | if cfg!(feature = "coreml") {
             PODOCO_FEATURE_COREML
         } else {
@@ -205,10 +206,14 @@ struct Open {
     schema_version: u32,
     bundle_directory: String,
     options: AnalyzerOptions,
+    formula_bundle_directory: Option<String>,
+    formula_options: Option<podoco::formula::FormulaOptions>,
 }
 /// Verify an existing offline bundle and open one persistent analyzer. Blocks;
 /// bindings must call on a worker. Metadata is UTF-8 JSON with schema_version=0,
 /// bundle_directory, and the complete Rust AnalyzerOptions representation.
+/// With PODOCO_FEATURE_FORMULA, optional formula_bundle_directory enables
+/// recognition; formula_options is a token cap integer (1..=2048, default 2048).
 /// # Safety
 /// Config covers readable bytes for this call; outputs satisfy the standard
 /// disjoint writable contract. Normal builds never download models.
@@ -224,15 +229,31 @@ pub unsafe extern "C" fn podoco_analyzer_open(
             clear(output)?;
             let config: Open = json(config)?;
             schema(config.schema_version)?;
+            if config.formula_options.is_some() && config.formula_bundle_directory.is_none() {
+                return Err(invalid("formula_options requires a formula bundle"));
+            }
             let bundle = ModelBundle::verify(&config.bundle_directory)?;
-            let profile = bundle.manifest().profile.id.clone();
+            let mut model_manifests = vec![bundle.manifest_sha256().clone()];
             let limits = config.options.limits;
-            let analyzer = Analyzer::open(bundle, config.options)?;
-            output.write(handles::insert(Entry::Analyzer(OwnedAnalyzer {
+            let analyzer = if let Some(path) = config.formula_bundle_directory {
+                let formula = podoco::formula::FormulaBundle::verify(path)?;
+                model_manifests.push(formula.manifest_sha256().clone());
+                Analyzer::open_with_formula(
+                    bundle,
+                    formula,
+                    config.options,
+                    config.formula_options.unwrap_or_default(),
+                )?
+            } else {
+                Analyzer::open(bundle, config.options)?
+            };
+            let profile = analyzer.profile().to_owned();
+            output.write(handles::insert(Entry::Analyzer(Box::new(OwnedAnalyzer {
                 analyzer,
                 limits,
                 profile,
-            }))?);
+                model_manifests,
+            })))?);
             Ok(PODOCO_OK)
         })
     }
@@ -254,7 +275,7 @@ pub unsafe extern "C" fn podoco_analyzer_info(
             let Entry::Analyzer(a) = entry.as_ref() else {
                 unreachable!()
             };
-            output.write(buffer(&serde_json::json!({"schema_version":0,"capabilities":a.analyzer.capabilities(),"profile":a.profile,"limits":a.limits}),PODOCO_MAX_METADATA_BYTES)?);
+            output.write(buffer(&serde_json::json!({"schema_version":0,"capabilities":a.analyzer.capabilities(),"profile":a.profile,"limits":a.limits,"model_manifests":a.model_manifests}),PODOCO_MAX_METADATA_BYTES)?);
             Ok(PODOCO_OK)
         })
     }
@@ -306,6 +327,31 @@ pub unsafe extern "C" fn podoco_bundle_verify(
             "capabilities":bundle.declared_capabilities()}),
                 PODOCO_MAX_METADATA_BYTES,
             )?);
+            Ok(PODOCO_OK)
+        })
+    }
+}
+
+/// Verify the pinned formula bundle offline and return schema-v0 identity/profile
+/// and manifest hash. Probe PODOCO_FEATURE_FORMULA before using this ABI-2 extension.
+/// # Safety
+/// Directory is readable UTF-8 for this call; output/error handles are writable,
+/// aligned and disjoint. This blocks on hashing and never downloads or compiles.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn podoco_formula_bundle_verify(
+    directory: PodocoBytes,
+    output: *mut PodocoHandle,
+    error: *mut PodocoHandle,
+) -> PodocoStatus {
+    // SAFETY: Exported borrowed-input and disjoint writable-output contracts.
+    unsafe {
+        guard(error, || {
+            clear(output)?;
+            let path = std::str::from_utf8(input(directory, PODOCO_MAX_METADATA_BYTES)?)
+                .map_err(|_| invalid("bundle path is not UTF-8"))?;
+            let bundle = podoco::formula::FormulaBundle::verify(path)?;
+            output.write(buffer(&serde_json::json!({"schema_version":0,"id":bundle.manifest().id,"profile":bundle.manifest().profile,
+            "manifest_sha256":bundle.manifest_sha256()}),PODOCO_MAX_METADATA_BYTES)?);
             Ok(PODOCO_OK)
         })
     }

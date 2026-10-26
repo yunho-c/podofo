@@ -5,6 +5,7 @@
   bounded JSON, and offline bundle verification.
 - [Layout inference (M2)](layout.md): blocking Rust sessions and the PNG CLI.
 - [Document jobs (M3)](jobs.md): eager analysis, lazy sources, budgets, and cancellation.
+- [Formula recognition (M6)](formula.md): blocking crops and progressive document recognition.
 - [PoDoFo integration (M5)](../../docs/document-analysis.md): rendering, cache, and reader controls.
 - [C ABI](ffi.md): current exported functions and ownership guarantees.
 - [Core ML](coreml.md): optional native dependency, observer policy, and checks.
@@ -20,5 +21,6 @@
 
 M1 implements Rust data/ownership contracts and offline verification. M2 adds
 Core ML layout inference; M3 adds bounded document jobs. M4 exposes the
-[C/Dart layout SDK](internal/m4-validation.md); M5 integrates the reader. The concrete
-PP-DocLayoutV3 bundle remains experimental, not production-qualified.
+[C/Dart layout SDK](internal/m4-validation.md); M5 integrates the reader. M6 adds
+[qualified formula jobs](internal/m6-document-validation.md). Both model profiles
+remain experimental with measured quality limitations.

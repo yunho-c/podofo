@@ -71,7 +71,19 @@ impl PageSource for PngPages {
 }
 
 fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<_> = std::env::args().skip(1).collect();
+    let mut args: Vec<_> = std::env::args().skip(1).collect();
+    let formula = if args.first().is_some_and(|v| v == "--formula") {
+        if args.len() < 4 {
+            return Err("--formula needs BUNDLE TOKEN_CAP CACHE_BYTES".into());
+        }
+        let bundle = podoco::formula::FormulaBundle::verify(&args[1])?;
+        let options = podoco::formula::FormulaOptions::new(args[2].parse()?)?;
+        let cache = args[3].parse::<u64>()?;
+        args.drain(..4);
+        Some((bundle, options, cache))
+    } else {
+        None
+    };
     let [
         bundle,
         policy,
@@ -98,23 +110,31 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let max_update_bytes: u64 = max_update_bytes.parse()?;
     let source = PngPages::open(pages, input_bytes)?;
     let bundle = ModelBundle::verify(bundle)?;
-    let mut options = AnalysisOptions::new(ProfileId::new(&bundle.manifest().profile.id)?);
-    options.formula_scope = FormulaScope::None;
-    let analyzer = Analyzer::open(
-        bundle,
-        AnalyzerOptions {
-            compute_policy,
-            limits: ResourceLimits::new(
-                1,
-                input_bytes,
-                pending_updates.parse()?,
-                result_bytes.parse()?,
-                max_update_bytes,
-                tensor_bytes.parse()?,
-                1,
-            )?,
-        },
-    )?;
+    let analyzer_options = AnalyzerOptions {
+        compute_policy,
+        limits: ResourceLimits::new(
+            1,
+            input_bytes,
+            pending_updates.parse()?,
+            result_bytes.parse()?,
+            max_update_bytes,
+            tensor_bytes.parse()?,
+            formula.as_ref().map_or(1, |(_, _, cache)| *cache),
+        )?,
+    };
+    let all = formula.is_some();
+    let analyzer = match formula {
+        Some((formula, options, _)) => {
+            Analyzer::open_with_formula(bundle, formula, analyzer_options, options)?
+        }
+        None => Analyzer::open(bundle, analyzer_options)?,
+    };
+    let mut options = AnalysisOptions::new(ProfileId::new(analyzer.profile())?);
+    options.formula_scope = if all {
+        FormulaScope::All
+    } else {
+        FormulaScope::None
+    };
     let job = analyzer.analyze_document(source, options, move |update| {
         let bytes = update.to_json(max_update_bytes.min(usize::MAX as u64) as usize)?;
         let stdout = std::io::stdout();

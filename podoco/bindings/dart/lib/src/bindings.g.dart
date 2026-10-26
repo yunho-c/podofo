@@ -42,6 +42,8 @@ external int podoco_analyzer_info(
 /// Verify an existing offline bundle and open one persistent analyzer. Blocks;
 /// bindings must call on a worker. Metadata is UTF-8 JSON with schema_version=0,
 /// bundle_directory, and the complete Rust AnalyzerOptions representation.
+/// With PODOCO_FEATURE_FORMULA, optional formula_bundle_directory enables
+/// recognition; formula_options is a token cap integer (1..=2048, default 2048).
 /// # Safety
 /// Config covers readable bytes for this call; outputs satisfy the standard
 /// disjoint writable contract. Normal builds never download models.
@@ -98,6 +100,24 @@ external int podoco_bundle_verify(
 /// Built features; model-specific capabilities are queried on the analyzer.
 @ffi.Native<ffi.Uint32 Function()>()
 external int podoco_features();
+
+/// Verify the pinned formula bundle offline and return schema-v0 identity/profile
+/// and manifest hash. Probe PODOCO_FEATURE_FORMULA before using this ABI-2 extension.
+/// # Safety
+/// Directory is readable UTF-8 for this call; output/error handles are writable,
+/// aligned and disjoint. This blocks on hashing and never downloads or compiles.
+@ffi.Native<
+  ffi.Int32 Function(
+    PodocoBytes,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_formula_bundle_verify(
+  PodocoBytes directory,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
 
 /// Copy the complete initialized view, including supplied padding/trailing
 /// bytes. Caller storage can be modified/freed immediately after return.
@@ -402,6 +422,8 @@ external ffi.Pointer<ffi.Char> podoco_version();
 const int PODOCO_ERROR = -1;
 
 const int PODOCO_FEATURE_COREML = 2;
+
+const int PODOCO_FEATURE_FORMULA = 8;
 
 const int PODOCO_FEATURE_IMAGES = 1;
 

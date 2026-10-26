@@ -4,7 +4,7 @@ A Rust-first library for efficient document analysis with ergonomic language
 bindings. Podoco lives alongside the PoDoFo application in this Git repository,
 with its own Cargo workspace and development checks.
 
-**Status: M5 layout application integration and M6 single-crop recognition implemented.** Rust provides checked
+**Status: M5 layout application integration and M6 Rust/C/Dart formula analysis implemented.** Rust provides checked
 page images, portable results, offline model bundles, and reusable Core ML
 `LayoutSession` execution for PP-DocLayoutV3. `Analyzer` adds eager document jobs,
 lazy rendering, bounded sinks, and cancellation. See [document jobs](docs/jobs.md),
@@ -15,7 +15,10 @@ The [C ABI](docs/ffi.md) and [Dart SDK](bindings/dart/README.md) expose document
 jobs, copied images, controlled native leases, typed results, and draining
 cancellation. PoDoFo now has an [experimental layout integration](../docs/document-analysis.md).
 PP-FormulaNet_plus-L has a [qualified blocking Rust crop recognizer](docs/formula.md).
-Progressive formula jobs, their C/Dart exposure, and Copy/Listen remain subsequent work.
+Its [progressive document pipeline](docs/internal/m6-document-validation.md) is also
+qualified against the deployed reference; detector recall and recognition quality
+limits remain explicit. Optional math conversion, renderer leases and Copy/Listen
+are the next milestones.
 Core ML via cidre is the first backend, with QNN planned for Qualcomm Windows.
 [Observer exclusion and coexistence](docs/coreml.md) remain the packaging policy.
 The packages are private while the complete analysis contract is established.
@@ -30,7 +33,7 @@ cargo run --locked -p podoco --example version
 cargo run --locked -p podoco --example contracts
 ```
 
-For Dart, use the existing Dart SDK (local validation uses Dart 3.13.5):
+For Dart, use the existing Dart SDK (the M6 native run uses Dart 3.13.4):
 
 ```sh
 cd bindings/dart
@@ -64,8 +67,8 @@ docs/internal/         Maintainer architecture and validation scope
 ```
 
 Rust callers depend directly on `podoco`. Other languages use `podoco-ffi`.
-PoDoFo will consume the public Dart package; no application dependency is added
-by this scaffold. A Flutter-specific adapter belongs under `bindings/flutter/`
+PoDoFo consumes the public Dart package through its analysis adapter. A reusable
+Flutter-specific adapter belongs under `bindings/flutter/`
 when it has concrete model/resource integration to own. Additional language
 bindings can use the same C ABI.
 

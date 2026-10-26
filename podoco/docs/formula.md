@@ -1,9 +1,11 @@
 # Formula recognition
 
 `podoco::formula` provides a blocking single-crop API for the experimental
-PP-FormulaNet_plus-L Core ML profile. Use it off UI/executor threads. Document
-job and C/Dart integration is the second part of M6; this API does not yet add
-formula recognition to a layout-only `Analyzer`.
+PP-FormulaNet_plus-L Core ML profile. Use it off UI/executor threads. For
+progressive document analysis, open `Analyzer::open_with_formula` with both
+verified bundles; see [document jobs](jobs.md). The [Dart SDK](../bindings/dart/README.md)
+exposes the same document pipeline through the C ABI. Opening a layout-only
+analyzer still leaves formula recognition unavailable.
 
 ```rust,no_run
 use podoco::{AnalyzerOptions, ResourceLimits, options::ComputePolicy};

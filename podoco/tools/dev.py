@@ -167,6 +167,39 @@ def test_standalone():
             )
         print("Dart correctly rejected the incompatible native ABI.", flush=True)
 
+        layout_only = root / "layout-only" / library_name()
+        layout_only.parent.mkdir()
+        run(
+            "rustc",
+            "--edition",
+            "2024",
+            "--crate-type",
+            "cdylib",
+            "-C",
+            "strip=none",
+            ROOT / "tests/integration/layout_only_abi.rs",
+            "-o",
+            layout_only,
+        )
+        select_library(layout_only)
+        guard = package / "example/formula_extension_guard.dart"
+        guard.write_text(
+            "import 'package:podoco/podoco.dart';\n"
+            "Future<void> main() async {\n"
+            "  try { await FormulaBundle.verify('unused'); }\n"
+            "  on PodocoException catch (e) {\n"
+            "    if (e.code == 'unsupported_capability') return;\n"
+            "    rethrow;\n"
+            "  }\n"
+            "  throw StateError('Missing formula extension was accepted');\n"
+            "}\n"
+        )
+        run("dart", "run", guard, cwd=package)
+        print(
+            "Dart rejected missing formula support before resolving its symbols.",
+            flush=True,
+        )
+
 
 def check():
     verify_cidre()
