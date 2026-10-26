@@ -1,6 +1,9 @@
 # Model manifests
 
-No model has been selected or bundled yet. Future model contracts use YAML and
+PP-DocLayoutV3 is selected for layout detection; formula-recognition selection is
+ongoing. No production model bundle/manifest has been qualified in Podoco yet.
+The [implementation plan](../../docs/podoco-implementation.md) defines the handoff
+and qualification gates. Model contracts use YAML and
 record immutable upstream revisions, artifact paths/sizes/hashes, tensor and
 pre/postprocessing contracts, runtime/shape requirements, provenance, and
 model-specific licenses.

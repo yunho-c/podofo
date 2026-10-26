@@ -12,8 +12,10 @@ recognizes **all detected inline and displayed formulas**. It publishes layout
 and individual formula results as they become available. Detection can miss
 formulas; “all” describes which detections are processed, not guaranteed recall.
 PoDoFo can copy recognized LaTeX immediately and ask the optional math module for
-speech text to submit to MLSR. Model selection remains a separate qualification
-milestone.
+speech text to submit to MLSR. PP-DocLayoutV3 is the selected layout model;
+formula-model selection and deployed-model qualification remain separate gates.
+The [implementation plan](podoco-implementation.md) sequences the work around
+that pending formula decision.
 
 ## 1. Ownership and dependency direction
 
@@ -630,6 +632,10 @@ warm page/region latency, cancellation drain, peak memory, and copying boundarie
 on pinned inputs/settings. There is no latency or accuracy threshold selected
 by this document without a representative qualification corpus.
 
+The gates below describe the architecture-level scope. The
+[implementation plan](podoco-implementation.md) splits them into M1–M9, including
+a usable layout-only path before the formula model is ready.
+
 | Milestone | Completion gate |
 | --- | --- |
 | A. Domain API and ownership | Implement proposed types, bounded jobs, source/sink transport, copy/lease contracts, generated C/Dart bindings, and deterministic fake-pipeline lifecycle tests. Replace proposed examples with type-checked examples. This does not establish model quality. |
@@ -638,13 +644,14 @@ by this document without a representative qualification corpus.
 | D. Optional math module | Qualify/pin converter, MathCAT, and rule assets; pass syntax, state-isolation, error, and speech-text fixtures; preserve Copy when Listen conversion fails. It can proceed independently of B/C. |
 | E. PoDoFo integration | Integrate the page source/store and renderer lease extension, verify geometry/revision safety, and exercise Copy/Listen through actual MLSR playback. Publish separate correctness, memory/copy, and performance evidence. |
 
-The local PP-DocLayoutV3 experiment is a layout candidate with a Core ML/ANE
-prototype, not an adopted default or formula recognizer. Its evidence is in the
-sibling `docling-layout-heron-coreml` repository under
+PP-DocLayoutV3 is the selected layout model. Its local Core ML/ANE prototype is
+an integration baseline, not yet a qualified Podoco bundle or formula recognizer.
+Its evidence is in the sibling `docling-layout-heron-coreml` repository under
 `results/ppdoclayoutv3-coreml-20261025/REPORT.md`; keep the pinned report/artifact
 provenance when promoting a model. Heron experience also demonstrates why output
 stride handling and detection-versus-recognition qualification must stay explicit.
-This design does not pick a recognition model or freeze model-specific defaults.
+Formula recognition selection is ongoing. This design does not freeze the
+recognizer or unqualified model-specific defaults.
 
 ### Decision record
 

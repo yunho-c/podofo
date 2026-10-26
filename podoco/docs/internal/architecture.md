@@ -74,3 +74,8 @@ cases, then connect a complete progressive Rust-owned pipeline. Optional math
 conversion can be developed independently. PoDoFo integration is done when real
 pages produce qualified results and Copy/Listen work through the public APIs;
 a placeholder `analyze` method would not meet that gate.
+
+The [implementation plan](../../../docs/podoco-implementation.md) gives the
+concrete dependency order and completion gates. PP-DocLayoutV3 is selected for
+layout; the domain, layout runtime, and Dart integration can proceed while
+formula-recognition model selection finishes.

@@ -8,7 +8,8 @@ with its own Cargo workspace and development checks.
 the Dart package builds and bundles the native library for desktop host builds.
 Model loading, inference, OCR, layout detection, reading order, and table
 recognition are not implemented. Core ML via cidre is the selected first backend;
-QNN is planned for Qualcomm Windows targets. No model has been selected yet.
+QNN is planned for Qualcomm Windows targets. PP-DocLayoutV3 is selected for layout
+detection; formula-recognition model selection is ongoing.
 An optional [Core ML dependency](docs/coreml.md) is wired with observer exclusion
 and a real-model coexistence check; the document-analysis runtime remains future work.
 The packages are private while the first analysis contract is established.
