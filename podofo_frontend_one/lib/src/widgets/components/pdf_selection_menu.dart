@@ -302,10 +302,11 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
                 MenuLabel(
                   child: Text('This ${existing.kind.name} is read-only'),
                 ),
-              MenuButton(
-                onPressed: canEdit ? (_) => edit() : null,
-                child: Text('Remove ${existing.kind.name}'),
-              ),
+              if (canEdit)
+                MenuButton(
+                  onPressed: (_) => edit(),
+                  child: Text('Remove ${existing.kind.name}'),
+                ),
             ],
             if (underline)
               MenuButton(

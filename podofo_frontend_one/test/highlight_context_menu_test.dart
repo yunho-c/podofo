@@ -23,7 +23,6 @@ import 'package:podofo_one/src/services/pdf_session.dart';
 import 'package:podofo_one/src/widgets/components/highlight_palette.dart';
 import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 
 import 'fixtures/annotation_pdf.dart';
 import 'fixtures/spaced_text_pdf.dart';
@@ -431,7 +430,7 @@ void main() {
             duration: Duration.zero,
           );
           await tester.pump();
-          Future<void> foreignMenu() async {
+          Future<void> foreignMenu({bool readOnly = true}) async {
             final point = foreignViewer.documentToGlobal(
               const PdfRect(60, 110, 60, 110)
                   .toRectInDocument(
@@ -447,18 +446,22 @@ void main() {
             );
             await waitForNative(
               tester,
-              () => find.text('Remove highlight').evaluate().isNotEmpty,
+              () => find
+                  .text(
+                    readOnly
+                        ? 'This highlight is read-only'
+                        : 'Remove highlight',
+                  )
+                  .evaluate()
+                  .isNotEmpty,
             );
             await tester.pump();
           }
 
           await foreignMenu();
           expect(find.text('This highlight is read-only'), findsOneWidget);
-          final remove = find.ancestor(
-            of: find.text('Remove highlight'),
-            matching: find.byType(shadcn.MenuButton),
-          );
-          expect(tester.widget<shadcn.MenuButton>(remove).onPressed, isNull);
+          expect(find.text('Remove highlight'), findsNothing);
+          expect(find.text('Remove underline'), findsNothing);
           expect(find.byType(HighlightPalette), findsNothing);
           expect(foreign.session.dirty, false);
           await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -469,7 +472,7 @@ void main() {
             ], 0x66abcdef),
           );
           await tester.pump();
-          await foreignMenu();
+          await foreignMenu(readOnly: false);
           expect(find.text('This highlight is read-only'), findsNothing);
           expect(find.byTooltip('Current highlight color'), findsOneWidget);
           final revision = foreign.session.revision;
@@ -485,6 +488,7 @@ void main() {
           expect(remaining.every((a) => !a.owned), true);
           await foreignMenu();
           expect(find.text('This highlight is read-only'), findsOneWidget);
+          expect(find.text('Remove highlight'), findsNothing);
         }
         expect(tester.takeException(), isNull);
       } finally {
