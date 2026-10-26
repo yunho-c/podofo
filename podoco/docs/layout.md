@@ -60,7 +60,8 @@ and result-budget rejection leave the session usable. A native exception or
 prediction failure terminates native state; a later request returns
 `WorkerFailed`. A worker panic unblocks callers with `WorkerFailed`. Analysis
 after ordinary close returns `InvalidInput`. A running native prediction cannot
-be interrupted by this blocking API; document-job cancellation is M3 work.
+be interrupted by this blocking API. [Document jobs](jobs.md) add cooperative
+cancellation and wait for the active prediction before releasing its image.
 
 ## Pixels and decoding
 

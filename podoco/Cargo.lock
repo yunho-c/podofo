@@ -370,6 +370,7 @@ name = "podoco"
 version = "0.1.0"
 dependencies = [
  "cidre",
+ "getrandom",
  "png",
  "serde",
  "serde_json",

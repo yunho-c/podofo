@@ -4,6 +4,7 @@
 - [Rust contracts (M1)](contracts.md): validated inputs/results, image ownership,
   bounded JSON, and offline bundle verification.
 - [Layout inference (M2)](layout.md): blocking Rust sessions and the PNG CLI.
+- [Document jobs (M3)](jobs.md): eager analysis, lazy sources, budgets, and cancellation.
 - [C ABI](ffi.md): current exported functions and ownership guarantees.
 - [Core ML](coreml.md): optional native dependency, observer policy, and checks.
 - [Dart package](../bindings/dart/README.md): native builds and prebuilt libraries.
@@ -17,5 +18,6 @@
   namespacing experiments for loading Podoco alongside MLSR.
 
 M1 implements Rust data/ownership contracts and offline verification. M2 adds
-Core ML layout inference. Document jobs and C/Dart analysis APIs remain planned. The concrete
+Core ML layout inference; M3 adds bounded document jobs. C/Dart analysis APIs
+remain planned. The concrete
 PP-DocLayoutV3 bundle remains experimental, not production-qualified.

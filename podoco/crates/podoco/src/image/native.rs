@@ -68,6 +68,31 @@ pub(super) fn import(
 }
 
 #[cfg(test)]
+pub(super) fn owned_for_test(
+    descriptor: ImageDescriptor,
+    mut bytes: Vec<u8>,
+    released: Box<dyn FnOnce() + Send>,
+) -> PageImage {
+    let pointer = NonNull::new(bytes.as_mut_ptr()).expect("test allocation");
+    // SAFETY: This test helper transfers the initialized Vec into the sole
+    // release closure and exposes no writable aliases during the lease.
+    let lease = unsafe {
+        NativeLease::new(
+            pointer,
+            bytes.len(),
+            bytes.capacity(),
+            Box::new(move || {
+                drop(bytes);
+                released();
+            }),
+        )
+    };
+    import(descriptor, lease, u64::MAX)
+        .ok()
+        .expect("valid test descriptor")
+}
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{AlphaMode, PixelFormat};

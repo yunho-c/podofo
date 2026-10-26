@@ -61,6 +61,9 @@ pub struct LayoutSession {
     failed: bool,
 }
 impl LayoutSession {
+    pub(crate) fn failed(&self) -> bool {
+        self.failed
+    }
     /// Verify runtime support, load the model, and validate its native interface.
     /// The bundle payload must remain immutable for the session's lifetime.
     pub fn open(bundle: ModelBundle, options: AnalyzerOptions) -> Result<Self> {

@@ -144,6 +144,14 @@ impl fmt::Debug for PageImage {
     }
 }
 impl PageImage {
+    #[cfg(test)]
+    pub(crate) fn owned_for_test(
+        descriptor: ImageDescriptor,
+        bytes: Vec<u8>,
+        released: Box<dyn FnOnce() + Send>,
+    ) -> Self {
+        native::owned_for_test(descriptor, bytes, released)
+    }
     /// Copy the entire supplied initialized byte view before returning.
     ///
     /// Padding and trailing bytes count against `byte_budget`. The caller can

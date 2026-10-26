@@ -1,6 +1,7 @@
 # Validation scope
 
-M2 implements and qualifies Rust layout integration; see [M2 validation](m2-validation.md).
+M3 adds bounded Rust document jobs; see [M3 validation](m3-validation.md).
+M2's layout integration is recorded in [M2 validation](m2-validation.md).
 The records below describe earlier milestones, not the current runtime surface.
 
 M1 adds portable contracts, ownership tests, result-schema fixtures, local bundle

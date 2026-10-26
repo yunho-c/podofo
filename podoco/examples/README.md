@@ -8,6 +8,8 @@ Run these from `podoco/`:
   `cargo run --locked -p podoco --example contracts` (no model required).
 - [PNG layout inference](../crates/podoco/examples/page_layout.rs): real sequential
   page analysis through one session; [setup and arguments](../docs/layout.md).
+- [PNG document jobs](../crates/podoco/examples/document_layout.rs): lazy input,
+  progressive JSONL updates, and authoritative completion; [instructions](../docs/jobs.md).
 - [Offline bundles](../crates/podoco/examples/model_bundle.rs): local verification
   and preparation; [instructions](../tools/pp_doclayout_v3/README.md).
 - [Dart identity](../bindings/dart/example/version.dart): run `dart run

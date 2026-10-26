@@ -4,8 +4,9 @@
 the agreed architecture and proposed interfaces. M1 now implements the
 [Rust data/ownership contracts and offline bundles](../podoco/docs/contracts.md).
 M2 implements the blocking [Rust layout session](../podoco/docs/layout.md).
-The analyzer/job execution and Dart examples below remain proposed APIs. C/Dart
-still expose identity only. See the [current architecture](../podoco/docs/internal/architecture.md)
+M3 implements [Rust document jobs](../podoco/docs/jobs.md); the Rust analyzer
+example below now matches that API. Dart analysis and optional math examples
+remain proposed. C/Dart still expose identity only. See the [current architecture](../podoco/docs/internal/architecture.md)
 and [Core ML qualification boundary](../podoco/docs/coreml.md).
 
 The first complete pipeline analyzes a document's pages, detects layout, and
@@ -188,7 +189,7 @@ application-service level; the helper above deliberately demonstrates complete
 resource cleanup. `RecognizedFormula` is the successful outcome payload, so
 Copy/Listen do not accidentally accept failed or truncated recognition.
 
-### Proposed Rust usage
+### Rust document usage
 
 The Rust facade has the same source, update, cancellation, and outcome semantics.
 The sink returns after accepting an owned update; a blocking persistence call
@@ -257,9 +258,10 @@ pub fn equation_for_tts(
 }
 ```
 
-These examples describe the future API, not passing compilation against today's
-identity-only crate. Implementation must replace these examples with
-type-checked examples before declaring API v0 available.
+The document-job facade is implemented; the complete
+[PNG document example](../podoco/crates/podoco/examples/document_layout.rs) is
+compiled by the development checks. Optional math and Dart examples still
+describe future APIs and must be type-checked before complete API v0 availability.
 
 ## 3. Images, coordinate systems, and ownership
 

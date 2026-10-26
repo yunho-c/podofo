@@ -18,6 +18,7 @@ pub mod domain;
 pub mod error;
 pub mod geometry;
 pub mod image;
+pub mod jobs;
 pub mod options;
 #[cfg_attr(not(feature = "coreml"), allow(dead_code))]
 mod pipelines;
@@ -30,6 +31,10 @@ pub use domain::{AnalysisId, DocumentRef, PageDescriptor, PageKey, ProfileId, Re
 pub use error::{Error, ErrorCode, Result};
 pub use geometry::{Affine, PageSpace, Point, Polygon, Rect};
 pub use image::{AlphaMode, ImageDescriptor, PageImage, PageInput, PixelFormat};
+pub use jobs::{
+    AnalysisJob, AnalysisOutcome, AnalysisProgress, Analyzer, CancellationHandle, DeliveryCounts,
+    JobPhase, PageRequest, PageSource, RasterRequirements,
+};
 pub use options::{AnalysisOptions, AnalyzerOptions, Capabilities, FormulaScope, ResourceLimits};
 pub use results::{AnalysisUpdate, FormulaOutcome, LayoutRegion, PageAnalysis};
 pub use session::{LayoutSession, LayoutSessionStats, LayoutTimings};

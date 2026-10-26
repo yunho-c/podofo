@@ -13,6 +13,7 @@ default = []
 coreml = ["dep:cidre"]
 
 [dependencies]
+getrandom = "=0.4.3"
 serde = { version = "=1.0.229", features = ["derive"] }
 serde_json = { version = "=1.0.154", features = ["float_roundtrip"] }
 serde_yaml_ng = "=0.10.0"

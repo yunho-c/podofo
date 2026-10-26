@@ -8,8 +8,8 @@ The [proposed API v0 contract](../../../docs/podoco-api.md) records the agreed
 document/formula pipeline, image ownership, progressive jobs, and optional math
 conversion. M1 implements the [Rust data/ownership contracts](../contracts.md)
 and offline model verification. M2 adds a [blocking layout session](../layout.md),
-private page pipeline, and thread-confined Core ML runtime. Document jobs and
-binding-level analysis remain proposed.
+private page pipeline, and thread-confined Core ML runtime. M3 adds
+[bounded document jobs](../jobs.md). Binding-level analysis remains planned.
 
 ## Dependency direction
 
@@ -21,7 +21,8 @@ PoDoFo / other Dart clients -> Dart API -> podoco-ffi -> podoco
 The core provides validated domain types, image copying, bounded JSON results,
 and local bundle verification. The C ABI and Dart native hook still expose
 identity only. The optional `coreml` feature implements real page-layout
-inference; document scheduling and PDF rendering belong to later layers.
+inference, with Rust-owned scheduling in `jobs`. PDF rendering remains the
+caller's responsibility.
 
 The selected backend direction is Core ML via cidre first, followed by QNN for
 Qualcomm Windows targets. The [cidre coexistence investigation](cidre-coexistence.md)
@@ -70,14 +71,13 @@ coordinate/reading-order checks alongside model-specific quality metrics.
 
 ## Next implementation milestone
 
-M1 establishes domain/ownership contracts and pinned layout inputs. Next,
-implement real Rust PP-DocLayoutV3 inference and bounded jobs, then connect
-the C/Dart API. Formula deployment follows its selection handoff. Optional math
+M1–M3 establish domain/ownership contracts, real Rust layout inference, and
+bounded jobs. M4 connects the C/Dart API. Formula deployment follows its selection handoff. Optional math
 conversion can be developed independently. PoDoFo integration is done when real
 pages produce qualified results and Copy/Listen work through the public APIs;
 a placeholder `analyze` method would not meet that gate.
 
 The [implementation plan](../../../docs/podoco-implementation.md) gives the
 concrete dependency order and completion gates. PP-DocLayoutV3 is selected for
-layout; the domain, layout runtime, and Dart integration can proceed while
-formula-recognition model selection finishes.
+layout and PP-FormulaNet_plus-L for recognition. The latter still requires a
+pinned conversion handoff and native qualification.
