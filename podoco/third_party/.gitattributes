@@ -1,2 +1,5 @@
 # Preserve upstream source formatting, including whitespace in generated bindings.
 cidre/** linguist-vendored -whitespace
+# Published payload hashes cover exact bytes, including upstream CRLF and spaces.
+mathcat/** linguist-vendored -text -whitespace
+mathcat-podoco-host.patch -text -whitespace
