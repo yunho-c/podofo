@@ -1,6 +1,8 @@
 # Podoco documentation
 
 - [Development](development.md): setup, builds, checks, and generated files.
+- [Rust contracts (M1)](contracts.md): validated inputs/results, image ownership,
+  bounded JSON, and offline bundle verification.
 - [C ABI](ffi.md): current exported functions and ownership guarantees.
 - [Core ML](coreml.md): optional native dependency, observer policy, and checks.
 - [Dart package](../bindings/dart/README.md): native builds and prebuilt libraries.
@@ -13,5 +15,6 @@
 - [cidre coexistence](internal/cidre-coexistence.md): observer exclusion and
   namespacing experiments for loading Podoco alongside MLSR.
 
-There is no implemented document analysis API or qualified Podoco model bundle
-yet. Selecting PP-DocLayoutV3 does not by itself establish inference support.
+M1 implements the Rust data/ownership contracts and offline verification. Runtime
+inference, document jobs, and C/Dart analysis APIs remain planned. The concrete
+PP-DocLayoutV3 bundle remains experimental, not production-qualified.

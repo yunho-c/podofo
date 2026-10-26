@@ -170,6 +170,7 @@ def test_standalone():
 
 def check():
     verify_cidre()
+    run(sys.executable, ROOT / "tools/pp_doclayout_v3/reference.py", "check-fixtures")
     run("cargo", "fmt", "--all", "--check")
     run(
         "cargo",
@@ -182,6 +183,7 @@ def check():
         "warnings",
     )
     run("cargo", "test", "--locked", "--workspace")
+    run("cargo", "run", "--locked", "-p", "podoco", "--example", "contracts")
     run(
         "cargo",
         "doc",

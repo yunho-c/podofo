@@ -1,4 +1,9 @@
-# Scaffold validation scope
+# Validation scope
+
+M1 adds portable contracts, ownership tests, result-schema fixtures, local bundle
+verification, and small eager-reference captures. Its specific evidence is
+recorded in [M1 validation](m1-validation.md); the initialization and Core ML
+dependency records below remain historical evidence for their own boundaries.
 
 The development checks exercise Rust library identity, the generated C ABI, and
 the Dart native-asset build/load path. A copied Dart package uses a relocated

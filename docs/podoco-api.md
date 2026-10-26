@@ -1,9 +1,10 @@
 # Podoco architecture and API v0
 
 **Status: proposed implementation contract, 2026-10-25.** This document records
-the agreed architecture and proposed interfaces. The analysis types and examples
-below are not implemented APIs. The current SDK exposes identity queries and an
-optional, tested Core ML dependency; its affine-model probe does not implement
+the agreed architecture and proposed interfaces. M1 now implements the
+[Rust data/ownership contracts and offline bundles](../podoco/docs/contracts.md).
+The analyzer/job execution and Dart examples below remain proposed APIs. C/Dart
+still expose identity only; the optional Core ML affine probe does not implement
 document analysis. See the [current architecture](../podoco/docs/internal/architecture.md)
 and [Core ML qualification boundary](../podoco/docs/coreml.md).
 

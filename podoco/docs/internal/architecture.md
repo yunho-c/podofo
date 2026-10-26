@@ -6,8 +6,9 @@ atomic library/application changes; Podoco must remain usable by other clients.
 
 The [proposed API v0 contract](../../../docs/podoco-api.md) records the agreed
 document/formula pipeline, image ownership, progressive jobs, and optional math
-conversion. It is a design contract; the current implementation remains the
-identity scaffold and qualified Core ML dependency.
+conversion. M1 implements the [Rust data/ownership contracts](../contracts.md)
+and offline model verification. Runtime/job execution and binding-level analysis
+remain proposed, alongside the existing qualified Core ML dependency.
 
 ## Dependency direction
 
@@ -16,9 +17,9 @@ Rust consumers -------------------------> podoco
 PoDoFo / other Dart clients -> Dart API -> podoco-ffi -> podoco
 ```
 
-The initial core exposes library identity only. The C ABI and Dart native hook
-are executable plumbing, not a substitute for a real analysis implementation.
-No document model, inference runtime, or PDF parser is included. The optional
+The core provides validated domain types, image copying, bounded JSON results,
+and local bundle verification. The C ABI and Dart native hook still expose
+identity only. No inference runtime, scheduler, or PDF parser is included. The optional
 `coreml` feature selects the native Apple bindings for the first runtime slice.
 
 The selected backend direction is Core ML via cidre first, followed by QNN for
@@ -68,9 +69,9 @@ coordinate/reading-order checks alongside model-specific quality metrics.
 
 ## Next implementation milestone
 
-Follow the API proposal's milestones: establish domain/ownership contracts,
-qualify layout and formula models with pinned YAML manifests and reference
-cases, then connect a complete progressive Rust-owned pipeline. Optional math
+M1 establishes domain/ownership contracts and pinned layout inputs. Next,
+implement real Rust PP-DocLayoutV3 inference and bounded jobs, then connect
+the C/Dart API. Formula deployment follows its selection handoff. Optional math
 conversion can be developed independently. PoDoFo integration is done when real
 pages produce qualified results and Copy/Listen work through the public APIs;
 a placeholder `analyze` method would not meet that gate.

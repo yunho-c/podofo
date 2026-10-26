@@ -5,6 +5,12 @@ The [API v0 design](podoco-api.md) defines the intended behavior. This plan orde
 its implementation into independently reviewable milestones; it is not evidence
 that the proposed APIs or models are integrated.
 
+**Implementation update:** M1's Rust contracts, image ownership boundary,
+offline bundle tooling, and reference fixtures are implemented. See
+[M1 contracts](../podoco/docs/contracts.md) and
+[validation evidence](../podoco/docs/internal/m1-validation.md). M2–M9 remain
+planned; the starting-point inventory below records the original baseline.
+
 PP-DocLayoutV3 is the selected layout model. Formula-recognition selection is
 ongoing and expected later today; the implementation sequence does not depend on
 that timing. Model selection, availability of a converted artifact, and qualified

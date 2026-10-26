@@ -4,10 +4,12 @@ A Rust-first library for efficient document analysis with ergonomic language
 bindings. Podoco lives alongside the PoDoFo application in this Git repository,
 with its own Cargo workspace and development checks.
 
-**Status: initialized scaffold.** Rust, C, and Dart expose library identity;
-the Dart package builds and bundles the native library for desktop host builds.
-Model loading, inference, OCR, layout detection, reading order, and table
-recognition are not implemented. Core ML via cidre is the selected first backend;
+**Status: M1 Rust contracts and offline bundles implemented.** Rust provides
+validated identities/geometry, copied images, portable analysis results, and
+local model-bundle verification. See [Rust contracts](docs/contracts.md).
+C and Dart still expose identity only; the Dart package bundles the native
+library for desktop host builds. Model loading, inference, job scheduling,
+and application integration remain future work. Core ML via cidre is the selected first backend;
 QNN is planned for Qualcomm Windows targets. PP-DocLayoutV3 is selected for layout
 detection; formula-recognition model selection is ongoing.
 An optional [Core ML dependency](docs/coreml.md) is wired with observer exclusion
@@ -21,6 +23,7 @@ From this directory, with stable Rust, Python 3.11+, and a native C toolchain:
 ```sh
 python3 tools/dev.py build
 cargo run --locked -p podoco --example version
+cargo run --locked -p podoco --example contracts
 ```
 
 For Dart, use the existing Dart SDK (local validation uses Dart 3.13.5):
@@ -31,8 +34,10 @@ dart pub get --enforce-lockfile
 dart run example/version.dart
 ```
 
-Both examples report `Podoco 0.1.0`. Dart checks C ABI compatibility before
-reading the native version. No model weights are needed or downloaded.
+The version examples report `Podoco 0.1.0`; `contracts` demonstrates copied-image
+construction and bounded result serialization without inference. Dart checks C
+ABI compatibility before reading the native version. No model weights are needed
+or downloaded. [Offline model preparation](tools/pp_doclayout_v3/README.md) is explicit.
 
 ## Layout
 
@@ -42,12 +47,13 @@ crates/podoco/          Public Rust API and future analysis implementation
 crates/podoco-ffi/      Shared C ABI adapter; dynamic and static libraries
 include/podoco.h        Generated C header
 bindings/dart/         Dart API, generated FFI, and native build hook
-model-manifests/        Model contract policy; no model is selected yet
+model-manifests/        Pinned experimental PP-DocLayoutV3 YAML contract
 examples/              Index of executable examples
 tests/integration/     Actual C caller checks
 third_party/cidre/     Pinned MIT-licensed Apple bindings with observer exclusion
 tools/codegen/         Pinned C header generator
 tools/dev.py           Build, generation, and validation commands
+tools/pp_doclayout_v3/  Original fixture generation and offline reference tooling
 docs/                  Consumer setup and API contracts
 docs/internal/         Maintainer architecture and validation scope
 ```
