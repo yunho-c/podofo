@@ -1437,6 +1437,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "podoco-models"
+version = "0.1.0"
+dependencies = [
+ "podoco",
+ "serde",
+ "serde_json",
+ "serde_yaml_ng",
+ "sha2",
+ "tempfile",
+]
+
+[[package]]
 name = "portable-atomic"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
