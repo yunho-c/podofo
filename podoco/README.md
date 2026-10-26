@@ -4,7 +4,7 @@ A Rust-first library for efficient document analysis with ergonomic language
 bindings. Podoco lives alongside the PoDoFo application in this Git repository,
 with its own Cargo workspace and development checks.
 
-**Status: M5 layout application integration and M6 Rust/C/Dart formula analysis implemented.** Rust provides checked
+**Status: M5 app layout, M6 formula analysis, and M7 optional math conversion implemented.** Rust provides checked
 page images, portable results, offline model bundles, and reusable Core ML
 `LayoutSession` execution for PP-DocLayoutV3. `Analyzer` adds eager document jobs,
 lazy rendering, bounded sinks, and cancellation. See [document jobs](docs/jobs.md),
@@ -17,7 +17,8 @@ cancellation. PoDoFo now has an [experimental layout integration](../docs/docume
 PP-FormulaNet_plus-L has a [qualified blocking Rust crop recognizer](docs/formula.md).
 Its [progressive document pipeline](docs/internal/m6-document-validation.md) is also
 qualified against the deployed reference; detector recall and recognition quality
-limits remain explicit. Optional math conversion, renderer leases and Copy/Listen
+limits remain explicit. [Optional math conversion](docs/math.md) exposes isolated
+MathML/plain-speech workers through Rust/C/Dart. Renderer leases and Copy/Listen
 are the next milestones.
 Core ML via cidre is the first backend, with QNN planned for Qualcomm Windows.
 [Observer exclusion and coexistence](docs/coreml.md) remain the packaging policy.

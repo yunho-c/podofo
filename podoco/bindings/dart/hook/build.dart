@@ -11,6 +11,11 @@ Future<void> main(List<String> args) async {
     if (coreml is! bool) {
       throw FormatException('Podoco coreml must be true or false.');
     }
+    final math = input.userDefines['math'] ?? false;
+    if (math is! bool) {
+      throw FormatException('Podoco math must be true or false.');
+    }
+    final features = [if (coreml) 'coreml', if (math) 'math'];
     if (coreml && config.targetOS != OS.macOS) {
       throw UnsupportedError('Podoco Core ML host builds require macOS.');
     }
@@ -75,7 +80,7 @@ Future<void> main(List<String> args) async {
           '--release',
           '--package',
           'podoco-ffi',
-          if (coreml) ...['--features', 'coreml'],
+          if (features.isNotEmpty) ...['--features', features.join(',')],
           '--target',
           target,
           '--target-dir',
@@ -124,6 +129,24 @@ Future<void> main(List<String> args) async {
           output.dependencies.add(entry.uri);
         }
         output.dependencies.add(root.resolve('third_party/cidre-source.json'));
+      }
+      if (math) {
+        final vendored = Directory.fromUri(
+          root.resolve('third_party/mathcat/'),
+        );
+        output.dependencies.add(vendored.uri);
+        await for (final entry in vendored.list(
+          recursive: true,
+          followLinks: false,
+        )) {
+          output.dependencies.add(entry.uri);
+        }
+        output.dependencies.add(
+          root.resolve('third_party/mathcat-source.json'),
+        );
+        output.dependencies.add(
+          root.resolve('third_party/mathcat-podoco-host.patch'),
+        );
       }
     }
     if (!File.fromUri(source).existsSync()) {

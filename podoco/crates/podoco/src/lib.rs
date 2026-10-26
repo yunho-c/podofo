@@ -20,6 +20,8 @@ pub mod formula;
 pub mod geometry;
 pub mod image;
 pub mod jobs;
+#[cfg(feature = "math")]
+pub mod math;
 pub mod options;
 #[cfg_attr(not(feature = "coreml"), allow(dead_code))]
 mod pipelines;

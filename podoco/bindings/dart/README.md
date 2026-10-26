@@ -19,6 +19,7 @@ hooks:
   user_defines:
     podoco:
       coreml: true
+      math: true # Optional; independent of Core ML
 ```
 
 It needs the Rust workspace, Rust on `PATH`, and Xcode. The Core ML build uses
@@ -40,6 +41,16 @@ Use `.so` on Linux or `podoco_ffi.dll` on Windows. ABI 2 is checked before analy
 symbols are used; an old identity-only library fails cleanly. `coreMlAvailable`
 reports the compiled backend flag. `Analyzer.capabilities` reports loaded-model
 operations. Prebuilt files must themselves satisfy the platform/deployment floor.
+
+## Math conversion
+
+The optional `MathProcessor` verifies separately provisioned rules and converts
+explicit `MathInput.latex`/`MathInput.mathml` to MathML or plain speech text.
+It needs no ML model or MLSR. `mathAvailable` guards extension symbols in older
+ABI-2 artifacts. Calls run off the UI isolate with bounded admission; await
+`dispose()` to cancel queued calls and drain active work. See the [API, assets
+and limits](../../docs/math.md) and [JSONL example](example/math.dart).
+Recognized LaTeX remains usable when conversion fails.
 
 ## Analyze
 

@@ -13,6 +13,7 @@ import tempfile
 import tomllib
 
 from verify_cidre import verify as verify_cidre
+from verify_mathcat import verify as verify_mathcat
 
 ROOT = Path(__file__).resolve().parents[1]
 DART = ROOT / "bindings/dart"
@@ -186,25 +187,30 @@ def test_standalone():
         guard.write_text(
             "import 'package:podoco/podoco.dart';\n"
             "Future<void> main() async {\n"
-            "  try { await FormulaBundle.verify('unused'); }\n"
-            "  on PodocoException catch (e) {\n"
-            "    if (e.code == 'unsupported_capability') return;\n"
-            "    rethrow;\n"
+            "  for (final call in [() => FormulaBundle.verify('unused'),\n"
+            "                       () => MathRules.verify('unused')]) {\n"
+            "    var rejected = false;\n"
+            "    try { await call(); } on PodocoException catch (e) {\n"
+            "      if (e.code != 'unsupported_capability') rethrow;\n"
+            "      rejected = true;\n"
+            "    }\n"
+            "    if (!rejected) throw StateError('Missing extension accepted');\n"
             "  }\n"
-            "  throw StateError('Missing formula extension was accepted');\n"
             "}\n"
         )
         run("dart", "run", guard, cwd=package)
         print(
-            "Dart rejected missing formula support before resolving its symbols.",
+            "Dart rejected missing formula/math support before resolving symbols.",
             flush=True,
         )
 
 
 def check():
     verify_cidre()
+    verify_mathcat()
     run(sys.executable, ROOT / "tools/pp_doclayout_v3/reference.py", "check-fixtures")
-    run("cargo", "fmt", "--all", "--check")
+    # Keep upstream formatting and source pins intact in path dependencies.
+    run("cargo", "fmt", "-p", "podoco", "-p", "podoco-ffi", "-p", "podoco-codegen", "--check")
     run(
         "cargo",
         "clippy",

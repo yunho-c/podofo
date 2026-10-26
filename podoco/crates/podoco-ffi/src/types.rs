@@ -17,6 +17,8 @@ pub const PODOCO_FEATURE_COREML: u32 = 2;
 /// Formula bundle verification and analyzer formula configuration are available.
 /// Probe this additive ABI-2 extension before resolving formula entry points.
 pub const PODOCO_FEATURE_FORMULA: u32 = 8;
+/// Optional independent MathCAT/MathML conversion support.
+pub const PODOCO_FEATURE_MATH: u32 = 16;
 /// Current semantic result and FFI metadata schema.
 pub const PODOCO_SCHEMA_VERSION: u32 = 0;
 /// Maximum input metadata JSON bytes (4 MiB), independent of image size.

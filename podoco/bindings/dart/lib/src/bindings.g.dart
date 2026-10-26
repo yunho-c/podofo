@@ -301,6 +301,83 @@ external int podoco_job_start(
 @ffi.Native<ffi.Uint64 Function()>()
 external int podoco_live_handles();
 
+/// Cancel queued conversions and drain active work. Idempotent; release the
+/// processor handle afterward. Other analyzers/math/TTS workers are independent.
+/// # Safety
+/// Error is null or aligned writable storage; it is disjoint from other outputs.
+@ffi.Native<ffi.Int32 Function(ffi.Uint64, ffi.Pointer<ffi.Uint64>)>()
+external int podoco_math_close(int processor, ffi.Pointer<ffi.Uint64> error);
+
+/// Blocking conversion: schema-v0 {input,speech_options?}. Without speech options
+/// returns {schema_version:0,kind:"mathml",value}; with them kind is "speech".
+/// Call off UI threads; a full processor queue returns limit_exceeded.
+/// # Safety
+/// Config covers readable bytes; output/error are aligned, writable, disjoint.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    PodocoBytes,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_math_convert(
+  int processor,
+  PodocoBytes config,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Read schema-v0 effective limits, rule/profile identities and language/style availability.
+/// # Safety
+/// Output/error are aligned, writable, disjoint; handles may be arbitrary IDs.
+@ffi.Native<
+  ffi.Int32 Function(
+    ffi.Uint64,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_math_info(
+  int processor,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Open a math processor with schema-v0 {rules_directory,limits}. This verifies
+/// assets again, owns a separate conversion worker, and never loads ML models.
+/// # Safety
+/// Config covers readable bytes; output/error are aligned, writable, disjoint.
+@ffi.Native<
+  ffi.Int32 Function(
+    PodocoBytes,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_math_open(
+  PodocoBytes config,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
+/// Verify the exact offline rule inventory. Require PODOCO_FEATURE_MATH before
+/// resolving any math extension export. Blocks on filesystem hashing.
+/// # Safety
+/// Directory covers readable UTF-8; output/error are aligned, writable, disjoint.
+@ffi.Native<
+  ffi.Int32 Function(
+    PodocoBytes,
+    ffi.Pointer<ffi.Uint64>,
+    ffi.Pointer<ffi.Uint64>,
+  )
+>()
+external int podoco_math_rules_verify(
+  PodocoBytes directory,
+  ffi.Pointer<ffi.Uint64> output,
+  ffi.Pointer<ffi.Uint64> error,
+);
+
 /// Release any owned handle; zero is a no-op, stale nonzero handles fail.
 /// Last-owner release can block while an analyzer/job drains. Do not call from
 /// its source/sink wake callback or a UI thread. No registry lock is held while
@@ -428,6 +505,8 @@ const int PODOCO_FEATURE_FORMULA = 8;
 const int PODOCO_FEATURE_IMAGES = 1;
 
 const int PODOCO_FEATURE_JOBS = 4;
+
+const int PODOCO_FEATURE_MATH = 16;
 
 const int PODOCO_MAX_METADATA_BYTES = 4194304;
 

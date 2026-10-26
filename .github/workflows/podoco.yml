@@ -37,10 +37,14 @@ jobs:
           sdk: '3.13.5'
       - name: Check APIs, generated header, and relocated Dart package
         run: python tools/dev.py check
+      - name: Optional portable math module
+        run: |
+          cargo test --locked --workspace --features math
+          cargo clippy --locked --workspace --all-targets --features math -- -D warnings
       - name: Core ML observer exclusion and same-process loading
         if: runner.os == 'macOS'
         run: |
-          cargo clippy --locked --workspace --all-targets --features coreml -- -D warnings
+          cargo clippy --locked --workspace --all-targets --features coreml,math -- -D warnings
           python tools/check_coreml.py
 
   generated:
@@ -77,3 +81,4 @@ jobs:
           persist-credentials: false
       - uses: dtolnay/rust-toolchain@1.88.0
       - run: cargo +1.88.0 test --locked -p podoco -p podoco-ffi
+      - run: cargo +1.88.0 test --locked -p podoco -p podoco-ffi --features math

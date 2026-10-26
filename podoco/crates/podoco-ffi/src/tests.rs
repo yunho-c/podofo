@@ -397,3 +397,54 @@ fn native_document_transport_and_cancellation() {
     }
     assert_eq!(podoco_live_handles(), baseline);
 }
+
+#[test]
+fn math_extension_checks_feature_metadata_and_handle_kind() {
+    assert_eq!(
+        podoco_features() & PODOCO_FEATURE_MATH != 0,
+        cfg!(feature = "math")
+    );
+    let (mut output, mut error) = (123, 0);
+    // SAFETY: All input arrays and disjoint output scalars remain live.
+    unsafe {
+        assert_eq!(
+            podoco_math_open(bytes(b"{}"), &mut output, &mut error),
+            PODOCO_ERROR
+        );
+        assert_eq!(output, 0);
+        assert_eq!(
+            take_json(error)["code"],
+            if cfg!(feature = "math") {
+                "invalid_input"
+            } else {
+                "unsupported_capability"
+            }
+        );
+        assert_eq!(
+            podoco_math_info(999999, &mut output, &mut error),
+            PODOCO_ERROR
+        );
+        assert_eq!(output, 0);
+        assert_eq!(
+            take_json(error)["code"],
+            if cfg!(feature = "math") {
+                "invalid_input"
+            } else {
+                "unsupported_capability"
+            }
+        );
+        assert_eq!(podoco_math_close(999999, &mut error), PODOCO_ERROR);
+        take_json(error);
+        assert_eq!(
+            podoco_math_convert(
+                999999,
+                bytes(b"{\"schema_version\":999}"),
+                &mut output,
+                &mut error
+            ),
+            PODOCO_ERROR
+        );
+        assert_eq!(output, 0);
+        take_json(error);
+    }
+}

@@ -14,3 +14,4 @@ import 'bindings.g.dart' as native;
 part 'analysis_types.dart';
 part 'analysis_native.dart';
 part 'analysis_jobs.dart';
+part 'math.dart';

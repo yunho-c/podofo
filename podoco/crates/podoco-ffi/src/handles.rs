@@ -14,6 +14,8 @@ pub(crate) struct OwnedAnalyzer {
 }
 pub(crate) enum Entry {
     Analyzer(Box<OwnedAnalyzer>),
+    #[cfg(feature = "math")]
+    Math(Box<podoco::math::MathProcessor>),
     Job(crate::transport::OwnedJob),
     Image(PageImage),
     Buffer(Box<[u8]>),
@@ -24,11 +26,15 @@ pub(crate) enum Kind {
     Buffer,
     Analyzer,
     Job,
+    #[cfg(feature = "math")]
+    Math,
 }
 impl Entry {
     fn kind(&self) -> Kind {
         match self {
             Self::Analyzer(_) => Kind::Analyzer,
+            #[cfg(feature = "math")]
+            Self::Math(_) => Kind::Math,
             Self::Job(_) => Kind::Job,
             Self::Image(_) => Kind::Image,
             Self::Buffer(_) => Kind::Buffer,

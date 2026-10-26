@@ -34,6 +34,8 @@ pub enum ErrorCode {
     Layout,
     /// Formula recognition failed.
     Recognition,
+    /// LaTeX/MathML conversion or mathematical speech failed.
+    Conversion,
     /// The inference backend failed.
     Backend,
     /// Delivery to the application failed.

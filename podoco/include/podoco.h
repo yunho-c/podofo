@@ -25,6 +25,11 @@
 #define PODOCO_FEATURE_FORMULA 8
 
 /**
+ * Optional independent MathCAT/MathML conversion support.
+ */
+#define PODOCO_FEATURE_MATH 16
+
+/**
  * Current semantic result and FFI metadata schema.
  */
 #define PODOCO_SCHEMA_VERSION 0
@@ -399,6 +404,51 @@ PodocoStatus podoco_job_abandon(PodocoHandle job, PodocoHandle *error);
  * Count/error outputs are aligned, writable, non-null (count), and disjoint.
  */
 PodocoStatus podoco_job_drain_state(PodocoHandle job, uint64_t *count, PodocoHandle *error);
+
+/**
+ * Verify the exact offline rule inventory. Require PODOCO_FEATURE_MATH before
+ * resolving any math extension export. Blocks on filesystem hashing.
+ * # Safety
+ * Directory covers readable UTF-8; output/error are aligned, writable, disjoint.
+ */
+PodocoStatus podoco_math_rules_verify(PodocoBytes directory,
+                                      PodocoHandle *output,
+                                      PodocoHandle *error);
+
+/**
+ * Open a math processor with schema-v0 {rules_directory,limits}. This verifies
+ * assets again, owns a separate conversion worker, and never loads ML models.
+ * # Safety
+ * Config covers readable bytes; output/error are aligned, writable, disjoint.
+ */
+PodocoStatus podoco_math_open(PodocoBytes config, PodocoHandle *output, PodocoHandle *error);
+
+/**
+ * Read schema-v0 effective limits, rule/profile identities and language/style availability.
+ * # Safety
+ * Output/error are aligned, writable, disjoint; handles may be arbitrary IDs.
+ */
+PodocoStatus podoco_math_info(PodocoHandle processor, PodocoHandle *output, PodocoHandle *error);
+
+/**
+ * Blocking conversion: schema-v0 {input,speech_options?}. Without speech options
+ * returns {schema_version:0,kind:"mathml",value}; with them kind is "speech".
+ * Call off UI threads; a full processor queue returns limit_exceeded.
+ * # Safety
+ * Config covers readable bytes; output/error are aligned, writable, disjoint.
+ */
+PodocoStatus podoco_math_convert(PodocoHandle processor,
+                                 PodocoBytes config,
+                                 PodocoHandle *output,
+                                 PodocoHandle *error);
+
+/**
+ * Cancel queued conversions and drain active work. Idempotent; release the
+ * processor handle afterward. Other analyzers/math/TTS workers are independent.
+ * # Safety
+ * Error is null or aligned writable storage; it is disjoint from other outputs.
+ */
+PodocoStatus podoco_math_close(PodocoHandle processor, PodocoHandle *error);
 
 #ifdef __cplusplus
 }  // extern "C"

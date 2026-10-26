@@ -1,5 +1,35 @@
 # Pinned native dependencies
 
+## MathCAT host integration
+
+`mathcat/` contains the published MathCAT 0.7.7 Rust source/manifests/build script,
+README and [MIT license](mathcat/LICENSE). The exact published crate, whose VCS
+metadata declares a dirty source tree, is the authority; the Git commit alone is
+not a reproducible replacement. [mathcat-source.json](mathcat-source.json) records
+its archive checksum, selected file inventory and the
+[host patch](mathcat-podoco-host.patch). Upstream tests/site images are omitted;
+rules are separately provisioned, hash-verified offline assets.
+
+The opt-in `podoco-host` feature disables installation of MathCAT's process-global
+panic hook and discovery of host user preferences, and enables upstream
+`no-unsafe`. Its build script watches embedded rules only with `include-zip`,
+which Podoco does not enable. Other feature configurations preserve upstream
+behavior. Podoco uses a direct path dependency, without patching other MathCAT
+consumers in the application graph or modifying the registry cache.
+
+Run `python3 tools/verify_mathcat.py` to check every source and patch hash. Start
+updates from the verified published archive, reapply and review the host patch,
+then requalify the rules, process-global effects, worker isolation and conversion
+corpus. Retain upstream formatting: use `cargo fmt -p podoco -p podoco-ffi -p
+podoco-codegen`, since `cargo fmt --all` traverses local path dependencies.
+
+The optional registry dependencies `pulldown-latex` 0.8.0 (MIT) and
+`roxmltree` 0.21.1 (MIT/Apache-2.0) retain their published licenses and are pinned
+in Cargo.toml/Cargo.lock. See [math conversion](../docs/math.md) for the strict
+profile, rule asset/license preparation and qualification boundaries.
+
+## cidre observer exclusion
+
 `cidre/` contains the complete published cidre 0.29.0 crate from upstream commit
 `6f3b3626c98460301c979b4a76f60e23eb3f99f0`, with the
 [observer feature patch](../tools/cidre_coexistence/patches/cidre-0.29.0-optional.patch)

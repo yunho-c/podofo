@@ -14,6 +14,7 @@ crate-type = ["cdylib", "staticlib"]
 [features]
 default = []
 coreml = ["podoco/coreml"]
+math = ["podoco/math"]
 
 [dependencies]
 podoco.workspace = true

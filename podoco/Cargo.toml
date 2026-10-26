@@ -1,6 +1,6 @@
 [workspace]
 members = ["crates/*", "tools/codegen"]
-exclude = ["third_party/cidre"]
+exclude = ["third_party/cidre", "third_party/mathcat"]
 default-members = ["crates/podoco", "crates/podoco-ffi"]
 resolver = "3"
 

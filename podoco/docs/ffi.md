@@ -18,6 +18,19 @@ libraries lack this extension and may ignore unknown configuration fields.
 The formula flag means these APIs exist; Core ML support and a loaded formula
 bundle are additionally required for inference. Dart performs both guards.
 
+The independent optional math extension requires `PODOCO_FEATURE_MATH` (16)
+before resolving `podoco_math_*`. `podoco_math_rules_verify` takes a UTF-8 rules
+directory. `podoco_math_open` takes schema-v0 `{rules_directory,limits}` and
+returns a processor handle; `podoco_math_info` returns authoritative limits,
+rule/profile identities and installed language/style pairs. Conversion accepts
+schema-v0 `{input:{format,text,display_kind},speech_options?}`. It returns
+`{schema_version:0,kind:"mathml"|"speech",value}`; speech options are the complete
+snapshot documented in [math conversion](math.md). These calls block and belong
+off UI threads. Close cancels queued work and drains active conversion, then
+release the processor handle. No analyzer/model/TTS handle is required. Feature-
+disabled builds export owned unsupported errors; older ABI-2 builds may lack the
+symbols altogether, so the feature guard is still required.
+
 ## Handles and buffers
 
 `PodocoHandle` is an opaque, never-reused registry ID fitting signed 64 bits.

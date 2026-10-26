@@ -6,9 +6,11 @@
 mod api;
 mod handles;
 mod jobs;
+mod math;
 mod transport;
 mod types;
 pub use jobs::*;
+pub use math::*;
 mod wire;
 pub use api::*;
 pub use types::*;
