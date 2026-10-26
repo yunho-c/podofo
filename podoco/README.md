@@ -13,7 +13,8 @@ experimental; its known export differences are recorded in the qualification.
 
 The [C ABI](docs/ffi.md) and [Dart SDK](bindings/dart/README.md) expose document
 jobs, copied images, controlled native leases, typed results, and draining
-cancellation. Formula recognition and application integration are subsequent milestones. PP-FormulaNet_plus-L is
+cancellation. PoDoFo now has an [experimental layout integration](../docs/document-analysis.md).
+Formula recognition and Copy/Listen remain subsequent milestones. PP-FormulaNet_plus-L is
 selected for recognition; its native conversion and qualification remain work.
 Core ML via cidre is the first backend, with QNN planned for Qualcomm Windows.
 [Observer exclusion and coexistence](docs/coreml.md) remain the packaging policy.

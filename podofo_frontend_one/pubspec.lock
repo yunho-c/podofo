@@ -777,6 +777,13 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.8"
+  podoco:
+    dependency: "direct main"
+    description:
+      path: "../podoco/bindings/dart"
+      relative: true
+    source: path
+    version: "0.1.0"
   pointycastle:
     dependency: transitive
     description:

@@ -73,7 +73,7 @@ coordinate/reading-order checks alongside model-specific quality metrics.
 ## Next implementation milestone
 
 M1–M4 establish domain/ownership contracts, real layout inference, bounded
-jobs, and C/Dart APIs. M5 connects PoDoFo rendering and persistence. Formula deployment follows its selection handoff. Optional math
+jobs, and C/Dart APIs. M5 connects [PoDoFo rendering and persistence](../../../docs/document-analysis.md). Formula deployment follows its selection handoff. Optional math
 conversion can be developed independently. PoDoFo integration is done when real
 pages produce qualified results and Copy/Listen work through the public APIs;
 a placeholder `analyze` method would not meet that gate.

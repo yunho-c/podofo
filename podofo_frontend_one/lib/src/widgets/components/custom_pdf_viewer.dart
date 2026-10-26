@@ -11,6 +11,10 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../analysis/analysis_controller.dart';
+import '../../analysis/analysis_painter.dart';
+import '../../providers/analysis_provider.dart';
+
 import '../../providers/document_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_state_provider.dart';
@@ -344,8 +348,32 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     _overlay = null;
   }
 
+  AnalysisController? _analysis;
+  Object? _analysisPage;
+  bool? _analysisVisible;
+  bool _analysisRepaintQueued = false;
+  void _analysisChanged() {
+    if (!mounted ||
+        (identical(_analysisPage, _analysis?.visibleUpdate) &&
+            _analysisVisible == _analysis?.showRegions)) {
+      return;
+    }
+    _analysisPage = _analysis?.visibleUpdate;
+    _analysisVisible = _analysis?.showRegions;
+    if (_analysisRepaintQueued) return;
+    _analysisRepaintQueued = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _analysisRepaintQueued = false;
+      if (!mounted) return;
+      final controller = ref.read(pdfViewerControllerProvider);
+      if (controller.isReady) controller.invalidate();
+    });
+    WidgetsBinding.instance.ensureVisualUpdate();
+  }
+
   @override
   void dispose() {
+    _analysis?.removeListener(_analysisChanged);
     _linkAnimation.dispose();
     _narration.removeListener(_onNarrationChanged);
     _narration.scrubPreview.removeListener(_onScrubPreviewChanged);
@@ -355,6 +383,12 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
 
   @override
   Widget build(BuildContext context) {
+    final analysis = ref.watch(analysisControllerProvider).asData?.value;
+    if (!identical(_analysis, analysis)) {
+      _analysis?.removeListener(_analysisChanged);
+      _analysis = analysis;
+      _analysis?.addListener(_analysisChanged);
+    }
     final document = ref.watch(currentDocumentProvider);
     if (_annotationMenuRequest?.document.session != document?.session) {
       _annotationMenuRequest = null;
@@ -431,6 +465,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
           }
         },
         pagePaintCallbacks: [
+          if (analysis != null)
+            (canvas, rect, page) =>
+                paintAnalysis(canvas, rect, page, analysis, document.session),
           if (searcher != null) searcher.pageTextMatchPaintCallback,
           (canvas, rect, page) =>
               paintNarration(canvas, rect, page, _narration, document.session),

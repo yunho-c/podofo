@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:crypto/crypto.dart';
@@ -37,6 +38,15 @@ class PdfSession {
   final Lock _lock = Lock();
   String? fileAccessWarning;
   int revision = 0;
+  // Unsaved edit counters can repeat after reopening the same bytes. Keep those
+  // revisions specific to this session; clean revision zero remains reusable.
+  final String _analysisSession = List<int>.generate(
+    16,
+    (_) => Random.secure().nextInt(256),
+  ).map((n) => n.toRadixString(16).padLeft(2, '0')).join();
+  String get analysisRevision => revision == 0
+      ? _fingerprint
+      : '$_fingerprint-$_analysisSession-$revision';
   final PdfAnnotationAdapter _adapter;
   final int _historyByteLimit, _historyEntryLimit;
   DocumentHistory? _history;
