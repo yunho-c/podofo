@@ -1,0 +1,146 @@
+--- a/pubspec.yaml
++++ b/pubspec.yaml
+@@ -7,7 +7,7 @@
+ 
+ environment:
+   sdk: ^3.13.0
+-resolution: workspace
++publish_to: none
+ 
+ dependencies:
+   pdfium_dart: ^0.3.1
+--- a/lib/src/pdf_image.dart
++++ b/lib/src/pdf_image.dart
+@@ -46,3 +46,42 @@
+   @override
+   void dispose() {}
+ }
++
++/// Exclusive native BGRA allocation for an immutable foreign reader.
++///
++/// Advanced API: [address] is valid only while this lease is retained and not
++/// released. Do not mutate the allocation, expose writable views, transfer the
++/// lease between isolates, or release it until every foreign reader has stopped.
++/// No PDF document/page handle is retained. Explicit [release] is preferred;
++/// native implementations may use a finalizer as a last-resort leak fallback.
++abstract interface class PdfNativeImageLease {
++  int get width;
++  int get height;
++  int get rowBytes;
++  int get initializedBytes;
++
++  /// Requested allocation size, excluding allocator bookkeeping.
++  int get retainedBytes;
++  int get address;
++  bool get isReleased;
++
++  /// Free once, after the last reader. Repeated release is harmless.
++  void release();
++}
++
++/// Capability implemented by renderers that can transfer exclusive storage.
++abstract interface class PdfNativeImageOwner implements PdfImage {
++  /// Return null when a writable pixel view has already escaped. A successful
++  /// transfer invalidates image pixel access; image disposal becomes a no-op.
++  /// Calling on an already disposed/transferred image throws [StateError].
++  PdfNativeImageLease? tryTransferNativeImage();
++}
++
++extension PdfImageNativeOwnership on PdfImage {
++  /// Transfer newly rendered storage without copying when supported and when
++  /// [PdfImage.pixels] has never been read. Otherwise return null for copying.
++  PdfNativeImageLease? tryTakeNativeLease() {
++    final image = this;
++    return image is PdfNativeImageOwner ? image.tryTransferNativeImage() : null;
++  }
++}
+--- a/lib/src/native/pdfrx_pdfium.dart
++++ b/lib/src/native/pdfrx_pdfium.dart
+@@ -1,4 +1,4 @@
+-// ignore_for_file: public_member_api_docs, sort_constructors_first
++// ignore_for_file: public_member_api_docs, sort_constructors_first, prefer_initializing_formals
+ import 'dart:async';
+ import 'dart:collection';
+ import 'dart:convert';
+@@ -2093,21 +2093,76 @@
+   }
+ }
+ 
+-class _PdfImagePdfium extends PdfImage {
++class _PdfImagePdfium extends PdfImage implements PdfNativeImageOwner {
+   @override
+   final int width;
+   @override
+   final int height;
+   @override
+-  Uint8List get pixels => _buffer.asTypedList(width * height * 4);
+-
+-  final Pointer<Uint8> _buffer;
++  Uint8List get pixels {
++    final buffer = _buffer;
++    if (buffer == null) throw StateError('PDF image is disposed or transferred');
++    _pixelsExposed = true;
++    return buffer.asTypedList(width * height * 4);
++  }
++
++  Pointer<Uint8>? _buffer;
++  bool _pixelsExposed = false;
+ 
+   _PdfImagePdfium._({required this.width, required this.height, required Pointer<Uint8> buffer}) : _buffer = buffer;
+ 
+   @override
+   void dispose() {
+-    malloc.free(_buffer);
++    final buffer = _buffer;
++    _buffer = null;
++    if (buffer != null) malloc.free(buffer);
++  }
++
++  @override
++  PdfNativeImageLease? tryTransferNativeImage() {
++    final buffer = _buffer;
++    if (buffer == null) throw StateError('PDF image is disposed or transferred');
++    if (_pixelsExposed) return null;
++    final lease = _PdfNativeImageLease(width, height, buffer);
++    _buffer = null;
++    return lease;
++  }
++}
++
++/// Finalization applies only to exclusive leases, never to old-style images
++/// whose writable typed-data views can outlive the PdfImage Dart object.
++final class _PdfNativeImageLease implements PdfNativeImageLease, Finalizable {
++  static final _finalizer = NativeFinalizer(malloc.nativeFree);
++  @override
++  final int width;
++  @override
++  final int height;
++  Pointer<Uint8>? _buffer;
++  _PdfNativeImageLease(this.width, this.height, Pointer<Uint8> buffer) : _buffer = buffer {
++    _finalizer.attach(this, buffer.cast(), detach: this, externalSize: retainedBytes);
++  }
++  @override
++  int get rowBytes => width * 4;
++  @override
++  int get initializedBytes => rowBytes * height;
++  @override
++  int get retainedBytes => initializedBytes;
++  @override
++  bool get isReleased => _buffer == null;
++  @override
++  int get address {
++    final buffer = _buffer;
++    if (buffer == null) throw StateError('PDF native image lease is released');
++    return buffer.address;
++  }
++
++  @override
++  void release() {
++    final buffer = _buffer;
++    if (buffer == null) return;
++    _buffer = null;
++    _finalizer.detach(this);
++    malloc.free(buffer);
+   }
+ }
+ 

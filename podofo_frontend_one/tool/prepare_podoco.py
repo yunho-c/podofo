@@ -9,6 +9,8 @@ import platform
 import shutil
 import subprocess
 
+from verify_pdfrx_engine import verify as verify_renderer
+
 APP = Path(__file__).resolve().parents[1]
 WORKSPACE = APP.parent / "podoco"
 
@@ -63,6 +65,7 @@ def prepare():
 
 
 def main():
+    verify_renderer()
     root = APP / ".podoco"
     root.mkdir(exist_ok=True)
     lock = root / "prepare.lock"

@@ -52,13 +52,22 @@ viewer's page rectangle. Applying `PdfRect.toRect` to these coordinates would
 rotate them twice. Native tests check raster text against PDF text geometry for
 all four rotations and a cropped page; reader tests paint real model output.
 
-M5 copies the exclusively rendered image into Podoco and immediately disposes
-the renderer image. There can be three full-image allocations during this
-handoff: the renderer, Dart's native staging allocation, and Rust's owned copy.
+M8 transfers a fresh renderer allocation through the pinned native lease API
+when no writable pixel view has escaped. Podoco retains it until its last native
+reader stops and the independent release acknowledgement frees the allocation.
+The renderer wrapper can be disposed immediately; page/document closure does
+not invalidate the owned buffer. Exposed views and unsupported renderers use
+the original copying path. That path copies the exclusively rendered image
+into Podoco and immediately disposes the renderer image. There can be three
+full-image allocations during this handoff: the renderer, Dart's native staging allocation, and Rust's owned copy.
 The 16 MiB Rust input reservation does not include those transient application
 copies; the current raster cap bounds each to 16 MiB. Core ML/preprocessing has
 its own 96 MiB explicit tensor limit; opaque framework allocations are additional.
-M8 separately qualifies a native renderer lease. No M5 zero-copy claim is made.
+The [M8 qualification](../podoco/docs/internal/m8-renderer-validation.md) establishes
+zero pixel copies only at the renderer-to-Podoco lease handoff. Rendering,
+preprocessing and Core ML tensors retain their own costs. The source exposes
+`preferNativeLease: false` for the copied fallback and optional aggregate
+`AnalysisImageTransfers` diagnostics.
 
 ## Persistence and invalidation
 

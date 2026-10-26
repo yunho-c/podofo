@@ -7,6 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:podoco/podoco.dart' as podoco;
 
 import '../services/pdf_session.dart';
+import 'pdf_image_input.dart';
 
 /// Layout-only experimental raster policy. Formula resolution is qualified
 /// separately. pdfrx already applies CropBox and page rotation.
@@ -63,30 +64,43 @@ Rect analysisRect(
 );
 
 class PdfAnalysisSource implements podoco.PageSource {
-  PdfAnalysisSource._(this.session, this.snapshot, this.pages);
+  PdfAnalysisSource._(
+    this.session,
+    this.snapshot,
+    this.pages,
+    this.preferNativeLease,
+    this.transfers,
+  );
   final PdfSession session;
   final podoco.DocumentRef snapshot;
+  final bool preferNativeLease;
+  final AnalysisImageTransfers? transfers;
   @override
   final List<podoco.PageDescriptor> pages;
   @override
   podoco.DocumentRef get document => analysisDocumentRef(session);
   bool get isCurrent => !session.lease.isClosed && document == snapshot;
 
-  static Future<PdfAnalysisSource> create(PdfSession session) =>
-      session.readLocked((pdf) async {
-        final document = analysisDocumentRef(session);
-        return PdfAnalysisSource._(
-          session,
-          document,
-          List.unmodifiable([
-            for (var i = 0; i < pdf.pages.length; i++)
-              podoco.PageDescriptor(
-                podoco.PageKey(document, i),
-                podoco.PageSpace(pdf.pages[i].width, pdf.pages[i].height),
-              ),
-          ]),
-        );
-      });
+  static Future<PdfAnalysisSource> create(
+    PdfSession session, {
+    bool preferNativeLease = true,
+    AnalysisImageTransfers? transfers,
+  }) => session.readLocked((pdf) async {
+    final document = analysisDocumentRef(session);
+    return PdfAnalysisSource._(
+      session,
+      document,
+      List.unmodifiable([
+        for (var i = 0; i < pdf.pages.length; i++)
+          podoco.PageDescriptor(
+            podoco.PageKey(document, i),
+            podoco.PageSpace(pdf.pages[i].width, pdf.pages[i].height),
+          ),
+      ]),
+      preferNativeLease,
+      transfers,
+    );
+  });
 
   @override
   Future<podoco.PageInput> loadPage(podoco.PageRequest request) =>
@@ -139,20 +153,15 @@ class PdfAnalysisSource implements podoco.PageSource {
             0,
             0,
           ]);
-          final copied = podoco.PageImage.copy(
-            descriptor: podoco.ImageDescriptor(
-              width: image.width,
-              height: image.height,
-              rowStride: image.width * 4,
-              format: podoco.PixelFormat.bgra8,
-              alpha: podoco.AlphaMode.opaque,
-            ),
-            bytes: image.pixels,
+          final input = analysisImageInput(
+            image,
             byteBudget: request.byteBudget,
+            preferNativeLease: preferNativeLease,
+            transfers: transfers,
           );
           return podoco.PageInput(
             page: request.page,
-            image: copied,
+            image: input,
             pixelToPage: transform,
             renderProfile: layoutRenderProfile,
           );

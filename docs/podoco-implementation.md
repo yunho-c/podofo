@@ -21,7 +21,7 @@ M5 adds [PoDoFo layout integration](document-analysis.md) with
 [qualified](../podoco/docs/internal/m6-single-crop-validation.md). M6 also adds
 [progressive Rust/C/Dart formula jobs](../podoco/docs/internal/m6-document-validation.md),
 with exact deployed-reference parity and explicitly measured detector/crop
-quality limits. M7 optional conversion is implemented; M8–M9 remain in progress/planned; the starting-point inventory
+quality limits. M7 optional conversion and M8 renderer leases are implemented; M9 remains in progress; the starting-point inventory
 below records the original baseline.
 
 PP-DocLayoutV3 is the selected layout model. PP-FormulaNet_plus-L is the selected
@@ -394,10 +394,12 @@ by the design and should not need to change for a conventional crop recognizer.
 
 ## Execution and review policy
 
-M1–M7 are implemented as experimental profiles/modules. M7 has exact Rust/C/Dart
+M1–M8 are implemented as experimental profiles/modules. M7 has exact Rust/C/Dart
 parity on 1,356 conversions/errors and explicit unsupported syntax; see its
-[qualification](../podoco/docs/internal/m7-math-validation.md). Continue with
-renderer leases and Copy/Listen, retaining the PP-FormulaNet_plus-L handoff.
+[qualification](../podoco/docs/internal/m7-math-validation.md). M8 has
+actual PDFium lease/copy parity through both models and lifetime checks; see its
+[qualification](../podoco/docs/internal/m8-renderer-validation.md). Continue with
+Copy/Listen, retaining the PP-FormulaNet_plus-L handoff.
 Keep the measured detector/crop quality limitations visible during M9;
 deployment parity alone does not promote a profile.
 M5 gives an integration checkpoint before the complete formula workflow;
