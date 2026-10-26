@@ -5,6 +5,8 @@
 - [Core ML](coreml.md): optional native dependency, observer policy, and checks.
 - [Dart package](../bindings/dart/README.md): native builds and prebuilt libraries.
 - [Architecture](internal/architecture.md): ownership and planned boundaries.
+- [Proposed API v0](../../docs/podoco-api.md): document/formula analysis, image
+  leases, progressive jobs, and optional math-to-speech-text conversion.
 - [Validation scope](internal/validation.md): what the scaffold checks establish.
 - [cidre coexistence](internal/cidre-coexistence.md): observer exclusion and
   namespacing experiments for loading Podoco alongside MLSR.

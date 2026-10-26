@@ -4,6 +4,11 @@ Podoco is an independent document analysis SDK inside PoDoFo's Git repository.
 Its Rust workspace is rooted at `podoco/Cargo.toml`. Sharing a repository allows
 atomic library/application changes; Podoco must remain usable by other clients.
 
+The [proposed API v0 contract](../../../docs/podoco-api.md) records the agreed
+document/formula pipeline, image ownership, progressive jobs, and optional math
+conversion. It is a design contract; the current implementation remains the
+identity scaffold and qualified Core ML dependency.
+
 ## Dependency direction
 
 ```text
@@ -46,7 +51,8 @@ Do not move PoDoFo's PDF resource ownership into the core by accident.
 Results should preserve page identity and explicit coordinate conventions,
 including transforms between model input pixels and source-page geometry.
 Reading order and text provenance need explicit contracts before they drive
-selection, navigation, or narration. No such result types are frozen yet.
+selection, navigation, or narration. The API proposal defines canonical page
+coordinates and proposed result types; no public analysis ABI is frozen yet.
 
 ## Efficiency and qualification
 
@@ -62,8 +68,9 @@ coordinate/reading-order checks alongside model-specific quality metrics.
 
 ## Next implementation milestone
 
-Select one document-analysis task and model, define its inputs/results, pin a
-YAML manifest with license and hashes, and capture reference cases. Implement
-one complete Rust-owned pipeline with a real runtime, cancellation, and a Dart
-consumer. It is done when real inputs produce qualified outputs through the
-public APIs; a placeholder `analyze` method would not meet that gate.
+Follow the API proposal's milestones: establish domain/ownership contracts,
+qualify layout and formula models with pinned YAML manifests and reference
+cases, then connect a complete progressive Rust-owned pipeline. Optional math
+conversion can be developed independently. PoDoFo integration is done when real
+pages produce qualified results and Copy/Listen work through the public APIs;
+a placeholder `analyze` method would not meet that gate.
