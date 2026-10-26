@@ -552,13 +552,13 @@ void main() {
       expect(container.read(currentDocumentProvider)!.dirty, true);
       expect(reading.cancelled, false);
 
-      await tester.tap(find.byTooltip('Annotations'));
+      await tester.tap(find.bySemanticsLabel('Annotations'));
       await waitForNative(
         tester,
         () => find.byTooltip('Remove highlight').evaluate().isNotEmpty,
       );
       expect(find.text('Highlight'), findsWidgets);
-      await tester.tap(find.byTooltip('Thumbnails'));
+      await tester.tap(find.bySemanticsLabel('Thumbnails'));
       await waitForNative(
         tester,
         () =>

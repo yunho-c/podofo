@@ -391,7 +391,7 @@ void main() {
           }
         });
         if (rotation == 0) {
-          await tester.tap(find.byTooltip('Annotations'));
+          await tester.tap(find.bySemanticsLabel('Annotations'));
           await tester.pump();
           await tester.pump(const Duration(milliseconds: 250));
           await waitForNative(
