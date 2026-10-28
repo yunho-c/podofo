@@ -1,5 +1,26 @@
 # Validation record
 
+## Internal PDF link hover previews — 2026-10-28
+
+Added bounded destination rendering to the existing 350 ms link tooltip, with
+crop/rotation conversion, a session/revision-scoped decoded-image cache, stale
+request cancellation and explicit image disposal. Click and Back behavior stay
+on the existing navigation paths. Dependencies and lockfile are unchanged.
+
+- **23 focused tests passed in an isolated Linux harness**, including 13 new
+  preview cases and 10 existing navigation, lease and link/cache cases.
+- Real PDFium renders verify cropped cross-page destinations at all four quarter
+  rotations, page-only previews and FitR rectangles. The reader tests cover
+  unchanged position/history, click/Back, rapid movement, tab switching and close.
+- Changed-file analysis, formatting and diff whitespace checks passed.
+- Full application/build validation remains blocked by the unavailable pinned
+  MLSR SHA. The isolated harness excludes the native narration adapter and uses
+  the existing fake narrator; that substitution is not part of the product diff.
+
+See [link_hover_previews.md](link_hover_previews.md) for exact limits, tests,
+environment and the validation boundary. Prepared locally for review; no push,
+merge, PR publication, remote CI or deployment was performed.
+
 ## Context-menu integration with MLSR main — 2026-10-24
 
 Merged main at `3b94d13` into `fix/context-menu`, retaining the two-page layout,

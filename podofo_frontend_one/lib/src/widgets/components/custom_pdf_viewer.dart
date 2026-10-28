@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
+import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
@@ -21,9 +22,11 @@ import '../../services/document_actions.dart';
 import '../../services/pdf_navigation_history.dart';
 import '../../services/pdf_session.dart';
 import '../../workers/open_graph_worker.dart';
+import '../../workers/link_preview_worker.dart';
 import 'pdf_context_menu_overlay.dart';
 import 'pdf_page_layout.dart';
 import 'pdf_back_button.dart';
+import 'pdf_link_hover_preview.dart';
 import 'pdf_selection_menu.dart';
 
 class CustomPdfViewer extends ConsumerStatefulWidget {
@@ -39,6 +42,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   OverlayEntry? _overlay;
   Timer? _hoverTimer;
   int _generation = 0;
+  late final LinkPreviewWorker _previews;
+  late PdfViewerController _hoverViewer;
+  ui.Image? _previewImage;
   final _selectionPointers = <int>{};
   bool _selectionChanged = false;
   late final NarrationController _narration;
@@ -204,6 +210,26 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   @override
   void initState() {
     super.initState();
+    _previews = LinkPreviewWorker(
+      render: ref.read(linkPreviewRendererProvider),
+    );
+    _hoverViewer = ref.read(pdfViewerControllerProvider);
+    _hoverViewer.addListener(_clearHover);
+    ref.listenManual(pdfViewerControllerProvider, (previous, next) {
+      _hoverViewer.removeListener(_clearHover);
+      _hoverViewer = next;
+      _hoverViewer.addListener(_clearHover);
+      _clearHover();
+    });
+    ref.listenManual(
+      currentDocumentProvider.select(
+        (doc) => (doc?.session, doc?.session.revision),
+      ),
+      (previous, next) {
+        _clearHover();
+        _previews.reset();
+      },
+    );
     _linkAnimation = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 200),
@@ -338,9 +364,13 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   void _clearHover() {
     _generation++;
     _hoverTimer?.cancel();
+    _hoverTimer = null;
+    _previews.cancel();
     _overlay?.remove();
     _overlay?.dispose();
     _overlay = null;
+    _previewImage?.dispose();
+    _previewImage = null;
   }
 
   @override
@@ -349,6 +379,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     _narration.removeListener(_onNarrationChanged);
     _narration.scrubPreview.removeListener(_onScrubPreviewChanged);
     _clearHover();
+    _hoverViewer.removeListener(_clearHover);
+    _previews.dispose();
     super.dispose();
   }
 
@@ -375,11 +407,17 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
                 useAlternativeFitScaleAsMinScale: false,
               )
             : null,
-        onViewSizeChanged: (_, _, _) => _checkUserScroll(zooming: true),
+        onViewSizeChanged: (_, _, _) {
+          _clearHover();
+          _checkUserScroll(zooming: true);
+        },
         onInteractionUpdate: (details) =>
             _checkUserScroll(zooming: (details.scale - 1).abs() > .001),
         onKey: (params, key, isRealKeyPress) {
-          if (isRealKeyPress) _cancelLinkNavigation();
+          if (isRealKeyPress) {
+            _clearHover();
+            _cancelLinkNavigation();
+          }
           if (isRealKeyPress &&
               identical(document.session, _narration.source?.documentId) &&
               const [
@@ -520,6 +558,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         imageFilter: invert ? ImageFilter.shader(shader) : _disabledFilter,
         child: Listener(
           onPointerSignal: (event) {
+            _clearHover();
             _cancelLinkNavigation();
             if (event is PointerScrollEvent) {
               _checkUserScroll(
@@ -534,6 +573,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             _checkUserScroll();
           },
           onPointerDown: (event) {
+            _clearHover();
             if (event.buttons == kPrimaryButton) {
               _selectionPointers.add(event.pointer);
             }
@@ -598,7 +638,20 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     final generation = _generation;
     final document = ref.read(currentDocumentProvider);
     final controller = ref.read(pdfViewerControllerProvider);
-    if (document == null || !controller.isReady) return;
+    if (document == null ||
+        document.session.lease.isClosed ||
+        !controller.isReady) {
+      return;
+    }
+    final session = document.session;
+    final revision = session.revision;
+    bool isCurrent() =>
+        mounted &&
+        generation == _generation &&
+        !session.lease.isClosed &&
+        session.revision == revision &&
+        identical(ref.read(currentDocumentProvider)?.session, session) &&
+        identical(ref.read(pdfViewerControllerProvider), controller);
     final hit = controller.getPdfPageHitTestResult(
       event.localPosition,
       useDocumentLayoutCoordinates: false,
@@ -606,47 +659,47 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     if (hit == null) return;
     _hoverTimer = Timer(const Duration(milliseconds: 350), () async {
       try {
-        final links = await document.session.lease.use(
-          (_) => hit.page.loadLinks(),
+        if (!isCurrent()) return;
+        final links = await session.readLocked((pdf) async {
+          if (!isCurrent()) return const <PdfLink>[];
+          return pdf.pages[hit.page.pageNumber - 1].loadLinks();
+        });
+        if (!mounted || !isCurrent()) return;
+        final link = links
+            .where(
+              (link) =>
+                  link.rects.any((rect) => rect.containsPoint(hit.offset)),
+            )
+            .firstOrNull;
+        if (link == null) return;
+        final label = link.url == null
+            ? 'Page ${link.dest?.pageNumber ?? ''}'
+            : linkPreviewLabel(link.url!);
+        final overlayBox =
+            Overlay.of(context).context.findRenderObject() as RenderBox;
+        final position = overlayBox.globalToLocal(event.position);
+        _overlay = OverlayEntry(
+          builder: (context) => PdfLinkHoverPreview(
+            anchor: position,
+            label: label,
+            image: _previewImage,
+          ),
         );
-        if (!mounted || generation != _generation) return;
-        for (final link in links) {
-          if (!link.rects.any((rect) => rect.containsPoint(hit.offset))) {
-            continue;
-          }
-          final label = link.url == null
-              ? 'Page ${link.dest?.pageNumber ?? ''}'
-              : linkPreviewLabel(link.url!);
-          final size = MediaQuery.sizeOf(context);
-          final overlayBox =
-              Overlay.of(context).context.findRenderObject() as RenderBox;
-          final position = overlayBox.globalToLocal(event.position);
-          _overlay = OverlayEntry(
-            builder: (context) => Positioned(
-              left: (position.dx + 15).clamp(
-                0,
-                (size.width - 340).clamp(0, double.infinity),
-              ),
-              top: (position.dy + 15).clamp(
-                0,
-                (size.height - 110).clamp(0, double.infinity),
-              ),
-              child: IgnorePointer(
-                child: SizedBox(
-                  width: 320,
-                  child: Card(
-                    child: Text(
-                      label,
-                      maxLines: 4,
-                      overflow: TextOverflow.ellipsis,
-                    ).small(),
-                  ),
-                ),
-              ),
-            ),
+        Overlay.of(context).insert(_overlay!);
+        // Only actual internal PDF destinations can request a visual preview.
+        // URLs and unsupported destinations retain the existing text tooltip.
+        if (link.url == null && link.dest != null) {
+          final image = await _previews.load(
+            session,
+            link.dest!,
+            pixelRatio: MediaQuery.devicePixelRatioOf(context),
           );
-          Overlay.of(context).insert(_overlay!);
-          break;
+          if (!isCurrent()) {
+            image?.dispose();
+            return;
+          }
+          _previewImage = image;
+          _overlay?.markNeedsBuild();
         }
       } catch (_) {
         // A hover can race tab close or page reload; it is never an app error.
