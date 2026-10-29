@@ -1690,6 +1690,8 @@ class _PdfViewerState extends State<PdfViewer>
   }) {
     final unusedPageList = <int>[];
     final unmeasuredPageList = <int>[];
+    // Only report the main viewport, not the magnifier or off-screen prefetch.
+    final renderingStatus = identical(cache, _imageCache) ? <PdfPageRenderingStatus>[] : null;
     // Pages inside the extent that are painting as a blank white rectangle
     // because no preview image has landed for them yet. This is the white-page
     // symptom itself, so trace it rather than inferring it from measurement.
@@ -1783,7 +1785,8 @@ class _PdfViewerState extends State<PdfViewer>
       final pageScale = page.width > 0 && page.height > 0
           ? scale * max(rect.width / page.width, rect.height / page.height)
           : 0.0;
-      if (!enableLowResolutionPagePreview || pageScale > previewScaleLimit) {
+      final needsPartial = !enableLowResolutionPagePreview || pageScale > previewScaleLimit;
+      if (needsPartial) {
         // `scale` (not `pageScale`) converts document units to physical pixels.
         // `pageScale` additionally carries the layout-to-page-size ratio, which
         // `_createRealSizePartialImage` would apply a second time via
@@ -1792,8 +1795,26 @@ class _PdfViewerState extends State<PdfViewer>
         _requestRealSizePartialImage(cache, page, scale, targetRect);
       }
 
-      if ((!enableLowResolutionPagePreview || pageScale > previewScaleLimit) && partial != null) {
+      if (needsPartial && partial != null) {
         partial.draw(canvas, filterQuality);
+      }
+
+      final visiblePageRect = rect.intersect(targetRect);
+      if (renderingStatus != null && !visiblePageRect.isEmpty) {
+        final partialIsCurrent =
+            partial != null && !partial.isDirty && partial.scale == scale && partial.rect == visiblePageRect;
+        renderingStatus.add((
+          pageNumber: page.pageNumber,
+          targetScale: pageScale,
+          previewScale: previewScaleLimit,
+          mode: needsPartial
+              ? (partialIsCurrent
+                    ? PdfPageRenderMode.fullResolution
+                    : (partial != null || (enableLowResolutionPagePreview && previewImage != null)
+                          ? PdfPageRenderMode.refining
+                          : PdfPageRenderMode.loading))
+              : (previewImage != null ? PdfPageRenderMode.preview : PdfPageRenderMode.loading),
+        ));
       }
 
       // Guarded on the selection flag. Without this, paint loads structured text
@@ -1841,6 +1862,8 @@ class _PdfViewerState extends State<PdfViewer>
         }
       }
     }
+
+    if (renderingStatus != null) _controller?._setRenderingStatus(renderingStatus);
 
     if (Pdfrx.debugLazyLoading && (unmeasuredPageList.isNotEmpty || whitePageList.isNotEmpty)) {
       // Paint runs on every frame, so log only when the picture actually
@@ -4554,6 +4577,24 @@ class PdfPageHitTestResult {
   int get hashCode => page.hashCode ^ offset.hashCode;
 }
 
+/// The image source used for a visible page in the most recent paint.
+enum PdfPageRenderMode {
+  /// No bitmap is available yet.
+  loading,
+
+  /// The whole-page preview is sufficient under the configured scale threshold.
+  preview,
+
+  /// A preview or older partial image is displayed while the viewport needs a new render.
+  refining,
+
+  /// A current partial image covers the visible page at the requested display scale.
+  fullResolution,
+}
+
+/// Main-view rendering diagnostics. Scales are pixels per PDF point (multiply by 72 for DPI).
+typedef PdfPageRenderingStatus = ({int pageNumber, double targetScale, double previewScale, PdfPageRenderMode mode});
+
 /// Controls associated [PdfViewer].
 ///
 /// It's always your option to extend (inherit) the class to customize the [PdfViewer] behavior.
@@ -4564,8 +4605,33 @@ class PdfPageHitTestResult {
 class PdfViewerController extends ValueListenable<Matrix4> {
   _PdfViewerState? __state;
   final _listeners = <VoidCallback>[];
+  final _renderingStatus = ValueNotifier<List<PdfPageRenderingStatus>>(const []);
+  List<PdfPageRenderingStatus>? _pendingRenderingStatus;
+
+  /// Rendering diagnostics for visible pages, updated after paint and cleared on detach.
+  ///
+  /// Unlike this controller's matrix notifications, this also updates when an
+  /// asynchronous bitmap finishes rendering without any scrolling or zooming.
+  ValueListenable<List<PdfPageRenderingStatus>> get renderingStatus => _renderingStatus;
+
+  void _setRenderingStatus(List<PdfPageRenderingStatus> status) {
+    if (listEquals(_pendingRenderingStatus ?? _renderingStatus.value, status)) return;
+    final scheduled = _pendingRenderingStatus != null;
+    _pendingRenderingStatus = status;
+    if (scheduled) return;
+    // Paint and controller attachment can run during a frame. Notify consumers
+    // afterward, coalescing changes so detached documents cannot publish stale state.
+    scheduleMicrotask(() {
+      final next = _pendingRenderingStatus!;
+      _pendingRenderingStatus = null;
+      if (!listEquals(_renderingStatus.value, next)) {
+        _renderingStatus.value = List.unmodifiable(next);
+      }
+    });
+  }
 
   void _attach(_PdfViewerState? state) {
+    if (!identical(__state, state)) _setRenderingStatus(const []);
     __state?._txController.removeListener(_notifyListeners);
     __state = state;
     __state?._txController.addListener(_notifyListeners);

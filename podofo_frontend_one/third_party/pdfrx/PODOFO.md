@@ -44,6 +44,17 @@ previews awaiting image decoding, so stale work cannot overwrite the refresh.
 `test/highlight_refresh_test.dart` checks creation, undo, and removal against the
 stationary viewer's actual pixels in preview and partial-rendering modes.
 
+`PdfViewerController.renderingStatus` exposes read-only diagnostics from the
+main viewport's paint path for PoDoFo's debug sidebar. Each visible page reports
+its preview and target scales, and whether it is loading, using the whole-page
+preview, refining an older bitmap, or displaying a current viewport render.
+Notifications are deferred until after paint, include asynchronous render
+completion, and clear when the controller detaches. Magnifier rendering and
+off-screen prefetch do not appear in the status. This does not change rendering
+resolution or cache policy. `test/debug_rendering_status_test.dart` checks the
+sidebar against native rendering across the scale threshold, display pixel
+ratios, document changes, spreads, and viewer teardown.
+
 ## Staging fixes
 
 Ported from `pdfrx_og` staging at `fe80962214a3df7615c5f1a1917f6f26326fa661`:

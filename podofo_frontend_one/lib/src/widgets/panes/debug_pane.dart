@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
@@ -10,7 +11,7 @@ class DebugPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
     final loadedDocuments = ref.watch(loadedDocumentsProvider);
-    return Container(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(10.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -30,6 +31,8 @@ class DebugPane extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          const _PdfRenderingStatus(),
           const SizedBox(height: 16),
           Collapsible(
             children: [
@@ -96,6 +99,62 @@ class DebugPane extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _PdfRenderingStatus extends ConsumerWidget {
+  const _PdfRenderingStatus();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final document = ref.watch(currentDocumentProvider);
+    final controller = ref.watch(pdfViewerControllerProvider);
+    return OutlinedContainer(
+      child: ValueListenableBuilder<List<PdfPageRenderingStatus>>(
+        valueListenable: controller.renderingStatus,
+        builder: (context, pages, _) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Reduced-DPI cache').small().semiBold(),
+            const SizedBox(height: 8),
+            if (document == null)
+              const Text('No document loaded').small()
+            else if (pages.isEmpty)
+              const Text('Waiting for page render…').small()
+            else
+              for (final page in pages)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Page ${page.pageNumber}: ${switch (page.mode) {
+                          PdfPageRenderMode.loading => 'Loading…',
+                          PdfPageRenderMode.preview => 'Active',
+                          PdfPageRenderMode.refining => 'Refining…',
+                          PdfPageRenderMode.fullResolution => 'Inactive',
+                        }}',
+                      ).small(),
+                      Text(switch (page.mode) {
+                        PdfPageRenderMode.loading => 'Waiting for a bitmap',
+                        PdfPageRenderMode.preview => 'Using cached page image',
+                        PdfPageRenderMode.refining =>
+                          'Cached image; display render pending',
+                        PdfPageRenderMode.fullResolution =>
+                          'Using display-resolution image',
+                      }).small().muted(),
+                      Text(
+                        '${(page.previewScale * 72).toStringAsFixed(0)} DPI cache · '
+                        '${(page.targetScale * 72).toStringAsFixed(0)} DPI target',
+                      ).small().muted(),
+                    ],
+                  ),
+                ),
+          ],
+        ),
+      ).withPadding(horizontal: 12, vertical: 10),
     );
   }
 }
