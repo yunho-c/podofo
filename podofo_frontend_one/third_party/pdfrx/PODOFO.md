@@ -66,6 +66,17 @@ Magnifier and preview rendering retain their existing paths. PoDoFo enables the
 hook only with `--dart-define=PODOFO_FRACTIONAL_RENDERING=true`; see
 `docs/rendering-quality.md` at the repository root for qualification and limits.
 
+`PdfViewerParams.renderAtDisplayScale` optionally requests a main-viewport
+render at every zoom, retaining the preview during startup and motion. Pending
+requests are keyed by visible rectangle, scale, and fractional placement so
+unrelated repaints cannot starve refinement or cancel matching in-flight work.
+Returning to a cached viewport cancels any obsolete pending request. The existing
+`partialImageLoadingDelay` controls settling; PoDoFo uses 150 ms with
+`--dart-define=PODOFO_DISPLAY_SCALE_RENDERING=true`. The flag is off by default
+and independent of the fractional-renderer flag. `display_scale_rendering_test`
+checks debounce, cache reuse, and cancellation; `highlight_refresh_test` also
+checks edits below 200 DPI with both options enabled.
+
 ## Staging fixes
 
 Ported from `pdfrx_og` staging at `fe80962214a3df7615c5f1a1917f6f26326fa661`:

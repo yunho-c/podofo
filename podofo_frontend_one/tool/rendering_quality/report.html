@@ -35,6 +35,7 @@ $('status').textContent = data.receipt.passed
   ? 'Capture and harness checks completed'
   : 'INCOMPLETE / FAILED — inspect the errors below';
 $('status').className = data.receipt.passed ? 'badge' : 'error';
+if (data.results.display_scale_requested) $('status').textContent += ' · display-scale refinement at every zoom';
 $('provenance').textContent = JSON.stringify(data.receipt, null, 2);
 $('calibration').textContent = JSON.stringify({
   measurement: data.results.calibration,

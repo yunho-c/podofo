@@ -31,6 +31,19 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual((cases[0]['pdf'], cases[0]['page'], cases[0]['offset']),
                          ('/tmp/example.pdf', 7, .25))
 
+    def test_low_zoom_matrix_includes_clamp_safe_phases_and_rotations(self):
+        cases = build_cases(suite='low-zoom')
+        self.assertEqual(len(cases), 24)
+        self.assertEqual(len({c['id'] for c in cases}), 24)
+        self.assertEqual({c['dpi'] for c in cases}, {72, 96, 120, 144, 175, 199, 200})
+        self.assertFalse(any(c['dpi'] < 120 and c['dpr'] == 2 for c in cases))
+        for dpi, dpr in [(144, 1), (199, 1), (199, 2)]:
+            self.assertEqual({c['offset'] for c in cases if c['dpi'] == dpi and c['dpr'] == dpr}, {0, .25, .5, .75})
+        self.assertEqual({c['page'] for c in cases}, {1, 2, 3, 4})
+        custom = build_cases(Path('/tmp/example.pdf'), page=7, suite='low-zoom')
+        self.assertEqual(len(custom), 21)
+        self.assertEqual({c['page'] for c in custom}, {7})
+
     def test_invalid_numeric_arguments(self):
         for value in ['0', '-1', 'nan', 'inf', '-inf']:
             with self.subTest(value=value), self.assertRaises(argparse.ArgumentTypeError):

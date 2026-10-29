@@ -1785,7 +1785,10 @@ class _PdfViewerState extends State<PdfViewer>
       final pageScale = page.width > 0 && page.height > 0
           ? scale * max(rect.width / page.width, rect.height / page.height)
           : 0.0;
-      final needsPartial = !enableLowResolutionPagePreview || pageScale > previewScaleLimit;
+      final needsPartial =
+          (identical(cache, _imageCache) && widget.params.renderAtDisplayScale) ||
+          !enableLowResolutionPagePreview ||
+          pageScale > previewScaleLimit;
       if (needsPartial) {
         // `scale` (not `pageScale`) converts document units to physical pixels.
         // `pageScale` additionally carries the layout-to-page-size ratio, which
@@ -2204,10 +2207,30 @@ class _PdfViewerState extends State<PdfViewer>
     final pageRect = _layout!.pageLayouts[page.pageNumber - 1];
     final rect = pageRect.intersect(targetRect);
     final prev = cache.pageImagesPartial[page.pageNumber];
-    if (_partialMatchesViewport(prev, pageRect, rect, scale)) return;
+    if (_partialMatchesViewport(prev, pageRect, rect, scale)) {
+      if (widget.params.renderAtDisplayScale && identical(cache, _imageCache)) {
+        cache.pageImagePartialRenderingRequests.remove(page.pageNumber)?.cancel();
+      }
+      return;
+    }
     if (rect.width < 1 || rect.height < 1) return;
 
-    cache.pageImagePartialRenderingRequests[page.pageNumber]?.cancel();
+    final pending = cache.pageImagePartialRenderingRequests[page.pageNumber];
+    final paintRect = widget.params.viewportRenderer != null && identical(cache, _imageCache)
+        ? _fractionalTile(pageRect, rect, scale)?.paintRect
+        : null;
+    if (widget.params.renderAtDisplayScale &&
+        identical(cache, _imageCache) &&
+        pending != null &&
+        !pending.cancellationToken.isCanceled &&
+        pending.rect == rect &&
+        pending.scale == scale &&
+        pending.paintRect == paintRect) {
+      // Debounce viewport changes, not every repaint (e.g. preview completion).
+      // Also keep an already running render for this exact viewport alive.
+      return;
+    }
+    pending?.cancel();
 
     final cancellationToken = page.createCancellationToken();
     late final _PdfPartialImageRenderingRequest request;
@@ -2231,6 +2254,9 @@ class _PdfViewerState extends State<PdfViewer>
         }
       }),
       cancellationToken,
+      rect: rect,
+      scale: scale,
+      paintRect: paintRect,
     );
     cache.pageImagePartialRenderingRequests[page.pageNumber] = request;
   }
@@ -4369,9 +4395,18 @@ class _PdfPageImageCache {
 }
 
 class _PdfPartialImageRenderingRequest {
-  _PdfPartialImageRenderingRequest(this.timer, this.cancellationToken);
+  _PdfPartialImageRenderingRequest(
+    this.timer,
+    this.cancellationToken, {
+    required this.rect,
+    required this.scale,
+    required this.paintRect,
+  });
   final Timer timer;
   final PdfPageRenderCancellationToken cancellationToken;
+  final Rect rect;
+  final double scale;
+  final Rect? paintRect;
 
   void cancel() {
     timer.cancel();

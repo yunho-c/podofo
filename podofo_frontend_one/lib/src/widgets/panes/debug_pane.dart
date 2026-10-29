@@ -117,6 +117,12 @@ class _PdfRenderingStatus extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text('Reduced-DPI cache').small().semiBold(),
+            if (document != null &&
+                controller.isReady &&
+                controller.params.renderAtDisplayScale)
+              const Text('Refine at every settled display scale')
+                  .small()
+                  .muted(),
             const SizedBox(height: 8),
             if (document == null)
               const Text('No document loaded').small()

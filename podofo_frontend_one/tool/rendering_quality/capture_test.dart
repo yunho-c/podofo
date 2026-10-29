@@ -64,6 +64,8 @@ void main() {
       final result = <String, Object?>{
         'schema_version': 1,
         'fractional_requested': fractionalPageRenderingEnabled,
+        'display_scale_requested': displayScaleRenderingEnabled,
+        'suite': config['suite'] ?? 'baseline',
         'passed': false,
         'boundary': 'Flutter widget-test raster capture; not native GPU/compositor qualification',
         'calibration': calibration(),
@@ -310,7 +312,8 @@ Future<void> _capture(
         return false;
       }
       return status.mode ==
-          (status.targetScale > status.previewScale
+          (displayScaleRenderingEnabled ||
+                  status.targetScale > status.previewScale
               ? PdfPageRenderMode.fullResolution
               : PdfPageRenderMode.preview);
     }
@@ -444,6 +447,9 @@ Future<void> _capture(
     container.dispose();
     narrator.dispose();
     await _real(tester, () => session.close(discard: true));
+    // Finish the viewer's guarded trailing-page delay after disposal. A fast
+    // preview capture can otherwise end before that background timer fires.
+    await tester.pumpAndSettle();
   }
 }
 

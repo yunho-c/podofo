@@ -13,11 +13,18 @@ import 'fixtures/spaced_text_pdf.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  for (final mode in ['preview', 'partial', 'fractional']) {
+  for (final mode in ['preview', 'partial', 'fractional', 'settled-low']) {
     final partial = mode != 'preview';
+    final fractional = mode == 'fractional' || mode == 'settled-low';
     testWidgets(
       'highlight edits refresh a stationary $mode image without changing the viewport',
       (tester) async {
+        if (mode == 'settled-low') {
+          tester.view.devicePixelRatio = 1;
+          tester.view.physicalSize = const Size(800, 600);
+          addTearDown(tester.view.resetDevicePixelRatio);
+          addTearDown(tester.view.resetPhysicalSize);
+        }
         final temporary = Directory.systemTemp.createTempSync(
           'podofo-refresh-',
         );
@@ -59,11 +66,18 @@ void main() {
                   session.lease.reference,
                   controller: controller,
                   params: PdfViewerParams(
-                    viewportRenderer: mode == 'fractional'
-                        ? renderFractionalPage
-                        : null,
+                    renderAtDisplayScale: mode == 'settled-low',
+                    behaviorControlParams: mode == 'settled-low'
+                        ? const PdfViewerBehaviorControlParams(
+                            partialImageLoadingDelay: Duration(
+                              milliseconds: 150,
+                            ),
+                          )
+                        : const PdfViewerBehaviorControlParams(),
+                    viewportRenderer: fractional ? renderFractionalPage : null,
                     onDocumentLoadFinished: (_, success) => loaded = success,
-                    getPageRenderingScale: (_, _, _, _) => partial ? .5 : 4,
+                    getPageRenderingScale: (_, _, _, _) =>
+                        mode == 'settled-low' ? 200 / 72 : (partial ? .5 : 4),
                     sizeDelegateProvider: PdfViewerSizeDelegateProviderLegacy(
                       calculateInitialZoom: (_, _, fitPage, _) => fitPage,
                     ),
@@ -80,11 +94,27 @@ void main() {
           for (var i = 0; i < 10; i++) {
             await _tick(tester);
           }
-          if (mode == 'fractional') {
+          if (fractional) {
+            for (
+              var i = 0;
+              i < 100 &&
+                  !controller.renderingStatus.value.any(
+                    (s) =>
+                        s.mode == PdfPageRenderMode.fullResolution &&
+                        s.usesFractionalTransform,
+                  );
+              i++
+            ) {
+              await _tick(tester);
+            }
             expect(
               controller.renderingStatus.value.single.usesFractionalTransform,
               isTrue,
             );
+            if (mode == 'settled-low') {
+              final status = controller.renderingStatus.value.single;
+              expect(status.targetScale, lessThan(status.previewScale));
+            }
           }
           final viewport = controller.value.clone();
           final boundary =
@@ -194,7 +224,7 @@ void main() {
           temporary.deleteSync(recursive: true);
         }
       },
-      skip: mode == 'fractional' && !Platform.isMacOS,
+      skip: fractional && !Platform.isMacOS,
     );
   }
 }

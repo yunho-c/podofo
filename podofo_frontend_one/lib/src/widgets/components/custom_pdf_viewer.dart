@@ -374,6 +374,12 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       controller: controller,
       initialPageNumber: document.lastOpenedPage ?? 1,
       params: PdfViewerParams(
+        renderAtDisplayScale: displayScaleRenderingEnabled,
+        behaviorControlParams: displayScaleRenderingEnabled
+            ? const PdfViewerBehaviorControlParams(
+                partialImageLoadingDelay: Duration(milliseconds: 150),
+              )
+            : const PdfViewerBehaviorControlParams(),
         viewportRenderer: fractionalPageRenderingEnabled
             ? renderFractionalPage
             : null,

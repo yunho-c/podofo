@@ -3,7 +3,8 @@
 The harness compares PoDoFo's **production `CustomPdfViewer`** with a direct
 PDFium render at the same physical pixel size, page position, and scale. It is
 intended to guide changes to bitmap sizing, cache policy, and Flutter image
-placement. It does not change the viewer's rendering policy.
+placement. The viewer's default rendering policy is unchanged; the experiments
+below are opt-in.
 
 This first version runs in a headless Flutter widget test on macOS. It exercises
 the real viewer and its rendering caches, but **does not qualify the native
@@ -78,6 +79,104 @@ qualification work before considering a default change. Native rasterization
 is synchronous on the existing worker; cancellation discards an obsolete result
 rather than interrupting PDFium mid-call.
 
+## Settled display-scale prototype
+
+`--display-scale` enables a second, independent experiment: render the main
+viewport at its actual physical display scale at **every zoom**, including at
+or below 200 DPI. The existing 200-DPI preview remains available during startup
+and interaction. PoDoFo requests a replacement viewport bitmap after 150 ms
+without a change to the requested geometry. Identical repaints neither restart
+that delay nor cancel an in-flight matching render. Returning to a cached
+viewport cancels a pending request for a different viewport.
+
+Use it together with fractional transforms for the improved rendering path:
+
+```sh
+flutter run -d macos \
+  --dart-define=PODOFO_DISPLAY_SCALE_RENDERING=true \
+  --dart-define=PODOFO_FRACTIONAL_RENDERING=true
+
+python3 tool/rendering_quality/run.py --suite low-zoom \
+  --display-scale --fractional \
+  --output build/rendering-quality/low-zoom-combined
+```
+
+Add `--native-frameworks /path/to/PoDoFo.app/Contents/Frameworks` if needed.
+Run the same suite without either flag for the preview control, and with only
+`--display-scale` to isolate the cache-policy change. Both flags are **off by
+default**. The debug sidebar identifies the policy and reports `Refining…`
+while waiting, then `Inactive` once the preview has been replaced, even below
+200 DPI. The flags remain independent for these controlled comparisons.
+
+The 24-case low-zoom suite covers 72, 96, 120, 144, 175, 199, and 200 DPI at
+DPR 1; 120, 144, 175, 199, and 200 DPI at DPR 2; four physical offset phases at
+144/DPR 1, 199/DPR 1, and 199/DPR 2; and rotated/cropped pages at 144/DPR 1.
+72 and 96 DPI at DPR 2 are below this fixture's normal minimum zoom and were
+rejected by exploratory captures, so are excluded. Fractional offsets are
+tested where the page exceeds the viewport in both dimensions. A custom PDF
+omits the three fixture rotation cases and may have different navigation bounds.
+The fixed suite cannot be combined with `--dpi`, `--dpr`, or `--offset`.
+
+Headless results with the code based on `9e706ee` (RGB MAE, 8-bit code values,
+scored page interior):
+
+| Case | 200-DPI preview | Display scale, ordinary transform | Display scale + fractional transform |
+| --- | ---: | ---: | ---: |
+| 72 DPI, DPR 1, offset 0 | 1.20311 | 0 | 0 |
+| 144 DPI, DPR 1, offset 0 | 1.31291 | 0 | 0 |
+| 144 DPI, DPR 1, offset 0.25 | 1.37994 | 7.02362 | 0 |
+| 175 DPI, DPR 1, offset 0 | 1.75518 | 4.49282 | 0 |
+| 199 DPI, DPR 1, offset 0 | 2.36516 | 5.26355 | 0 |
+| 120 DPI, DPR 2, offset 0 | 0.55358 | 0.02793 | 0.02793 |
+| 144 DPI, DPR 2, offset 0 | 0.44129 | 0.0000034 | 0.0000034 |
+| 199 DPI, DPR 2, offset 0 | 0.75117 | 1.60793 | 0 |
+
+The combined path matches exactly in **22 of 24 cases**, including every
+rotated/cropped case. At 144/DPR 1 the preview's thin-line edge-energy ratio is
+0.911; at 199/DPR 1 it is 0.837. Both become 1.0 with the combined path. This is
+consistent with smoothing introduced by resampling an already antialiased
+200-DPI bitmap. Display-scale rendering alone can increase positional error
+because the ordinary render API still rounds the page transform.
+
+The two residual cases were isolated by rendering a tight native PDFium tile
+with the viewer's geometry and comparing it directly with the captured pixels:
+both tiles match PoDoFo exactly. The mismatch is between PDFium's tile render
+and its full-viewport reference render, without Flutter resampling. At 120/DPR 2,
+0.077% of scored pixels differ by more than two levels, almost entirely in text;
+edge energy is 0.99945 of the reference and the maximum channel difference is
+73. At 144/DPR 2 the maximum is one level. Integer translation of the bitmap
+origin exposes native rasterization sensitivity; the precise PDFium internal
+cause has not been established. These are retained as nonzero measurements.
+
+The default 21-case matrix remains byte-identical to the committed control, and
+all 15 above-200-DPI cases still match exactly with both flags. Regression tests
+exercise preview availability, settling after repeated zoom changes, immunity
+to unrelated repaints, cancellation when returning to a cached viewport, and
+annotation creation/recolor/undo/redo/removal below 200 DPI.
+
+On `Assets/documents/relativity.pdf`, page 1 at DPR 2, the combined path also
+matches exactly at 144 and 199 DPI. Preview MAE is 0.33315 and 0.30388,
+respectively; the matched references are byte-identical between runs.
+
+Local comparison artifacts are in `podofo_frontend_one/build/rendering-quality/`:
+`low-zoom-control`, `low-zoom-display-integer`, `low-zoom-display-fractional`,
+`low-zoom-default-regression`, and `low-zoom-combined-regression`. Each run has
+its own report and provenance receipt. `low-zoom-evaluation.json` records the
+three-way comparison, and `low-zoom-text-comparison.png` shows a matched 144-DPI
+text crop enlarged with nearest-neighbor sampling for inspection. Artifacts are
+local and ignored by Git. `low-zoom-relativity-control-final` and
+`low-zoom-relativity-combined-final` contain the real-document comparisons.
+`inspect-low-zoom-tiles.py` and `low-zoom-tile-diagnostic.json` preserve the
+standalone native replay of the residual cases. Widening its bitmap without
+changing the local page origin leaves the pixels unchanged, while restoring the
+full-viewport origin reproduces the reference exactly.
+
+This policy adds viewport rasters below the old threshold while retaining the
+preview cache. Its 150-ms delay and allocation estimates are not a release
+latency/memory benchmark. Native GPU capture, scrolling performance, and broader
+document/platform qualification remain outstanding. Form fallback and the
+fractional renderer's platform limits described above still apply.
+
 ## Run
 
 Use the repository's pinned Flutter SDK and configured frontend dependencies
@@ -141,10 +240,10 @@ only the requested page, with no synthetic rotation cases added.
 For each case the job opens a fresh document session, mounts the production
 viewer with light appearance and inactive narration/search, and sets the
 viewport transform. It waits for the actual `renderingStatus` and a painted
-frame: the normal preview bitmap at or below 200 DPI, and the completed partial
-render above 200 DPI. It does not turn off the reduced-DPI cache or change image
-filtering. A clamped viewport is rejected instead of silently comparing at a
-different zoom.
+frame: normally the preview bitmap at or below 200 DPI and the completed
+partial render above 200 DPI; with `--display-scale`, the completed viewport
+render at every zoom. It does not change image filtering. A clamped viewport
+is rejected instead of silently comparing at a different zoom.
 
 The reference uses `FPDF_RenderPageBitmapWithMatrix` through the same document
 worker and PDFium binary. Its final-sized opaque-white RGBA image incorporates
@@ -224,5 +323,7 @@ flutter analyze --no-pub
 
 The actual viewer/native integration is validated by `run.py`, not by the metric
 unit tests. Related repository regressions are `debug_rendering_status_test`,
-`pdf_selection_paint_test`, and `highlight_refresh_test`; use the existing macOS
+`pdf_selection_paint_test`, `highlight_refresh_test`,
+`fractional_rendering_test`, `fractional_rendering_geometry_test`, and
+`display_scale_rendering_test`; use the existing macOS
 native-test setup for those.

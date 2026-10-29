@@ -46,8 +46,20 @@ def positive(value):
     return number
 
 
-def build_cases(pdf=None, page=1, dpis=None, dprs=None, offsets=None):
+def build_cases(pdf=None, page=1, dpis=None, dprs=None, offsets=None, suite='baseline'):
     cases = []
+    if suite == 'low-zoom':
+        # The stock viewer clamps smaller scales and offsets when a page fits.
+        # Keep this preset inside the fixture's normal navigation bounds.
+        for dpr, targets in [(1, [72, 96, 120, 144, 175, 199, 200]),
+                             (2, [120, 144, 175, 199, 200])]:
+            for dpi in targets:
+                phases = [0, .25, .5, .75] if (dpi, dpr) in [(144, 1), (199, 1), (199, 2)] else [0]
+                cases.extend({'pdf': str(pdf) if pdf else None, 'page': page,
+                              'dpi': dpi, 'dpr': dpr, 'offset': phase} for phase in phases)
+        if not pdf and page == 1:
+            cases += [{'pdf': None, 'page': p, 'dpi': 144, 'dpr': 1, 'offset': 0} for p in [2, 3, 4]]
+        return label_cases(cases)
     for dpi in dpis or [144, 199, 200, 201, 209, 288]:
         for dpr in dprs or [1, 2]:
             phases = offsets if offsets is not None else ([0, .25, .5, .75] if dpi == 209 else [0])
@@ -56,6 +68,10 @@ def build_cases(pdf=None, page=1, dpis=None, dprs=None, offsets=None):
                               'dpi': dpi, 'dpr': dpr, 'offset': offset})
     if not pdf and page == 1 and dpis is None and dprs is None and offsets is None:
         cases += [{'pdf': None, 'page': p, 'dpi': 209, 'dpr': 2, 'offset': 0} for p in [2, 3, 4]]
+    return label_cases(cases)
+
+
+def label_cases(cases):
     for i, case in enumerate(cases):
         case['id'] = f"{i:03d}-p{case['page']}-{case['dpi']:g}dpi-{case['dpr']:g}x-offset{case['offset']:g}"
     return cases
@@ -74,9 +90,13 @@ def main():
     parser.add_argument('--pdfium', type=Path, help='Explicit PDFium binary; also accepts PDFIUM_PATH')
     parser.add_argument('--timeout', type=positive, default=600, help='Whole capture-job timeout in seconds')
     parser.add_argument('--fractional', action='store_true', help='Enable experimental fractional viewport rendering')
+    parser.add_argument('--display-scale', action='store_true', help='Refine at every zoom after 150 ms without a viewport change')
+    parser.add_argument('--suite', choices=['baseline', 'low-zoom'], default='baseline', help='Built-in capture matrix')
     args = parser.parse_args()
     if platform.system() != 'Darwin':
         parser.error('This first runner is qualified on macOS only')
+    if args.suite == 'low-zoom' and any(x is not None for x in [args.dpi, args.dpr, args.offset]):
+        parser.error('--suite low-zoom has a fixed matrix; omit --dpi, --dpr and --offset')
     if args.page < 1:
         parser.error('--page must be positive')
     if args.dpr and any(x > 4 for x in args.dpr):
@@ -115,8 +135,9 @@ def main():
                           APP / 'assets/fonts/Urbanist/static/Urbanist-Regular.ttf'})
         receipt['source_sha256'] = {str(p.relative_to(ROOT)): digest(p) for p in sources}
         config = {'output': str(output), 'pdfium': str(pdfium.resolve()), 'fractional': args.fractional,
+                  'display_scale': args.display_scale, 'suite': args.suite,
                   'cases': build_cases(args.pdf.resolve() if args.pdf else None, args.page,
-                                       args.dpi, args.dpr, args.offset)}
+                                       args.dpi, args.dpr, args.offset, args.suite)}
         config_file = output / 'config.json'
         config_file.write_text(json.dumps(config, indent=2) + '\n')
         env = dict(os.environ, PDFIUM_PATH=str(pdfium.resolve()), RENDER_QUALITY_CONFIG=str(config_file))
@@ -129,6 +150,7 @@ def main():
             receipt['objectbox'] = {'path': str(objectbox.resolve()), 'sha256': digest(objectbox)}
         command = [str(dart.resolve()), str(snapshot.resolve()), 'test', '--no-pub',
                    f'--dart-define=PODOFO_FRACTIONAL_RENDERING={str(args.fractional).lower()}',
+                   f'--dart-define=PODOFO_DISPLAY_SCALE_RENDERING={str(args.display_scale).lower()}',
                    '--reporter', 'expanded', 'tool/rendering_quality/capture_test.dart']
         receipt['command'] = command
         receipt['cwd'] = str(APP)

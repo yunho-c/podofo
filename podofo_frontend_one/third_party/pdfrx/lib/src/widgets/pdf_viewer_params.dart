@@ -65,6 +65,7 @@ class PdfViewerParams {
     this.annotationRenderingMode = PdfAnnotationRenderingMode.annotationAndForms,
     this.limitRenderingCache = true,
     this.viewportRenderer,
+    this.renderAtDisplayScale = false,
     this.pageAnchor = PdfPageAnchor.top,
     this.underflowAnchor,
     this.pageAnchorEnd = PdfPageAnchor.bottom,
@@ -247,6 +248,12 @@ class PdfViewerParams {
   /// The renderer owns native work; the viewer owns any returned image. It must
   /// honor cancellation and preserve the requested annotation policy.
   final PdfViewportRenderer? viewportRenderer;
+
+  /// Refine the main viewport at its display scale even below the preview
+  /// threshold. Keep the preview for startup and motion. Refinement waits for
+  /// [PdfViewerBehaviorControlParams.partialImageLoadingDelay] without a change
+  /// to the requested viewport; unrelated repaints do not reset that delay.
+  final bool renderAtDisplayScale;
 
   /// Anchor to position the page when navigating to a page or area.
   ///
@@ -767,6 +774,7 @@ class PdfViewerParams {
         other.annotationRenderingMode != annotationRenderingMode ||
         other.limitRenderingCache != limitRenderingCache ||
         other.viewportRenderer != viewportRenderer ||
+        other.renderAtDisplayScale != renderAtDisplayScale ||
         other.pageAnchor != pageAnchor ||
         other.underflowAnchor != underflowAnchor ||
         other.pageAnchorEnd != pageAnchorEnd ||
@@ -812,6 +820,7 @@ class PdfViewerParams {
         other.annotationRenderingMode == annotationRenderingMode &&
         other.limitRenderingCache == limitRenderingCache &&
         other.viewportRenderer == viewportRenderer &&
+        other.renderAtDisplayScale == renderAtDisplayScale &&
         other.pageAnchor == pageAnchor &&
         other.underflowAnchor == underflowAnchor &&
         other.pageAnchorEnd == pageAnchorEnd &&
@@ -884,6 +893,7 @@ class PdfViewerParams {
         annotationRenderingMode.hashCode ^
         limitRenderingCache.hashCode ^
         viewportRenderer.hashCode ^
+        renderAtDisplayScale.hashCode ^
         pageAnchor.hashCode ^
         underflowAnchor.hashCode ^
         pageAnchorEnd.hashCode ^
