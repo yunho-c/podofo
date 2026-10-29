@@ -19,6 +19,7 @@ import 'package:podofo_one/src/providers/narration_provider.dart';
 import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
+import 'package:podofo_one/src/rendering/fractional_page_renderer.dart';
 import 'package:podofo_one/src/widgets/components/custom_pdf_viewer.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -62,6 +63,7 @@ void main() {
       final module = config['pdfium'] as String;
       final result = <String, Object?>{
         'schema_version': 1,
+        'fractional_requested': fractionalPageRenderingEnabled,
         'passed': false,
         'boundary': 'Flutter widget-test raster capture; not native GPU/compositor qualification',
         'calibration': calibration(),
@@ -319,6 +321,7 @@ Future<void> _capture(
     );
     row['settle_wall_ms'] = stopwatch.elapsedMicroseconds / 1000;
     row['mode'] = status.mode.name;
+    row['uses_fractional_transform'] = status.usesFractionalTransform;
     row['target_scale'] = status.targetScale;
     row['preview_scale'] = status.previewScale;
     row['transform'] = controller.value.storage.toList();
@@ -347,6 +350,13 @@ Future<void> _capture(
         )),
       ),
     );
+    if (fractionalPageRenderingEnabled &&
+        status.mode == PdfPageRenderMode.fullResolution &&
+        !status.usesFractionalTransform) {
+      throw StateError(
+        'Fractional renderer was requested but the viewer fell back',
+      );
+    }
     Future<Uint8List> capture() => _real(tester, () async {
       final image = await boundary.toImage(pixelRatio: dpr);
       try {

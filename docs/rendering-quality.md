@@ -13,6 +13,71 @@ introduced by the viewer's render requests and presentation. It is not an
 independent assessment of PDFium's raster quality. A native capture path and a
 second renderer such as PDF.js are future extensions.
 
+## Fractional-transform prototype
+
+The opt-in prototype preserves the exact page scale and fractional translation
+inside PDFium's matrix renderer. It rounds only the output tile bounds outwards
+on the physical screen grid, then paints that tile at one bitmap pixel per
+physical pixel. The visible-page clip prevents the rounded tile from covering
+adjacent page backgrounds. The cache checks the tile's placement as well as its
+zoom and visible rectangle; stale/cancelled images are disposed. Native work
+holds the editable document's backing lease through the PDFium worker operation.
+
+Enable it in the capture harness with `--fractional`, or in the macOS app with:
+
+```sh
+flutter run -d macos --dart-define=PODOFO_FRACTIONAL_RENDERING=true
+```
+
+The prototype is **off by default**. It handles PoDoFo's editable document
+sessions on macOS. Interactive forms, other document implementations/platforms,
+the magnifier, and the preview cache use the existing path. The debug sidebar
+and case metadata identify when the fractional renderer actually supplied the
+displayed image. The harness fails if an eligible full-resolution capture
+silently falls back while `--fractional` is selected.
+
+Run paired comparisons from the frontend directory, adding
+`--native-frameworks /path/to/PoDoFo.app/Contents/Frameworks` when needed:
+
+```sh
+python3 tool/rendering_quality/run.py --output build/rendering-quality/control
+python3 tool/rendering_quality/run.py --fractional --output build/rendering-quality/fractional
+```
+
+Initial headless qualification against the baseline at `1ed864e`:
+
+| Case group | Standard path | Fractional prototype |
+| --- | --- | --- |
+| 201 DPI, DPR 1 and 2 | Nonzero RGB difference | Exact match in scored region |
+| 209 DPI, DPR 1 and 2, all four offsets | Nonzero RGB difference | Exact match in scored region |
+| 209 DPI rotated/cropped fixture pages | Nonzero RGB difference | Exact match in scored region |
+| 288 DPI, DPR 1 and 2 | Exact match in scored region | Exact match in scored region |
+| 144, 199, 200 DPI preview cases | Existing preview result | Identical to standard path |
+| `Assets/documents/relativity.pdf`, page 1, 209 DPI, DPR 2 | RGB MAE 0.6834 | RGB MAE 0 |
+
+All 15 above-threshold synthetic cases matched the direct reference in the
+scored area (MAE/RMSE 0 and edge-energy ratio 1); six preview cases retained
+their previous measurements. At 209 DPI/DPR 2, the text-region MAE across the
+four offsets fell from 3.37–9.20 to zero. Native tests also cover annotation
+creation/recolor/undo/redo/removal, settled cache reuse, parent-position changes,
+late-image disposal, interactive-form fallback, and cancellation during document
+close. Geometry tests cover partial-page edges and fractional placement.
+
+Additional 209-DPI probes at DPR 1.25 matched exactly at all four offsets. At
+DPR 3, where the whole page width is visible, offset 0 improved from MAE 1.4247
+to 0.000031; the largest remaining RGB-channel difference was one 8-bit level.
+The three nonzero offsets in that view are unsupported because the existing
+viewer clamps horizontal panning when the page fits. Those rejected probes are
+not counted as successful captures.
+
+This establishes headless pixel agreement for these inputs, not general visual
+superiority or native compositor/performance qualification. Arbitrary animated
+ancestor transforms, continuous scrolling/zooming on native GPUs, interactive
+form matrix rendering, broader PDF coverage, and release memory/latency remain
+qualification work before considering a default change. Native rasterization
+is synchronous on the existing worker; cancellation discards an obsolete result
+rather than interrupting PDFium mid-call.
+
 ## Run
 
 Use the repository's pinned Flutter SDK and configured frontend dependencies

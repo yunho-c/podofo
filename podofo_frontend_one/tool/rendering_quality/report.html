@@ -110,7 +110,7 @@ function show() {
   $('case').disabled = !cases.length;
   $('error').textContent = current?.error || data.results.error || data.receipt.error || '';
   $('info').textContent = current
-    ? `Page ${current.page} · ${current.dpi} DPI target · ${current.dpr}× display · offset ${current.offset} physical px · ${current.mode || current.status} · ${current.settle_wall_ms?.toFixed(1) ?? '?'} ms to settled capture (test runner)`
+    ? `Page ${current.page} · ${current.dpi} DPI target · ${current.dpr}× display · offset ${current.offset} physical px · ${current.mode || current.status} · ${current.uses_fractional_transform ? 'fractional transform' : 'standard renderer'} · ${current.settle_wall_ms?.toFixed(1) ?? '?'} ms to settled capture (test runner)`
     : 'No case results';
   $('metadata').textContent = JSON.stringify(current, null, 2);
   $('region').replaceChildren(...Object.keys(current?.metrics || {}).map(k => option(k, k)));

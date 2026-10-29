@@ -1801,12 +1801,12 @@ class _PdfViewerState extends State<PdfViewer>
 
       final visiblePageRect = rect.intersect(targetRect);
       if (renderingStatus != null && !visiblePageRect.isEmpty) {
-        final partialIsCurrent =
-            partial != null && !partial.isDirty && partial.scale == scale && partial.rect == visiblePageRect;
+        final partialIsCurrent = _partialMatchesViewport(partial, rect, visiblePageRect, scale);
         renderingStatus.add((
           pageNumber: page.pageNumber,
           targetScale: pageScale,
           previewScale: previewScaleLimit,
+          usesFractionalTransform: needsPartial && (partial?.usesFractionalTransform ?? false),
           mode: needsPartial
               ? (partialIsCurrent
                     ? PdfPageRenderMode.fullResolution
@@ -2204,7 +2204,7 @@ class _PdfViewerState extends State<PdfViewer>
     final pageRect = _layout!.pageLayouts[page.pageNumber - 1];
     final rect = pageRect.intersect(targetRect);
     final prev = cache.pageImagesPartial[page.pageNumber];
-    if (prev != null && !prev.isDirty && prev.rect == rect && prev.scale == scale) return;
+    if (_partialMatchesViewport(prev, pageRect, rect, scale)) return;
     if (rect.width < 1 || rect.height < 1) return;
 
     cache.pageImagePartialRenderingRequests[page.pageNumber]?.cancel();
@@ -2235,6 +2235,25 @@ class _PdfViewerState extends State<PdfViewer>
     cache.pageImagePartialRenderingRequests[page.pageNumber] = request;
   }
 
+  PixelAlignedViewport? _fractionalTile(Rect pageRect, Rect visibleRect, double scale) {
+    final origin = _documentToGlobal(pageRect.topLeft);
+    return origin == null
+        ? null
+        : pixelAlignedViewport(
+            pageRect: pageRect,
+            visibleRect: visibleRect,
+            pageOriginPhysical: origin * MediaQuery.of(context).devicePixelRatio,
+            scale: scale,
+          );
+  }
+
+  bool _partialMatchesViewport(_PdfImageWithScaleAndRect? image, Rect pageRect, Rect rect, double scale) {
+    if (image == null || image.isDirty || image.scale != scale || image.rect != rect) return false;
+    // A parent's fractional translation can change the physical pixel grid
+    // without changing the document-space visible rectangle or zoom.
+    return !image.usesFractionalTransform || image.paintRect == _fractionalTile(pageRect, rect, scale)?.paintRect;
+  }
+
   Future<_PdfImageWithScaleAndRect?> _createRealSizePartialImage(
     _PdfPageImageCache cache,
     PdfPage page,
@@ -2254,6 +2273,47 @@ class _PdfViewerState extends State<PdfViewer>
 
     var flags = 0;
     if (widget.params.limitRenderingCache) flags |= PdfPageRenderFlags.limitedImageCache;
+
+    final renderer = widget.params.viewportRenderer;
+    if (renderer != null && identical(cache, _imageCache) && page.width > 0 && page.height > 0) {
+      final tile = _fractionalTile(pageRect, rect, scale);
+      if (tile != null) {
+        final image = await renderer(
+          page,
+          PdfViewportRenderRequest(
+            width: tile.width,
+            height: tile.height,
+            scaleX: pageRect.width * scale / page.width,
+            scaleY: pageRect.height * scale / page.height,
+            pageLeft: tile.pageLeft,
+            pageTop: tile.pageTop,
+            annotationRenderingMode: widget.params.annotationRenderingMode,
+            flags: flags,
+            cancellationToken: cancellationToken,
+          ),
+        );
+        if (image != null) {
+          if (!mounted || cancellationToken.isCanceled) {
+            image.dispose();
+            return null;
+          }
+          if (image.width != tile.width || image.height != tile.height) {
+            image.dispose();
+            throw StateError('Viewport renderer returned unexpected image dimensions');
+          }
+          return _PdfImageWithScaleAndRect(
+            image,
+            scale,
+            rect,
+            x,
+            y,
+            paintRect: tile.paintRect,
+            usesFractionalTransform: true,
+          );
+        }
+        if (!mounted || cancellationToken.isCanceled) return null;
+      }
+    }
 
     PdfImage? img;
     try {
@@ -4335,8 +4395,18 @@ class _PdfImageWithScale {
 }
 
 class _PdfImageWithScaleAndRect extends _PdfImageWithScale {
-  _PdfImageWithScaleAndRect(super.image, super.scale, this.rect, this.left, this.top);
+  _PdfImageWithScaleAndRect(
+    super.image,
+    super.scale,
+    this.rect,
+    this.left,
+    this.top, {
+    this.paintRect,
+    this.usesFractionalTransform = false,
+  });
   final Rect rect;
+  final Rect? paintRect;
+  final bool usesFractionalTransform;
   final int left;
   final int top;
 
@@ -4344,12 +4414,15 @@ class _PdfImageWithScaleAndRect extends _PdfImageWithScale {
   int get right => left + width;
 
   void draw(Canvas canvas, [FilterQuality filterQuality = FilterQuality.low]) {
+    canvas.save();
+    if (paintRect != null) canvas.clipRect(rect);
     canvas.drawImageRect(
       image,
       Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-      rect,
+      paintRect ?? rect,
       Paint()..filterQuality = filterQuality,
     );
+    canvas.restore();
   }
 
   void drawNoScale(Canvas canvas, int x, int y, [FilterQuality filterQuality = FilterQuality.low]) {
@@ -4593,7 +4666,13 @@ enum PdfPageRenderMode {
 }
 
 /// Main-view rendering diagnostics. Scales are pixels per PDF point (multiply by 72 for DPI).
-typedef PdfPageRenderingStatus = ({int pageNumber, double targetScale, double previewScale, PdfPageRenderMode mode});
+typedef PdfPageRenderingStatus = ({
+  int pageNumber,
+  double targetScale,
+  double previewScale,
+  PdfPageRenderMode mode,
+  bool usesFractionalTransform,
+});
 
 /// Controls associated [PdfViewer].
 ///

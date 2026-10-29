@@ -149,6 +149,10 @@ class _PdfRenderingStatus extends ConsumerWidget {
                         '${(page.previewScale * 72).toStringAsFixed(0)} DPI cache · '
                         '${(page.targetScale * 72).toStringAsFixed(0)} DPI target',
                       ).small().muted(),
+                      if (page.usesFractionalTransform)
+                        const Text('Fractional transform prototype')
+                            .small()
+                            .muted(),
                     ],
                   ),
                 ),

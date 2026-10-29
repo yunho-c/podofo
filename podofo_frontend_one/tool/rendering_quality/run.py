@@ -73,6 +73,7 @@ def main():
     parser.add_argument('--native-frameworks', type=Path, help='Existing app Contents/Frameworks directory; never modified')
     parser.add_argument('--pdfium', type=Path, help='Explicit PDFium binary; also accepts PDFIUM_PATH')
     parser.add_argument('--timeout', type=positive, default=600, help='Whole capture-job timeout in seconds')
+    parser.add_argument('--fractional', action='store_true', help='Enable experimental fractional viewport rendering')
     args = parser.parse_args()
     if platform.system() != 'Darwin':
         parser.error('This first runner is qualified on macOS only')
@@ -113,7 +114,7 @@ def main():
                          {APP / 'pubspec.yaml', APP / 'pubspec.lock', ROOT / '.fvmrc',
                           APP / 'assets/fonts/Urbanist/static/Urbanist-Regular.ttf'})
         receipt['source_sha256'] = {str(p.relative_to(ROOT)): digest(p) for p in sources}
-        config = {'output': str(output), 'pdfium': str(pdfium.resolve()),
+        config = {'output': str(output), 'pdfium': str(pdfium.resolve()), 'fractional': args.fractional,
                   'cases': build_cases(args.pdf.resolve() if args.pdf else None, args.page,
                                        args.dpi, args.dpr, args.offset)}
         config_file = output / 'config.json'
@@ -127,6 +128,7 @@ def main():
             env['DYLD_LIBRARY_PATH'] = str(links) + (':' + env['DYLD_LIBRARY_PATH'] if env.get('DYLD_LIBRARY_PATH') else '')
             receipt['objectbox'] = {'path': str(objectbox.resolve()), 'sha256': digest(objectbox)}
         command = [str(dart.resolve()), str(snapshot.resolve()), 'test', '--no-pub',
+                   f'--dart-define=PODOFO_FRACTIONAL_RENDERING={str(args.fractional).lower()}',
                    '--reporter', 'expanded', 'tool/rendering_quality/capture_test.dart']
         receipt['command'] = command
         receipt['cwd'] = str(APP)

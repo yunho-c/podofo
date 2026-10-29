@@ -55,6 +55,17 @@ resolution or cache policy. `test/debug_rendering_status_test.dart` checks the
 sidebar against native rendering across the scale threshold, display pixel
 ratios, document changes, spreads, and viewer teardown.
 
+`PdfViewerParams.viewportRenderer` is an optional main-viewport rendering hook
+for the fractional-transform prototype. It receives a physical-pixel-aligned
+tile size and fractional page-to-tile scale/translation; returning null uses
+the ordinary renderer. The tile is painted one-to-one at the snapped screen
+bounds and clipped to the visible page. Its cache key includes the fractional
+placement through the paint rectangle, as well as zoom and visible rectangle.
+`renderingStatus.usesFractionalTransform` reports which path supplied the bitmap.
+Magnifier and preview rendering retain their existing paths. PoDoFo enables the
+hook only with `--dart-define=PODOFO_FRACTIONAL_RENDERING=true`; see
+`docs/rendering-quality.md` at the repository root for qualification and limits.
+
 ## Staging fixes
 
 Ported from `pdfrx_og` staging at `fe80962214a3df7615c5f1a1917f6f26326fa661`:

@@ -20,6 +20,7 @@ import '../../narration/narration_painter.dart';
 import '../../services/document_actions.dart';
 import '../../services/pdf_navigation_history.dart';
 import '../../services/pdf_session.dart';
+import '../../rendering/fractional_page_renderer.dart';
 import '../../workers/open_graph_worker.dart';
 import 'pdf_context_menu_overlay.dart';
 import 'pdf_page_layout.dart';
@@ -373,6 +374,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       controller: controller,
       initialPageNumber: document.lastOpenedPage ?? 1,
       params: PdfViewerParams(
+        viewportRenderer: fractionalPageRenderingEnabled
+            ? renderFractionalPage
+            : null,
         layoutPages: document.twoPageView ? layoutTwoPages : null,
         sizeDelegateProvider: document.twoPageView
             ? const PdfViewerSizeDelegateProviderLegacy(
