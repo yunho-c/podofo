@@ -19,7 +19,7 @@ class DarkModeButton extends ConsumerWidget {
           position: details.globalPosition,
           builder: (context) {
             return SizedBox(
-              width: 220,
+              width: 290,
               child: Consumer(
                 builder: (context, ref, child) {
                   final shaderPreference = ref.watch(shaderPreferenceProvider);
@@ -34,6 +34,15 @@ class DarkModeButton extends ConsumerWidget {
                           },
                         ),
                         child: const Text('Invert PDF Colors'),
+                      ),
+                      MenuButton(
+                        trailing: Switch(
+                          value: ref.watch(preservePhotosProvider),
+                          onChanged: shaderPreference
+                              ? userPreferenceNotifier.setPreservePhotos
+                              : null,
+                        ),
+                        child: const Text('Preserve photos (experimental)'),
                       ),
                       MenuLabel(
                         trailing: Text(shaderStrength.toStringAsFixed(2))

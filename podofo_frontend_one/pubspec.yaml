@@ -136,6 +136,7 @@ flutter:
   shaders:
     - shaders/default.frag
     - shaders/invert.frag
+    - shaders/invert_photos.frag
 
 flutter_launcher_icons:
   # NOTE: run

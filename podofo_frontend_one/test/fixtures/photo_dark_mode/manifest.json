@@ -1,0 +1,149 @@
+{
+  "sha256": "20bc6ca2d201cbb9d9ae8592a116a28f5ba9ac8014a5d40f5f115ab663c5d4d8",
+  "pages": [
+    {
+      "page": 1,
+      "name": "mixed",
+      "rotation": 0,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 1
+    },
+    {
+      "page": 2,
+      "name": "mixed",
+      "rotation": 90,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 1
+    },
+    {
+      "page": 3,
+      "name": "mixed",
+      "rotation": 180,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 1
+    },
+    {
+      "page": 4,
+      "name": "mixed",
+      "rotation": 270,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 1
+    },
+    {
+      "page": 5,
+      "name": "partly-cropped-photo",
+      "rotation": 0,
+      "crop": [
+        100,
+        260,
+        280,
+        430
+      ],
+      "expectedPhotos": 1
+    },
+    {
+      "page": 6,
+      "name": "full-page-scan",
+      "rotation": 0,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 0
+    },
+    {
+      "page": 7,
+      "name": "text-over-photo",
+      "rotation": 0,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 0
+    },
+    {
+      "page": 8,
+      "name": "clip-alpha-form-skew",
+      "rotation": 0,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 0
+    },
+    {
+      "page": 9,
+      "name": "ambiguous-rasters",
+      "rotation": 0,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 0
+    },
+    {
+      "page": 10,
+      "name": "grayscale-photo-ambiguous",
+      "rotation": 0,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 0
+    },
+    {
+      "page": 11,
+      "name": "highlight-on-photo",
+      "rotation": 0,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 1
+    },
+    {
+      "page": 12,
+      "name": "image-budget",
+      "rotation": 0,
+      "crop": [
+        30,
+        40,
+        330,
+        440
+      ],
+      "expectedPhotos": 0
+    }
+  ]
+}

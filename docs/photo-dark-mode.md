@@ -1,0 +1,216 @@
+# Experimental photo-preserving PDF dark mode
+
+Review prototype based on `main` commit
+`3e143209e91321bbae06607ce563a63c30febee5`. Nothing is pushed or merged by this
+change. The existing `invert.frag` and dependency lockfile are unchanged.
+
+## Enable and expected behavior
+
+In dark mode, right-click the theme button, enable **Invert PDF Colors**, then
+**Preserve photos (experimental)**. The new preference defaults to **off**,
+including for existing installations. Inversion strength retains its existing
+meaning; notably zero strength in the original shader is not a no-op.
+
+The main reader preserves likely photographs while text, vector figures and
+rejected raster figures use the original HSL lightness transform. Thumbnail
+inversion remains unchanged. Until analysis completes, and on analysis or
+selective-shader loading failure, the existing whole-view inversion is used.
+Photos may visibly change from inverted to natural after this initial delay.
+Turning the option off immediately restores the existing rendering path.
+
+This is a conservative heuristic, not semantic image recognition. It intentionally
+misses some photographs and can mistake sufficiently textured scientific images
+or screenshots containing photographs for photographs. There is no accuracy
+claim based on a single source photograph and no per-region user override yet.
+
+## Content inspection and classification
+
+`photo_analysis.dart` reads the **live session document**, not a separately opened
+source file. `PdfSession.readLocked` holds a document lease and serializes against
+edits, save and close. `useNativeDocumentHandle` in the pinned pdfrx engine pauses
+its PDFium worker throughout the awaited callback. Raw calls execute in a short
+auxiliary isolate while that worker remains suspended. All native pages and
+bitmaps are closed in `finally`; only detached geometry/decisions return. The
+prototype never initializes or destroys the shared PDFium runtime.
+
+Inspection uses `FPDFPage_CountObjects`, `FPDFPage_GetObject`, object type/bounds,
+image matrix, transparency, clip information, pixel dimensions and
+`FPDFImageObj_GetBitmap`. Only top-level image objects are eligible. Images
+inside Form XObjects are not traversed. Form bounds still block overlapping
+photo candidates. All other page objects, even underlays, block an overlapping
+candidate; this avoids leaving PDF text/vector labels uninverted over a photo.
+Native annotations are retained in the viewer composite, not removed or covered.
+
+An image must pass **every** gate:
+
+| Gate | Prototype criterion |
+| --- | --- |
+| Geometry | Axis-aligned image or exact quarter-turn; arbitrary skew/rotation rejected |
+| Visibility | Opaque, without an explicit path or text clip; crop/media clipping is supported |
+| Isolation | No overlap with another top-level page object's bounds |
+| Page size | Visible width and height at least 24 PDF units; less than 65% of the visible page area |
+| Pixels | At least 64 × 64; at most 4 million decoded pixels per image |
+| Tonal entropy | At least 4.5 bits over 64 luminance bins |
+| Color diversity | At least 90 occupied 4-bit RGB palette cells |
+| Flat neighbors | At most 45% of horizontal/vertical luminance differences are ≤2 |
+| Sharp edges | At most 18% of neighbor luminance differences are ≥64 |
+| Extreme tones | At most 30% of samples have luminance <12 or >243 |
+| Distributed texture | At least 10 of 16 tiles each have 100 neighbor differences in [6,48] |
+
+Pixel statistics use a fixed 64 × 64 center sample, without image interpolation
+or a learned model. Low-color plots, white-background plots, screenshots and
+smooth gradients in the fixture are rejected. Grayscale photos are also rejected
+by the palette gate; scans/full-page photos, small images, photos with overprinted
+PDF labels, explicit clips, transparencies and complex image transforms stay
+inverted. These are deliberate false negatives, not features claimed to work.
+
+PDFium returns a non-null empty clip wrapper with `CountPaths == -1` when it has
+no reference. A count of zero or greater is rejected, including text-only clips.
+This was checked against native fixture behavior and
+[PDFium's implementation](https://github.com/chromium/pdfium/blob/main/fpdfsdk/fpdf_transformpage.cpp).
+
+## Coordinates and compositing
+
+Native object bounds are intersected with `FPDF_GetPageBoundingBox`; the crop
+origin is subtracted to match pdfrx's unrotated `PdfRect` convention. The same
+`PdfRect.toRectInDocument` conversion used by pdfrx applies page rotation and
+layout scaling. The actual viewer layout supplies each page's spread offset.
+Finally, the current visible document rectangle maps these coordinates to the
+filter input's normalized coordinates. No screen-space, window-origin or device
+pixel ratio assumptions are used. Geometry tests compare against PDFium's
+`FPDF_PageToDevice` for rotations 0/90/180/270 and nonzero crop origins.
+
+`PhotoPreservingFilter` always keeps one `PdfViewer`, its listener/gesture tree,
+and one `ImageFiltered` mounted. Its own shader belongs to the viewer; it does not
+mutate the shared default/thumbnail shader. A separate `invert_photos.frag` copies
+the original HSL calculation and bypasses it inside up to 16 visible photo
+rectangles. No second PDF render or bitmap overlay is introduced.
+
+The bypass preserves the **already composited pixels**, including any annotation,
+selection, search or narration overlay within the rectangle. Those overlay
+pixels consequently retain their uninverted color there, while pixels outside
+use the existing transform. This is region-level bypass, not separate treatment
+of image and overlay layers. Native embedded text/vector overlays disqualify the
+photo as described above. Excess visible photo regions stay inverted.
+
+## Work and memory bounds
+
+Only visible pages are admitted, with a 150 ms delay after the visible page set
+changes and between jobs. Analysis is serial; scrolling replaces queued pages.
+A 64-page LRU caches both positive and negative results. Zooming/panning a cached
+page recalculates rectangles only. Revisions invalidate the cache; stale results
+from an in-flight job are discarded. Disposal releases queued work, while the
+active job retains its lease until it finishes. Eviction or reopening a tab can
+cause analysis again; the cache is not persisted across tabs/restarts.
+
+Admission limits: 2,000 objects, 24 images, 8 million decoded pixels per page,
+and an 80 ms soft deadline checked between candidates. Native page loading or
+an individual image decode cannot be interrupted by that deadline. A costly
+cold decode can still delay pdfrx's renderer while the worker is paused, even
+though it does not block Dart's UI isolate. Source bitmaps are freed immediately;
+only at most 24 small decisions/regions per cached page are retained. Extreme
+zoom-out admits only the first 64 visible pages to avoid cache thrashing.
+
+## Verification performed on 2026-10-28
+
+Linux x64, Flutter **3.47.5**, Dart **3.13.4**, pdfrx **2.6.5**,
+pdfrx_engine **0.6.1**, pdfium_dart **0.3.1**. Final native checks used the PDFium
+`chromium/7811` binary obtained by the pinned package's build hook, SHA-256
+`d106072a29b3689a5d6739948f98a97fe3ec82f5a1c309dc44e86f6c549fb44e`.
+
+- 17 focused tests passed: six new classifier/preference/cache tests, three new
+  real-PDF tests, and eight existing lease/layout/highlight-selection regressions.
+- One Impeller-enabled viewer test passed: the production wrapper, navigation,
+  retained word selection, mode toggles, two-page layout, a rotated page,
+  nonzero outer padding, and a translucent paint overlay. Captured pixels inside
+  photo masks match the uninverted viewer; outside pixels match the original
+  filter. Toggling preserves the viewer instance and navigation matrix.
+- One explicit Impeller shader probe passed **1,024,821 sampled pixel comparisons**
+  over six pages, two render scales, and strengths 0, 0.6 and 1. It includes a
+  native highlight drawn over a photograph and all quarter-turn rotations.
+  The probe requires `ImageFilter.isShaderFilterSupported` and executes
+  `ImageFilter.shader` with offscreen readback; it is not a shader mock.
+- One diagnostic benchmark passed; static analysis of the changed Dart code,
+  focused tests and qualification tools passed. Fixture regeneration/hash and
+  formatting were checked separately.
+
+| Diagnostic | Measured result |
+| --- | --- |
+| 24 uncached page analyses, including synchronization/isolate | First 46.334 ms; median 2.433 ms; range 0.633–46.334 ms |
+| PDFium page rendering at 600 × 800, 12 pages | Median 4.398 ms; range 2.361–25.333 ms |
+| 10,000 cached lookups + rectangle projections | 15.866 ms total, about 1.59 μs each; no extra native analyses |
+| Offscreen filter + image readback, 36 samples per mode | Original median 0.621 ms; selective median 0.514 ms |
+
+The offscreen sequence always ran the original filter first and included cold
+initialization, mixed image sizes and JIT behavior. Its negative median difference
+is **not a performance improvement claim**. There is one filter pass in both
+modes; the selective pass adds up to 16 rectangle tests per pixel and skips HSL
+work inside a photo. Interactive frame-time/FPS, target-device GPU overhead,
+Release memory/RSS and long scrolling sessions remain unmeasured.
+
+### Qualification limits
+
+The actual **Release application was not built or run**. This Linux host cannot
+qualify the macOS Release/Metal path, and preparation also failed because the
+repository pins MLSR commit `0ca5d81bbcad0fa8a6274ebe3a7e44200bdc4da6`, which both
+Git and the GitHub API reported unavailable. The pinned SDK and lockfile were
+not altered. Focused validation used a separate source copy/harness removing
+only the three MLSR dependencies and their native hook. This does not qualify
+MLSR, the full reader, desktop packaging, or the complete existing test suite.
+
+The headless Impeller evidence is stronger than ordinary widget tests but is not
+Release desktop acceptance. Metal, Windows, GLES/backend orientation, device DPI
+changes, rapid tab switching during slow decoding, and full native context-menu/
+link/annotation-edit flows still need target-platform review. No new backend
+support is claimed beyond the original shader's requirements.
+
+Testing also exposed a pdfrx select-all paint failure (`PdfPageTextRange` on an
+empty-fragment page) when selecting across the fixture's image-only pages. The
+stack is in pdfrx's selection paint path, and the failure occurred with selective
+mode off. This prototype does not change that path; the passing selection check
+uses word selection. Cross-page select-all over image-only pages is unqualified.
+
+## Reproduce and review
+
+With the normal app prepared, run from `podofo_frontend_one`, supplying the same
+PDFium binary as the application (see `tool/test_macos.py` on macOS):
+
+```sh
+flutter test --no-pub --concurrency=1 \
+  test/photo_dark_mode_test.dart test/photo_dark_mode_native_test.dart \
+  test/pdf_document_lease_test.dart test/pdf_page_layout_test.dart \
+  test/highlight_selection_test.dart
+flutter test --no-pub --enable-impeller test/photo_filter_widget_test.dart
+flutter test --no-pub --enable-impeller tool/qualify_photo_shader_test.dart
+flutter test --no-pub tool/benchmark_photo_analysis_test.dart
+```
+
+If MLSR remains unavailable, `python3 tool/prepare_photo_test_harness.py
+/absolute/path/to/new-harness` prepares the limited harness (requires PyYAML).
+Run `flutter pub get --enforce-lockfile` in it. For the qualified Linux test path,
+set `PDFIUM_PATH="$PWD/build/native_assets/linux/libpdfium.so"` before the tests;
+the package hook creates that binary during test preparation. Keep `CI=true` on
+headless hosts to avoid Flutter's cloud-metadata environment detection. This is
+a focused verification workaround, not an application distribution configuration.
+
+The deterministic inputs and their attribution are in
+`test/fixtures/photo_dark_mode/`. Regenerate with
+`python3 tool/generate_photo_fixture.py` using Pillow 12.3.0. Test/probe outputs are
+under `build/photo-dark-mode/` and must not be treated as Release evidence.
+
+`tool/photo_release_probe.dart` reuses the same pixel checks in a real Release
+app and refuses an existing evidence directory. On a prepared macOS host:
+
+```sh
+flutter run -d macos --release -t tool/photo_release_probe.dart \
+  --dart-define=PHOTO_FIXTURE=/accessible/absolute/path/mixed.pdf \
+  --dart-define=PHOTO_OUTPUT=/accessible/absolute/path/new-evidence
+```
+
+Use paths accessible to the sandboxed app, such as its own container. Inspect
+`report.json` and the PNGs, then rebuild the ordinary app. Finally review actual
+paper PDFs: toggle inversion/strength, pan and zoom, switch single/two-page
+layouts, select/copy text, create/remove highlights, follow internal links/Back,
+and switch/close tabs while analysis is pending. Review gray photographs,
+heatmaps, microscopy, screenshots and scanned papers for false positives and
+false negatives before expanding this experimental classifier.

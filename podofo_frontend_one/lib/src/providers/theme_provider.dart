@@ -8,22 +8,26 @@ class UserPreference {
   final ThemeMode themeMode;
   final bool shaderPreference;
   final double shaderStrength;
+  final bool preservePhotos;
 
   UserPreference({
     this.themeMode = ThemeMode.system,
     this.shaderPreference = false,
     this.shaderStrength = 1.0,
+    this.preservePhotos = false,
   });
 
   UserPreference copyWith({
     ThemeMode? themeMode,
     bool? shaderPreference,
     double? shaderStrength,
+    bool? preservePhotos,
   }) {
     return UserPreference(
       themeMode: themeMode ?? this.themeMode,
       shaderPreference: shaderPreference ?? this.shaderPreference,
       shaderStrength: shaderStrength ?? this.shaderStrength,
+      preservePhotos: preservePhotos ?? this.preservePhotos,
     );
   }
 }
@@ -45,6 +49,7 @@ class UserPreferenceNotifier extends AsyncNotifier<UserPreference> {
       themeMode: themeMode,
       shaderPreference: shaderPreference,
       shaderStrength: shaderStrength,
+      preservePhotos: prefs.getBool('preservePhotosExperimental') ?? false,
     );
   }
 
@@ -60,6 +65,12 @@ class UserPreferenceNotifier extends AsyncNotifier<UserPreference> {
     state = AsyncValue.data(
       state.value!.copyWith(shaderPreference: shaderPreference),
     );
+  }
+
+  Future<void> setPreservePhotos(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('preservePhotosExperimental', value);
+    state = AsyncValue.data(state.value!.copyWith(preservePhotos: value));
   }
 
   Future<void> setShaderStrength(double shaderStrength) async {
@@ -134,3 +145,12 @@ final shaderStrengthProvider = Provider<double>((ref) {
 final shaderPreferenceProvider = Provider<bool>((ref) {
   return ref.watch(userPreferenceProvider).value?.shaderPreference ?? false;
 });
+
+final preservePhotosProvider = Provider<bool>(
+  (ref) => ref.watch(userPreferenceProvider).value?.preservePhotos ?? false,
+);
+
+// A load failure leaves the existing whole-view shader active.
+final photoFragmentProgramProvider = FutureProvider<FragmentProgram>(
+  (ref) => FragmentProgram.fromAsset('shaders/invert_photos.frag'),
+);

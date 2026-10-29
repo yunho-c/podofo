@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:ui';
 
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
@@ -11,6 +10,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../dark_mode/photo_filter.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_state_provider.dart';
@@ -34,8 +34,6 @@ class CustomPdfViewer extends ConsumerStatefulWidget {
 
 class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     with SingleTickerProviderStateMixin {
-  static final _disabledFilter = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
-
   OverlayEntry? _overlay;
   Timer? _hoverTimer;
   int _generation = 0;
@@ -364,6 +362,11 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     final searcher = ref.watch(pdfTextSearcherProvider);
     final brightness = ref.watch(brightnessProvider);
     final shader = ref.watch(shaderProvider);
+    final preservePhotos = ref.watch(preservePhotosProvider);
+    final photoProgram =
+        preservePhotos && brightness == Brightness.dark && shader != null
+        ? ref.watch(photoFragmentProgramProvider).value
+        : null;
     final viewer = PdfViewer(
       document.session.lease.reference,
       controller: controller,
@@ -515,9 +518,16 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       onHover: _onHover,
       onExit: (_) => _clearHover(),
       // Keep the viewer mounted so theme/inversion changes preserve its viewport.
-      child: ImageFiltered(
+      child: PhotoPreservingFilter(
+        session: document.session,
+        revision: document.session.revision,
+        controller: controller,
         enabled: invert,
-        imageFilter: invert ? ImageFilter.shader(shader) : _disabledFilter,
+        selective: preservePhotos,
+        twoPages: document.twoPageView,
+        strength: ref.watch(shaderStrengthProvider),
+        defaultShader: shader,
+        program: photoProgram,
         child: Listener(
           onPointerSignal: (event) {
             _cancelLinkNavigation();
