@@ -10,6 +10,9 @@ Future<Object?> ordinaryFileAccess(MethodCall call) async {
   switch (call.method) {
     case 'acquire':
       return {'path': args['path']};
+    case 'read':
+      final path = await File(args['path'] as String).resolveSymbolicLinks();
+      return {'path': path, 'bytes': await File(path).readAsBytes()};
     case 'remember':
     case 'release':
       return null;

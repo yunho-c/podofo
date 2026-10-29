@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
@@ -46,7 +47,8 @@ void main() {
   test('restore reads resolved bookmark path and releases access', () async {
     final session = await PdfSession.open('${temporary.path}/old-path.pdf');
     expect(session.path, await pdf.resolveSymbolicLinks());
-    expect(calls.map((c) => c.method), ['acquire', 'release']);
+    expect(calls.map((c) => c.method), ['acquire', 'read', 'release']);
+    expect((calls[1].arguments as Map)['path'], pdf.path);
     expect((calls.first.arguments as Map)['selected'], false);
     await session.close();
     // The PDF's detached data remains valid after releasing the file grant.
@@ -61,7 +63,83 @@ void main() {
         throwsA(anything),
       );
       expect((calls.first.arguments as Map)['selected'], true);
-      expect(calls.map((c) => c.method), ['acquire', 'release']);
+      expect(calls.map((c) => c.method), ['acquire', 'read', 'release']);
+    },
+    skip: !Platform.isMacOS,
+  );
+
+  test(
+    'native read supplies detached bytes and the coordinated path',
+    () async {
+      // Neither path exists. Any Dart stat, symlink resolution, or direct read
+      // would fail; native coordination alone supplies the document's contents.
+      final resolved = '${temporary.path}/coordinated.pdf';
+      installFileAccessMock((call) async {
+        calls.add(call);
+        if (call.method == 'acquire') {
+          return {
+            'path': '${temporary.path}/cloud-placeholder.pdf',
+            'token': 'cloud',
+          };
+        }
+        if (call.method == 'read') {
+          return {'path': resolved, 'bytes': pdfFixture()};
+        }
+        return ordinaryFileAccess(call);
+      });
+      final session = await PdfSession.open('${temporary.path}/old.pdf');
+      try {
+        expect(session.path, resolved);
+        expect(calls.map((c) => c.method), ['acquire', 'read', 'release']);
+        expect(await session.lease.use((pdf) async => pdf.pages.length), 3);
+      } finally {
+        await session.close();
+      }
+    },
+    skip: !Platform.isMacOS,
+  );
+
+  test(
+    'cloud read failure keeps access until completion and releases it',
+    () async {
+      final reading = Completer<void>();
+      final finish = Completer<Object?>();
+      installFileAccessMock((call) async {
+        calls.add(call);
+        if (call.method == 'acquire') {
+          return {'path': pdf.path, 'token': 'cloud'};
+        }
+        if (call.method == 'read') {
+          reading.complete();
+          return finish.future;
+        }
+        return ordinaryFileAccess(call);
+      });
+      final opening = PdfSession.open(pdf.path);
+      await reading.future;
+      expect(calls.map((c) => c.method), ['acquire', 'read']);
+      final failure = expectLater(
+        opening,
+        throwsA(
+          isA<DocumentFileReadException>()
+              .having((e) => e.cause.code, 'code', 'cloud_file_unavailable')
+              .having(
+                (e) => e.toString(),
+                'message',
+                'Make available offline, then retry.',
+              ),
+        ),
+      );
+      finish.completeError(
+        PlatformException(
+          code: 'cloud_file_unavailable',
+          message: 'Make available offline, then retry.',
+          details: {'domain': 'NSPOSIXErrorDomain', 'nativeCode': 11},
+        ),
+      );
+      await failure;
+      expect(calls.map((c) => c.method), ['acquire', 'read', 'release']);
+      expect((calls.last.arguments as Map)['token'], 'cloud');
     },
     skip: !Platform.isMacOS,
   );
@@ -73,6 +151,7 @@ void main() {
       await access.release();
       await access.release();
       expect(calls.where((c) => c.method == 'release'), hasLength(1));
+      await expectLater(access.read(), throwsStateError);
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(DocumentFileAccess.channel, null);
       await expectLater(
@@ -82,6 +161,22 @@ void main() {
     },
     skip: !Platform.isMacOS,
   );
+
+  test('missing native read bridge releases the grant without a direct-read fallback', () async {
+    installFileAccessMock((call) async {
+      calls.add(call);
+      if (call.method == 'acquire') {
+        return {'path': pdf.path, 'token': 'access-token'};
+      }
+      if (call.method == 'read') throw MissingPluginException('read');
+      return ordinaryFileAccess(call);
+    });
+    await expectLater(
+      PdfSession.open(pdf.path),
+      throwsA(isA<MissingPluginException>()),
+    );
+    expect(calls.map((c) => c.method), ['acquire', 'read', 'release']);
+  }, skip: !Platform.isMacOS);
 
   test(
     'save reacquires access and refreshes replacement bookmark before release',

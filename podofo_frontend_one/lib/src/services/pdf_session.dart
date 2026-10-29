@@ -109,8 +109,9 @@ class PdfSession {
     }
     final access = await DocumentFileAccess.acquire(path, selected: selected);
     try {
-      path = await File(access.path).resolveSymbolicLinks();
-      final bytes = await File(path).readAsBytes();
+      final contents = await access.read();
+      path = contents.path;
+      final bytes = contents.bytes;
       final pdf = await PdfDocument.openData(
         bytes,
         sourceName: path,
