@@ -28,17 +28,18 @@ claim based on a single source photograph and no per-region user override yet.
 In the developer sidebar, expand **Dark Mode** and enable **Show
 photo-preservation diagnostics**. This temporary toggle defaults off and also
 works in light mode or with preservation disabled. It shares the viewer's
-visible-page analysis/cache; it does not open another PDF or render image copies.
+visible-page analysis/cache; enabling diagnostics adds no second viewer or page render.
 
 - Green outlines indicate image regions actually passed to the preservation
   shader. Accepted images beyond the 16-region limit are gray and labeled
   `visible-region-limit`.
 - Orange outlines indicate rejected raster images. Labels include the page,
-  zero-based PDF object index, and the first failed gate.
-- Gray outlines indicate skipped/inactive images or uninspected Form containers.
-  Accepted photos show `inversion-off`, `preservation-off`, or
-  `selective-shader-unavailable` when preservation is inactive. Form bounds may
-  contain text, vectors, or raster images; their contents are still not traversed.
+  zero-based PDF object path, and the first failed gate. A path such as `60/2`
+  means page object 60, then child 2 inside that Form.
+- Gray outlines indicate skipped/inactive images. Accepted photos show
+  `inversion-off`, `preservation-off`, or `selective-shader-unavailable` when
+  preservation is inactive. Forms are traversed and their raster children appear
+  individually; there is no longer a `form-not-inspected` placeholder.
 
 Expand an object's sidebar entry to see its reason and, when pixel classification
 was reached, all six measured statistics alongside their thresholds. Multiple
@@ -71,23 +72,30 @@ auxiliary isolate while that worker remains suspended. All native pages and
 bitmaps are closed in `finally`; only detached geometry/decisions return. The
 prototype never initializes or destroys the shared PDFium runtime.
 
-Inspection uses `FPDFPage_CountObjects`, `FPDFPage_GetObject`, object type/bounds,
-image matrix, transparency, clip information, pixel dimensions and
-`FPDFImageObj_GetBitmap`. Only top-level image objects are eligible. Images
-inside Form XObjects are not traversed. Form bounds still block overlapping
-photo candidates. All other page objects, even underlays, block an overlapping
-candidate; this avoids leaving PDF text/vector labels uninverted over a photo.
-Native annotations are retained in the viewer composite, not removed or covered.
+Inspection flattens page objects and nested Form XObjects into paint order using
+`FPDFPage_GetObject` and `FPDFFormObj_GetObject`. It composes parent matrices,
+inherits Form transparency and clipping, and inspects the raster leaves. Native
+bounds already include each object's own matrix; only its ancestors are applied
+again. Form containers do not themselves count as overlapping paint.
+
+Once an image passes the opacity check, earlier paint is treated as covered.
+Later text, images and ambiguous drawing paths still block preservation. For
+bounded, straight-edged filled paths, contour edges plus the PDF fill rule can
+prove that an image lies in an unpainted hole. This handles figure frames exported
+as filled polygons. When a frame meets the photo edge, a one-point inset must be
+proved clear before preserving that smaller rectangle. Curves, strokes, and
+filled regions inside the rectangle stay conservative. Native annotations remain
+part of the viewer composite.
 
 An image must pass **every** gate:
 
 | Gate | Prototype criterion |
 | --- | --- |
 | Geometry | Axis-aligned image or exact quarter-turn; arbitrary skew/rotation rejected |
-| Visibility | Opaque, without an explicit path or text clip; crop/media clipping is supported |
-| Isolation | No overlap with another top-level page object's bounds |
+| Visibility | No image/Form transparency state; visible rendered pixels have full alpha; simple rectangular clips supported |
+| Isolation | No later paint in the retained rectangle; bounded polygon holes can prove clear interiors |
 | Page size | Visible width and height at least 24 PDF units; less than 65% of the visible page area |
-| Pixels | At least 64 × 64; at most 4 million decoded pixels per image |
+| Pixels | Source at least 64 × 64; source and local rendered bitmap each at most 4 million pixels |
 | Tonal entropy | At least 4.5 bits over 64 luminance bins |
 | Color diversity | At least 90 occupied 4-bit RGB palette cells |
 | Flat neighbors | At most 45% of horizontal/vertical luminance differences are ≤2 |
@@ -95,21 +103,43 @@ An image must pass **every** gate:
 | Extreme tones | At most 30% of samples have luminance <12 or >243 |
 | Distributed texture | At least 10 of 16 tiles each have 100 neighbor differences in [6,48] |
 
-Pixel statistics use a fixed 64 × 64 center sample, without image interpolation
+Pixel statistics use a fixed 64 × 64 center sample of the visible crop, mapped
+back to source pixels through the inverse composed matrix, without interpolation
 or a learned model. Low-color plots, white-background plots, screenshots and
 smooth gradients in the fixture are rejected. Grayscale photos are also rejected
 by the palette gate; scans/full-page photos, small images, photos with overprinted
-PDF labels, explicit clips, transparencies and complex image transforms stay
+PDF labels, complex clips, transparencies and complex image transforms stay
 inverted. These are deliberate false negatives, not features claimed to work.
 
-PDFium returns a non-null empty clip wrapper with `CountPaths == -1` when it has
-no reference. A count of zero or greater is rejected, including text-only clips.
-This was checked against native fixture behavior and
-[PDFium's implementation](https://github.com/chromium/pdfium/blob/main/fpdfsdk/fpdf_transformpage.cpp).
+Each geometric clip subpath must describe one axis-aligned rectangle after
+ancestor transforms; multiple such clips are intersected with the page and image
+bounds. Compound paths, holes, curves, unknown clips and zero-path referenced
+clips are rejected. Because the public clip API omits text clipping, any clipping
+text render mode found on a page conservatively rejects its image candidates.
+The empty, unreferenced PDFium clip wrapper has `CountPaths == -1`.
+
+`FPDFImageObj_GetBitmap` ignores intrinsic image masks, and
+`FPDFPageObj_HasTransparency` alone does not detect an image's `/SMask`. Admission
+therefore also uses `FPDFImageObj_GetRenderedBitmap`, checking **every** pixel's
+alpha within the retained region before sampling raw source colors. Source and
+rendered sizes are checked before allocation, both count toward the page pixel
+budget, and both bitmaps are immediately destroyed. No live object matrices,
+clips or PDF bytes are changed. The relevant contracts are in
+[PDFium's image API](https://pdfium.googlesource.com/pdfium/+/main/public/fpdf_edit.h)
+and [implementation](https://github.com/chromium/pdfium/blob/main/fpdfsdk/fpdf_editimg.cpp).
+
+This alpha check is at PDFium's local object-render resolution, which can differ
+from both source resolution and eventual viewer zoom. It rejects the soft,
+explicit and color-key masks in the fixtures; it is not a structural guarantee
+that a PDF resource has no mask, nor full-resolution mask-aware compositing.
+Subpixel mask details and arbitrary translucent composites remain later-stage
+work. Source/target size bounds also cannot bound every internal decoder or mask
+allocation; the deadline remains soft.
 
 ## Coordinates and compositing
 
-Native object bounds are intersected with `FPDF_GetPageBoundingBox`; the crop
+Ancestor-transformed object bounds and supported clips are intersected with
+`FPDF_GetPageBoundingBox`; the crop
 origin is subtracted to match pdfrx's unrotated `PdfRect` convention. The same
 `PdfRect.toRectInDocument` conversion used by pdfrx applies page rotation and
 layout scaling. The actual viewer layout supplies each page's spread offset.
@@ -141,15 +171,48 @@ from an in-flight job are discarded. Disposal releases queued work, while the
 active job retains its lease until it finishes. Eviction or reopening a tab can
 cause analysis again; the cache is not persisted across tabs/restarts.
 
-Admission limits: 2,000 objects, 24 images, 8 million decoded pixels per page,
+Admission limits: 2,000 total objects across Forms, 16 nested Form levels,
+24 raster placements, 8 million source-plus-rendered pixels per page,
 and an 80 ms soft deadline checked between candidates. Native page loading or
 an individual image decode cannot be interrupted by that deadline. A costly
 cold decode can still delay pdfrx's renderer while the worker is paused, even
 though it does not block Dart's UI isolate. Source bitmaps are freed immediately;
 only detached decisions/regions are retained. Diagnostic metadata is capped at
-128 raster objects and 128 uninspected Form containers per page, with omitted
-counts reported; image classification still admits at most 24 images. Extreme
+128 raster objects per page, with omitted counts reported; image classification
+still admits at most 24 images. Geometric clips admit at most eight rectangles
+per object; filled-path overlap proofs admit at most 256 segments per path. Extreme
 zoom-out admits only the first 64 visible pages to avoid cache thrashing.
+
+## Form inspection qualification on 2026-10-30
+
+The macOS Flutter 3.47.5 runner uses the existing Debug app's PDFium framework.
+All 17 focused tests, the separate local-paper shader qualification, and static
+analysis passed. The combined shader checks compared 5,642,700 pixel samples.
+The committed `forms.pdf` adds 26 deterministic pages covering nested quarter-turn
+and reflected transforms, repeated Forms, image/ancestor/BBox clips, paint order,
+text clipping, intrinsic masks, transparency groups, depth/image/allocation
+limits, fractional placement and filled frame holes. Tests verify expected
+crop-relative bounds and object paths, plus unchanged PDF pixels and text after
+analysis. The sidebar test exercises sibling object paths without duplicate keys.
+The actual Impeller probe also covers ten of these pages at two scales and three
+inversion strengths, including the cropped and framed photo edges.
+
+Local-paper qualification (papers are not committed) preserved **3 crops on
+GVC-RT page 8** and **5 crops on ResGVC page 16**. Actual Impeller output matches
+natural pixels within accepted regions and the original dark-mode transform
+outside them. Rendered captures were inspected for caption/table/label legibility.
+The large photos with inset labels/boxes still fail overlap admission; some small
+crops fail the unchanged palette, entropy or flatness thresholds. This is partial
+coverage, not full figure or document acceptance. Dense GenRecon pages still face
+the unchanged 24-image limit. No new Release build or interactive-window
+acceptance is claimed by these test-runner checks.
+
+Reports and natural/original/selective PNGs are under
+`build/photo-dark-mode/paper-qualification/` and `build/photo-dark-mode/impeller-test/`.
+To repeat with other local papers, set `PHOTO_PAPER_CASES` to a JSON file containing
+`[{"path":"/absolute/paper.pdf","pages":[8]}]`, then run
+`tool/qualify_photo_papers_test.dart` with Impeller and the same native libraries.
+The opt-in probe requires at least one accepted photo on each requested page.
 
 ## Verification performed on 2026-10-28
 
@@ -218,6 +281,7 @@ PDFium binary as the application (see `tool/test_macos.py` on macOS):
 ```sh
 flutter test --no-pub --concurrency=1 \
   test/photo_dark_mode_test.dart test/photo_dark_mode_native_test.dart \
+  test/photo_forms_native_test.dart \
   test/pdf_document_lease_test.dart test/pdf_page_layout_test.dart \
   test/highlight_selection_test.dart
 flutter test --no-pub --enable-impeller \
@@ -236,7 +300,8 @@ a focused verification workaround, not an application distribution configuration
 
 The deterministic inputs and their attribution are in
 `test/fixtures/photo_dark_mode/`. Regenerate with
-`python3 tool/generate_photo_fixture.py` using Pillow 12.3.0. Test/probe outputs are
+`python3 tool/generate_photo_fixture.py` and
+`python3 tool/generate_photo_forms_fixture.py` using Pillow 12.3.0. Test/probe outputs are
 under `build/photo-dark-mode/` and must not be treated as Release evidence.
 
 `tool/photo_release_probe.dart` reuses the same pixel checks in a real Release

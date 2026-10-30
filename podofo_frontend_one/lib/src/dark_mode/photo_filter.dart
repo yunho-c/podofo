@@ -138,10 +138,8 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           if (widget.showDiagnostics) {
             diagnosticPages.add(
               PhotoDiagnosticPage(number, analysis, [
-                for (final candidate in [
-                  ...?analysis?.candidates,
-                  ...?analysis?.uninspectedForms,
-                ])
+                for (final candidate
+                    in analysis?.candidates ?? const <PhotoCandidate>[])
                   PhotoDiagnosticEntry(
                     pageNumber: number,
                     candidate: candidate,

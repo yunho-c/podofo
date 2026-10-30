@@ -25,14 +25,11 @@ class PhotoDiagnosticEntry {
   /// Normalized to the viewer viewport, after page rotation and cropping.
   final Rect rect;
   final String reason;
-  bool get isForm => candidate.reason == 'form-not-inspected';
-  String get label =>
-      'P$pageNumber ${isForm ? 'form' : 'image'} #${candidate.objectIndex}';
+  String get label => 'P$pageNumber image #${candidate.objectId}';
   PhotoDiagnosticStatus get status {
     if (reason == 'preserved') return PhotoDiagnosticStatus.preserved;
     if (candidate.reason == 'likely-photo' ||
         const {
-          'form-not-inspected',
           'time-budget',
           'image-budget',
           'image-pixel-budget',
@@ -40,6 +37,10 @@ class PhotoDiagnosticEntry {
           'image-size-unavailable',
           'decode-failed',
           'unsupported-bitmap',
+          'opacity-unavailable',
+          'rendered-image-budget',
+          'form-depth-budget',
+          'object-budget',
         }.contains(reason)) {
       return PhotoDiagnosticStatus.skipped;
     }

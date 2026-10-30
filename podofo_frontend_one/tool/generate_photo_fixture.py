@@ -67,7 +67,7 @@ def build():
     page(photo_command, crop=(100,260,280,430), name='partly-cropped-photo')
     page('q 300 0 0 400 30 40 cm /Photo Do Q', name='full-page-scan', expect=0)
     page(photo_command+'BT /F1 18 Tf 70 300 Td (Overlay label) Tj ET', name='text-over-photo',expect=0)
-    page('q 140 0 0 140 40 240 cm 0 0 .5 .5 re W n /Photo Do Q\nq /Alpha gs 100 0 0 100 220 280 cm /Photo Do Q\nq 1 0 0 1 40 60 cm /Form Do Q\nq 70 25 -25 70 240 80 cm /Photo Do Q',name='clip-alpha-form-skew',expect=0)
+    page('q 140 0 0 140 40 240 cm 0 0 .5 .5 re W n /Photo Do Q\nq /Alpha gs 100 0 0 100 220 280 cm /Photo Do Q\nq 1 0 0 1 40 60 cm /Form Do Q\nq 70 25 -25 70 240 80 cm /Photo Do Q',name='clip-alpha-form-skew',expect=2)
     page('q 120 0 0 120 40 280 cm /Gradient Do Q\nq 120 0 0 120 190 280 cm /Screen Do Q\nq 120 0 0 120 40 100 cm /Plot Do Q',name='ambiguous-rasters',expect=0)
     page('q 160 0 0 160 50 240 cm /Gray Do Q',name='grayscale-photo-ambiguous',expect=0)
     annotation = obj('<< /Type /Annot /Subtype /Highlight /Rect [65 300 180 320] /QuadPoints [65 320 180 320 65 300 180 300] /C [1 1 0] /CA 0.5 /F 4 >>')

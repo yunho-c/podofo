@@ -42,11 +42,7 @@ void main() {
       if (spec['name'] == 'clip-alpha-form-skew') {
         expect(
           result.candidates.map((c) => c.reason),
-          containsAll([
-            'explicit-clip',
-            'transparency',
-            'non-rectangular-transform',
-          ]),
+          containsAll(['transparency', 'non-rectangular-transform']),
         );
       }
       if (spec['name'] == 'image-budget') {
@@ -156,10 +152,9 @@ void main() {
       expect(rejected.region.right, 180);
       expect(rejected.region.top, 360);
       final complex = await analyzePhotos(document, 8);
-      expect(complex.uninspectedForms, hasLength(1));
-      final form = complex.uninspectedForms.single;
-      expect(form.reason, 'form-not-inspected');
-      expect(form.classification, isNull);
+      final form = complex.candidates.singleWhere((c) => c.objectId == '2/0');
+      expect(form.reason, 'likely-photo');
+      expect(form.objectPath, [2, 0]);
       expect(form.region.left, 10);
       expect(form.region.bottom, 20);
       expect(form.region.right, 130);

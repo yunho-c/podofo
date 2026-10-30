@@ -27,8 +27,14 @@ class PhotoCandidate {
     this.reason, {
     required this.region,
     this.classification,
+    this.objectPath = const [],
   });
   final int objectIndex;
+
+  /// Zero-based path through page objects and nested Form children.
+  final List<int> objectPath;
+  String get objectId =>
+      objectPath.isEmpty ? objectIndex.toString() : objectPath.join('/');
   final String reason;
   final PhotoRegion region;
   final PhotoClassification? classification;
@@ -38,14 +44,12 @@ class PhotoPageAnalysis {
   const PhotoPageAnalysis({
     this.regions = const [],
     this.candidates = const [],
-    this.uninspectedForms = const [],
     this.omittedDiagnosticObjects = 0,
     this.fallback,
     this.elapsedMicroseconds = 0,
   });
   final List<PhotoRegion> regions;
   final List<PhotoCandidate> candidates;
-  final List<PhotoCandidate> uninspectedForms;
   final int omittedDiagnosticObjects;
   final String? fallback;
   final int elapsedMicroseconds;
@@ -95,136 +99,85 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
       if (!crop.area.isFinite || crop.area <= 0) {
         return const PhotoPageAnalysis(fallback: 'invalid-page-box');
       }
-      final count = api.FPDFPage_CountObjects(page);
-      if (count < 0 || count > 2000) {
-        return const PhotoPageAnalysis(fallback: 'object-budget');
-      }
-      final bounds = <PhotoRegion>[];
-      final objects = <FPDF_PAGEOBJECT>[];
-      final imageIndices = <int>[];
-      final formIndices = <int>[];
-      final coords = arena<Float>(4);
-      for (var i = 0; i < count; i++) {
-        final object = api.FPDFPage_GetObject(page, i);
-        if (object == nullptr ||
-            api.FPDFPageObj_GetBounds(
-                  object,
-                  coords,
-                  coords + 1,
-                  coords + 2,
-                  coords + 3,
-                ) ==
-                0) {
-          return const PhotoPageAnalysis(fallback: 'unknown-object-bounds');
-        }
-        final rect = PhotoRegion(coords[0], coords[1], coords[2], coords[3]);
-        if (![
-          rect.left,
-          rect.bottom,
-          rect.right,
-          rect.top,
-        ].every((v) => v.isFinite)) {
-          return const PhotoPageAnalysis(fallback: 'invalid-object-bounds');
-        }
-        objects.add(object);
-        bounds.add(rect);
-        final type = api.FPDFPageObj_GetType(object);
-        if (type == FPDF_PAGEOBJ_IMAGE) {
-          imageIndices.add(i);
-        } else if (type == FPDF_PAGEOBJ_FORM) {
-          formIndices.add(i);
-        }
-      }
+      final tree = _PageObjects(api, arena);
+      tree.walk(page, null, const [], const _Transform.identity(), crop, null);
       PhotoRegion cropRelative(PhotoRegion rect) => PhotoRegion(
         rect.left - crop.left,
         rect.bottom - crop.bottom,
         rect.right - crop.left,
         rect.top - crop.bottom,
       );
-      // Bound diagnostic metadata even on pages rejected before classification.
-      const diagnosticLimit = 128;
-      final forms = List<PhotoCandidate>.unmodifiable([
-        for (final index in formIndices.take(diagnosticLimit))
-          PhotoCandidate(
-            index,
-            'form-not-inspected',
-            region: cropRelative(bounds[index]),
-          ),
-      ]);
-      final omittedForms = math.max(0, formIndices.length - diagnosticLimit);
-      if (imageIndices.length > 24) {
+      final images = tree.leaves
+          .where((o) => o.type == FPDF_PAGEOBJ_IMAGE)
+          .toList();
+      PhotoCandidate candidate(
+        _Object image,
+        String reason, [
+        PhotoClassification? classification,
+      ]) => PhotoCandidate(
+        image.path.first,
+        reason,
+        objectPath: image.path,
+        region: cropRelative(image.visible),
+        classification: classification,
+      );
+      final fallback =
+          tree.fallback ?? (images.length > 24 ? 'image-budget' : null);
+      if (fallback != null) {
         return PhotoPageAnalysis(
-          fallback: 'image-budget',
+          fallback: fallback,
           candidates: List.unmodifiable([
-            for (final index in imageIndices.take(diagnosticLimit))
-              PhotoCandidate(
-                index,
-                'image-budget',
-                region: cropRelative(bounds[index]),
-              ),
+            for (final image in images.take(128)) candidate(image, fallback),
           ]),
-          uninspectedForms: forms,
-          omittedDiagnosticObjects:
-              omittedForms + math.max(0, imageIndices.length - diagnosticLimit),
+          omittedDiagnosticObjects: math.max(0, images.length - 128),
+          elapsedMicroseconds: watch.elapsedMicroseconds,
         );
       }
       final regions = <PhotoRegion>[];
       final candidates = <PhotoCandidate>[];
-      final matrix = arena<FS_MATRIX>();
       final width = arena<UnsignedInt>();
       final height = arena<UnsignedInt>();
       var decodedPixels = 0;
-      for (final index in imageIndices) {
+      for (final original in images) {
+        var image = original;
         // Soft admission deadline; cannot interrupt a PDFium decode in progress.
         if (watch.elapsedMilliseconds > 80) {
-          candidates.add(
-            PhotoCandidate(
-              index,
-              'time-budget',
-              region: cropRelative(bounds[index]),
-            ),
-          );
+          candidates.add(candidate(image, 'time-budget'));
           continue;
         }
-        final object = objects[index];
-        final raw = bounds[index];
-        final rect = PhotoRegion(
-          math.max(raw.left, crop.left),
-          math.max(raw.bottom, crop.bottom),
-          math.min(raw.right, crop.right),
-          math.min(raw.top, crop.top),
-        );
-        final region = cropRelative(rect);
-        String? reject;
-        if (rect.right - rect.left < 24 || rect.top - rect.bottom < 24) {
-          reject = 'small-or-outside-page';
-        } else if (rect.area / crop.area >= .65) {
-          reject = 'scan-or-full-page-image';
-        } else if (api.FPDFPageObj_HasTransparency(object) != 0) {
-          reject = 'transparency';
-        } else if (api.FPDFPageObj_GetMatrix(object, matrix) == 0 ||
-            ![
-              matrix.ref.a,
-              matrix.ref.b,
-              matrix.ref.c,
-              matrix.ref.d,
-            ].every((v) => v.isFinite) ||
-            !((matrix.ref.b.abs() < .001 && matrix.ref.c.abs() < .001) ||
-                (matrix.ref.a.abs() < .001 && matrix.ref.d.abs() < .001))) {
-          reject = 'non-rectangular-transform';
-        } else {
-          final clip = api.FPDFPageObj_GetClipPath(object);
-          // PDFium returns a borrowed empty wrapper for an unclipped object;
-          // CountPaths is -1 when that wrapper has no reference (HasRef=false).
-          // A referenced clip (including text-only clips with zero paths) is rejected.
-          if (clip == nullptr || api.FPDFClipPath_CountPaths(clip) >= 0) {
-            reject = 'explicit-clip';
-          } else if (bounds.indexed.any(
-            (entry) => entry.$1 != index && rect.overlaps(entry.$2),
-          )) {
-            // Includes text, vectors, other images and whole Form XObject bounds.
-            // Even an underlay is rejected: no guessing about painting order.
-            reject = 'overlapping-page-content';
+        final object = image.handle;
+        final rect = image.visible;
+        String? reject = image.reject;
+        if (tree.hasTextClip) {
+          // The public clip-path API omits text clipping. Do not mistake its
+          // geometric subpaths for the complete clip, even inside a Form.
+          reject = 'text-clip';
+        } else if (reject == null) {
+          if (rect.right - rect.left < 24 || rect.top - rect.bottom < 24) {
+            reject = 'small-or-outside-page';
+          } else if (rect.area / crop.area >= .65) {
+            reject = 'scan-or-full-page-image';
+          } else if (!image.transform.isRectangular ||
+              !image.localTransform.isRectangular) {
+            reject = 'non-rectangular-transform';
+          } else {
+            // Form containers are not paint operations. Earlier leaves can be
+            // covered by an image that passes opacity checks; later labels cannot.
+            var clear = rect;
+            for (final later in tree.leaves.skip(image.order + 1)) {
+              final remaining = tree.clearRegion(later, clear);
+              if (remaining == null) {
+                reject = 'overlapping-page-content';
+                break;
+              }
+              clear = remaining;
+            }
+            image = image.withVisible(clear);
+            if (reject == null &&
+                (clear.right - clear.left < 24 ||
+                    clear.top - clear.bottom < 24)) {
+              reject = 'small-or-outside-page';
+            }
           }
         }
         if (reject == null) {
@@ -232,44 +185,88 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
             reject = 'image-size-unavailable';
           } else if (width.value < 64 || height.value < 64) {
             reject = 'small-image';
-          } else if (width.value * height.value > 4000000) {
+          } else if (width.value > 4000000 ||
+              height.value > 4000000 ||
+              width.value * height.value > 4000000) {
             reject = 'image-pixel-budget';
           } else if (decodedPixels + width.value * height.value > 8000000) {
             reject = 'page-pixel-budget';
           }
         }
         if (reject != null) {
-          candidates.add(PhotoCandidate(index, reject, region: region));
+          candidates.add(candidate(image, reject));
           continue;
         }
-        decodedPixels += width.value * height.value;
+        // GetRenderedBitmap includes intrinsic image masks, unlike GetBitmap.
+        // Its allocation is based on the object's LOCAL matrix, not the parent
+        // Form or source pixel dimensions. Bound both allocations before calling.
+        final extentWidth = math.sqrt(
+          image.localTransform.a * image.localTransform.a +
+              image.localTransform.c * image.localTransform.c,
+        );
+        final extentHeight = math.sqrt(
+          image.localTransform.b * image.localTransform.b +
+              image.localTransform.d * image.localTransform.d,
+        );
+        // Check doubles before converting/multiplying bounded integers.
+        if (!extentWidth.isFinite ||
+            !extentHeight.isFinite ||
+            extentWidth <= 0 ||
+            extentHeight <= 0 ||
+            extentWidth > 4000000 ||
+            extentHeight > 4000000) {
+          candidates.add(candidate(image, 'rendered-image-budget'));
+          continue;
+        }
+        final renderedPixels = extentWidth.ceil() * extentHeight.ceil();
+        if (renderedPixels > 4000000) {
+          candidates.add(candidate(image, 'rendered-image-budget'));
+          continue;
+        }
+        if (decodedPixels + width.value * height.value + renderedPixels >
+            8000000) {
+          candidates.add(candidate(image, 'page-pixel-budget'));
+          continue;
+        }
+        decodedPixels += width.value * height.value + renderedPixels;
+        final rendered = api.FPDFImageObj_GetRenderedBitmap(
+          Pointer<fpdf_document_t__>.fromAddress(handle),
+          page,
+          object,
+        );
+        if (rendered == nullptr) {
+          candidates.add(candidate(image, 'opacity-unavailable'));
+          continue;
+        }
+        bool opaque;
+        try {
+          opaque = _isOpaque(api, rendered, image);
+        } finally {
+          api.FPDFBitmap_Destroy(rendered);
+        }
+        if (!opaque) {
+          candidates.add(candidate(image, 'mask-or-transparency'));
+          continue;
+        }
         final bitmap = api.FPDFImageObj_GetBitmap(object);
         if (bitmap == nullptr) {
-          candidates.add(
-            PhotoCandidate(index, 'decode-failed', region: region),
-          );
+          candidates.add(candidate(image, 'decode-failed'));
           continue;
         }
         try {
-          final sample = _sampleBitmap(api, bitmap);
+          final sample = _sampleBitmap(api, bitmap, image);
           if (sample == null) {
-            candidates.add(
-              PhotoCandidate(index, 'unsupported-bitmap', region: region),
-            );
+            candidates.add(candidate(image, 'unsupported-bitmap'));
             continue;
           }
           final classification = classifyPhoto(sample);
-          candidates.add(
-            PhotoCandidate(
-              index,
-              classification.reason,
-              region: region,
-              classification: classification,
-            ),
+          final result = candidate(
+            image,
+            classification.reason,
+            classification,
           );
-          if (classification.isLikelyPhoto) {
-            regions.add(region);
-          }
+          candidates.add(result);
+          if (classification.isLikelyPhoto) regions.add(result.region);
         } finally {
           api.FPDFBitmap_Destroy(bitmap);
         }
@@ -277,8 +274,6 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
       return PhotoPageAnalysis(
         regions: List.unmodifiable(regions),
         candidates: List.unmodifiable(candidates),
-        uninspectedForms: forms,
-        omittedDiagnosticObjects: omittedForms,
         elapsedMicroseconds: watch.elapsedMicroseconds,
       );
     });
@@ -287,7 +282,7 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
   }
 }
 
-Uint8List? _sampleBitmap(PDFium api, FPDF_BITMAP bitmap) {
+Uint8List? _sampleBitmap(PDFium api, FPDF_BITMAP bitmap, _Object image) {
   final width = api.FPDFBitmap_GetWidth(bitmap);
   final height = api.FPDFBitmap_GetHeight(bitmap);
   final stride = api.FPDFBitmap_GetStride(bitmap);
@@ -310,11 +305,19 @@ Uint8List? _sampleBitmap(PDFium api, FPDF_BITMAP bitmap) {
   }
   final bytes = buffer.cast<Uint8>().asTypedList(stride * height);
   final sample = Uint8List(64 * 64 * 3);
+  final inverse = image.transform.inverse;
+  final rect = image.visible;
   for (var y = 0; y < 64; y++) {
     for (var x = 0; x < 64; x++) {
-      final source =
-          ((y + .5) * height / 64).floor() * stride +
-          ((x + .5) * width / 64).floor() * channels;
+      // Sample only the visible crop, in page orientation. Image pixels use
+      // top-down rows, whereas the PDF image unit square has y increasing up.
+      final point = inverse.point(
+        rect.left + (x + .5) * (rect.right - rect.left) / 64,
+        rect.top - (y + .5) * (rect.top - rect.bottom) / 64,
+      );
+      final sx = (point.$1 * width).floor().clamp(0, width - 1);
+      final sy = ((1 - point.$2) * height).floor().clamp(0, height - 1);
+      final source = sy * stride + sx * channels;
       if (format == FPDFBitmap_BGRA && bytes[source + 3] != 255) return null;
       final target = (y * 64 + x) * 3;
       sample[target] = bytes[source + (channels == 1 ? 0 : 2)];
@@ -323,4 +326,418 @@ Uint8List? _sampleBitmap(PDFium api, FPDF_BITMAP bitmap) {
     }
   }
   return sample;
+}
+
+PhotoRegion _intersect(PhotoRegion a, PhotoRegion b) => PhotoRegion(
+  math.max(a.left, b.left),
+  math.max(a.bottom, b.bottom),
+  math.min(a.right, b.right),
+  math.min(a.top, b.top),
+);
+
+class _Transform {
+  const _Transform(this.a, this.b, this.c, this.d, this.e, this.f);
+  const _Transform.identity() : this(1, 0, 0, 1, 0, 0);
+  factory _Transform.fromNative(FS_MATRIX m) =>
+      _Transform(m.a, m.b, m.c, m.d, m.e, m.f);
+  final double a, b, c, d, e, f;
+  bool get isValid =>
+      [a, b, c, d, e, f].every((v) => v.isFinite) &&
+      (a * d - b * c).abs() > 1e-12;
+  bool get isRectangular =>
+      isValid &&
+      ((b.abs() < .001 && c.abs() < .001) ||
+          (a.abs() < .001 && d.abs() < .001));
+  (double, double) point(double x, double y) =>
+      (a * x + c * y + e, b * x + d * y + f);
+  _Transform compose(_Transform child) => _Transform(
+    a * child.a + c * child.b,
+    b * child.a + d * child.b,
+    a * child.c + c * child.d,
+    b * child.c + d * child.d,
+    a * child.e + c * child.f + e,
+    b * child.e + d * child.f + f,
+  );
+  _Transform get inverse {
+    final det = a * d - b * c;
+    return _Transform(
+      d / det,
+      -b / det,
+      -c / det,
+      a / det,
+      (c * f - d * e) / det,
+      (b * e - a * f) / det,
+    );
+  }
+
+  PhotoRegion rect(PhotoRegion r) {
+    final points = [
+      point(r.left, r.bottom),
+      point(r.left, r.top),
+      point(r.right, r.bottom),
+      point(r.right, r.top),
+    ];
+    return PhotoRegion(
+      points.map((p) => p.$1).reduce(math.min),
+      points.map((p) => p.$2).reduce(math.min),
+      points.map((p) => p.$1).reduce(math.max),
+      points.map((p) => p.$2).reduce(math.max),
+    );
+  }
+}
+
+class _Object {
+  _Object(
+    this.handle,
+    this.type,
+    this.path,
+    this.order,
+    this.visible,
+    this.transform,
+    this.localTransform,
+    this.parentTransform,
+    this.reject,
+  );
+  final FPDF_PAGEOBJECT handle;
+  final int type, order;
+  final List<int> path;
+  final PhotoRegion visible;
+  final _Transform transform, localTransform, parentTransform;
+  final String? reject;
+  _Object withVisible(PhotoRegion region) => _Object(
+    handle,
+    type,
+    path,
+    order,
+    region,
+    transform,
+    localTransform,
+    parentTransform,
+    reject,
+  );
+}
+
+/// A flattened display list in PDF paint order. No borrowed handles escape the
+/// page lifetime; Forms contribute inherited state, not overlapping rectangles.
+class _PageObjects {
+  _PageObjects(this.api, this.arena);
+  final PDFium api;
+  final Arena arena;
+  final leaves = <_Object>[];
+  int visited = 0;
+  bool hasTextClip = false;
+  String? fallback;
+
+  void walk(
+    FPDF_PAGE page,
+    FPDF_PAGEOBJECT? form,
+    List<int> path,
+    _Transform parent,
+    PhotoRegion inheritedClip,
+    String? inheritedReject,
+  ) {
+    if (path.length > 16) {
+      fallback = 'form-depth-budget';
+      return;
+    }
+    final count = form == null
+        ? api.FPDFPage_CountObjects(page)
+        : api.FPDFFormObj_CountObjects(form);
+    if (count < 0 || count > 2000 - visited) {
+      fallback = 'object-budget';
+      return;
+    }
+    // Allocate once per nesting level, not once per object.
+    final coords = arena<Float>(4);
+    final matrix = arena<FS_MATRIX>();
+    for (var i = 0; i < count && fallback == null; i++) {
+      if (++visited > 2000) {
+        fallback = 'object-budget';
+        return;
+      }
+      final object = form == null
+          ? api.FPDFPage_GetObject(page, i)
+          : api.FPDFFormObj_GetObject(form, i);
+      if (object == nullptr ||
+          api.FPDFPageObj_GetBounds(
+                object,
+                coords,
+                coords + 1,
+                coords + 2,
+                coords + 3,
+              ) ==
+              0) {
+        fallback = 'unknown-object-bounds';
+        return;
+      }
+      if (!List.generate(4, (j) => coords[j]).every((v) => v.isFinite)) {
+        fallback = 'invalid-object-bounds';
+        return;
+      }
+      final type = api.FPDFPageObj_GetType(object);
+      final objectPath = List<int>.unmodifiable([...path, i]);
+      var local = const _Transform.identity();
+      if (type == FPDF_PAGEOBJ_FORM ||
+          type == FPDF_PAGEOBJ_IMAGE ||
+          type == FPDF_PAGEOBJ_PATH) {
+        if (api.FPDFPageObj_GetMatrix(object, matrix) == 0) {
+          fallback = 'unknown-object-transform';
+          return;
+        }
+        local = _Transform.fromNative(matrix.ref);
+        if (!local.isValid) {
+          fallback = 'invalid-object-transform';
+          return;
+        }
+      }
+      final transform = parent.compose(local);
+      if (!transform.isValid) {
+        fallback = 'invalid-object-transform';
+        return;
+      }
+      var reject = inheritedReject;
+      if (api.FPDFPageObj_HasTransparency(object) != 0) {
+        reject ??= type == FPDF_PAGEOBJ_FORM
+            ? 'form-transparency'
+            : 'transparency';
+      }
+      final (clip, clipReason) = _clip(object, parent, inheritedClip);
+      reject ??= clipReason;
+      if (type == FPDF_PAGEOBJ_FORM) {
+        walk(page, object, objectPath, transform, clip, reject);
+      } else {
+        if (type == FPDF_PAGEOBJ_TEXT) {
+          final mode = api.FPDFTextObj_GetTextRenderMode(object).value;
+          if (mode < 0 || mode >= 4) hasTextClip = true;
+        }
+        // Bounds already include the object's own transform, but not its
+        // containing Forms. Applying the image matrix here would double it.
+        final bounds = parent.rect(
+          PhotoRegion(coords[0], coords[1], coords[2], coords[3]),
+        );
+        leaves.add(
+          _Object(
+            object,
+            type,
+            objectPath,
+            leaves.length,
+            _intersect(bounds, clip),
+            transform,
+            local,
+            parent,
+            reject,
+          ),
+        );
+      }
+    }
+  }
+
+  final _filledPaths = <int, _FilledPath?>{};
+
+  PhotoRegion? clearRegion(_Object object, PhotoRegion rect) {
+    if (!rect.overlaps(object.visible)) return rect;
+    if (object.type != FPDF_PAGEOBJ_PATH) return null;
+    // Illustrator-style frames are often filled polygons with a hole, not
+    // strokes. Bounding boxes alone incorrectly treat that hole as painted.
+    final path = _filledPaths.putIfAbsent(
+      object.handle.address,
+      () => _filledPath(object),
+    );
+    if (path == null) return null;
+    if (!path.mayPaint(rect)) return rect;
+    // Frame edges can meet or slightly enter the image. Preserve only a
+    // verified clear interior, leaving a one-point margin for antialiasing.
+    final inner = PhotoRegion(
+      rect.left + 1,
+      rect.bottom + 1,
+      rect.right - 1,
+      rect.top - 1,
+    );
+    if (inner.right <= inner.left ||
+        inner.top <= inner.bottom ||
+        path.mayPaint(inner)) {
+      return null;
+    }
+    return inner;
+  }
+
+  _FilledPath? _filledPath(_Object object) {
+    final fill = arena<Int>(), stroke = arena<Int>();
+    if (api.FPDFPath_GetDrawMode(object.handle, fill, stroke) == 0 ||
+        stroke.value != 0 ||
+        (fill.value != 1 && fill.value != 2)) {
+      return null;
+    }
+    final count = api.FPDFPath_CountSegments(object.handle);
+    if (count < 3 || count > 256) return null;
+    final x = arena<Float>(), y = arena<Float>();
+    final contours = <List<(double, double)>>[];
+    var contour = <(double, double)>[];
+    for (var i = 0; i < count; i++) {
+      final segment = api.FPDFPath_GetPathSegment(object.handle, i);
+      if (segment == nullptr ||
+          api.FPDFPathSegment_GetPoint(segment, x, y) == 0) {
+        return null;
+      }
+      final type = api.FPDFPathSegment_GetType(segment);
+      if (type == FPDF_SEGMENT_MOVETO) {
+        if (contour.isNotEmpty) contours.add(contour);
+        contour = [];
+      } else if (type != FPDF_SEGMENT_LINETO || contour.isEmpty) {
+        return null; // Curves and stroke joins stay conservative.
+      }
+      final point = object.transform.point(x.value, y.value);
+      if (!point.$1.isFinite || !point.$2.isFinite) return null;
+      contour.add(point);
+      if (api.FPDFPathSegment_GetClose(segment) != 0) {
+        contours.add(contour);
+        contour = [];
+      }
+    }
+    if (contour.isNotEmpty) contours.add(contour); // Fill implicitly closes.
+    if (contours.any((c) => c.length < 3)) return null;
+    return _FilledPath(contours, fill.value == 1);
+  }
+
+  (PhotoRegion, String?) _clip(
+    FPDF_PAGEOBJECT object,
+    _Transform parent,
+    PhotoRegion inherited,
+  ) {
+    final clip = api.FPDFPageObj_GetClipPath(object);
+    if (clip == nullptr) return (inherited, 'unknown-clip');
+    final count = api.FPDFClipPath_CountPaths(clip);
+    if (count == -1) return (inherited, null); // borrowed, unreferenced wrapper
+    if (count <= 0 || count > 8) return (inherited, 'complex-clip');
+    var result = inherited;
+    final x = arena<Float>();
+    final y = arena<Float>();
+    for (var i = 0; i < count; i++) {
+      final n = api.FPDFClipPath_CountPathSegments(clip, i);
+      if (n < 4 || n > 5) return (inherited, 'complex-clip');
+      final points = <(double, double)>[];
+      for (var j = 0; j < n; j++) {
+        final segment = api.FPDFClipPath_GetPathSegment(clip, i, j);
+        if (segment == nullptr ||
+            api.FPDFPathSegment_GetType(segment) !=
+                (j == 0 ? FPDF_SEGMENT_MOVETO : FPDF_SEGMENT_LINETO) ||
+            api.FPDFPathSegment_GetPoint(segment, x, y) == 0 ||
+            (j < n - 1 && api.FPDFPathSegment_GetClose(segment) != 0)) {
+          return (inherited, 'complex-clip');
+        }
+        final p = parent.point(x.value, y.value);
+        if (!p.$1.isFinite || !p.$2.isFinite) {
+          return (inherited, 'complex-clip');
+        }
+        points.add(p);
+      }
+      bool near((double, double) a, (double, double) b) =>
+          (a.$1 - b.$1).abs() < .001 && (a.$2 - b.$2).abs() < .001;
+      if (points.length == 5) {
+        if (!near(points.first, points.last)) {
+          return (inherited, 'complex-clip');
+        }
+        points.removeLast();
+      }
+      for (var j = 0; j < 4; j++) {
+        final a = points[j], b = points[(j + 1) % 4];
+        if (near(a, b) ||
+            ((a.$1 - b.$1).abs() >= .001 && (a.$2 - b.$2).abs() >= .001)) {
+          return (inherited, 'complex-clip');
+        }
+      }
+      final rect = PhotoRegion(
+        points.map((p) => p.$1).reduce(math.min),
+        points.map((p) => p.$2).reduce(math.min),
+        points.map((p) => p.$1).reduce(math.max),
+        points.map((p) => p.$2).reduce(math.max),
+      );
+      final corners = [
+        (rect.left, rect.bottom),
+        (rect.left, rect.top),
+        (rect.right, rect.bottom),
+        (rect.right, rect.top),
+      ];
+      if (!corners.every((c) => points.where((p) => near(c, p)).length == 1)) {
+        return (inherited, 'complex-clip');
+      }
+      result = _intersect(result, rect);
+    }
+    return (result, null);
+  }
+}
+
+class _FilledPath {
+  _FilledPath(this.contours, this.evenOdd);
+  final List<List<(double, double)>> contours;
+  final bool evenOdd;
+
+  bool mayPaint(PhotoRegion rect) {
+    final x = (rect.left + rect.right) / 2;
+    final y = (rect.bottom + rect.top) / 2;
+    var winding = 0;
+    for (final contour in contours) {
+      for (var i = 0; i < contour.length; i++) {
+        final a = contour[i], b = contour[(i + 1) % contour.length];
+        // If an edge could enter the image, no inference from the center is
+        // safe. An expanded AABB is deliberately conservative for diagonals.
+        if (rect.overlaps(
+          PhotoRegion(
+            math.min(a.$1, b.$1) - .001,
+            math.min(a.$2, b.$2) - .001,
+            math.max(a.$1, b.$1) + .001,
+            math.max(a.$2, b.$2) + .001,
+          ),
+        )) {
+          return true;
+        }
+        final side = (b.$1 - a.$1) * (y - a.$2) - (x - a.$1) * (b.$2 - a.$2);
+        if (a.$2 <= y && b.$2 > y && side > 0) winding++;
+        if (a.$2 > y && b.$2 <= y && side < 0) winding--;
+      }
+    }
+    return evenOdd ? winding.isOdd : winding != 0;
+  }
+}
+
+bool _isOpaque(PDFium api, FPDF_BITMAP bitmap, _Object image) {
+  final width = api.FPDFBitmap_GetWidth(bitmap);
+  final height = api.FPDFBitmap_GetHeight(bitmap);
+  final stride = api.FPDFBitmap_GetStride(bitmap);
+  final buffer = api.FPDFBitmap_GetBuffer(bitmap);
+  if (api.FPDFBitmap_GetFormat(bitmap) != FPDFBitmap_BGRA ||
+      width <= 0 ||
+      height <= 0 ||
+      width * height > 4000000 ||
+      stride < width * 4 ||
+      stride * height > 20000000 ||
+      buffer == nullptr) {
+    return false;
+  }
+  final local = image.parentTransform.inverse.rect(image.visible);
+  final bounds = image.localTransform.rect(const PhotoRegion(0, 0, 1, 1));
+  // PDFium renders the transformed image into a bitmap of its local extent.
+  // Inspect every covered pixel, not just the classifier's 64x64 sample.
+  final left =
+      ((local.left - bounds.left) / (bounds.right - bounds.left) * width)
+          .floor()
+          .clamp(0, width - 1);
+  final right =
+      ((local.right - bounds.left) / (bounds.right - bounds.left) * width)
+          .ceil()
+          .clamp(left + 1, width);
+  final top = ((bounds.top - local.top) / (bounds.top - bounds.bottom) * height)
+      .floor()
+      .clamp(0, height - 1);
+  final bottom =
+      ((bounds.top - local.bottom) / (bounds.top - bounds.bottom) * height)
+          .ceil()
+          .clamp(top + 1, height);
+  final bytes = buffer.cast<Uint8>().asTypedList(stride * height);
+  for (var y = top; y < bottom; y++) {
+    for (var x = left; x < right; x++) {
+      if (bytes[y * stride + x * 4 + 3] != 255) return false;
+    }
+  }
+  return true;
 }

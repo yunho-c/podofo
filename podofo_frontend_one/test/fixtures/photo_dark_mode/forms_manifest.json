@@ -1,0 +1,273 @@
+{
+  "sha256": "48ae5249a1c0989196480c5bee662372fb3918a973deb378dba5d5f728d6cf73",
+  "pages": [
+    {
+      "page": 1,
+      "name": "nested-reflection-quarter-turn",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": [
+        [
+          40,
+          80,
+          200,
+          240
+        ]
+      ],
+      "paths": [
+        "0/0/0/0"
+      ]
+    },
+    {
+      "page": 2,
+      "name": "reused-form-placements",
+      "expectedPhotos": 2,
+      "reason": null,
+      "regions": [
+        [
+          30,
+          40,
+          190,
+          200
+        ],
+        [
+          220,
+          260,
+          380,
+          420
+        ]
+      ],
+      "paths": [
+        "0/0",
+        "1/0"
+      ]
+    },
+    {
+      "page": 3,
+      "name": "image-rectangular-crop",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": [
+        [
+          30,
+          80,
+          110,
+          240
+        ]
+      ],
+      "paths": null
+    },
+    {
+      "page": 4,
+      "name": "ancestor-rectangular-crop",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": [
+        [
+          40,
+          80,
+          120,
+          240
+        ]
+      ],
+      "paths": null
+    },
+    {
+      "page": 5,
+      "name": "form-bbox-crop",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": [
+        [
+          40,
+          80,
+          120,
+          240
+        ]
+      ],
+      "paths": null
+    },
+    {
+      "page": 6,
+      "name": "opaque-photo-covers-underlay",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 7,
+      "name": "later-text-blocks-photo",
+      "expectedPhotos": 0,
+      "reason": "overlapping-page-content",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 8,
+      "name": "triangle-clip",
+      "expectedPhotos": 0,
+      "reason": "complex-clip",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 9,
+      "name": "compound-rectangular-clip",
+      "expectedPhotos": 0,
+      "reason": "complex-clip",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 10,
+      "name": "text-and-rectangular-clip",
+      "expectedPhotos": 0,
+      "reason": "text-clip",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 11,
+      "name": "soft-image-mask",
+      "expectedPhotos": 0,
+      "reason": "mask-or-transparency",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 12,
+      "name": "hard-image-mask",
+      "expectedPhotos": 0,
+      "reason": "mask-or-transparency",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 13,
+      "name": "key-image-mask",
+      "expectedPhotos": 0,
+      "reason": "mask-or-transparency",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 14,
+      "name": "form-alpha",
+      "expectedPhotos": 0,
+      "reason": "form-transparency",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 15,
+      "name": "form-transparency-group",
+      "expectedPhotos": 0,
+      "reason": "form-transparency",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 16,
+      "name": "skewed-parent",
+      "expectedPhotos": 0,
+      "reason": "non-rectangular-transform",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 17,
+      "name": "depth-budget",
+      "expectedPhotos": 0,
+      "reason": "form-depth-budget",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 18,
+      "name": "nested-image-budget",
+      "expectedPhotos": 0,
+      "reason": "image-budget",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 19,
+      "name": "local-render-allocation-budget",
+      "expectedPhotos": 0,
+      "reason": "rendered-image-budget",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 20,
+      "name": "fractional-placement",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 21,
+      "name": "clip-excludes-later-label",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 22,
+      "name": "even-odd-frame",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": [
+        [
+          31,
+          81,
+          189,
+          239
+        ]
+      ],
+      "paths": null
+    },
+    {
+      "page": 23,
+      "name": "winding-frame",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": [
+        [
+          31,
+          81,
+          189,
+          239
+        ]
+      ],
+      "paths": null
+    },
+    {
+      "page": 24,
+      "name": "solid-winding-is-not-a-frame",
+      "expectedPhotos": 0,
+      "reason": "overlapping-page-content",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 25,
+      "name": "path-enters-photo",
+      "expectedPhotos": 0,
+      "reason": "overlapping-page-content",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 26,
+      "name": "stroke-stays-conservative",
+      "expectedPhotos": 0,
+      "reason": "overlapping-page-content",
+      "regions": null,
+      "paths": null
+    }
+  ]
+}

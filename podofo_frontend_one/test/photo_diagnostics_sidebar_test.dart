@@ -126,6 +126,32 @@ void main() {
         );
         image.dispose();
       });
+      // Siblings share a top-level Form index but must remain distinct entries.
+      final siblings = [
+        for (final child in [1, 2])
+          PhotoDiagnosticEntry(
+            pageNumber: 8,
+            candidate: PhotoCandidate(
+              60,
+              'time-budget',
+              objectPath: [60, child],
+              region: const PhotoRegion(0, 0, 100, 100),
+            ),
+            rect: const Rect.fromLTWH(.1, .1, .2, .2),
+            preserved: false,
+            inactiveReason: 'inversion-off',
+          ),
+      ];
+      diagnostics.publish(
+        PhotoDiagnosticsSnapshot(
+          revision: session.revision,
+          pages: [PhotoDiagnosticPage(8, const PhotoPageAnalysis(), siblings)],
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('P8 image #60/1 · skipped'), findsOneWidget);
+      expect(find.text('P8 image #60/2 · skipped'), findsOneWidget);
+      expect(tester.takeException(), isNull);
       // The pane follows the active session and cannot expose a closed tab's data.
       container.read(current.notifier).state = null;
       await tester.pumpAndSettle();

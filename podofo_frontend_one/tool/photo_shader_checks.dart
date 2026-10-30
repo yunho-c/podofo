@@ -9,8 +9,10 @@ import 'package:podofo_one/src/dark_mode/photo_geometry.dart';
 /// Offscreen GPU readback, not a substitute for inspecting the native window.
 Future<Map<String, Object>> checkPhotoShader(
   String fixture,
-  Directory output,
-) async {
+  Directory output, {
+  List<int> pageNumbers = const [1, 2, 3, 4, 5, 11],
+  int? expectedPhotos = 1,
+}) async {
   if (!ui.ImageFilter.isShaderFilterSupported) {
     throw StateError('Requires the actual Impeller ImageFilter.shader backend');
   }
@@ -23,21 +25,46 @@ Future<Map<String, Object>> checkPhotoShader(
     'shaders/invert_photos.frag',
   );
   var compared = 0;
+  final analyses = <Map<String, Object?>>[];
   final timings = <String, List<int>>{'original': [], 'selective': []};
   try {
     // All rotations, crop, and an existing annotation on top of the photograph.
-    for (final number in [1, 2, 3, 4, 5, 11]) {
+    for (final number in pageNumbers) {
       final page = pdf.pages[number - 1];
       final analysis = await analyzePhotos(pdf, number);
-      if (analysis.regions.length != 1) {
-        throw StateError('Expected one photo on page $number');
+      analyses.add({
+        'page': number,
+        'fallback': analysis.fallback,
+        'elapsed_us': analysis.elapsedMicroseconds,
+        'photos': analysis.regions.length,
+        'candidates': [
+          for (final c in analysis.candidates)
+            {
+              'path': c.objectId,
+              'reason': c.reason,
+              'rect': [
+                c.region.left,
+                c.region.bottom,
+                c.region.right,
+                c.region.top,
+              ],
+            },
+        ],
+      });
+      if (analysis.regions.isEmpty ||
+          (expectedPhotos != null &&
+              analysis.regions.length != expectedPhotos)) {
+        throw StateError('Unexpected photos on page $number: ${analyses.last}');
       }
-      final region = photoViewportRect(
-        analysis.regions.single,
-        page,
-        ui.Rect.fromLTWH(0, 0, page.width, page.height),
-        ui.Rect.fromLTWH(0, 0, page.width, page.height),
-      );
+      final regions = [
+        for (final region in analysis.regions.take(16))
+          photoViewportRect(
+            region,
+            page,
+            ui.Rect.fromLTWH(0, 0, page.width, page.height),
+            ui.Rect.fromLTWH(0, 0, page.width, page.height),
+          ),
+      ];
       for (final scale in [1.0, 2.0]) {
         final width = (page.width * scale).round();
         final height = (page.height * scale).round();
@@ -54,9 +81,9 @@ Future<Map<String, Object>> checkPhotoShader(
               ..setFloat(2, strength);
             final selective = photoProgram.fragmentShader()
               ..setFloat(2, strength)
-              ..setFloat(3, 1);
+              ..setFloat(3, regions.length.toDouble());
             for (var i = 0; i < 16; i++) {
-              final rect = i == 0 ? region : ui.Rect.zero;
+              final rect = i < regions.length ? regions[i] : ui.Rect.zero;
               selective.setFloat(4 + i * 4, rect.left);
               selective.setFloat(5 + i * 4, rect.top);
               selective.setFloat(6 + i * 4, rect.right);
@@ -92,10 +119,14 @@ Future<Map<String, Object>> checkPhotoShader(
                 for (var x = 2; x < width - 2; x += 3) {
                   final point = ui.Offset((x + .5) / width, (y + .5) / height);
                   // Avoid subpixel edge sampling differences in GPU backends.
-                  final inner = region.deflate(2 / width);
-                  final outer = region.inflate(2 / width);
-                  if (outer.contains(point) && !inner.contains(point)) continue;
-                  final expected = inner.contains(point) ? sourceBytes : base;
+                  final inside = regions.any(
+                    (r) => r.deflate(2 / width).contains(point),
+                  );
+                  final edge = regions.any(
+                    (r) => r.inflate(2 / width).contains(point),
+                  );
+                  if (edge && !inside) continue;
+                  final expected = inside ? sourceBytes : base;
                   final offset = (y * width + x) * 4;
                   for (var c = 0; c < 4; c++) {
                     if ((expected[offset + c] - actual[offset + c]).abs() > 3) {
@@ -109,6 +140,7 @@ Future<Map<String, Object>> checkPhotoShader(
               }
               if (scale == 1 && strength == 1) {
                 for (final pair in [
+                  ('natural', source),
                   ('original', normal),
                   ('selective', preserved),
                 ]) {
@@ -134,7 +166,8 @@ Future<Map<String, Object>> checkPhotoShader(
     return {
       'impeller_shader_supported': true,
       'compared_pixel_samples': compared,
-      'page_numbers': [1, 2, 3, 4, 5, 11],
+      'page_numbers': pageNumbers,
+      'analyses': analyses,
       'scales': [1, 2],
       'strengths': [0, .6, 1],
       'offscreen_to_image_us': timings,

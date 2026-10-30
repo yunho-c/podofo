@@ -36,7 +36,7 @@ class PhotoDiagnosticsControls extends ConsumerWidget {
             'Green: preserved · Orange: rejected · Gray: skipped or inactive',
           ).small(),
           const Text(
-            'Works in light mode too. Form containers are outlined, but their contents are not inspected. Object numbers start at 0.',
+            'Works in light mode too. Images inside Forms are inspected. Object paths such as 4/2 identify nested children; numbers start at 0.',
           ).small(),
           if (session == null)
             const Text('Open a PDF to inspect its images.').small()
@@ -86,17 +86,14 @@ class _PageDetails extends StatelessWidget {
           if (analysis.fallback != null)
             Text('Page skipped: ${analysis.fallback}').small(),
           if (page.entries.isEmpty && analysis.fallback == null)
-            const Text('No top-level raster images or Form containers.')
-                .small(),
+            const Text('No raster images found.').small(),
           if (analysis.omittedDiagnosticObjects > 0)
             Text(
               '${analysis.omittedDiagnosticObjects} additional object outlines omitted: diagnostic limit.',
             ).small(),
           for (final entry in page.entries)
             Collapsible(
-              key: ValueKey(
-                '${page.pageNumber}-${entry.candidate.objectIndex}',
-              ),
+              key: ValueKey('${page.pageNumber}-${entry.candidate.objectId}'),
               children: [
                 CollapsibleTrigger(
                   child: Text('${entry.label} · ${entry.status.name}').small(),
@@ -126,10 +123,6 @@ class _EntryDetails extends StatelessWidget {
           Text(entry.reason).small(),
           if (entry.candidate.reason == 'likely-photo')
             const Text('Photo classifier accepted this image.').small(),
-          if (entry.isForm)
-            const Text(
-              'Container may include images, text or vectors; contents are not traversed.',
-            ).small(),
           if (stats != null) ...[
             Text('Tonal entropy: ${stats.entropy.toStringAsFixed(2)} (min 4.5)')
                 .small(),
@@ -144,7 +137,7 @@ class _EntryDetails extends StatelessWidget {
             const Text(
               'Reason shows the first failed gate; multiple gates may fail.',
             ).small(),
-          ] else if (!entry.isForm)
+          ] else
             const Text('Pixel classification was not reached.').small(),
         ],
       ),

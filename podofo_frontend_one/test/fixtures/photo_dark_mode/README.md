@@ -6,7 +6,16 @@ photograph, a raster plot, a screenshot, a smooth gradient, grayscale imagery,
 a large scan-like raster, overlapping text, a clipped image, an alpha image,
 a Form XObject, a skewed image, and a native highlight annotation. Its pages
 cover all four quarter-turn rotations and nonzero crop/media origins.
-`manifest.json` records page expectations and the PDF SHA-256.
+`manifest.json` records page expectations and the PDF SHA-256. Page 8 now
+preserves its rectangular crop and nested photo, while alpha/skew stay rejected.
+
+`forms.pdf` and `forms_manifest.json` add 26 stage-one regression pages:
+three-level transforms (reflection and quarter-turn), reused Forms, rectangular
+image/ancestor/Form-BBox crops, opaque underlays, later text, compound and text
+clips, soft/explicit/color-key masks, Form alpha/groups, skew, depth/image/render
+budgets, fractional coordinates, and filled frames with even-odd/winding holes.
+The native tests check paths, coordinates and read-only behavior. The shader
+probe checks accepted crops and frames against the original rendered pixels.
 
 `astronaut.png` is a 256 × 256 RGB Lanczos reduction of the 512 × 512 NASA
 photograph of Eileen Collins distributed by scikit-image v0.25.2:
@@ -27,6 +36,7 @@ Regenerate from the app directory with Python 3 and Pillow (tested with 12.3.0):
 
 ```sh
 python3 tool/generate_photo_fixture.py
+python3 tool/generate_photo_forms_fixture.py
 ```
 
 The committed PDF and samples are the test inputs. Regeneration can vary with

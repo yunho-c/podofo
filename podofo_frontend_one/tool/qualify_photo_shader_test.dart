@@ -19,6 +19,13 @@ void main() {
           'test/fixtures/photo_dark_mode/mixed.pdf',
           output,
         );
+        final forms = await checkPhotoShader(
+          'test/fixtures/photo_dark_mode/forms.pdf',
+          Directory('${output.path}/forms'),
+          pageNumbers: [1, 2, 3, 4, 5, 6, 20, 21, 22, 23],
+          expectedPhotos: null,
+        );
+        report['forms'] = forms;
         report['runner'] =
             'Flutter test with --enable-impeller (not Release app)';
         File(
