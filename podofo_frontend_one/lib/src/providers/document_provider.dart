@@ -15,6 +15,7 @@ import '../data/document_history_entity.dart';
 import '../services/pdf_session.dart';
 import '../services/document_file_access.dart';
 import '../services/pdf_highlights.dart';
+import '../services/photo_override_store.dart';
 import 'data_provider.dart';
 import 'narration_provider.dart';
 import 'tab_provider.dart';
@@ -103,7 +104,10 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
   Map<String, Document> build() {
     ref.onDispose(() {
       for (final session in _owned) {
-        session.lease.close();
+        if (!session.lease.isClosed) {
+          session.lease.close();
+          session.photoOverrides.dispose();
+        }
       }
       _owned.clear();
     });
@@ -146,7 +150,13 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
       // Compare canonical paths after opening too (symlinks and case).
       var key = state.keys.where((s) => p.equals(s, path)).firstOrNull;
       if (key == null) {
-        opened = await PdfSession.open(path, selected: selected);
+        opened = await PdfSession.open(
+          path,
+          selected: selected,
+          photoOverrideStore: StoredPhotoOverrides(
+            ref.read(objectboxProvider).store,
+          ),
+        );
         if (!ref.mounted) {
           await opened.close();
           return false;

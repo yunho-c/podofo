@@ -238,10 +238,36 @@
         }
       ],
       "relations": []
+    },
+    {
+      "id": "6:2175092818506899373",
+      "lastPropertyId": "3:3506299965362248555",
+      "name": "PhotoOverrideEntity",
+      "properties": [
+        {
+          "id": "1:9172897063065344153",
+          "name": "id",
+          "type": 6,
+          "flags": 1
+        },
+        {
+          "id": "2:8865761824969002018",
+          "name": "documentHash",
+          "indexId": "4:4875534683436650490",
+          "type": 9,
+          "flags": 2080
+        },
+        {
+          "id": "3:3506299965362248555",
+          "name": "decisions",
+          "type": 9
+        }
+      ],
+      "relations": []
     }
   ],
-  "lastEntityId": "5:5220693176391162839",
-  "lastIndexId": "3:5234795908054042713",
+  "lastEntityId": "6:2175092818506899373",
+  "lastIndexId": "4:4875534683436650490",
   "lastRelationId": "0:0",
   "lastSequenceId": "0:0",
   "modelVersion": 5,

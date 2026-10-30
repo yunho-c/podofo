@@ -7,6 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:synchronized/synchronized.dart';
 
 import '../data/pdf_document_lease.dart';
+import '../dark_mode/photo_overrides.dart';
 import 'pdf_highlights.dart';
 import 'document_file_access.dart';
 import 'pdf_navigation_history.dart';
@@ -14,10 +15,17 @@ import 'pdf_navigation_history.dart';
 /// A tab owns one detached PDF, so replacing its source file is safe on Windows.
 /// Mutations, saves, and close are serialized. Failed saves retain dirty edits.
 class PdfSession {
-  PdfSession._(this.path, this.lease, this._fingerprint, this._savedBytes);
+  PdfSession._(
+    this.path,
+    this.lease,
+    this._fingerprint,
+    this._savedBytes,
+    this.photoOverrides,
+  );
   String path;
   final PdfDocumentLease lease;
   final navigationHistory = PdfNavigationHistory();
+  final PhotoOverrides photoOverrides;
   String _fingerprint;
   Uint8List _savedBytes;
   final Lock _lock = Lock();
@@ -35,7 +43,11 @@ class PdfSession {
   Future<T> readLocked<T>(Future<T> Function(PdfDocument) read) =>
       _lock.synchronized(() => lease.use(read));
 
-  static Future<PdfSession> open(String path, {bool selected = false}) async {
+  static Future<PdfSession> open(
+    String path, {
+    bool selected = false,
+    PhotoOverrideStore? photoOverrideStore,
+  }) async {
     final access = await DocumentFileAccess.acquire(path, selected: selected);
     try {
       // Resolve only after restoring sandbox access, including moved bookmarks.
@@ -46,12 +58,25 @@ class PdfSession {
         sourceName: path,
         useProgressiveLoading: false,
       );
-      return PdfSession._(
-        path,
-        PdfDocumentLease(pdf),
-        sha256.convert(bytes).toString(),
-        bytes,
-      );
+      try {
+        final fingerprint = sha256.convert(bytes).toString();
+        // Load preferences before constructing the owning native lease, so a
+        // database failure cannot strand a reference to a disposed document.
+        final overrides = PhotoOverrides(
+          fingerprint,
+          store: photoOverrideStore,
+        );
+        return PdfSession._(
+          path,
+          PdfDocumentLease(pdf),
+          fingerprint,
+          bytes,
+          overrides,
+        );
+      } catch (_) {
+        await pdf.dispose();
+        rethrow;
+      }
     } finally {
       await access.release();
     }
@@ -151,6 +176,9 @@ class PdfSession {
       _savedBytes = bytes;
       _savedRevision = revision;
       fileAccessWarning = null;
+      if (!photoOverrides.documentSaved(_fingerprint)) {
+        fileAccessWarning = photoOverrides.error;
+      }
       try {
         await DocumentFileAccess.remember(target);
       } catch (e) {
@@ -166,10 +194,12 @@ class PdfSession {
   });
 
   Future<void> close({bool discard = false}) => _lock.synchronized(() {
+    if (lease.isClosed) return;
     if (dirty && !discard) {
       throw StateError('Save or discard changes before closing.');
     }
     lease.close();
+    photoOverrides.dispose();
   });
 }
 

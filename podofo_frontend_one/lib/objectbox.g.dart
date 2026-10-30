@@ -17,6 +17,7 @@ import 'package:objectbox_flutter_libs/objectbox_flutter_libs.dart';
 import 'src/data/document_entity.dart';
 import 'src/data/document_history_entity.dart';
 import 'src/data/narration_bookmark.dart';
+import 'src/data/photo_override_entity.dart';
 import 'src/data/thumbnail_entity.dart';
 import 'src/providers/user_state_provider.dart';
 
@@ -298,6 +299,35 @@ final _entities = <obx_int.ModelEntity>[
     relations: <obx_int.ModelRelation>[],
     backlinks: <obx_int.ModelBacklink>[],
   ),
+  obx_int.ModelEntity(
+    id: const obx_int.IdUid(6, 2175092818506899373),
+    name: 'PhotoOverrideEntity',
+    lastPropertyId: const obx_int.IdUid(3, 3506299965362248555),
+    flags: 0,
+    properties: <obx_int.ModelProperty>[
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(1, 9172897063065344153),
+        name: 'id',
+        type: 6,
+        flags: 1,
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(2, 8865761824969002018),
+        name: 'documentHash',
+        type: 9,
+        flags: 2080,
+        indexId: const obx_int.IdUid(4, 4875534683436650490),
+      ),
+      obx_int.ModelProperty(
+        id: const obx_int.IdUid(3, 3506299965362248555),
+        name: 'decisions',
+        type: 9,
+        flags: 0,
+      ),
+    ],
+    relations: <obx_int.ModelRelation>[],
+    backlinks: <obx_int.ModelBacklink>[],
+  ),
 ];
 
 /// Shortcut for [obx.Store.new] that passes [getObjectBoxModel] and for Flutter
@@ -343,8 +373,8 @@ obx_int.ModelDefinition getObjectBoxModel() {
     // Typically, this is done with `dart run build_runner build`.
     generatorVersion: obx_int.GeneratorVersion.v2025_12_16,
     entities: _entities,
-    lastEntityId: const obx_int.IdUid(5, 5220693176391162839),
-    lastIndexId: const obx_int.IdUid(3, 5234795908054042713),
+    lastEntityId: const obx_int.IdUid(6, 2175092818506899373),
+    lastIndexId: const obx_int.IdUid(4, 4875534683436650490),
     lastRelationId: const obx_int.IdUid(0, 0),
     lastSequenceId: const obx_int.IdUid(0, 0),
     retiredEntityUids: const [],
@@ -715,6 +745,48 @@ obx_int.ModelDefinition getObjectBoxModel() {
         return object;
       },
     ),
+    PhotoOverrideEntity: obx_int.EntityDefinition<PhotoOverrideEntity>(
+      model: _entities[5],
+      toOneRelations: (PhotoOverrideEntity object) => [],
+      toManyRelations: (PhotoOverrideEntity object) => {},
+      getId: (PhotoOverrideEntity object) => object.id,
+      setId: (PhotoOverrideEntity object, int id) {
+        object.id = id;
+      },
+      objectToFB: (PhotoOverrideEntity object, fb.Builder fbb) {
+        final documentHashOffset = fbb.writeString(object.documentHash);
+        final decisionsOffset = fbb.writeString(object.decisions);
+        fbb.startTable(4);
+        fbb.addInt64(0, object.id);
+        fbb.addOffset(1, documentHashOffset);
+        fbb.addOffset(2, decisionsOffset);
+        fbb.finish(fbb.endTable());
+        return object.id;
+      },
+      objectFromFB: (obx.Store store, ByteData fbData) {
+        final buffer = fb.BufferContext(fbData);
+        final rootOffset = buffer.derefObject(0);
+        final idParam = const fb.Int64Reader().vTableGet(
+          buffer,
+          rootOffset,
+          4,
+          0,
+        );
+        final documentHashParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 6, '');
+        final decisionsParam = const fb.StringReader(
+          asciiOptimization: true,
+        ).vTableGet(buffer, rootOffset, 8, '');
+        final object = PhotoOverrideEntity(
+          id: idParam,
+          documentHash: documentHashParam,
+          decisions: decisionsParam,
+        );
+
+        return object;
+      },
+    ),
   };
 
   return obx_int.ModelDefinition(model, bindings);
@@ -916,5 +988,23 @@ class NarrationBookmark_ {
   /// See [NarrationBookmark.contextAfter].
   static final contextAfter = obx.QueryStringProperty<NarrationBookmark>(
     _entities[4].properties[8],
+  );
+}
+
+/// [PhotoOverrideEntity] entity fields to define ObjectBox queries.
+class PhotoOverrideEntity_ {
+  /// See [PhotoOverrideEntity.id].
+  static final id = obx.QueryIntegerProperty<PhotoOverrideEntity>(
+    _entities[5].properties[0],
+  );
+
+  /// See [PhotoOverrideEntity.documentHash].
+  static final documentHash = obx.QueryStringProperty<PhotoOverrideEntity>(
+    _entities[5].properties[1],
+  );
+
+  /// See [PhotoOverrideEntity.decisions].
+  static final decisions = obx.QueryStringProperty<PhotoOverrideEntity>(
+    _entities[5].properties[2],
   );
 }

@@ -11,9 +11,19 @@ class PhotoDiagnosticEntry {
     required this.rect,
     required bool preserved,
     required String inactiveReason,
-  }) : reason = candidate.reason == 'likely-photo'
+    this.override,
+  }) : reason = override == false
+           ? switch (inactiveReason) {
+               'inversion-off' ||
+               'preservation-off' ||
+               'selective-shader-unavailable' => inactiveReason,
+               _ => rect.isEmpty ? 'outside-viewport' : 'user-inverted',
+             }
+           : candidate.reason == 'likely-photo' || override == true
            ? preserved
-                 ? 'preserved'
+                 ? override == true
+                       ? 'user-preserved'
+                       : 'preserved'
                  : rect.isEmpty
                  ? 'outside-viewport'
                  : inactiveReason
@@ -21,14 +31,18 @@ class PhotoDiagnosticEntry {
 
   final int pageNumber;
   final PhotoCandidate candidate;
+  final bool? override;
 
   /// Normalized to the viewer viewport, after page rotation and cropping.
   final Rect rect;
   final String reason;
   String get label => 'P$pageNumber image #${candidate.objectId}';
   PhotoDiagnosticStatus get status {
-    if (reason == 'preserved') return PhotoDiagnosticStatus.preserved;
-    if (candidate.reason == 'likely-photo' ||
+    if (reason == 'preserved' || reason == 'user-preserved') {
+      return PhotoDiagnosticStatus.preserved;
+    }
+    if (override != null ||
+        candidate.reason == 'likely-photo' ||
         const {
           'pending',
           'analysis-stalled',

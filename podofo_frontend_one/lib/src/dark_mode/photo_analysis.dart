@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'dart:typed_data';
 
 import 'package:ffi/ffi.dart';
+import 'package:crypto/crypto.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:pdfium_dart/pdfium_dart.dart';
 
@@ -27,6 +28,7 @@ class PhotoCandidate {
     this.reason, {
     required this.region,
     this.classification,
+    this.sampleHash,
     this.objectPath = const [],
   });
   final int objectIndex;
@@ -38,6 +40,9 @@ class PhotoCandidate {
   final String reason;
   final PhotoRegion region;
   final PhotoClassification? classification;
+
+  /// Hash of the cropped, oriented RGB sample; computed during the existing decode.
+  final String? sampleHash;
 }
 
 class PhotoPageAnalysis {
@@ -210,6 +215,7 @@ PhotoPageAnalysis inspectPhotoPage(
         final object = _resolveImage(api, page, before.objectPath);
         String reason;
         PhotoClassification? classification;
+        String? sampleHash;
         if (object == nullptr) {
           reason = 'image-unavailable';
         } else {
@@ -241,6 +247,9 @@ PhotoPageAnalysis inspectPhotoPage(
                   classification = sample == null
                       ? null
                       : classifyPhoto(sample);
+                  if (sample != null) {
+                    sampleHash = sha256.convert(sample).toString();
+                  }
                   reason = classification?.reason ?? 'unsupported-bitmap';
                 } finally {
                   api.FPDFBitmap_Destroy(bitmap);
@@ -255,6 +264,7 @@ PhotoPageAnalysis inspectPhotoPage(
           region: before.region,
           objectPath: before.objectPath,
           classification: classification,
+          sampleHash: sampleHash,
         );
         completed++;
       }

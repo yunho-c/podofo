@@ -126,6 +126,9 @@ class _EntryDetails extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(entry.reason).small(),
+          if (entry.override != null)
+            Text('Manual override; automatic result: ${entry.candidate.reason}')
+                .small(),
           if (entry.candidate.reason == 'likely-photo')
             const Text('Photo classifier accepted this image.').small(),
           if (stats != null) ...[

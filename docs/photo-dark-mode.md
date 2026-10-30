@@ -21,7 +21,55 @@ Turning the option off immediately restores the existing rendering path.
 This is a conservative heuristic, not semantic image recognition. It intentionally
 misses some photographs and can mistake sufficiently textured scientific images
 or screenshots containing photographs for photographs. There is no accuracy
-claim based on a single source photograph and no per-region user override yet.
+claim based on a single source photograph.
+
+## Manual panel choices
+
+With dark mode, PDF inversion and preservation enabled, hold **Option** on macOS
+or **Alt** elsewhere to reveal clickable image outlines. Click a panel to choose
+the opposite of its automatic result; click it again while holding the modifier
+to remove the override and return to Automatic. Releasing the modifier or losing
+window focus hides the outlines. Green means original colors, orange means dark
+mode; a thicker outline and corner dot identify a manual choice. Hovering shows
+the current choice and what clicking will do. Wheel scrolling remains available.
+The appearance menu includes a short reminder of the modifier gesture.
+
+Only panels that reached pixel classification are adjustable: they have already
+passed the geometry, opacity, overlap and allocation gates. This includes both
+accepted photos and classifier rejections. Masks, complex clipping, overlapping
+page content and other earlier rejections are still excluded. All eligible
+visible panels can be adjusted; the developer list's 128-entry cap does not limit
+this interaction. The overlay consumes panel clicks, so they cannot select PDF
+text or activate links; ordinary interaction resumes when the modifier is released.
+
+Explicit choices belong to `PdfSession.photoOverrides` and persist in a separate
+ObjectBox entity after a tab closes. They do not modify the PDF, its revision or
+its dirty flag. Automatic decisions remain disposable cached analysis. The saved
+choice is a concrete preserve/invert value, so classifier changes do not reverse
+the user's intent. Returning to Automatic removes that saved value.
+
+Records are keyed by the PDF's SHA-256 fingerprint. Panel anchors contain the
+page, rotation, page dimensions, cropped geometry rounded to 0.001 PDF points,
+and a hash of the existing 64×64 oriented RGB classifier sample. No additional
+image decode or pixels are retained. Object paths are not durable identifiers.
+Byte-identical renamed/moved files and copies therefore share saved preferences.
+App-controlled annotation saves and Save As copy choices to the new fingerprint;
+each choice still requires a matching eligible panel. Externally changed PDFs
+start with Automatic, rather than inheriting stale choices by filename. This
+first version does not try to rematch externally rewritten or reordered papers.
+
+Diagnostics retain the automatic classification and additionally report
+`user-preserved` or `user-inverted`. Persistence failures leave the prior choice
+in effect and display an error in the modifier overlay; a failure after a PDF save
+is reported as a saved-file warning.
+
+Override validation covers both Alt keys, key release during a click, window/app
+focus loss, disabled inversion, pointer isolation, wheel scrolling, unchanged
+viewport/viewer state, and actual Impeller pixel changes on a rotated page.
+Persistence checks close and reopen the database, rename a document, save
+annotations, use Save As, and reject choices after external file replacement.
+They also verify that a second click returns to Automatic and a failed database
+write leaves the previous choice intact.
 
 ## Developer diagnostics
 
@@ -351,7 +399,8 @@ flutter test --no-pub --concurrency=1 \
   test/highlight_selection_test.dart
 flutter test --no-pub --enable-impeller \
   test/photo_filter_widget_test.dart test/photo_diagnostics_sidebar_test.dart \
-  test/photo_mask_test.dart
+  test/photo_mask_test.dart test/photo_overrides_test.dart \
+  test/photo_override_widget_test.dart
 flutter test --no-pub --enable-impeller tool/qualify_photo_shader_test.dart
 flutter test --no-pub tool/benchmark_photo_analysis_test.dart
 ```

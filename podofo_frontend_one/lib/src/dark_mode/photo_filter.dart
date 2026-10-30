@@ -10,6 +10,8 @@ import 'photo_cache.dart';
 import 'photo_diagnostics.dart';
 import 'photo_geometry.dart';
 import 'photo_mask.dart';
+import 'photo_overrides.dart';
+import 'photo_override_overlay.dart';
 
 /// One viewer and one filter pass. Never paste image bitmaps over annotations,
 /// highlights, selection, or links; preserve the already composited pixels.
@@ -110,7 +112,12 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-    animation: Listenable.merge([widget.controller, _cache, _masks]),
+    animation: Listenable.merge([
+      widget.controller,
+      _cache,
+      _masks,
+      if (!widget.session.lease.isClosed) widget.session.photoOverrides,
+    ]),
     child: widget.child,
     builder: (context, child) {
       final viewer = widget.controller;
@@ -124,6 +131,8 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
       final regions = <Rect>[];
       final priorities = <int, List<String>>{};
       final diagnosticPages = <PhotoDiagnosticPage>[];
+      final overrideEntries = <PhotoOverrideEntry>[];
+      final overrides = widget.session.photoOverrides;
       var omittedPages = 0;
       if ((active || widget.showDiagnostics) &&
           !widget.session.lease.isClosed &&
@@ -144,6 +153,11 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
         omittedPages = (pages.length - _cache.capacity).clamp(0, pages.length);
         for (final number in pages.take(_cache.capacity)) {
           final analysis = _cache.peek(number);
+          final page = widget.session.lease.document.pages[number - 1];
+          final targets = {
+            for (final c in analysis?.candidates ?? const <PhotoCandidate>[])
+              c: PhotoOverrides.target(page, c),
+          };
           Rect project(PhotoRegion region) => photoViewportRect(
             region,
             widget.session.lease.document.pages[number - 1],
@@ -167,9 +181,26 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           pending.sort((a, b) => visibleArea(b).compareTo(visibleArea(a)));
           priorities[number] = pending.map((c) => c.objectId).toList();
           if (active) {
-            for (final region in analysis?.regions ?? const <PhotoRegion>[]) {
-              final rect = documentRect(region);
-              if (!rect.isEmpty) regions.add(rect);
+            for (final candidate
+                in analysis?.candidates ?? const <PhotoCandidate>[]) {
+              final target = targets[candidate];
+              final manual = overrides.decision(target);
+              final automatic = candidate.reason == 'likely-photo';
+              if (manual ?? automatic) {
+                final rect = documentRect(candidate.region);
+                if (!rect.isEmpty) regions.add(rect);
+              }
+              final rect = project(candidate.region);
+              if (target != null && !rect.isEmpty) {
+                overrideEntries.add(
+                  PhotoOverrideEntry(
+                    target: target,
+                    rect: rect,
+                    automatic: automatic,
+                    override: manual,
+                  ),
+                );
+              }
             }
           }
           if (widget.showDiagnostics) {
@@ -181,6 +212,7 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
                   PhotoDiagnosticEntry(
                     pageNumber: number,
                     candidate: candidate,
+                    override: overrides.decision(targets[candidate]),
                     rect: project(candidate.region),
                     preserved:
                         active &&
@@ -243,6 +275,19 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           ),
           if (snapshot != null)
             Positioned.fill(child: PhotoDiagnosticsOverlay(snapshot: snapshot)),
+          Positioned.fill(
+            child: PhotoOverrideOverlay(
+              enabled: active,
+              entries: overrideEntries,
+              controller: viewer,
+              error: overrides.error,
+              onToggle: (entry) {
+                if (!widget.session.lease.isClosed) {
+                  overrides.toggle(entry.target, automatic: entry.automatic);
+                }
+              },
+            ),
+          ),
         ],
       );
     },

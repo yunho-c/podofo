@@ -608,6 +608,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
 
   void _onHover(PointerHoverEvent event) {
     _clearHover();
+    if (HardwareKeyboard.instance.isAltPressed) return;
     final generation = _generation;
     final document = ref.read(currentDocumentProvider);
     final controller = ref.read(pdfViewerControllerProvider);

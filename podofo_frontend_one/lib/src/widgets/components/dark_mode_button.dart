@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/foundation.dart'
+    show defaultTargetPlatform, TargetPlatform;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
@@ -43,6 +45,11 @@ class DarkModeButton extends ConsumerWidget {
                               : null,
                         ),
                         child: const Text('Preserve photos (experimental)'),
+                      ),
+                      MenuLabel(
+                        child: Text(
+                          'Hold ${defaultTargetPlatform == TargetPlatform.macOS ? 'Option' : 'Alt'} and click an outlined image to switch its colors. Click again for Automatic.',
+                        ).small.normal,
                       ),
                       MenuLabel(
                         trailing: Text(shaderStrength.toStringAsFixed(2))
