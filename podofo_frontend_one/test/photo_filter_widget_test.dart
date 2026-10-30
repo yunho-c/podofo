@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/dark_mode/photo_filter.dart';
 import 'package:podofo_one/src/dark_mode/photo_analysis.dart';
+import 'package:podofo_one/src/dark_mode/photo_diagnostics.dart';
 import 'package:podofo_one/src/dark_mode/photo_geometry.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 import 'package:podofo_one/src/widgets/components/pdf_page_layout.dart';
@@ -22,6 +23,12 @@ void main() {
       ui.FragmentShader? original;
       ui.FragmentProgram? selective;
       await tester.runAsync(() async {
+        await (FontLoader('Urbanist')..addFont(
+              rootBundle.load(
+                'assets/fonts/Urbanist/static/Urbanist-Regular.ttf',
+              ),
+            ))
+            .load();
         await pdfrxInitialize();
         session = await PdfSession.open(
           'test/fixtures/photo_dark_mode/mixed.pdf',
@@ -39,9 +46,17 @@ void main() {
       var preserve = false;
       var invert = true;
       var twoPages = false;
+      var showDiagnostics = false;
+      final diagnostics = PhotoDiagnosticsController();
+      addTearDown(diagnostics.dispose);
       late StateSetter update;
       await tester.pumpWidget(
         MaterialApp(
+          theme: ThemeData(fontFamily: 'Urbanist'),
+          builder: (context, child) => DefaultTextStyle(
+            style: const TextStyle(fontFamily: 'Urbanist', fontSize: 14),
+            child: child!,
+          ),
           home: StatefulBuilder(
             builder: (context, setState) {
               update = setState;
@@ -50,6 +65,8 @@ void main() {
                 child: RepaintBoundary(
                   key: const ValueKey('photo-capture'),
                   child: PhotoPreservingFilter(
+                    showDiagnostics: showDiagnostics,
+                    diagnostics: diagnostics,
                     session: session,
                     revision: session.revision,
                     controller: controller,
@@ -120,6 +137,33 @@ void main() {
         ),
         selectedText,
       );
+      update(() => showDiagnostics = true);
+      await _settle(tester);
+      expect(find.byType(PhotoDiagnosticsOverlay), findsOneWidget);
+      expect(tester.state(find.byType(PdfViewer)), same(state));
+      expect(controller.value, matrix);
+      expect(
+        await _withPumps(
+          tester,
+          controller.textSelectionDelegate.getSelectedText,
+        ),
+        selectedText,
+      );
+      update(() {
+        invert = false;
+        preserve = false;
+      });
+      await _settle(tester);
+      expect(
+        diagnostics.value!.entries.where((e) => e.reason == 'inversion-off'),
+        isNotEmpty,
+      );
+      expect(
+        diagnostics.value!.entries.where(
+          (e) => e.status == PhotoDiagnosticStatus.rejected,
+        ),
+        isNotEmpty,
+      );
       update(() => twoPages = true);
       await _settle(tester);
       unawaited(
@@ -142,6 +186,24 @@ void main() {
       await _settle(tester);
       expect(controller.value, spreadMatrix);
       expect(tester.state(find.byType(PdfViewer)), same(state));
+      // Capture the debug overlay on rotated, cropped pages in a spread.
+      await tester.runAsync(() async {
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(const ValueKey('photo-capture')),
+        );
+        final image = await boundary.toImage();
+        final file = File('build/photo-dark-mode/viewer-diagnostics.png');
+        file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(
+          (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer
+              .asUint8List(),
+        );
+        image.dispose();
+      });
+      update(() => showDiagnostics = false);
+      await _settle(tester);
+      expect(find.byType(PhotoDiagnosticsOverlay), findsNothing);
+      expect(diagnostics.value, isNull);
       if (selective != null) {
         final captures = <String, Uint8List>{};
         var width = 0;
@@ -215,6 +277,14 @@ void main() {
           }
         }
         expect(restored, greaterThan(100));
+        update(() => showDiagnostics = true);
+        await _settle(tester);
+        expect(
+          diagnostics.value!.entries.where(
+            (e) => e.status == PhotoDiagnosticStatus.preserved,
+          ),
+          hasLength(2),
+        );
       }
       await tester.pumpWidget(const SizedBox());
       await tester.runAsync(() async {

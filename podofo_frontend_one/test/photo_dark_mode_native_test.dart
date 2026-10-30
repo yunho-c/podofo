@@ -135,6 +135,47 @@ void main() {
     }
   });
 
+  test(
+    'diagnostics retain rejected raster bounds, stats, Forms and budget skips',
+    () async {
+      final mixed = await analyzePhotos(document, 1);
+      final accepted = mixed.candidates.singleWhere(
+        (c) => c.reason == 'likely-photo',
+      );
+      expect(identical(accepted.region, mixed.regions.single), isTrue);
+      expect(
+        mixed.candidates.where((c) => c.reason != 'likely-photo'),
+        isNotEmpty,
+      );
+      final gray = await analyzePhotos(document, 10);
+      final rejected = gray.candidates.single;
+      expect(rejected.reason, 'limited-palette');
+      expect(rejected.classification!.colors, lessThan(90));
+      expect(rejected.region.left, 20);
+      expect(rejected.region.bottom, 200);
+      expect(rejected.region.right, 180);
+      expect(rejected.region.top, 360);
+      final complex = await analyzePhotos(document, 8);
+      expect(complex.uninspectedForms, hasLength(1));
+      final form = complex.uninspectedForms.single;
+      expect(form.reason, 'form-not-inspected');
+      expect(form.classification, isNull);
+      expect(form.region.left, 10);
+      expect(form.region.bottom, 20);
+      expect(form.region.right, 130);
+      expect(form.region.top, 140);
+      final budget = await analyzePhotos(document, 12);
+      expect(budget.fallback, 'image-budget');
+      expect(budget.candidates, hasLength(25));
+      expect(
+        budget.candidates.every((c) => c.reason == 'image-budget'),
+        isTrue,
+      );
+      expect(budget.candidates.every((c) => c.region.area == 25), isTrue);
+      expect(budget.regions, isEmpty);
+    },
+  );
+
   test('read-only analysis leaves PDF rendering, text, and annotation count intact', () async {
     final page = document.pages[10];
     final before = await page.render(

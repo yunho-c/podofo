@@ -6,6 +6,7 @@ import 'package:pdfrx/pdfrx.dart';
 import '../services/pdf_session.dart';
 import 'photo_analysis.dart';
 import 'photo_cache.dart';
+import 'photo_diagnostics.dart';
 import 'photo_geometry.dart';
 
 /// One viewer and one filter pass. Never paste image bitmaps over annotations,
@@ -23,6 +24,8 @@ class PhotoPreservingFilter extends StatefulWidget {
     required this.defaultShader,
     required this.program,
     required this.child,
+    this.showDiagnostics = false,
+    this.diagnostics,
   });
   final PdfSession session;
   final int revision;
@@ -32,6 +35,8 @@ class PhotoPreservingFilter extends StatefulWidget {
   final FragmentShader? defaultShader;
   final FragmentProgram? program;
   final Widget child;
+  final bool showDiagnostics;
+  final PhotoDiagnosticsController? diagnostics;
 
   @override
   State<PhotoPreservingFilter> createState() => _PhotoPreservingFilterState();
@@ -59,6 +64,9 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
   @override
   void didUpdateWidget(covariant PhotoPreservingFilter oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.diagnostics != widget.diagnostics) {
+      oldWidget.diagnostics?.publish(null);
+    }
     if (!identical(oldWidget.session, widget.session)) {
       _cache.dispose();
       _createCache();
@@ -75,6 +83,7 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
 
   @override
   void dispose() {
+    widget.diagnostics?.publish(null);
     _cache.dispose();
     _shader?.dispose();
     super.dispose();
@@ -94,7 +103,11 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           !widget.session.lease.isClosed &&
           viewer.isReady;
       final regions = <Rect>[];
-      if (active) {
+      final diagnosticPages = <PhotoDiagnosticPage>[];
+      var omittedPages = 0;
+      if ((active || widget.showDiagnostics) &&
+          !widget.session.lease.isClosed &&
+          viewer.isReady) {
         final visible = viewer.visibleRect;
         final layout = viewer.layout.pageLayouts;
         final pages = visiblePhotoPages(
@@ -103,18 +116,53 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           twoPages: widget.twoPages,
         );
         _cache.setVisiblePages(pages);
+        omittedPages = (pages.length - _cache.capacity).clamp(0, pages.length);
         for (final number in pages.take(_cache.capacity)) {
           final analysis = _cache.peek(number);
-          for (final region in analysis?.regions ?? const <PhotoRegion>[]) {
-            final rect = photoViewportRect(
-              region,
-              widget.session.lease.document.pages[number - 1],
-              layout[number - 1],
-              visible,
+          Rect project(PhotoRegion region) => photoViewportRect(
+            region,
+            widget.session.lease.document.pages[number - 1],
+            layout[number - 1],
+            visible,
+          );
+          final preserved = <PhotoRegion>{};
+          if (active) {
+            for (final region in analysis?.regions ?? const <PhotoRegion>[]) {
+              final rect = project(region);
+              if (!rect.isEmpty && regions.length < 16) {
+                regions.add(rect);
+                preserved.add(region);
+              }
+            }
+          }
+          if (widget.showDiagnostics) {
+            diagnosticPages.add(
+              PhotoDiagnosticPage(number, analysis, [
+                for (final candidate in [
+                  ...?analysis?.candidates,
+                  ...?analysis?.uninspectedForms,
+                ])
+                  PhotoDiagnosticEntry(
+                    pageNumber: number,
+                    candidate: candidate,
+                    rect: project(candidate.region),
+                    preserved: preserved.contains(candidate.region),
+                    inactiveReason: !widget.enabled
+                        ? 'inversion-off'
+                        : !widget.selective
+                        ? 'preservation-off'
+                        : shader == null
+                        ? 'selective-shader-unavailable'
+                        : 'visible-region-limit',
+                  ),
+              ]),
             );
-            if (!rect.isEmpty && regions.length < 16) regions.add(rect);
           }
         }
+      } else {
+        _cache.setVisiblePages(const []);
+      }
+      if (active) {
         shader.setFloat(2, widget.strength.clamp(0, 1));
         shader.setFloat(3, regions.length.toDouble());
         for (var i = 0; i < 16; i++) {
@@ -124,20 +172,33 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           shader.setFloat(6 + i * 4, rect.right);
           shader.setFloat(7 + i * 4, rect.bottom);
         }
-      } else {
-        _cache.setVisiblePages(const []);
       }
+      final snapshot = widget.showDiagnostics
+          ? PhotoDiagnosticsSnapshot(
+              revision: widget.revision,
+              pages: diagnosticPages,
+              omittedPages: omittedPages,
+            )
+          : null;
+      widget.diagnostics?.publish(snapshot);
       // The child hierarchy stays identical across mode/loading/error changes.
       // No detected regions => use the original shader, byte-for-byte unchanged.
       final effective = active && regions.isNotEmpty
           ? shader
           : widget.defaultShader;
-      return ImageFiltered(
-        enabled: widget.enabled && effective != null,
-        imageFilter: widget.enabled && effective != null
-            ? ImageFilter.shader(effective)
-            : _disabled,
-        child: child,
+      return Stack(
+        fit: StackFit.passthrough,
+        children: [
+          ImageFiltered(
+            enabled: widget.enabled && effective != null,
+            imageFilter: widget.enabled && effective != null
+                ? ImageFilter.shader(effective)
+                : _disabled,
+            child: child,
+          ),
+          if (snapshot != null)
+            Positioned.fill(child: PhotoDiagnosticsOverlay(snapshot: snapshot)),
+        ],
       );
     },
   );

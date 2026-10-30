@@ -23,6 +23,44 @@ misses some photographs and can mistake sufficiently textured scientific images
 or screenshots containing photographs for photographs. There is no accuracy
 claim based on a single source photograph and no per-region user override yet.
 
+## Developer diagnostics
+
+In the developer sidebar, expand **Dark Mode** and enable **Show
+photo-preservation diagnostics**. This temporary toggle defaults off and also
+works in light mode or with preservation disabled. It shares the viewer's
+visible-page analysis/cache; it does not open another PDF or render image copies.
+
+- Green outlines indicate image regions actually passed to the preservation
+  shader. Accepted images beyond the 16-region limit are gray and labeled
+  `visible-region-limit`.
+- Orange outlines indicate rejected raster images. Labels include the page,
+  zero-based PDF object index, and the first failed gate.
+- Gray outlines indicate skipped/inactive images or uninspected Form containers.
+  Accepted photos show `inversion-off`, `preservation-off`, or
+  `selective-shader-unavailable` when preservation is inactive. Form bounds may
+  contain text, vectors, or raster images; their contents are still not traversed.
+
+Expand an object's sidebar entry to see its reason and, when pixel classification
+was reached, all six measured statistics alongside their thresholds. Multiple
+thresholds may fail even though the reason reports only the first. Pending pages,
+page-level failures and analysis limits are reported explicitly; a page rejected
+before object enumeration cannot supply outlines. Offscreen objects on a visible
+page may appear in the sidebar without a visible outline.
+
+Outlines and labels are painted after the color filter and ignore pointer input.
+Selection, links and navigation continue through the overlay. The diagnostic
+toggle retains the existing viewer and viewport. The sidebar follows the active
+document session, and document revisions invalidate cached results. Neither this
+toggle nor the extra metadata changes photo-classification thresholds.
+
+Diagnostics validation on 2026-10-29: 26 focused tests passed in the macOS
+Flutter 3.47.5 test runner with Impeller and the existing Debug app's PDFium
+framework. Coverage included native rejection/Form/budget metadata, the sidebar,
+pointer passthrough, retained selection/viewports, reader/navigation regressions,
+document leases, page layouts and the shader pixel probe. Static analysis and
+format checks passed. Captures are in `build/photo-dark-mode/`; this is test-runner
+evidence, not a new Release application build or interactive acceptance.
+
 ## Content inspection and classification
 
 `photo_analysis.dart` reads the **live session document**, not a separately opened
@@ -108,7 +146,9 @@ and an 80 ms soft deadline checked between candidates. Native page loading or
 an individual image decode cannot be interrupted by that deadline. A costly
 cold decode can still delay pdfrx's renderer while the worker is paused, even
 though it does not block Dart's UI isolate. Source bitmaps are freed immediately;
-only at most 24 small decisions/regions per cached page are retained. Extreme
+only detached decisions/regions are retained. Diagnostic metadata is capped at
+128 raster objects and 128 uninspected Form containers per page, with omitted
+counts reported; image classification still admits at most 24 images. Extreme
 zoom-out admits only the first 64 visible pages to avoid cache thrashing.
 
 ## Verification performed on 2026-10-28
@@ -180,7 +220,8 @@ flutter test --no-pub --concurrency=1 \
   test/photo_dark_mode_test.dart test/photo_dark_mode_native_test.dart \
   test/pdf_document_lease_test.dart test/pdf_page_layout_test.dart \
   test/highlight_selection_test.dart
-flutter test --no-pub --enable-impeller test/photo_filter_widget_test.dart
+flutter test --no-pub --enable-impeller \
+  test/photo_filter_widget_test.dart test/photo_diagnostics_sidebar_test.dart
 flutter test --no-pub --enable-impeller tool/qualify_photo_shader_test.dart
 flutter test --no-pub tool/benchmark_photo_analysis_test.dart
 ```

@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../dark_mode/photo_filter.dart';
 import '../../providers/document_provider.dart';
+import '../../providers/photo_diagnostics_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_state_provider.dart';
 import '../../providers/narration_provider.dart';
@@ -519,6 +520,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       onExit: (_) => _clearHover(),
       // Keep the viewer mounted so theme/inversion changes preserve its viewport.
       child: PhotoPreservingFilter(
+        showDiagnostics: ref.watch(showPhotoDiagnosticsProvider),
+        diagnostics: ref.watch(photoDiagnosticsProvider(document.session)),
         session: document.session,
         revision: document.session.revision,
         controller: controller,

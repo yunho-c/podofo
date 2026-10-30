@@ -22,9 +22,15 @@ class PhotoRegion {
 }
 
 class PhotoCandidate {
-  const PhotoCandidate(this.objectIndex, this.reason, {this.classification});
+  const PhotoCandidate(
+    this.objectIndex,
+    this.reason, {
+    required this.region,
+    this.classification,
+  });
   final int objectIndex;
   final String reason;
+  final PhotoRegion region;
   final PhotoClassification? classification;
 }
 
@@ -32,11 +38,15 @@ class PhotoPageAnalysis {
   const PhotoPageAnalysis({
     this.regions = const [],
     this.candidates = const [],
+    this.uninspectedForms = const [],
+    this.omittedDiagnosticObjects = 0,
     this.fallback,
     this.elapsedMicroseconds = 0,
   });
   final List<PhotoRegion> regions;
   final List<PhotoCandidate> candidates;
+  final List<PhotoCandidate> uninspectedForms;
+  final int omittedDiagnosticObjects;
   final String? fallback;
   final int elapsedMicroseconds;
 }
@@ -92,6 +102,7 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
       final bounds = <PhotoRegion>[];
       final objects = <FPDF_PAGEOBJECT>[];
       final imageIndices = <int>[];
+      final formIndices = <int>[];
       final coords = arena<Float>(4);
       for (var i = 0; i < count; i++) {
         final object = api.FPDFPage_GetObject(page, i);
@@ -117,12 +128,45 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
         }
         objects.add(object);
         bounds.add(rect);
-        if (api.FPDFPageObj_GetType(object) == FPDF_PAGEOBJ_IMAGE) {
+        final type = api.FPDFPageObj_GetType(object);
+        if (type == FPDF_PAGEOBJ_IMAGE) {
           imageIndices.add(i);
+        } else if (type == FPDF_PAGEOBJ_FORM) {
+          formIndices.add(i);
         }
       }
+      PhotoRegion cropRelative(PhotoRegion rect) => PhotoRegion(
+        rect.left - crop.left,
+        rect.bottom - crop.bottom,
+        rect.right - crop.left,
+        rect.top - crop.bottom,
+      );
+      // Bound diagnostic metadata even on pages rejected before classification.
+      const diagnosticLimit = 128;
+      final forms = List<PhotoCandidate>.unmodifiable([
+        for (final index in formIndices.take(diagnosticLimit))
+          PhotoCandidate(
+            index,
+            'form-not-inspected',
+            region: cropRelative(bounds[index]),
+          ),
+      ]);
+      final omittedForms = math.max(0, formIndices.length - diagnosticLimit);
       if (imageIndices.length > 24) {
-        return const PhotoPageAnalysis(fallback: 'image-budget');
+        return PhotoPageAnalysis(
+          fallback: 'image-budget',
+          candidates: List.unmodifiable([
+            for (final index in imageIndices.take(diagnosticLimit))
+              PhotoCandidate(
+                index,
+                'image-budget',
+                region: cropRelative(bounds[index]),
+              ),
+          ]),
+          uninspectedForms: forms,
+          omittedDiagnosticObjects:
+              omittedForms + math.max(0, imageIndices.length - diagnosticLimit),
+        );
       }
       final regions = <PhotoRegion>[];
       final candidates = <PhotoCandidate>[];
@@ -133,7 +177,13 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
       for (final index in imageIndices) {
         // Soft admission deadline; cannot interrupt a PDFium decode in progress.
         if (watch.elapsedMilliseconds > 80) {
-          candidates.add(PhotoCandidate(index, 'time-budget'));
+          candidates.add(
+            PhotoCandidate(
+              index,
+              'time-budget',
+              region: cropRelative(bounds[index]),
+            ),
+          );
           continue;
         }
         final object = objects[index];
@@ -144,6 +194,7 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
           math.min(raw.right, crop.right),
           math.min(raw.top, crop.top),
         );
+        final region = cropRelative(rect);
         String? reject;
         if (rect.right - rect.left < 24 || rect.top - rect.bottom < 24) {
           reject = 'small-or-outside-page';
@@ -176,28 +227,35 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
             reject = 'overlapping-page-content';
           }
         }
-        if (reject == null &&
-            (api.FPDFImageObj_GetImagePixelSize(object, width, height) == 0 ||
-                width.value < 64 ||
-                height.value < 64 ||
-                width.value * height.value > 4000000 ||
-                decodedPixels + width.value * height.value > 8000000)) {
-          reject = 'pixel-budget-or-small-image';
+        if (reject == null) {
+          if (api.FPDFImageObj_GetImagePixelSize(object, width, height) == 0) {
+            reject = 'image-size-unavailable';
+          } else if (width.value < 64 || height.value < 64) {
+            reject = 'small-image';
+          } else if (width.value * height.value > 4000000) {
+            reject = 'image-pixel-budget';
+          } else if (decodedPixels + width.value * height.value > 8000000) {
+            reject = 'page-pixel-budget';
+          }
         }
         if (reject != null) {
-          candidates.add(PhotoCandidate(index, reject));
+          candidates.add(PhotoCandidate(index, reject, region: region));
           continue;
         }
         decodedPixels += width.value * height.value;
         final bitmap = api.FPDFImageObj_GetBitmap(object);
         if (bitmap == nullptr) {
-          candidates.add(PhotoCandidate(index, 'decode-failed'));
+          candidates.add(
+            PhotoCandidate(index, 'decode-failed', region: region),
+          );
           continue;
         }
         try {
           final sample = _sampleBitmap(api, bitmap);
           if (sample == null) {
-            candidates.add(PhotoCandidate(index, 'unsupported-bitmap'));
+            candidates.add(
+              PhotoCandidate(index, 'unsupported-bitmap', region: region),
+            );
             continue;
           }
           final classification = classifyPhoto(sample);
@@ -205,18 +263,12 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
             PhotoCandidate(
               index,
               classification.reason,
+              region: region,
               classification: classification,
             ),
           );
           if (classification.isLikelyPhoto) {
-            regions.add(
-              PhotoRegion(
-                rect.left - crop.left,
-                rect.bottom - crop.bottom,
-                rect.right - crop.left,
-                rect.top - crop.bottom,
-              ),
-            );
+            regions.add(region);
           }
         } finally {
           api.FPDFBitmap_Destroy(bitmap);
@@ -225,6 +277,8 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
       return PhotoPageAnalysis(
         regions: List.unmodifiable(regions),
         candidates: List.unmodifiable(candidates),
+        uninspectedForms: forms,
+        omittedDiagnosticObjects: omittedForms,
         elapsedMicroseconds: watch.elapsedMicroseconds,
       );
     });

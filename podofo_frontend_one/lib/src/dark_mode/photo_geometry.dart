@@ -47,6 +47,9 @@ Rect photoViewportRect(
   Rect layout,
   Rect visible,
 ) {
+  if (region.right <= region.left || region.top <= region.bottom) {
+    return Rect.zero;
+  }
   final documentRect = PdfRect(
     region.left,
     region.top,
