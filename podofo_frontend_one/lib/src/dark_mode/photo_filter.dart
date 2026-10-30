@@ -1,6 +1,7 @@
 import 'dart:ui';
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:pdfrx/pdfrx.dart';
 
 import '../services/pdf_session.dart';
@@ -8,6 +9,7 @@ import 'photo_analysis.dart';
 import 'photo_cache.dart';
 import 'photo_diagnostics.dart';
 import 'photo_geometry.dart';
+import 'photo_mask.dart';
 
 /// One viewer and one filter pass. Never paste image bitmaps over annotations,
 /// highlights, selection, or links; preserve the already composited pixels.
@@ -46,6 +48,8 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
   static final _disabled = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
   late PhotoAnalysisCache _cache;
   FragmentShader? _shader;
+  final _masks = PhotoMaskCache();
+  List<Rect>? _maskLayout;
 
   @override
   void initState() {
@@ -56,9 +60,20 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
 
   void _createCache() {
     final session = widget.session;
-    _cache = PhotoAnalysisCache(
-      (page) => session.readLocked((pdf) => analyzePhotos(pdf, page)),
-    );
+    _cache = PhotoAnalysisCache((page, previous, priority) {
+      final revision = widget.revision;
+      return session.readLocked((pdf) {
+        if (session.revision != revision) {
+          throw StateError('Document revision changed');
+        }
+        return analyzePhotoBatch(
+          pdf,
+          page,
+          previous: previous,
+          priority: priority,
+        );
+      });
+    });
   }
 
   @override
@@ -69,9 +84,12 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
     }
     if (!identical(oldWidget.session, widget.session)) {
       _cache.dispose();
+      _masks.invalidate();
+      _maskLayout = null;
       _createCache();
     } else if (oldWidget.revision != widget.revision) {
       _cache.invalidate();
+      _masks.invalidate();
     }
     if (oldWidget.program != widget.program) {
       final oldShader = _shader;
@@ -85,13 +103,14 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
   void dispose() {
     widget.diagnostics?.publish(null);
     _cache.dispose();
+    _masks.dispose();
     _shader?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) => AnimatedBuilder(
-    animation: Listenable.merge([widget.controller, _cache]),
+    animation: Listenable.merge([widget.controller, _cache, _masks]),
     child: widget.child,
     builder: (context, child) {
       final viewer = widget.controller;
@@ -103,6 +122,7 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           !widget.session.lease.isClosed &&
           viewer.isReady;
       final regions = <Rect>[];
+      final priorities = <int, List<String>>{};
       final diagnosticPages = <PhotoDiagnosticPage>[];
       var omittedPages = 0;
       if ((active || widget.showDiagnostics) &&
@@ -110,12 +130,17 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           viewer.isReady) {
         final visible = viewer.visibleRect;
         final layout = viewer.layout.pageLayouts;
+        if (!identical(_maskLayout, layout)) {
+          if (_maskLayout != null && !listEquals(_maskLayout, layout)) {
+            _masks.invalidate();
+          }
+          _maskLayout = layout;
+        }
         final pages = visiblePhotoPages(
           layout,
           visible,
           twoPages: widget.twoPages,
         );
-        _cache.setVisiblePages(pages);
         omittedPages = (pages.length - _cache.capacity).clamp(0, pages.length);
         for (final number in pages.take(_cache.capacity)) {
           final analysis = _cache.peek(number);
@@ -125,51 +150,73 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
             layout[number - 1],
             visible,
           );
-          final preserved = <PhotoRegion>{};
+          Rect documentRect(PhotoRegion region) => photoDocumentRect(
+            region,
+            widget.session.lease.document.pages[number - 1],
+            layout[number - 1],
+          );
+          final pending = [
+            for (final c in analysis?.candidates ?? const <PhotoCandidate>[])
+              if (c.reason == 'pending' && !project(c.region).isEmpty) c,
+          ];
+          double visibleArea(PhotoCandidate c) {
+            final r = project(c.region);
+            return r.width * r.height;
+          }
+
+          pending.sort((a, b) => visibleArea(b).compareTo(visibleArea(a)));
+          priorities[number] = pending.map((c) => c.objectId).toList();
           if (active) {
             for (final region in analysis?.regions ?? const <PhotoRegion>[]) {
-              final rect = project(region);
-              if (!rect.isEmpty && regions.length < 16) {
-                regions.add(rect);
-                preserved.add(region);
-              }
+              final rect = documentRect(region);
+              if (!rect.isEmpty) regions.add(rect);
             }
           }
           if (widget.showDiagnostics) {
             diagnosticPages.add(
               PhotoDiagnosticPage(number, analysis, [
                 for (final candidate
-                    in analysis?.candidates ?? const <PhotoCandidate>[])
+                    in analysis?.candidates.take(128) ??
+                        const <PhotoCandidate>[])
                   PhotoDiagnosticEntry(
                     pageNumber: number,
                     candidate: candidate,
                     rect: project(candidate.region),
-                    preserved: preserved.contains(candidate.region),
+                    preserved:
+                        active &&
+                        !project(candidate.region).isEmpty &&
+                        (_masks.current?.rectangles.contains(
+                              documentRect(candidate.region),
+                            ) ??
+                            false),
                     inactiveReason: !widget.enabled
                         ? 'inversion-off'
                         : !widget.selective
                         ? 'preservation-off'
                         : shader == null
                         ? 'selective-shader-unavailable'
-                        : 'visible-region-limit',
+                        : _masks.failed
+                        ? 'mask-unavailable'
+                        : 'mask-pending',
                   ),
               ]),
             );
           }
         }
+        _cache.setVisiblePages(pages, priorities: priorities);
+        if (active && pages.isNotEmpty) {
+          final bounds = pages
+              .take(_cache.capacity)
+              .map((p) => layout[p - 1])
+              .reduce((a, b) => a.expandToInclude(b));
+          _masks.request(bounds, regions);
+        }
       } else {
         _cache.setVisiblePages(const []);
       }
-      if (active) {
-        shader.setFloat(2, widget.strength.clamp(0, 1));
-        shader.setFloat(3, regions.length.toDouble());
-        for (var i = 0; i < 16; i++) {
-          final rect = i < regions.length ? regions[i] : Rect.zero;
-          shader.setFloat(4 + i * 4, rect.left);
-          shader.setFloat(5 + i * 4, rect.top);
-          shader.setFloat(6 + i * 4, rect.right);
-          shader.setFloat(7 + i * 4, rect.bottom);
-        }
+      final mask = _masks.current;
+      if (active && mask != null) {
+        mask.configure(shader, widget.strength, viewer.visibleRect);
       }
       final snapshot = widget.showDiagnostics
           ? PhotoDiagnosticsSnapshot(
@@ -181,7 +228,7 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
       widget.diagnostics?.publish(snapshot);
       // The child hierarchy stays identical across mode/loading/error changes.
       // No detected regions => use the original shader, byte-for-byte unchanged.
-      final effective = active && regions.isNotEmpty
+      final effective = active && mask != null && mask.rectangles.isNotEmpty
           ? shader
           : widget.defaultShader;
       return Stack(

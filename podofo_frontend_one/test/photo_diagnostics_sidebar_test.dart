@@ -133,7 +133,7 @@ void main() {
             pageNumber: 8,
             candidate: PhotoCandidate(
               60,
-              'time-budget',
+              'pending',
               objectPath: [60, child],
               region: const PhotoRegion(0, 0, 100, 100),
             ),
@@ -145,12 +145,22 @@ void main() {
       diagnostics.publish(
         PhotoDiagnosticsSnapshot(
           revision: session.revision,
-          pages: [PhotoDiagnosticPage(8, const PhotoPageAnalysis(), siblings)],
+          pages: [
+            PhotoDiagnosticPage(
+              8,
+              PhotoPageAnalysis(
+                candidates: siblings.map((e) => e.candidate).toList(),
+                pendingCount: 2,
+              ),
+              siblings,
+            ),
+          ],
         ),
       );
       await tester.pumpAndSettle();
       expect(find.text('P8 image #60/1 · skipped'), findsOneWidget);
       expect(find.text('P8 image #60/2 · skipped'), findsOneWidget);
+      expect(find.text('0 of 2 images inspected; 2 pending'), findsOneWidget);
       expect(tester.takeException(), isNull);
       // The pane follows the active session and cannot expose a closed tab's data.
       container.read(current.notifier).state = null;

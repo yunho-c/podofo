@@ -44,25 +44,99 @@ class PhotoPageAnalysis {
   const PhotoPageAnalysis({
     this.regions = const [],
     this.candidates = const [],
-    this.omittedDiagnosticObjects = 0,
     this.fallback,
     this.elapsedMicroseconds = 0,
-  });
+    this.pendingCount = 0,
+    this.batchDecodedImages = 0,
+    this.batchDecodedPixels = 0,
+  }) : _pending = const [];
+
+  PhotoPageAnalysis._(
+    List<PhotoCandidate> results,
+    List<_PendingImage> pending, {
+    this.elapsedMicroseconds = 0,
+    this.batchDecodedImages = 0,
+    this.batchDecodedPixels = 0,
+  }) : candidates = List.unmodifiable(results),
+       regions = List.unmodifiable(
+         results.where((c) => c.reason == 'likely-photo').map((c) => c.region),
+       ),
+       _pending = List.unmodifiable(pending),
+       pendingCount = pending.length,
+       fallback = null;
+
+  /// Stop a failed continuation without discarding photos already classified.
+  factory PhotoPageAnalysis.failed(PhotoPageAnalysis? previous, String reason) {
+    final results = [
+      for (final c in previous?.candidates ?? const <PhotoCandidate>[])
+        c.reason == 'pending'
+            ? PhotoCandidate(
+                c.objectIndex,
+                reason,
+                region: c.region,
+                objectPath: c.objectPath,
+              )
+            : c,
+    ];
+    return PhotoPageAnalysis(
+      candidates: List.unmodifiable(results),
+      regions: List.unmodifiable(
+        results.where((c) => c.reason == 'likely-photo').map((c) => c.region),
+      ),
+      fallback: reason,
+    );
+  }
+
   final List<PhotoRegion> regions;
   final List<PhotoCandidate> candidates;
-  final int omittedDiagnosticObjects;
   final String? fallback;
-  final int elapsedMicroseconds;
+  final int elapsedMicroseconds,
+      pendingCount,
+      batchDecodedImages,
+      batchDecodedPixels;
+  final List<_PendingImage> _pending;
+  bool get isComplete => pendingCount == 0;
+  int get totalImages => candidates.length;
+  int get inspectedImages => totalImages - pendingCount;
+  int get omittedDiagnosticObjects => math.max(0, candidates.length - 128);
 }
 
-/// useNativeDocumentHandle suspends pdfrx's worker for the entire awaited action.
-/// The caller must hold a lease/session read lock until this future completes.
-/// The auxiliary isolate returns only detached data; it never calls pdfrx or
-/// initializes/destroys the shared PDFium runtime.
-Future<PhotoPageAnalysis> analyzePhotos(PdfDocument document, int pageNumber) {
+/// Complete-page convenience for qualification tools. The viewer uses one batch
+/// per session read lock, yielding to pdfrx and other visible pages between calls.
+Future<PhotoPageAnalysis> analyzePhotos(
+  PdfDocument document,
+  int pageNumber,
+) async {
+  PhotoPageAnalysis? result;
+  do {
+    result = await analyzePhotoBatch(document, pageNumber, previous: result);
+  } while (!result.isComplete);
+  return result;
+}
+
+/// Only detached metadata crosses batches. Caller supplies results from the same
+/// session, page and revision, and holds its read lock until this call completes.
+Future<PhotoPageAnalysis> analyzePhotoBatch(
+  PdfDocument document,
+  int pageNumber, {
+  PhotoPageAnalysis? previous,
+  List<String> priority = const [],
+  int maxImages = 8,
+  int maxPixels = 8000000,
+  Duration timeBudget = const Duration(milliseconds: 20),
+}) {
   final modulePath = Pdfrx.pdfiumModulePath;
   return document.useNativeDocumentHandle(
-    (handle) => _analyzeOffThread(handle, pageNumber, modulePath),
+    (handle) => _analyzeOffThread(
+      handle,
+      pageNumber,
+      modulePath,
+      previous,
+      priority,
+      maxImages,
+      maxPixels,
+      timeBudget,
+    ),
   );
 }
 
@@ -71,10 +145,37 @@ Future<PhotoPageAnalysis> _analyzeOffThread(
   int handle,
   int page,
   String? path,
-) => Isolate.run(() => inspectPhotoPage(handle, page, path));
+  PhotoPageAnalysis? previous,
+  List<String> priority,
+  int maxImages,
+  int maxPixels,
+  Duration timeBudget,
+) => Isolate.run(
+  () => inspectPhotoPage(
+    handle,
+    page,
+    path,
+    previous: previous,
+    priority: priority,
+    maxImages: maxImages,
+    maxPixels: maxPixels,
+    timeBudget: timeBudget,
+  ),
+);
 
-/// Public for the native qualification harness. Call only while PDFium is locked.
-PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
+/// Call only while PDFium is locked. The first batch inventories the page; each
+/// continuation decodes a bounded portion, re-resolving paths in a fresh page.
+PhotoPageAnalysis inspectPhotoPage(
+  int handle,
+  int pageNumber,
+  String? path, {
+  PhotoPageAnalysis? previous,
+  List<String> priority = const [],
+  int maxImages = 8,
+  int maxPixels = 8000000,
+  Duration timeBudget = const Duration(milliseconds: 20),
+}) {
+  if (previous?.isComplete ?? false) return previous!;
   final watch = Stopwatch()..start();
   final api = getPdfium(modulePath: path);
   final page = api.FPDF_LoadPage(
@@ -82,9 +183,90 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
     pageNumber - 1,
   );
   if (page == nullptr) {
-    return const PhotoPageAnalysis(fallback: 'page-unavailable');
+    return PhotoPageAnalysis.failed(previous, 'page-unavailable');
   }
   try {
+    if (previous != null) {
+      final results = previous.candidates.toList();
+      final pending = previous._pending.toList();
+      final rank = {for (var i = 0; i < priority.length; i++) priority[i]: i};
+      pending.sort((a, b) {
+        final order = (rank[results[a.index].objectId] ?? priority.length)
+            .compareTo(rank[results[b.index].objectId] ?? priority.length);
+        return order != 0 ? order : a.index.compareTo(b.index);
+      });
+      var completed = 0, pixels = 0;
+      for (final work in pending) {
+        // Always admit one bounded image, even when page loading consumed the
+        // time slice or this image exceeds the batch's target pixel allowance.
+        // Otherwise a costly image could remain pending forever.
+        if (completed > 0 &&
+            (completed >= maxImages ||
+                pixels + work.pixels > maxPixels ||
+                watch.elapsed > timeBudget)) {
+          break;
+        }
+        final before = results[work.index];
+        final object = _resolveImage(api, page, before.objectPath);
+        String reason;
+        PhotoClassification? classification;
+        if (object == nullptr) {
+          reason = 'image-unavailable';
+        } else {
+          final image = work.bind(object, before.objectPath);
+          pixels += work.pixels;
+          final rendered = api.FPDFImageObj_GetRenderedBitmap(
+            Pointer<fpdf_document_t__>.fromAddress(handle),
+            page,
+            object,
+          );
+          if (rendered == nullptr) {
+            reason = 'opacity-unavailable';
+          } else {
+            bool opaque;
+            try {
+              opaque = _isOpaque(api, rendered, image);
+            } finally {
+              api.FPDFBitmap_Destroy(rendered);
+            }
+            if (!opaque) {
+              reason = 'mask-or-transparency';
+            } else {
+              final bitmap = api.FPDFImageObj_GetBitmap(object);
+              if (bitmap == nullptr) {
+                reason = 'decode-failed';
+              } else {
+                try {
+                  final sample = _sampleBitmap(api, bitmap, image);
+                  classification = sample == null
+                      ? null
+                      : classifyPhoto(sample);
+                  reason = classification?.reason ?? 'unsupported-bitmap';
+                } finally {
+                  api.FPDFBitmap_Destroy(bitmap);
+                }
+              }
+            }
+          }
+        }
+        results[work.index] = PhotoCandidate(
+          before.objectIndex,
+          reason,
+          region: before.region,
+          objectPath: before.objectPath,
+          classification: classification,
+        );
+        completed++;
+      }
+      return PhotoPageAnalysis._(
+        results,
+        pending.skip(completed).toList(),
+        elapsedMicroseconds:
+            previous.elapsedMicroseconds + watch.elapsedMicroseconds,
+        batchDecodedImages: completed,
+        batchDecodedPixels: pixels,
+      );
+    }
     return using((arena) {
       final box = arena<FS_RECTF>();
       if (api.FPDF_GetPageBoundingBox(page, box) == 0) {
@@ -101,50 +283,35 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
       }
       final tree = _PageObjects(api, arena);
       tree.walk(page, null, const [], const _Transform.identity(), crop, null);
-      PhotoRegion cropRelative(PhotoRegion rect) => PhotoRegion(
-        rect.left - crop.left,
-        rect.bottom - crop.bottom,
-        rect.right - crop.left,
-        rect.top - crop.bottom,
+      PhotoRegion cropRelative(PhotoRegion r) => PhotoRegion(
+        r.left - crop.left,
+        r.bottom - crop.bottom,
+        r.right - crop.left,
+        r.top - crop.bottom,
       );
       final images = tree.leaves
           .where((o) => o.type == FPDF_PAGEOBJ_IMAGE)
           .toList();
-      PhotoCandidate candidate(
-        _Object image,
-        String reason, [
-        PhotoClassification? classification,
-      ]) => PhotoCandidate(
+      PhotoCandidate candidate(_Object image, String reason) => PhotoCandidate(
         image.path.first,
         reason,
         objectPath: image.path,
         region: cropRelative(image.visible),
-        classification: classification,
       );
-      final fallback =
-          tree.fallback ?? (images.length > 24 ? 'image-budget' : null);
-      if (fallback != null) {
+      if (tree.fallback != null) {
         return PhotoPageAnalysis(
-          fallback: fallback,
+          fallback: tree.fallback,
           candidates: List.unmodifiable([
-            for (final image in images.take(128)) candidate(image, fallback),
+            for (final image in images) candidate(image, tree.fallback!),
           ]),
-          omittedDiagnosticObjects: math.max(0, images.length - 128),
           elapsedMicroseconds: watch.elapsedMicroseconds,
         );
       }
-      final regions = <PhotoRegion>[];
       final candidates = <PhotoCandidate>[];
-      final width = arena<UnsignedInt>();
-      final height = arena<UnsignedInt>();
-      var decodedPixels = 0;
+      final pending = <_PendingImage>[];
+      final width = arena<UnsignedInt>(), height = arena<UnsignedInt>();
       for (final original in images) {
         var image = original;
-        // Soft admission deadline; cannot interrupt a PDFium decode in progress.
-        if (watch.elapsedMilliseconds > 80) {
-          candidates.add(candidate(image, 'time-budget'));
-          continue;
-        }
         final object = image.handle;
         final rect = image.visible;
         String? reject = image.reject;
@@ -189,8 +356,6 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
               height.value > 4000000 ||
               width.value * height.value > 4000000) {
             reject = 'image-pixel-budget';
-          } else if (decodedPixels + width.value * height.value > 8000000) {
-            reject = 'page-pixel-budget';
           }
         }
         if (reject != null) {
@@ -223,63 +388,75 @@ PhotoPageAnalysis inspectPhotoPage(int handle, int pageNumber, String? path) {
           candidates.add(candidate(image, 'rendered-image-budget'));
           continue;
         }
-        if (decodedPixels + width.value * height.value + renderedPixels >
-            8000000) {
-          candidates.add(candidate(image, 'page-pixel-budget'));
-          continue;
-        }
-        decodedPixels += width.value * height.value + renderedPixels;
-        final rendered = api.FPDFImageObj_GetRenderedBitmap(
-          Pointer<fpdf_document_t__>.fromAddress(handle),
-          page,
-          object,
+        pending.add(
+          _PendingImage(
+            candidates.length,
+            image.visible,
+            image.transform,
+            image.localTransform,
+            image.parentTransform,
+            width.value * height.value + renderedPixels,
+          ),
         );
-        if (rendered == nullptr) {
-          candidates.add(candidate(image, 'opacity-unavailable'));
-          continue;
-        }
-        bool opaque;
-        try {
-          opaque = _isOpaque(api, rendered, image);
-        } finally {
-          api.FPDFBitmap_Destroy(rendered);
-        }
-        if (!opaque) {
-          candidates.add(candidate(image, 'mask-or-transparency'));
-          continue;
-        }
-        final bitmap = api.FPDFImageObj_GetBitmap(object);
-        if (bitmap == nullptr) {
-          candidates.add(candidate(image, 'decode-failed'));
-          continue;
-        }
-        try {
-          final sample = _sampleBitmap(api, bitmap, image);
-          if (sample == null) {
-            candidates.add(candidate(image, 'unsupported-bitmap'));
-            continue;
-          }
-          final classification = classifyPhoto(sample);
-          final result = candidate(
-            image,
-            classification.reason,
-            classification,
-          );
-          candidates.add(result);
-          if (classification.isLikelyPhoto) regions.add(result.region);
-        } finally {
-          api.FPDFBitmap_Destroy(bitmap);
-        }
+        candidates.add(candidate(image, 'pending'));
       }
-      return PhotoPageAnalysis(
-        regions: List.unmodifiable(regions),
-        candidates: List.unmodifiable(candidates),
+      return PhotoPageAnalysis._(
+        candidates,
+        pending,
         elapsedMicroseconds: watch.elapsedMicroseconds,
       );
     });
   } finally {
     api.FPDF_ClosePage(page);
   }
+}
+
+FPDF_PAGEOBJECT _resolveImage(PDFium api, FPDF_PAGE page, List<int> path) {
+  if (path.isEmpty ||
+      path.first < 0 ||
+      path.first >= api.FPDFPage_CountObjects(page)) {
+    return nullptr;
+  }
+  var object = api.FPDFPage_GetObject(page, path.first);
+  for (final index in path.skip(1)) {
+    if (object == nullptr ||
+        api.FPDFPageObj_GetType(object) != FPDF_PAGEOBJ_FORM ||
+        index < 0 ||
+        index >= api.FPDFFormObj_CountObjects(object)) {
+      return nullptr;
+    }
+    object = api.FPDFFormObj_GetObject(object, index);
+  }
+  return object != nullptr &&
+          api.FPDFPageObj_GetType(object) == FPDF_PAGEOBJ_IMAGE
+      ? object
+      : nullptr;
+}
+
+/// No FFI pointers or source pixels survive a batch.
+class _PendingImage {
+  const _PendingImage(
+    this.index,
+    this.visible,
+    this.transform,
+    this.localTransform,
+    this.parentTransform,
+    this.pixels,
+  );
+  final int index, pixels;
+  final PhotoRegion visible;
+  final _Transform transform, localTransform, parentTransform;
+  _Object bind(FPDF_PAGEOBJECT handle, List<int> path) => _Object(
+    handle,
+    FPDF_PAGEOBJ_IMAGE,
+    path,
+    0,
+    visible,
+    transform,
+    localTransform,
+    parentTransform,
+    null,
+  );
 }
 
 Uint8List? _sampleBitmap(PDFium api, FPDF_BITMAP bitmap, _Object image) {

@@ -45,9 +45,6 @@ void main() {
           containsAll(['transparency', 'non-rectangular-transform']),
         );
       }
-      if (spec['name'] == 'image-budget') {
-        expect(result.fallback, 'image-budget');
-      }
     }
   });
 
@@ -160,10 +157,11 @@ void main() {
       expect(form.region.right, 130);
       expect(form.region.top, 140);
       final budget = await analyzePhotos(document, 12);
-      expect(budget.fallback, 'image-budget');
+      expect(budget.fallback, isNull);
+      expect(budget.isComplete, isTrue);
       expect(budget.candidates, hasLength(25));
       expect(
-        budget.candidates.every((c) => c.reason == 'image-budget'),
+        budget.candidates.every((c) => c.reason == 'small-or-outside-page'),
         isTrue,
       );
       expect(budget.candidates.every((c) => c.region.area == 25), isTrue);

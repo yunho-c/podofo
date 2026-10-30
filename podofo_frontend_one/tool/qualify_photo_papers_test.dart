@@ -11,6 +11,9 @@ import 'photo_shader_checks.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   final casesPath = Platform.environment['PHOTO_PAPER_CASES'];
+  final outputRoot =
+      Platform.environment['PHOTO_PAPER_OUTPUT'] ??
+      'build/photo-dark-mode/paper-qualification';
   test(
     'real paper photos through the actual Impeller shader',
     () async {
@@ -20,9 +23,7 @@ void main() {
         final cases = jsonDecode(File(casesPath!).readAsStringSync()) as List;
         for (var i = 0; i < cases.length; i++) {
           final spec = cases[i];
-          final output = Directory(
-            'build/photo-dark-mode/paper-qualification/doc-${i + 1}',
-          );
+          final output = Directory('$outputRoot/doc-${i + 1}');
           final report = await checkPhotoShader(
             spec['path'],
             output,

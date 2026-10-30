@@ -4,9 +4,9 @@ uniform vec2 uSize;
 uniform float invertStrength;
 uniform sampler2D image;
 // First two floats and sampler 0 are supplied by ImageFilter.shader.
-// Rectangles use normalized filter-input coordinates, independent of DPR.
-uniform float photoCount;
-uniform vec4 photoRects[16];
+// Sampler 1 is cached geometric coverage in document coordinates.
+uniform sampler2D preservationMask;
+uniform vec4 maskTransform; // viewport-to-mask offset.xy and scale.zw
 
 // Convert color from RGB color space to HSL color space
 // Source: https://stackoverflow.com/a/9493060/1310978
@@ -94,14 +94,12 @@ void main() {
     // Get the original color of the pixel from the image
     vec4 original_color = texture(image, uv);
 
-    for (int i = 0; i < 16; i++) {
-        if (float(i) < photoCount) {
-            vec4 r = photoRects[i];
-            if (uv.x >= r.x && uv.y >= r.y && uv.x < r.z && uv.y < r.w) {
-                fragColor = original_color;
-                return;
-            }
-        }
+    vec2 maskUV = maskTransform.xy + uv * maskTransform.zw;
+    if (all(greaterThanEqual(maskUV, vec2(0.0))) &&
+        all(lessThan(maskUV, vec2(1.0))) &&
+        texture(preservationMask, maskUV).a > 0.999) {
+        fragColor = original_color;
+        return;
     }
 
     // Convert color to HSL

@@ -13,9 +13,16 @@ preserves its rectangular crop and nested photo, while alpha/skew stay rejected.
 three-level transforms (reflection and quarter-turn), reused Forms, rectangular
 image/ancestor/Form-BBox crops, opaque underlays, later text, compound and text
 clips, soft/explicit/color-key masks, Form alpha/groups, skew, depth/image/render
-budgets, fractional coordinates, and filled frames with even-odd/winding holes.
+budgets (the 25 tiny images now receive individual size rejections), fractional coordinates, and filled frames with even-odd/winding holes.
 The native tests check paths, coordinates and read-only behavior. The shader
 probe checks accepted crops and frames against the original rendered pixels.
+
+`dense.pdf` and `dense_manifest.json` contain nested 25/92-panel grids and a
+rotated 92-panel page. All panels are photographic and large enough for admission;
+the 92-panel source pixels exceed the former page allowance. Native tests cover
+resumable work and priority without repeated decodes; shader and viewer tests
+cover every region, zoom and a 117-panel spread with uninverted photos and
+normally inverted captions. Generate with `tool/generate_photo_dense_fixture.py`.
 
 `astronaut.png` is a 256 × 256 RGB Lanczos reduction of the 512 × 512 NASA
 photograph of Eileen Collins distributed by scikit-image v0.25.2:
@@ -37,6 +44,7 @@ Regenerate from the app directory with Python 3 and Pillow (tested with 12.3.0):
 ```sh
 python3 tool/generate_photo_fixture.py
 python3 tool/generate_photo_forms_fixture.py
+python3 tool/generate_photo_dense_fixture.py
 ```
 
 The committed PDF and samples are the test inputs. Regeneration can vary with

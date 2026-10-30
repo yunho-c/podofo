@@ -20,7 +20,8 @@ void main() {
     final times = <int>[];
     final renders = <int>[];
     final cache = PhotoAnalysisCache(
-      (p) => analyzePhotos(pdf, p),
+      (p, previous, priority) =>
+          analyzePhotoBatch(pdf, p, previous: previous, priority: priority),
       settleDelay: Duration.zero,
     );
     try {
@@ -42,6 +43,9 @@ void main() {
       while (!cache.isIdle) {
         await Future<void>.delayed(const Duration(milliseconds: 1));
       }
+      final analysisCalls = cache.analyses;
+      expect(cache.peek(1)!.isComplete, isTrue);
+      expect(cache.peek(2)!.isComplete, isTrue);
       final page = pdf.pages.first;
       final watch = Stopwatch()..start();
       for (var i = 0; i < 10000; i++) {
@@ -56,7 +60,7 @@ void main() {
         }
       }
       final cachedMicros = watch.elapsedMicroseconds;
-      expect(cache.analyses, 2);
+      expect(cache.analyses, analysisCalls);
       Map<String, Object> stats(List<int> values) {
         final sorted = values.toList()..sort();
         return {

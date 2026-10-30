@@ -635,7 +635,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
               Overlay.of(context).context.findRenderObject() as RenderBox;
           final position = overlayBox.globalToLocal(event.position);
           _overlay = OverlayEntry(
-            builder: (context) => Positioned(
+            // Overlay uses Flutter parent data, not shadcn's StackParentData.
+            builder: (context) => flutter.Positioned(
               left: (position.dx + 15).clamp(
                 0,
                 (size.width - 340).clamp(0, double.infinity),

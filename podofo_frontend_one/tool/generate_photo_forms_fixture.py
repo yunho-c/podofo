@@ -73,7 +73,7 @@ def build():
         deep = form('/Child Do', extra=f'/Child {deep} 0 R')
     page('depth-budget', 'q 1 0 0 1 50 100 cm /Deep Do Q', f'/Deep {deep} 0 R', expect=0, reason='form-depth-budget')
     dense = form('\n'.join(f'q 5 0 0 5 {i*7} 100 cm /Photo Do Q' for i in range(25)))
-    page('nested-image-budget', 'q 1 0 0 1 50 100 cm /Dense Do Q', f'/Dense {dense} 0 R', expect=0, reason='image-budget')
+    page('nested-tiny-images', 'q 1 0 0 1 50 100 cm /Dense Do Q', f'/Dense {dense} 0 R', expect=0, reason='small-or-outside-page')
     huge = form('q 3000 0 0 3000 0 0 cm /Photo Do Q', bbox='0 0 3000 3000')
     page('local-render-allocation-budget', 'q .05 0 0 .05 60 120 cm /Huge Do Q', f'/Huge {huge} 0 R', expect=0, reason='rendered-image-budget')
     page('fractional-placement', 'q 161.24 0 0 160.42 60.31 120.63 cm /Photo Do Q')

@@ -1,0 +1,20 @@
+{
+  "sha256": "1de327063128135eb5cca519c692e08be4f525c46865822b8020ee3dc5d4927c",
+  "pages": [
+    {
+      "page": 1,
+      "expectedPhotos": 25,
+      "rotation": 0
+    },
+    {
+      "page": 2,
+      "expectedPhotos": 92,
+      "rotation": 0
+    },
+    {
+      "page": 3,
+      "expectedPhotos": 92,
+      "rotation": 90
+    }
+  ]
+}

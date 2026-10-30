@@ -47,19 +47,24 @@ Rect photoViewportRect(
   Rect layout,
   Rect visible,
 ) {
-  if (region.right <= region.left || region.top <= region.bottom) {
-    return Rect.zero;
-  }
-  final documentRect = PdfRect(
-    region.left,
-    region.top,
-    region.right,
-    region.bottom,
-  ).toRectInDocument(page: page, pageRect: layout).intersect(layout);
+  final documentRect = photoDocumentRect(region, page, layout);
+  if (documentRect.isEmpty) return Rect.zero;
   return Rect.fromLTRB(
     (documentRect.left - visible.left) / visible.width,
     (documentRect.top - visible.top) / visible.height,
     (documentRect.right - visible.left) / visible.width,
     (documentRect.bottom - visible.top) / visible.height,
   ).intersect(const Rect.fromLTRB(0, 0, 1, 1));
+}
+
+Rect photoDocumentRect(PhotoRegion region, PdfPage page, Rect layout) {
+  if (region.right <= region.left || region.top <= region.bottom) {
+    return Rect.zero;
+  }
+  return PdfRect(
+    region.left,
+    region.top,
+    region.right,
+    region.bottom,
+  ).toRectInDocument(page: page, pageRect: layout).intersect(layout);
 }

@@ -135,7 +135,7 @@
     },
     {
       "page": 12,
-      "name": "image-budget",
+      "name": "many-tiny-images",
       "rotation": 0,
       "crop": [
         30,

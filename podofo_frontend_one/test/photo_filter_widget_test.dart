@@ -295,17 +295,224 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+  testWidgets('dense panels stay preserved through zoom and two-page layout', (
+    tester,
+  ) async {
+    late PdfSession session;
+    late ui.FragmentShader original;
+    late ui.FragmentProgram selective;
+    await tester.runAsync(() async {
+      await pdfrxInitialize();
+      session = await PdfSession.open(
+        'test/fixtures/photo_dark_mode/dense.pdf',
+      );
+      original = (await ui.FragmentProgram.fromAsset(
+        'shaders/invert.frag',
+      )).fragmentShader()..setFloat(2, 1);
+      selective = await ui.FragmentProgram.fromAsset(
+        'shaders/invert_photos.frag',
+      );
+    });
+    final controller = PdfViewerController();
+    final diagnostics = PhotoDiagnosticsController();
+    var twoPages = false, preserve = true, invert = true, show = true;
+    late StateSetter update;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: StatefulBuilder(
+          builder: (context, setState) {
+            update = setState;
+            return RepaintBoundary(
+              key: const ValueKey('dense-capture'),
+              child: PhotoPreservingFilter(
+                session: session,
+                revision: session.revision,
+                controller: controller,
+                enabled: invert,
+                selective: preserve,
+                twoPages: twoPages,
+                strength: 1,
+                defaultShader: original,
+                program: selective,
+                showDiagnostics: show,
+                diagnostics: diagnostics,
+                child: PdfViewer(
+                  session.lease.reference,
+                  controller: controller,
+                  params: PdfViewerParams(
+                    layoutPages: twoPages ? layoutTwoPages : null,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+    await _wait(tester, () => controller.isReady);
+    await _wait(
+      tester,
+      () =>
+          diagnostics.value?.pages.any(
+            (p) => (p.analysis?.pendingCount ?? 0) > 0,
+          ) ??
+          false,
+    );
+    unawaited(
+      controller.goTo(
+        controller.calcMatrixForRect(controller.layout.pageLayouts[1]),
+        duration: Duration.zero,
+      ),
+    );
+    await _wait(
+      tester,
+      () =>
+          diagnostics.value?.entries
+              .where(
+                (e) =>
+                    e.pageNumber == 2 &&
+                    e.status == PhotoDiagnosticStatus.preserved,
+              )
+              .length ==
+          92,
+      attempts: 800,
+      details: () =>
+          'visible=${controller.visibleRect}; page=${controller.layout.pageLayouts[1]}; ${diagnostics.value?.pages.map((p) => '${p.pageNumber}:pending=${p.analysis?.pendingCount},photos=${p.analysis?.regions.length},preserved=${p.entries.where((e) => e.status == PhotoDiagnosticStatus.preserved).length},reasons=${p.entries.map((e) => e.reason).toSet()}')}',
+    );
+    expect(
+      diagnostics.value!.pages
+          .singleWhere((p) => p.pageNumber == 2)
+          .analysis!
+          .isComplete,
+      isTrue,
+    );
+
+    final page = controller.layout.pageLayouts[1];
+    final zoom = Rect.fromLTWH(
+      page.left + page.width * .2,
+      page.top + page.height * .2,
+      page.width * .5,
+      page.height * .5,
+    );
+    unawaited(
+      controller.goTo(
+        controller.calcMatrixForRect(zoom),
+        duration: Duration.zero,
+      ),
+    );
+    await _settle(tester);
+    final rects = diagnostics.value!.entries
+        .where((e) => e.status == PhotoDiagnosticStatus.preserved)
+        .map((e) => e.rect)
+        .toList();
+    expect(rects.length, greaterThan(16));
+    final captures = <String, Uint8List>{};
+    var width = 0, height = 0;
+    for (final mode in ['natural', 'original', 'selective']) {
+      update(() {
+        show = false;
+        invert = mode != 'natural';
+        preserve = mode == 'selective';
+      });
+      await _settle(tester);
+      await tester.runAsync(() async {
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(const ValueKey('dense-capture')),
+        );
+        final image = await boundary.toImage();
+        try {
+          width = image.width;
+          height = image.height;
+          captures[mode] = (await image.toByteData())!.buffer.asUint8List();
+          final file = File('build/photo-dark-mode/dense-zoom-$mode.png');
+          file.parent.createSync(recursive: true);
+          file.writeAsBytesSync(
+            (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer
+                .asUint8List(),
+          );
+        } finally {
+          image.dispose();
+        }
+      });
+    }
+    var insideSamples = 0, outsideSamples = 0;
+    for (var y = 4; y < height - 4; y += 7) {
+      for (var x = 4; x < width - 4; x += 7) {
+        final point = Offset((x + .5) / width, (y + .5) / height);
+        final inside = rects.any((r) => r.deflate(4 / width).contains(point));
+        if (!inside && rects.any((r) => r.inflate(4 / width).contains(point))) {
+          continue;
+        }
+        final expected = captures[inside ? 'natural' : 'original']!;
+        if (inside) {
+          insideSamples++;
+        } else {
+          outsideSamples++;
+        }
+        final offset = (y * width + x) * 4;
+        for (var c = 0; c < 4; c++) {
+          expect(
+            captures['selective']![offset + c],
+            closeTo(expected[offset + c], 3),
+            reason: 'zoom xy=$x,$y',
+          );
+        }
+      }
+    }
+    expect(insideSamples, greaterThan(100));
+    expect(outsideSamples, greaterThan(100));
+    update(() {
+      twoPages = true;
+      show = true;
+    });
+    await _settle(tester);
+    final spread = controller.layout.pageLayouts[0].expandToInclude(
+      controller.layout.pageLayouts[1],
+    );
+    unawaited(
+      controller.goTo(
+        controller.calcMatrixForRect(spread),
+        duration: Duration.zero,
+      ),
+    );
+    await _wait(
+      tester,
+      () =>
+          diagnostics.value?.entries
+              .where(
+                (e) =>
+                    e.pageNumber <= 2 &&
+                    e.status == PhotoDiagnosticStatus.preserved,
+              )
+              .length ==
+          117,
+      attempts: 800,
+    );
+    await tester.pumpWidget(const SizedBox());
+    await tester.runAsync(() async {
+      await session.close();
+      await PdfrxEntryFunctions.instance.stopBackgroundWorker();
+    });
+    diagnostics.dispose();
+    original.dispose();
+    expect(tester.takeException(), isNull);
+  });
 }
 
-Future<void> _wait(WidgetTester tester, bool Function() condition) async {
-  for (var i = 0; i < 200; i++) {
+Future<void> _wait(
+  WidgetTester tester,
+  bool Function() condition, {
+  String Function()? details,
+  int attempts = 200,
+}) async {
+  for (var i = 0; i < attempts; i++) {
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 10)),
     );
     await tester.pump(const Duration(milliseconds: 10));
     if (condition()) return;
   }
-  fail('Viewer did not become ready');
+  fail('Viewer did not become ready: ${details?.call()}');
 }
 
 Future<void> _settle(WidgetTester tester) async {

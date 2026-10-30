@@ -73,7 +73,7 @@ def build():
     annotation = obj('<< /Type /Annot /Subtype /Highlight /Rect [65 300 180 320] /QuadPoints [65 320 180 320 65 300 180 300] /C [1 1 0] /CA 0.5 /F 4 >>')
     page(mixed, name='highlight-on-photo', annotations=f'/Annots [{annotation} 0 R]')
     # Raster repeated over many top-level objects exercises admission budgets.
-    page('\n'.join(f'q 5 0 0 5 {40+i*7} 200 cm /Photo Do Q' for i in range(25)), name='image-budget',expect=0)
+    page('\n'.join(f'q 5 0 0 5 {40+i*7} 200 cm /Photo Do Q' for i in range(25)), name='many-tiny-images',expect=0)
     objects[catalog-1] = f'<< /Type /Catalog /Pages {pages} 0 R >>'.encode()
     objects[pages-1] = f'<< /Type /Pages /Kids [{" ".join(kids)}] /Count {len(kids)} >>'.encode()
     data = bytearray(b'%PDF-1.7\n%\xe2\xe3\xcf\xd3\n')

@@ -83,6 +83,11 @@ class _PageDetails extends StatelessWidget {
         if (analysis == null)
           const Text('Analysis pending…').small()
         else ...[
+          if (analysis.totalImages > 0)
+            Text(
+              '${analysis.inspectedImages} of ${analysis.totalImages} images inspected'
+              '${analysis.isComplete ? '' : '; ${analysis.pendingCount} pending'}',
+            ).small(),
           if (analysis.fallback != null)
             Text('Page skipped: ${analysis.fallback}').small(),
           if (page.entries.isEmpty && analysis.fallback == null)

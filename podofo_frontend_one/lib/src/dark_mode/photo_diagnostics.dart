@@ -30,6 +30,10 @@ class PhotoDiagnosticEntry {
     if (reason == 'preserved') return PhotoDiagnosticStatus.preserved;
     if (candidate.reason == 'likely-photo' ||
         const {
+          'pending',
+          'analysis-stalled',
+          'analysis-unavailable',
+          'image-unavailable',
           'time-budget',
           'image-budget',
           'image-pixel-budget',

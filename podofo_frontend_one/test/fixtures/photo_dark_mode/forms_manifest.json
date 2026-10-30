@@ -185,9 +185,9 @@
     },
     {
       "page": 18,
-      "name": "nested-image-budget",
+      "name": "nested-tiny-images",
       "expectedPhotos": 0,
-      "reason": "image-budget",
+      "reason": "small-or-outside-page",
       "regions": null,
       "paths": null
     },

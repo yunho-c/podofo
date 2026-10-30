@@ -34,6 +34,31 @@ void main() {
       ? TargetPlatform.macOS
       : TargetPlatform.windows;
 
+  testWidgets('link hover preview uses compatible overlay parent data', (
+    tester,
+  ) async {
+    final reader = await _Reader.open(tester);
+    await reader.position(1, zoom: 1);
+    final page = reader.session.lease.document.pages.first;
+    final links = (await tester.runAsync(
+      () => reader.session.lease.use((_) => page.loadLinks()),
+    ))!;
+    final rect = links.single.rects.single.toRectInDocument(
+      page: page,
+      pageRect: reader.viewer.layout.pageLayouts.first,
+    );
+    await reader.mouse.moveTo(reader.viewer.documentToGlobal(rect.center)!);
+    await tester.pump(const Duration(milliseconds: 400));
+    await waitForNative(
+      tester,
+      () => find.text('Page 2').evaluate().isNotEmpty,
+    );
+    expect(tester.takeException(), isNull);
+    await reader.mouse.moveTo(Offset.zero);
+    await tester.pump();
+    expect(find.text('Page 2'), findsNothing);
+  }, variant: TargetPlatformVariant.only(platform));
+
   testWidgets(
     'two-page menus preserve playback and page-relative citation history',
     (tester) async {

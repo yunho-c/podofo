@@ -4,6 +4,7 @@ import 'dart:ui' as ui;
 import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/dark_mode/photo_analysis.dart';
 import 'package:podofo_one/src/dark_mode/photo_geometry.dart';
+import 'package:podofo_one/src/dark_mode/photo_mask.dart';
 
 /// Used by the Release probe and the explicitly Impeller-enabled test runner.
 /// Offscreen GPU readback, not a substitute for inspecting the native window.
@@ -57,7 +58,7 @@ Future<Map<String, Object>> checkPhotoShader(
         throw StateError('Unexpected photos on page $number: ${analyses.last}');
       }
       final regions = [
-        for (final region in analysis.regions.take(16))
+        for (final region in analysis.regions)
           photoViewportRect(
             region,
             page,
@@ -75,20 +76,22 @@ Future<Map<String, Object>> checkPhotoShader(
         final source = await raster.createImage();
         raster.dispose();
         final sourceBytes = (await source.toByteData())!.buffer.asUint8List();
+        final pageBounds = ui.Rect.fromLTWH(0, 0, page.width, page.height);
+        final mask = await PhotoMask.create(pageBounds, [
+          for (final r in regions)
+            ui.Rect.fromLTRB(
+              r.left * page.width,
+              r.top * page.height,
+              r.right * page.width,
+              r.bottom * page.height,
+            ),
+        ]);
         try {
           for (final strength in [0.0, .6, 1.0]) {
             final original = originalProgram.fragmentShader()
               ..setFloat(2, strength);
-            final selective = photoProgram.fragmentShader()
-              ..setFloat(2, strength)
-              ..setFloat(3, regions.length.toDouble());
-            for (var i = 0; i < 16; i++) {
-              final rect = i < regions.length ? regions[i] : ui.Rect.zero;
-              selective.setFloat(4 + i * 4, rect.left);
-              selective.setFloat(5 + i * 4, rect.top);
-              selective.setFloat(6 + i * 4, rect.right);
-              selective.setFloat(7 + i * 4, rect.bottom);
-            }
+            final selective = photoProgram.fragmentShader();
+            mask.configure(selective, strength, pageBounds);
             Future<ui.Image> filter(
               ui.FragmentShader shader,
               String label,
@@ -159,6 +162,7 @@ Future<Map<String, Object>> checkPhotoShader(
             }
           }
         } finally {
+          mask.dispose();
           source.dispose();
         }
       }

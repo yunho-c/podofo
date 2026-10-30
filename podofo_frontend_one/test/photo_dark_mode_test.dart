@@ -109,7 +109,7 @@ void main() {
     () async {
       final calls = <int>[];
       final cache = PhotoAnalysisCache(
-        (page) async {
+        (page, previous, priority) async {
           calls.add(page);
           if (page == 2) throw StateError('unsupported');
           return const PhotoPageAnalysis();
@@ -137,7 +137,7 @@ void main() {
   test('revision invalidation discards an in-flight result', () async {
     final first = Completer<PhotoPageAnalysis>();
     var calls = 0;
-    final cache = PhotoAnalysisCache((_) {
+    final cache = PhotoAnalysisCache((_, previous, priority) {
       calls++;
       return calls == 1
           ? first.future
@@ -160,7 +160,7 @@ void main() {
       final first = Completer<PhotoPageAnalysis>();
       var calls = 0;
       var notifications = 0;
-      final cache = PhotoAnalysisCache((_) {
+      final cache = PhotoAnalysisCache((_, previous, priority) {
         calls++;
         return first.future;
       }, settleDelay: Duration.zero);
@@ -173,6 +173,110 @@ void main() {
       await Future<void>.delayed(const Duration(milliseconds: 5));
       expect(calls, 1);
       expect(notifications, 0);
+    },
+  );
+  test(
+    'pending pages alternate fairly and completed pages are not retried',
+    () async {
+      final calls = <int>[];
+      final cache = PhotoAnalysisCache(
+        (page, previous, priority) async {
+          calls.add(page);
+          return PhotoPageAnalysis(
+            pendingCount: (previous?.pendingCount ?? 4) - 1,
+          );
+        },
+        settleDelay: Duration.zero,
+        batchDelay: Duration.zero,
+      );
+      addTearDown(cache.dispose);
+      cache.setVisiblePages([1, 2]);
+      await _idle(cache);
+      expect(calls, [1, 2, 1, 2, 1, 2, 1, 2]);
+      expect(cache.peek(1)!.isComplete, isTrue);
+      cache.setVisiblePages([2, 1]);
+      await _idle(cache);
+      expect(calls.length, 8);
+    },
+  );
+
+  test(
+    'leaving a pending page pauses work and returning resumes saved progress',
+    () async {
+      final first = Completer<PhotoPageAnalysis>();
+      var calls = 0;
+      final seen = <PhotoPageAnalysis?>[];
+      final priorities = <List<String>>[];
+      final cache = PhotoAnalysisCache(
+        (page, previous, priority) {
+          calls++;
+          seen.add(previous);
+          priorities.add(priority);
+          return calls == 1
+              ? first.future
+              : Future.value(const PhotoPageAnalysis());
+        },
+        settleDelay: Duration.zero,
+        batchDelay: Duration.zero,
+      );
+      addTearDown(cache.dispose);
+      cache.setVisiblePages([1]);
+      await Future<void>.delayed(const Duration(milliseconds: 5));
+      cache.setVisiblePages([]);
+      const partial = PhotoPageAnalysis(pendingCount: 2);
+      first.complete(partial);
+      await _idle(cache);
+      expect(calls, 1);
+      expect(cache.peek(1), same(partial));
+      cache.setVisiblePages(
+        [1],
+        priorities: {
+          1: ['3/7'],
+        },
+      );
+      await _idle(cache);
+      expect(calls, 2);
+      expect(seen.last, same(partial));
+      expect(priorities.last, ['3/7']);
+    },
+  );
+
+  test(
+    'a failed or stalled continuation preserves completed decisions and stops',
+    () async {
+      const region = PhotoRegion(0, 0, 100, 100);
+      const partial = PhotoPageAnalysis(
+        regions: [region],
+        pendingCount: 1,
+        candidates: [
+          PhotoCandidate(0, 'likely-photo', region: region),
+          PhotoCandidate(1, 'pending', region: region),
+        ],
+      );
+      for (final throws in [false, true]) {
+        var calls = 0;
+        final cache = PhotoAnalysisCache(
+          (page, previous, priority) async {
+            calls++;
+            if (calls == 1 || !throws) return partial;
+            throw StateError('decoder failed');
+          },
+          settleDelay: Duration.zero,
+          batchDelay: Duration.zero,
+        );
+        cache.setVisiblePages([1]);
+        await _idle(cache);
+        final result = cache.peek(1)!;
+        expect(calls, 2);
+        expect(result.isComplete, isTrue);
+        expect(result.regions, [region]);
+        expect(result.candidates.first.reason, 'likely-photo');
+        expect(
+          result.fallback,
+          throws ? 'analysis-unavailable' : 'analysis-stalled',
+        );
+        cache.dispose();
+      }
     },
   );
 }

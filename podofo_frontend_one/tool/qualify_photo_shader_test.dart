@@ -26,6 +26,18 @@ void main() {
           expectedPhotos: null,
         );
         report['forms'] = forms;
+        report['dense25'] = await checkPhotoShader(
+          'test/fixtures/photo_dark_mode/dense.pdf',
+          Directory('${output.path}/dense25'),
+          pageNumbers: [1],
+          expectedPhotos: 25,
+        );
+        report['dense92'] = await checkPhotoShader(
+          'test/fixtures/photo_dark_mode/dense.pdf',
+          Directory('${output.path}/dense92'),
+          pageNumbers: [2, 3],
+          expectedPhotos: 92,
+        );
         report['runner'] =
             'Flutter test with --enable-impeller (not Release app)';
         File(

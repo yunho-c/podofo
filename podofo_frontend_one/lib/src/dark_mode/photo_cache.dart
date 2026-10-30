@@ -4,22 +4,30 @@ import 'package:flutter/foundation.dart';
 
 import 'photo_analysis.dart';
 
-typedef PhotoLoader = Future<PhotoPageAnalysis> Function(int page);
+typedef PhotoLoader = Future<PhotoPageAnalysis> Function(
+  int page,
+  PhotoPageAnalysis? previous,
+  List<String> priority,
+);
 
-/// One session/revision, bounded LRU, one admitted page at a time. Both failed
-/// and successful analyses are cached; scrolling never retries a bad decode.
+/// One session/revision, bounded LRU and one native batch at a time. Completed
+/// decisions are cached; pending images resume fairly across visible pages.
 class PhotoAnalysisCache extends ChangeNotifier {
   PhotoAnalysisCache(
     this.load, {
     this.capacity = 64,
     this.settleDelay = const Duration(milliseconds: 150),
+    this.batchDelay = const Duration(milliseconds: 32),
   });
   final PhotoLoader load;
   final int capacity;
-  final Duration settleDelay;
+  final Duration settleDelay, batchDelay;
+  Map<int, List<String>> _priorities = const {};
+  int? _lastPage;
   final _pages = <int, PhotoPageAnalysis>{};
   List<int> _visible = const [];
-  Timer? _timer;
+  Timer? _timer, _batchTimer;
+  Completer<void>? _batchWait;
   bool _running = false;
   bool _disposed = false;
   int _epoch = 0;
@@ -39,20 +47,29 @@ class PhotoAnalysisCache extends ChangeNotifier {
     return result;
   }
 
-  void setVisiblePages(List<int> pages) {
+  void setVisiblePages(
+    List<int> pages, {
+    Map<int, List<String>> priorities = const {},
+  }) {
+    if (_disposed) return;
+    _priorities = priorities;
     // At extreme zoom-out, keep a bounded working set without LRU thrashing.
     final bounded = pages.take(capacity).toList(growable: false);
     if (_disposed || listEquals(_visible, bounded)) return;
     _visible = bounded;
     _timer?.cancel();
+    if (_visible.isEmpty) _cancelBatchWait();
     if (_visible.isNotEmpty) _timer = Timer(settleDelay, _drain);
   }
 
   void invalidate() {
     _epoch++;
     _pages.clear();
+    _priorities = const {};
+    _lastPage = null;
     _visible = const [];
     _timer?.cancel();
+    _cancelBatchWait();
     // A read in flight owns its lease until completion; its result is discarded.
   }
 
@@ -61,17 +78,30 @@ class PhotoAnalysisCache extends ChangeNotifier {
     _running = true;
     try {
       while (!_disposed) {
-        final pending = _visible.where((p) => !_pages.containsKey(p));
+        final pending = _visible
+            .where((p) => !(_pages[p]?.isComplete ?? false))
+            .toList();
         if (pending.isEmpty) break;
-        final page = pending.first;
+        final lastIndex = _visible.indexOf(_lastPage ?? -1);
+        final page = pending.firstWhere(
+          (p) => _visible.indexOf(p) > lastIndex,
+          orElse: () => pending.first,
+        );
+        _lastPage = page;
+        final previous = _pages[page];
         final epoch = _epoch;
         final watch = Stopwatch()..start();
         PhotoPageAnalysis result;
         try {
           analyses++;
-          result = await load(page);
+          result = await load(page, previous, _priorities[page] ?? const []);
+          if (previous != null &&
+              !result.isComplete &&
+              result.pendingCount >= previous.pendingCount) {
+            result = PhotoPageAnalysis.failed(previous, 'analysis-stalled');
+          }
         } catch (_) {
-          result = const PhotoPageAnalysis(fallback: 'analysis-unavailable');
+          result = PhotoPageAnalysis.failed(previous, 'analysis-unavailable');
         }
         totalMicroseconds += watch.elapsedMicroseconds;
         if (_disposed) break;
@@ -83,11 +113,33 @@ class PhotoAnalysisCache extends ChangeNotifier {
           notifyListeners();
         }
         // Let pdfrx render between analysis jobs; no whole-document pre-scan.
-        await Future<void>.delayed(settleDelay);
+        if (_disposed ||
+            !_visible.any((p) => !(_pages[p]?.isComplete ?? false))) {
+          break;
+        }
+        await _yieldToRenderer();
       }
     } finally {
       _running = false;
     }
+  }
+
+  Future<void> _yieldToRenderer() {
+    final wait = Completer<void>();
+    _batchWait = wait;
+    _batchTimer = Timer(batchDelay, () {
+      _batchTimer = null;
+      _batchWait = null;
+      wait.complete();
+    });
+    return wait.future;
+  }
+
+  void _cancelBatchWait() {
+    _batchTimer?.cancel();
+    _batchTimer = null;
+    _batchWait?.complete();
+    _batchWait = null;
   }
 
   @override

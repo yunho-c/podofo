@@ -30,9 +30,9 @@ photo-preservation diagnostics**. This temporary toggle defaults off and also
 works in light mode or with preservation disabled. It shares the viewer's
 visible-page analysis/cache; enabling diagnostics adds no second viewer or page render.
 
-- Green outlines indicate image regions actually passed to the preservation
-  shader. Accepted images beyond the 16-region limit are gray and labeled
-  `visible-region-limit`.
+- Green outlines indicate image regions included in the current preservation
+  mask. Accepted regions waiting for a texture update are gray (`mask-pending`);
+  a failed texture build shows `mask-unavailable`. There is no 16-photo ceiling.
 - Orange outlines indicate rejected raster images. Labels include the page,
   zero-based PDF object path, and the first failed gate. A path such as `60/2`
   means page object 60, then child 2 inside that Form.
@@ -44,7 +44,9 @@ visible-page analysis/cache; enabling diagnostics adds no second viewer or page 
 Expand an object's sidebar entry to see its reason and, when pixel classification
 was reached, all six measured statistics alongside their thresholds. Multiple
 thresholds may fail even though the reason reports only the first. Pending pages,
-page-level failures and analysis limits are reported explicitly; a page rejected
+page-level failures and analysis limits are reported explicitly. Progress shows
+`32 of 92 images inspected; 60 pending`; `pending` is queued work rather than a
+permanent rejection. A page rejected
 before object enumeration cannot supply outlines. Offscreen objects on a visible
 page may appear in the sidebar without a visible outline.
 
@@ -122,8 +124,8 @@ The empty, unreferenced PDFium clip wrapper has `CountPaths == -1`.
 `FPDFPageObj_HasTransparency` alone does not detect an image's `/SMask`. Admission
 therefore also uses `FPDFImageObj_GetRenderedBitmap`, checking **every** pixel's
 alpha within the retained region before sampling raw source colors. Source and
-rendered sizes are checked before allocation, both count toward the page pixel
-budget, and both bitmaps are immediately destroyed. No live object matrices,
+rendered sizes are checked before allocation, both count toward the batch pixel
+allowance, and both bitmaps are immediately destroyed. No live object matrices,
 clips or PDF bytes are changed. The relevant contracts are in
 [PDFium's image API](https://pdfium.googlesource.com/pdfium/+/main/public/fpdf_edit.h)
 and [implementation](https://github.com/chromium/pdfium/blob/main/fpdfsdk/fpdf_editimg.cpp).
@@ -151,37 +153,99 @@ pixel ratio assumptions are used. Geometry tests compare against PDFium's
 `PhotoPreservingFilter` always keeps one `PdfViewer`, its listener/gesture tree,
 and one `ImageFiltered` mounted. Its own shader belongs to the viewer; it does not
 mutate the shared default/thumbnail shader. A separate `invert_photos.frag` copies
-the original HSL calculation and bypasses it inside up to 16 visible photo
-rectangles. No second PDF render or bitmap overlay is introduced.
+the original HSL calculation and samples a second texture containing only the
+union of accepted rectangles. A full-coverage texel bypasses inversion. No second
+PDF render or photograph overlay is introduced.
+
+After changing shader assets, rebuild and fully relaunch the app. Hot reload of
+Dart code alone can leave the native bundle with the previous shader interface.
+
+`PhotoMaskCache` builds coverage for the current band of visible pages in document
+coordinates. Panning and zooming within that band change shader uniforms, not the
+texture. Changes in accepted rectangles or the page band rebuild it; page-layout,
+session and revision changes invalidate it. At most one build is active and one
+latest request is queued; stale results are disposed. The previous valid mask can
+remain active while new coverage is built. Empty coverage needs no texture.
+
+Each texture is bounded to 2048 by 2048 RGBA pixels (at most 16 MiB). Whole texels
+are rounded inward and the shader requires full alpha, so rasterization can
+slightly shrink a preserved edge instead of spilling into adjacent text. At large
+zoom or extreme zoom-out this bounded resolution can become visible. Old textures
+are released after the frame using them, with stale in-flight results released
+immediately. Mask count is bounded by the current, in-flight and retiring images;
+there is no per-page texture cache.
 
 The bypass preserves the **already composited pixels**, including any annotation,
 selection, search or narration overlay within the rectangle. Those overlay
 pixels consequently retain their uninverted color there, while pixels outside
 use the existing transform. This is region-level bypass, not separate treatment
 of image and overlay layers. Native embedded text/vector overlays disqualify the
-photo as described above. Excess visible photo regions stay inverted.
+photo as described above.
 
 ## Work and memory bounds
 
-Only visible pages are admitted, with a 150 ms delay after the visible page set
-changes and between jobs. Analysis is serial; scrolling replaces queued pages.
-A 64-page LRU caches both positive and negative results. Zooming/panning a cached
-page recalculates rectangles only. Revisions invalidate the cache; stale results
-from an in-flight job are discarded. Disposal releases queued work, while the
-active job retains its lease until it finishes. Eviction or reopening a tab can
-cause analysis again; the cache is not persisted across tabs/restarts.
+Only visible pages are admitted, initially after a 150 ms settle delay. Analysis
+has two phases: a complete structural/geometry inventory, followed by resumable
+image-decode batches. The inventory must see later paint before declaring an
+image clear of overlays. Each continuation reopens the native page and resolves
+saved object paths; only detached geometry, decisions and pending metadata cross
+batches. No native page/object/bitmap handle is retained across a released lock.
 
-Admission limits: 2,000 total objects across Forms, 16 nested Form levels,
-24 raster placements, 8 million source-plus-rendered pixels per page,
-and an 80 ms soft deadline checked between candidates. Native page loading or
-an individual image decode cannot be interrupted by that deadline. A costly
-cold decode can still delay pdfrx's renderer while the worker is paused, even
-though it does not block Dart's UI isolate. Source bitmaps are freed immediately;
-only detached decisions/regions are retained. Diagnostic metadata is capped at
-128 raster objects per page, with omitted counts reported; image classification
-still admits at most 24 images. Geometric clips admit at most eight rectangles
-per object; filled-path overlap proofs admit at most 256 segments per path. Extreme
-zoom-out admits only the first 64 visible pages to avoid cache thrashing.
+The viewer holds a session read lock for one batch and releases it, including
+pdfrx's worker suspension, before yielding for 32 ms. Pending visible pages are
+served round-robin, with on-screen panels prioritized within each page. Each
+batch targets at most 8 images, 8 million source-plus-rendered pixels, or 20 ms.
+At least one individually bounded image is processed so expensive page loading or
+a small work allowance cannot cause starvation. Native loading/decoding is not
+interruptible: the time allowance is a soft scheduling target, not a latency
+ceiling. The inventory and per-image limits remain separate hard admission gates.
+
+A 64-page LRU retains both completed decisions and pending work. Leaving a page
+pauses continuation; returning resumes it. Successful classifications are not
+re-decoded. Decode failures are terminal for that candidate; failed/stalled
+continuations preserve previously accepted regions and terminate instead of
+retrying forever. Session/revision invalidation discards stale results. Disabling
+analysis or closing the viewer cancels scheduled delays; an active batch retains
+its lease until completion. An evicted page must be inventoried again.
+
+There is no page-wide image-count or cumulative decode-pixel cutoff. Individual
+source/rendered bitmaps remain limited to 4 million pixels each. Pathological
+structure guards remain: 2,000 total objects, 16 Form levels, eight rectangular
+clip paths per object and 256 segments per filled-path overlap proof. Diagnostics
+show up to 128 object entries, with omitted counts and whole-page progress; this
+display cap does not limit classification or preservation. At extreme zoom-out,
+only the first 64 visible pages enter the working set.
+
+## Dense-figure qualification on 2026-10-30
+
+All 30 focused tests and static analysis passed on the macOS Flutter 3.47.5
+Impeller runner. Separate shader checks passed on 11 pages across the three
+supplied papers; dense-grid, zoom and GenRecon captures were visually inspected.
+
+`dense.pdf` contains nested grids of 25 and 92 photos, including a rotated page
+and native captions. All panels complete under resumable image/pixel/time slices,
+and the native test checks that each is decoded once. Cache tests cover fairness,
+priority forwarding, offscreen pause/resume, revision invalidation, disposal,
+terminal errors and non-progressing continuations. Mask tests cover coalescing,
+reuse, failed builds and stale generation/disposal handling.
+
+Actual Impeller checks include all 25/92 regions, at two scales and three
+inversion strengths. The viewer check exercises progressive analysis, all 92
+panels on one page, pixel agreement after zooming, and 117 preserved panels across
+a two-page spread. The caption/background pixels retain the original dark-mode
+transform. This is test-runner/offscreen evidence, not a Release performance or
+interactive-window acceptance claim.
+
+Fresh local-paper checks complete GVC-RT page 4 (three accepted photos) rather
+than leaving images at `time-budget`. Shader checks also cover GVC-RT pages 6/8
+and ResGVC pages 8/16/18/19. Classifier thresholds, overlap rules and the accepted
+local-resolution image-mask check are unchanged. After the moved GenRecon copy
+was made available offline, all its raster placements completed analysis: pages
+1/4/7/9/17/18 contain 33/92/28/36/37/20 placements and accept 3/0/0/9/1/3 photos.
+Pages 4 and 7 now expose actual geometry, mask and classifier rejections rather
+than `image-budget`. Native results are in `build/photo-dark-mode/dense-stage3.json`.
+Shader captures for accepted GenRecon pages are stored separately under
+`build/photo-dark-mode/genrecon-qualification/`.
 
 ## Form inspection qualification on 2026-10-30
 
@@ -203,8 +267,8 @@ natural pixels within accepted regions and the original dark-mode transform
 outside them. Rendered captures were inspected for caption/table/label legibility.
 The large photos with inset labels/boxes still fail overlap admission; some small
 crops fail the unchanged palette, entropy or flatness thresholds. This is partial
-coverage, not full figure or document acceptance. Dense GenRecon pages still face
-the unchanged 24-image limit. No new Release build or interactive-window
+coverage, not full figure or document acceptance. At that stage, dense GenRecon pages still faced
+the 24-image limit; the dense-figure stage above removes it. No new Release build or interactive-window
 acceptance is claimed by these test-runner checks.
 
 Reports and natural/original/selective PNGs are under
@@ -213,6 +277,7 @@ To repeat with other local papers, set `PHOTO_PAPER_CASES` to a JSON file contai
 `[{"path":"/absolute/paper.pdf","pages":[8]}]`, then run
 `tool/qualify_photo_papers_test.dart` with Impeller and the same native libraries.
 The opt-in probe requires at least one accepted photo on each requested page.
+`PHOTO_PAPER_OUTPUT` optionally selects a separate output directory.
 
 ## Verification performed on 2026-10-28
 
@@ -247,8 +312,8 @@ pdfrx_engine **0.6.1**, pdfium_dart **0.3.1**. Final native checks used the PDFi
 The offscreen sequence always ran the original filter first and included cold
 initialization, mixed image sizes and JIT behavior. Its negative median difference
 is **not a performance improvement claim**. There is one filter pass in both
-modes; the selective pass adds up to 16 rectangle tests per pixel and skips HSL
-work inside a photo. Interactive frame-time/FPS, target-device GPU overhead,
+modes; that historical shader added up to 16 rectangle tests per pixel. The
+current shader instead samples a coverage texture and skips HSL work inside a photo. Interactive frame-time/FPS, target-device GPU overhead,
 Release memory/RSS and long scrolling sessions remain unmeasured.
 
 ### Qualification limits
@@ -281,11 +346,12 @@ PDFium binary as the application (see `tool/test_macos.py` on macOS):
 ```sh
 flutter test --no-pub --concurrency=1 \
   test/photo_dark_mode_test.dart test/photo_dark_mode_native_test.dart \
-  test/photo_forms_native_test.dart \
+  test/photo_forms_native_test.dart test/photo_dense_native_test.dart \
   test/pdf_document_lease_test.dart test/pdf_page_layout_test.dart \
   test/highlight_selection_test.dart
 flutter test --no-pub --enable-impeller \
-  test/photo_filter_widget_test.dart test/photo_diagnostics_sidebar_test.dart
+  test/photo_filter_widget_test.dart test/photo_diagnostics_sidebar_test.dart \
+  test/photo_mask_test.dart
 flutter test --no-pub --enable-impeller tool/qualify_photo_shader_test.dart
 flutter test --no-pub tool/benchmark_photo_analysis_test.dart
 ```
@@ -301,7 +367,8 @@ a focused verification workaround, not an application distribution configuration
 The deterministic inputs and their attribution are in
 `test/fixtures/photo_dark_mode/`. Regenerate with
 `python3 tool/generate_photo_fixture.py` and
-`python3 tool/generate_photo_forms_fixture.py` using Pillow 12.3.0. Test/probe outputs are
+`python3 tool/generate_photo_forms_fixture.py`, plus
+`python3 tool/generate_photo_dense_fixture.py` using Pillow 12.3.0. Test/probe outputs are
 under `build/photo-dark-mode/` and must not be treated as Release evidence.
 
 `tool/photo_release_probe.dart` reuses the same pixel checks in a real Release
