@@ -129,6 +129,11 @@
       "pdf": "2608.04891v1.pdf",
       "split": "held_out",
       "replaces_promoted_document": "2605.10938v2"
+    },
+    {
+      "pdf": "2609.34725v1.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "1809.02736v1"
     }
   ],
   "replenishment_policy": "Previously unused arXiv documents in filename order, at most 60 pages, with at least two unique named destinations in each target group; exclude all versions of sampled paper IDs. Selection batches are preserved in m5_history/replenishment_v*_selection.json. No resolver/model output was inspected for replacement selection."

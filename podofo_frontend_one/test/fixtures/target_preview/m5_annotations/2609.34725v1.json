@@ -1,0 +1,715 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2609.34725v1.pdf",
+    "split": "held_out",
+    "replaces_promoted_document": "1809.02736v1",
+    "id": "2609.34725v1",
+    "sha256": "fb2069191df24e38498bb6e9fec25c6bf5199981748fbefae612b87f88d9ab30",
+    "source_url": "https://arxiv.org/abs/2609.34725v1",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2609.34725v1-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 296,
+        "source_bounds": [
+          252.713,
+          369.279,
+          285.339,
+          380.222
+        ],
+        "source_text": "(Li et al.,",
+        "source_context": "(a) Gen2-VC better preserves source structure and details \ntion-oriented DCVC-UF (Li et al., 2026a), tokenizer-based \non-based YODA (Li et al., 2026b), as illustrated by HEVC",
+        "destination": {
+          "name": "cite.dcvcuf2026",
+          "page": 12,
+          "raw_pdf_point": [
+            83.093,
+            413.384
+          ],
+          "point": [
+            83.093,
+            378.616
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              382,
+              506,
+              415
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              350,
+              506,
+              373
+            ]
+          },
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              424,
+              506,
+              458
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Ultra-fast neural video compression"
+        ],
+        "reviewed": true,
+        "notes": "Complete Li 2026a entry with authors, title, venue and page range; exclude the Li 2021 entry above and different first-author Li 2026b entry below."
+      },
+      {
+        "id": "2609.34725v1-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 298,
+        "source_bounds": [
+          425.099,
+          369.279,
+          474.322,
+          380.222
+        ],
+        "source_text": "(Zheng et al.,",
+        "source_context": "ure and details at the same or lower bitrates\nokenizer-based GVC1D (Zheng et al., 2026),\nstrated by HEVC-D examples. (b) Gen2-VC",
+        "destination": {
+          "name": "cite.gvc1d2026",
+          "page": 14,
+          "raw_pdf_point": [
+            83.093,
+            711.134
+          ],
+          "point": [
+            83.093,
+            80.866
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 14,
+            "bounds": [
+              107,
+              84,
+              506,
+              128
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 14,
+            "bounds": [
+              107,
+              136,
+              506,
+              180
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Generative video compression with one-dimensional latent representation"
+        ],
+        "reviewed": true,
+        "notes": "Complete four-line Zheng 2026 entry including venue and pages; exclude Zhou 2024."
+      },
+      {
+        "id": "2609.34725v1-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 6,
+        "source_xref": 549,
+        "source_bounds": [
+          432.442,
+          441.125,
+          439.416,
+          452.068
+        ],
+        "source_text": "1(",
+        "source_context": "2026a) prioritize pixel-level reconstruction\n, as illustrated in Figure 1(a). Even when\nve reconstructed regions looking unnatural.",
+        "destination": {
+          "name": "figure.1",
+          "page": 1,
+          "raw_pdf_point": [
+            149.812,
+            436.849
+          ],
+          "point": [
+            149.812,
+            355.151
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 1,
+            "bounds": [
+              107,
+              201,
+              506,
+              343
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              107,
+              358,
+              506,
+              414
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 1,
+            "bounds": [
+              277,
+              433,
+              335,
+              447
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              143,
+              466,
+              470,
+              682
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Gen2-VC better preserves source structure and details"
+        ],
+        "reviewed": true,
+        "notes": "Whole Figure 1: all three visual-comparison rows and rate/quality labels, the trade-off plot with axes and legends, panel labels, and full caption. Source refers to panel (a); retain the entire parent figure. Exclude Abstract heading and prose."
+      },
+      {
+        "id": "2609.34725v1-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 27,
+        "source_xref": 569,
+        "source_bounds": [
+          410.512,
+          556.691,
+          417.486,
+          567.635
+        ],
+        "source_text": "2(",
+        "source_context": "nstraints therefore remains challenging (Blau &\nve architectures in Figure 2(b,c), existing designs\nntations and conditional reconstruction pipelines,",
+        "destination": {
+          "name": "figure.2",
+          "page": 2,
+          "raw_pdf_point": [
+            151.423,
+            506.405
+          ],
+          "point": [
+            151.423,
+            285.595
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              82,
+              506,
+              275
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              289,
+              506,
+              344
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              369,
+              208,
+              382
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              397,
+              506,
+              472
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Comparison of video codec architectures"
+        ],
+        "reviewed": true,
+        "notes": "Whole Figure 2 with all four architecture panels, trainable/frozen legend, panel labels and full caption. Source names panels (b,c) of one figure; the named target is the entire parent. Exclude Introduction heading and prose."
+      },
+      {
+        "id": "2609.34725v1-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 5,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 94,
+        "source_bounds": [
+          446.677,
+          625.289,
+          463.334,
+          636.233
+        ],
+        "source_text": "A.1.",
+        "source_context": "n Figure 3(b). This finalizes Lout = Lin\nare provided in Appendix A.1.",
+        "destination": {
+          "name": "subsection.A.1",
+          "page": 15,
+          "raw_pdf_point": [
+            108.0,
+            546.34
+          ],
+          "point": [
+            108.0,
+            245.66
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 15,
+            "bounds": [
+              107,
+              253,
+              321,
+              264
+            ]
+          },
+          {
+            "page": 15,
+            "bounds": [
+              107,
+              274,
+              506,
+              296
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 15,
+            "bounds": [
+              107,
+              310,
+              506,
+              354
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Implementation and Training Details"
+        ],
+        "reviewed": true,
+        "notes": "Appendix A.1 heading and complete two-line opening paragraph. Exclude the Training Configuration paragraph."
+      },
+      {
+        "id": "2609.34725v1-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 6,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 97,
+        "source_bounds": [
+          471.013,
+          398.513,
+          477.987,
+          409.457
+        ],
+        "source_text": "(4)",
+        "source_context": "measures perceptual differences,\nI-adapter, we apply Eq. (4) inde-\nverage this loss over all frames in",
+        "destination": {
+          "name": "equation.4",
+          "page": 5,
+          "raw_pdf_point": [
+            181.766,
+            73.097
+          ],
+          "point": [
+            181.766,
+            718.903
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              180,
+              721,
+              506,
+              735
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              703,
+              506,
+              719
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              301,
+              751,
+              312,
+              763
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(4)"
+        ],
+        "reviewed": true,
+        "notes": "Complete shared training objective including all three weighted loss terms, subscripts and number. Exclude introducing prose and page footer."
+      },
+      {
+        "id": "2609.34725v1-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 6,
+        "source_link_index_pymupdf": 41,
+        "source_xref": 673,
+        "source_bounds": [
+          293.364,
+          700.153,
+          317.493,
+          711.097
+        ],
+        "source_text": "A.2.2",
+        "source_context": "n, where positive values indicate bitrate increases and ne\ntched quality. Appendix A.2.2 reports patch-based FID \net al., 2018) following GLC-Video (Qi et al., 2025), toget",
+        "destination": {
+          "name": "subsubsection.A.2.2",
+          "page": 18,
+          "raw_pdf_point": [
+            108.0,
+            397.236
+          ],
+          "point": [
+            108.0,
+            394.764
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 18,
+            "bounds": [
+              107,
+              401,
+              285,
+              412
+            ]
+          },
+          {
+            "page": 18,
+            "bounds": [
+              107,
+              420,
+              506,
+              453
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 18,
+            "bounds": [
+              107,
+              348,
+              506,
+              383
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Additional Quality Metrics"
+        ],
+        "reviewed": true,
+        "notes": "Appendix A.2.2 heading and full three-line opening paragraph. Exclude the preceding Table 8 final row and rule."
+      },
+      {
+        "id": "2609.34725v1-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 16,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 771,
+        "source_bounds": [
+          200.69,
+          220.595,
+          207.664,
+          231.539
+        ],
+        "source_text": "(1)",
+        "source_context": "posterior-mode encoding and Wan\u2019s latent normal\nadded noise as in Eqs. (1) and (3), with the next no\ndecode, then rescale and clip outputs to [0, 1].",
+        "destination": {
+          "name": "equation.1",
+          "page": 4,
+          "raw_pdf_point": [
+            247.877,
+            113.463
+          ],
+          "point": [
+            247.877,
+            678.537
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              246,
+              679,
+              506,
+              695
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              664,
+              484,
+              675
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              698,
+              506,
+              734
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Complete latent update equation including starred/subscripted variables and number. Exclude introducing and following prose."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "07789a02eb2b3d9976d1c3d34a1bd1285d97d8c9"
+  }
+}

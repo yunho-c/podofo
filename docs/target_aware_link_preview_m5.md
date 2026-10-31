@@ -904,9 +904,26 @@ this change affects bibliography segmentation, not its measured figure path.
 Computer Use was retried and again returned `Computer Use was not approved to
 use PoDoFo`; native-window acceptance remains open.
 
+## Seventh source-reviewed freeze
+
+The unchanged source-only policy selects `2609.34725v1`. Its eight links were
+reviewed against full source/target pages and independent MuPDF geometry before
+resolver/model output, including both complete parent figures, author-year
+suffixes, appendix subsections and bottom-of-page equations. Source hash, page
+bounds, nonempty ink and disjoint required/excluded regions validate. Selection
+is recorded in `m5_history/replenishment_v8_selection.json`; local source renders
+are under `build/target-preview-m5/annotations-v9-replacement/`.
+
+The seventh freeze fixes resolver version 15 at `07789a0`, the strengthened
+unexpected-page guard and all 36 input identities. The six-paper set contains
+50 links: twelve eligible examples in each target group plus two controls.
+Eight links are new; 42 unchanged carryovers did not drive rule changes. The
+whole sample has 204 links over twenty-four papers, plus eight links in the
+two development seeds. Annotations and freeze are committed before evaluation.
+
 ## Remaining acceptance work
 
-Replenish and freeze before evaluating every held-out link with paired images,
+Evaluate every frozen held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback
