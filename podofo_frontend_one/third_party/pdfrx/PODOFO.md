@@ -44,6 +44,39 @@ previews awaiting image decoding, so stale work cannot overwrite the refresh.
 `test/highlight_refresh_test.dart` checks creation, undo, and removal against the
 stationary viewer's actual pixels in preview and partial-rendering modes.
 
+`PdfViewerController.renderingStatus` exposes read-only diagnostics from the
+main viewport's paint path for PoDoFo's debug sidebar. Each visible page reports
+its preview and target scales, and whether it is loading, using the whole-page
+preview, refining an older bitmap, or displaying a current viewport render.
+Notifications are deferred until after paint, include asynchronous render
+completion, and clear when the controller detaches. Magnifier rendering and
+off-screen prefetch do not appear in the status. This does not change rendering
+resolution or cache policy. `test/debug_rendering_status_test.dart` checks the
+sidebar against native rendering across the scale threshold, display pixel
+ratios, document changes, spreads, and viewer teardown.
+
+`PdfViewerParams.viewportRenderer` is an optional main-viewport rendering hook
+for the fractional-transform prototype. It receives a physical-pixel-aligned
+tile size and fractional page-to-tile scale/translation; returning null uses
+the ordinary renderer. The tile is painted one-to-one at the snapped screen
+bounds and clipped to the visible page. Its cache key includes the fractional
+placement through the paint rectangle, as well as zoom and visible rectangle.
+`renderingStatus.usesFractionalTransform` reports which path supplied the bitmap.
+Magnifier and preview rendering retain their existing paths. PoDoFo enables the
+hook only with `--dart-define=PODOFO_FRACTIONAL_RENDERING=true`; see
+`docs/rendering-quality.md` at the repository root for qualification and limits.
+
+`PdfViewerParams.renderAtDisplayScale` optionally requests a main-viewport
+render at every zoom, retaining the preview during startup and motion. Pending
+requests are keyed by visible rectangle, scale, and fractional placement so
+unrelated repaints cannot starve refinement or cancel matching in-flight work.
+Returning to a cached viewport cancels any obsolete pending request. The existing
+`partialImageLoadingDelay` controls settling; PoDoFo uses 150 ms with
+`--dart-define=PODOFO_DISPLAY_SCALE_RENDERING=true`. The flag is off by default
+and independent of the fractional-renderer flag. `display_scale_rendering_test`
+checks debounce, cache reuse, and cancellation; `highlight_refresh_test` also
+checks edits below 200 DPI with both options enabled.
+
 ## Staging fixes
 
 Ported from `pdfrx_og` staging at `fe80962214a3df7615c5f1a1917f6f26326fa661`:

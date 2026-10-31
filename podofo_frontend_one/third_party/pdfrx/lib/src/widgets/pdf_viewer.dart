@@ -1690,6 +1690,8 @@ class _PdfViewerState extends State<PdfViewer>
   }) {
     final unusedPageList = <int>[];
     final unmeasuredPageList = <int>[];
+    // Only report the main viewport, not the magnifier or off-screen prefetch.
+    final renderingStatus = identical(cache, _imageCache) ? <PdfPageRenderingStatus>[] : null;
     // Pages inside the extent that are painting as a blank white rectangle
     // because no preview image has landed for them yet. This is the white-page
     // symptom itself, so trace it rather than inferring it from measurement.
@@ -1783,7 +1785,11 @@ class _PdfViewerState extends State<PdfViewer>
       final pageScale = page.width > 0 && page.height > 0
           ? scale * max(rect.width / page.width, rect.height / page.height)
           : 0.0;
-      if (!enableLowResolutionPagePreview || pageScale > previewScaleLimit) {
+      final needsPartial =
+          (identical(cache, _imageCache) && widget.params.renderAtDisplayScale) ||
+          !enableLowResolutionPagePreview ||
+          pageScale > previewScaleLimit;
+      if (needsPartial) {
         // `scale` (not `pageScale`) converts document units to physical pixels.
         // `pageScale` additionally carries the layout-to-page-size ratio, which
         // `_createRealSizePartialImage` would apply a second time via
@@ -1792,8 +1798,26 @@ class _PdfViewerState extends State<PdfViewer>
         _requestRealSizePartialImage(cache, page, scale, targetRect);
       }
 
-      if ((!enableLowResolutionPagePreview || pageScale > previewScaleLimit) && partial != null) {
+      if (needsPartial && partial != null) {
         partial.draw(canvas, filterQuality);
+      }
+
+      final visiblePageRect = rect.intersect(targetRect);
+      if (renderingStatus != null && !visiblePageRect.isEmpty) {
+        final partialIsCurrent = _partialMatchesViewport(partial, rect, visiblePageRect, scale);
+        renderingStatus.add((
+          pageNumber: page.pageNumber,
+          targetScale: pageScale,
+          previewScale: previewScaleLimit,
+          usesFractionalTransform: needsPartial && (partial?.usesFractionalTransform ?? false),
+          mode: needsPartial
+              ? (partialIsCurrent
+                    ? PdfPageRenderMode.fullResolution
+                    : (partial != null || (enableLowResolutionPagePreview && previewImage != null)
+                          ? PdfPageRenderMode.refining
+                          : PdfPageRenderMode.loading))
+              : (previewImage != null ? PdfPageRenderMode.preview : PdfPageRenderMode.loading),
+        ));
       }
 
       // Guarded on the selection flag. Without this, paint loads structured text
@@ -1841,6 +1865,8 @@ class _PdfViewerState extends State<PdfViewer>
         }
       }
     }
+
+    if (renderingStatus != null) _controller?._setRenderingStatus(renderingStatus);
 
     if (Pdfrx.debugLazyLoading && (unmeasuredPageList.isNotEmpty || whitePageList.isNotEmpty)) {
       // Paint runs on every frame, so log only when the picture actually
@@ -2181,10 +2207,30 @@ class _PdfViewerState extends State<PdfViewer>
     final pageRect = _layout!.pageLayouts[page.pageNumber - 1];
     final rect = pageRect.intersect(targetRect);
     final prev = cache.pageImagesPartial[page.pageNumber];
-    if (prev != null && !prev.isDirty && prev.rect == rect && prev.scale == scale) return;
+    if (_partialMatchesViewport(prev, pageRect, rect, scale)) {
+      if (widget.params.renderAtDisplayScale && identical(cache, _imageCache)) {
+        cache.pageImagePartialRenderingRequests.remove(page.pageNumber)?.cancel();
+      }
+      return;
+    }
     if (rect.width < 1 || rect.height < 1) return;
 
-    cache.pageImagePartialRenderingRequests[page.pageNumber]?.cancel();
+    final pending = cache.pageImagePartialRenderingRequests[page.pageNumber];
+    final paintRect = widget.params.viewportRenderer != null && identical(cache, _imageCache)
+        ? _fractionalTile(pageRect, rect, scale)?.paintRect
+        : null;
+    if (widget.params.renderAtDisplayScale &&
+        identical(cache, _imageCache) &&
+        pending != null &&
+        !pending.cancellationToken.isCanceled &&
+        pending.rect == rect &&
+        pending.scale == scale &&
+        pending.paintRect == paintRect) {
+      // Debounce viewport changes, not every repaint (e.g. preview completion).
+      // Also keep an already running render for this exact viewport alive.
+      return;
+    }
+    pending?.cancel();
 
     final cancellationToken = page.createCancellationToken();
     late final _PdfPartialImageRenderingRequest request;
@@ -2208,8 +2254,30 @@ class _PdfViewerState extends State<PdfViewer>
         }
       }),
       cancellationToken,
+      rect: rect,
+      scale: scale,
+      paintRect: paintRect,
     );
     cache.pageImagePartialRenderingRequests[page.pageNumber] = request;
+  }
+
+  PixelAlignedViewport? _fractionalTile(Rect pageRect, Rect visibleRect, double scale) {
+    final origin = _documentToGlobal(pageRect.topLeft);
+    return origin == null
+        ? null
+        : pixelAlignedViewport(
+            pageRect: pageRect,
+            visibleRect: visibleRect,
+            pageOriginPhysical: origin * MediaQuery.of(context).devicePixelRatio,
+            scale: scale,
+          );
+  }
+
+  bool _partialMatchesViewport(_PdfImageWithScaleAndRect? image, Rect pageRect, Rect rect, double scale) {
+    if (image == null || image.isDirty || image.scale != scale || image.rect != rect) return false;
+    // A parent's fractional translation can change the physical pixel grid
+    // without changing the document-space visible rectangle or zoom.
+    return !image.usesFractionalTransform || image.paintRect == _fractionalTile(pageRect, rect, scale)?.paintRect;
   }
 
   Future<_PdfImageWithScaleAndRect?> _createRealSizePartialImage(
@@ -2231,6 +2299,47 @@ class _PdfViewerState extends State<PdfViewer>
 
     var flags = 0;
     if (widget.params.limitRenderingCache) flags |= PdfPageRenderFlags.limitedImageCache;
+
+    final renderer = widget.params.viewportRenderer;
+    if (renderer != null && identical(cache, _imageCache) && page.width > 0 && page.height > 0) {
+      final tile = _fractionalTile(pageRect, rect, scale);
+      if (tile != null) {
+        final image = await renderer(
+          page,
+          PdfViewportRenderRequest(
+            width: tile.width,
+            height: tile.height,
+            scaleX: pageRect.width * scale / page.width,
+            scaleY: pageRect.height * scale / page.height,
+            pageLeft: tile.pageLeft,
+            pageTop: tile.pageTop,
+            annotationRenderingMode: widget.params.annotationRenderingMode,
+            flags: flags,
+            cancellationToken: cancellationToken,
+          ),
+        );
+        if (image != null) {
+          if (!mounted || cancellationToken.isCanceled) {
+            image.dispose();
+            return null;
+          }
+          if (image.width != tile.width || image.height != tile.height) {
+            image.dispose();
+            throw StateError('Viewport renderer returned unexpected image dimensions');
+          }
+          return _PdfImageWithScaleAndRect(
+            image,
+            scale,
+            rect,
+            x,
+            y,
+            paintRect: tile.paintRect,
+            usesFractionalTransform: true,
+          );
+        }
+        if (!mounted || cancellationToken.isCanceled) return null;
+      }
+    }
 
     PdfImage? img;
     try {
@@ -4286,9 +4395,18 @@ class _PdfPageImageCache {
 }
 
 class _PdfPartialImageRenderingRequest {
-  _PdfPartialImageRenderingRequest(this.timer, this.cancellationToken);
+  _PdfPartialImageRenderingRequest(
+    this.timer,
+    this.cancellationToken, {
+    required this.rect,
+    required this.scale,
+    required this.paintRect,
+  });
   final Timer timer;
   final PdfPageRenderCancellationToken cancellationToken;
+  final Rect rect;
+  final double scale;
+  final Rect? paintRect;
 
   void cancel() {
     timer.cancel();
@@ -4312,8 +4430,18 @@ class _PdfImageWithScale {
 }
 
 class _PdfImageWithScaleAndRect extends _PdfImageWithScale {
-  _PdfImageWithScaleAndRect(super.image, super.scale, this.rect, this.left, this.top);
+  _PdfImageWithScaleAndRect(
+    super.image,
+    super.scale,
+    this.rect,
+    this.left,
+    this.top, {
+    this.paintRect,
+    this.usesFractionalTransform = false,
+  });
   final Rect rect;
+  final Rect? paintRect;
+  final bool usesFractionalTransform;
   final int left;
   final int top;
 
@@ -4321,12 +4449,15 @@ class _PdfImageWithScaleAndRect extends _PdfImageWithScale {
   int get right => left + width;
 
   void draw(Canvas canvas, [FilterQuality filterQuality = FilterQuality.low]) {
+    canvas.save();
+    if (paintRect != null) canvas.clipRect(rect);
     canvas.drawImageRect(
       image,
       Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
-      rect,
+      paintRect ?? rect,
       Paint()..filterQuality = filterQuality,
     );
+    canvas.restore();
   }
 
   void drawNoScale(Canvas canvas, int x, int y, [FilterQuality filterQuality = FilterQuality.low]) {
@@ -4554,6 +4685,30 @@ class PdfPageHitTestResult {
   int get hashCode => page.hashCode ^ offset.hashCode;
 }
 
+/// The image source used for a visible page in the most recent paint.
+enum PdfPageRenderMode {
+  /// No bitmap is available yet.
+  loading,
+
+  /// The whole-page preview is sufficient under the configured scale threshold.
+  preview,
+
+  /// A preview or older partial image is displayed while the viewport needs a new render.
+  refining,
+
+  /// A current partial image covers the visible page at the requested display scale.
+  fullResolution,
+}
+
+/// Main-view rendering diagnostics. Scales are pixels per PDF point (multiply by 72 for DPI).
+typedef PdfPageRenderingStatus = ({
+  int pageNumber,
+  double targetScale,
+  double previewScale,
+  PdfPageRenderMode mode,
+  bool usesFractionalTransform,
+});
+
 /// Controls associated [PdfViewer].
 ///
 /// It's always your option to extend (inherit) the class to customize the [PdfViewer] behavior.
@@ -4564,8 +4719,33 @@ class PdfPageHitTestResult {
 class PdfViewerController extends ValueListenable<Matrix4> {
   _PdfViewerState? __state;
   final _listeners = <VoidCallback>[];
+  final _renderingStatus = ValueNotifier<List<PdfPageRenderingStatus>>(const []);
+  List<PdfPageRenderingStatus>? _pendingRenderingStatus;
+
+  /// Rendering diagnostics for visible pages, updated after paint and cleared on detach.
+  ///
+  /// Unlike this controller's matrix notifications, this also updates when an
+  /// asynchronous bitmap finishes rendering without any scrolling or zooming.
+  ValueListenable<List<PdfPageRenderingStatus>> get renderingStatus => _renderingStatus;
+
+  void _setRenderingStatus(List<PdfPageRenderingStatus> status) {
+    if (listEquals(_pendingRenderingStatus ?? _renderingStatus.value, status)) return;
+    final scheduled = _pendingRenderingStatus != null;
+    _pendingRenderingStatus = status;
+    if (scheduled) return;
+    // Paint and controller attachment can run during a frame. Notify consumers
+    // afterward, coalescing changes so detached documents cannot publish stale state.
+    scheduleMicrotask(() {
+      final next = _pendingRenderingStatus!;
+      _pendingRenderingStatus = null;
+      if (!listEquals(_renderingStatus.value, next)) {
+        _renderingStatus.value = List.unmodifiable(next);
+      }
+    });
+  }
 
   void _attach(_PdfViewerState? state) {
+    if (!identical(__state, state)) _setRenderingStatus(const []);
     __state?._txController.removeListener(_notifyListeners);
     __state = state;
     __state?._txController.addListener(_notifyListeners);

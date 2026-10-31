@@ -19,6 +19,30 @@ import 'sizing/pdf_viewer_size_delegate_legacy.dart';
 import 'zoom_steps/pdf_viewer_zoom_steps_delegate.dart';
 import 'zoom_steps/pdf_viewer_zoom_steps_delegate_default.dart';
 
+/// A page-to-bitmap transform in the page's rotated, cropped, top-left axes.
+/// Width/height bound the allocation; scale and translation remain fractional.
+class PdfViewportRenderRequest {
+  const PdfViewportRenderRequest({
+    required this.width,
+    required this.height,
+    required this.scaleX,
+    required this.scaleY,
+    required this.pageLeft,
+    required this.pageTop,
+    required this.annotationRenderingMode,
+    required this.flags,
+    required this.cancellationToken,
+  });
+
+  final int width, height;
+  final double scaleX, scaleY, pageLeft, pageTop;
+  final PdfAnnotationRenderingMode annotationRenderingMode;
+  final int flags;
+  final PdfPageRenderCancellationToken cancellationToken;
+}
+
+typedef PdfViewportRenderer = Future<ui.Image?> Function(PdfPage page, PdfViewportRenderRequest request);
+
 /// Viewer customization parameters.
 ///
 /// Changes to several functions such as [layoutPages] does not
@@ -40,6 +64,8 @@ class PdfViewerParams {
     this.boundaryMargin,
     this.annotationRenderingMode = PdfAnnotationRenderingMode.annotationAndForms,
     this.limitRenderingCache = true,
+    this.viewportRenderer,
+    this.renderAtDisplayScale = false,
     this.pageAnchor = PdfPageAnchor.top,
     this.underflowAnchor,
     this.pageAnchorEnd = PdfPageAnchor.bottom,
@@ -216,6 +242,18 @@ class PdfViewerParams {
   /// For PDFium, it internally enables `FPDF_RENDER_LIMITEDIMAGECACHE` flag on rendering
   /// to reduce the memory consumption by image caching.
   final bool limitRenderingCache;
+
+  /// Optional renderer for a main-view tile aligned to physical screen pixels.
+  /// Returning null falls back to the ordinary integer-coordinate render path.
+  /// The renderer owns native work; the viewer owns any returned image. It must
+  /// honor cancellation and preserve the requested annotation policy.
+  final PdfViewportRenderer? viewportRenderer;
+
+  /// Refine the main viewport at its display scale even below the preview
+  /// threshold. Keep the preview for startup and motion. Refinement waits for
+  /// [PdfViewerBehaviorControlParams.partialImageLoadingDelay] without a change
+  /// to the requested viewport; unrelated repaints do not reset that delay.
+  final bool renderAtDisplayScale;
 
   /// Anchor to position the page when navigating to a page or area.
   ///
@@ -735,6 +773,8 @@ class PdfViewerParams {
         other.boundaryMargin != boundaryMargin ||
         other.annotationRenderingMode != annotationRenderingMode ||
         other.limitRenderingCache != limitRenderingCache ||
+        other.viewportRenderer != viewportRenderer ||
+        other.renderAtDisplayScale != renderAtDisplayScale ||
         other.pageAnchor != pageAnchor ||
         other.underflowAnchor != underflowAnchor ||
         other.pageAnchorEnd != pageAnchorEnd ||
@@ -779,6 +819,8 @@ class PdfViewerParams {
         other.boundaryMargin == boundaryMargin &&
         other.annotationRenderingMode == annotationRenderingMode &&
         other.limitRenderingCache == limitRenderingCache &&
+        other.viewportRenderer == viewportRenderer &&
+        other.renderAtDisplayScale == renderAtDisplayScale &&
         other.pageAnchor == pageAnchor &&
         other.underflowAnchor == underflowAnchor &&
         other.pageAnchorEnd == pageAnchorEnd &&
@@ -850,6 +892,8 @@ class PdfViewerParams {
         boundaryMargin.hashCode ^
         annotationRenderingMode.hashCode ^
         limitRenderingCache.hashCode ^
+        viewportRenderer.hashCode ^
+        renderAtDisplayScale.hashCode ^
         pageAnchor.hashCode ^
         underflowAnchor.hashCode ^
         pageAnchorEnd.hashCode ^

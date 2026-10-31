@@ -16,6 +16,41 @@ Selected and canonical paths share bookmarks. Resolved moves update the opened
 path and session record. Aliases are refreshed together. Bookmarks remain after a
 tab closes so the recent-document list can also reopen files.
 
+## Cloud-backed PDF reads
+
+Opening a PDF on macOS uses `FileAccessLease.read()` after acquiring the existing
+bookmark lease. The native bridge uses a separate `NSFileCoordinator` and read
+intent for each request, with an `OperationQueue` off the main thread. It reads
+the intent's URL inside the coordinated accessor, then returns the resolved path
+and detached bytes to Dart. Even symlink resolution for the open happens there;
+Dart does not read or resolve the cloud placeholder first. PDFium opens the
+returned bytes, and `finally` releases the grant on success or failure.
+
+This lets File Provider download an online-only Google Drive/iCloud document
+before the read. A plain Dart read can fail with `EDEADLK` (errno 11 on macOS) for
+a dataless file. Wrapped POSIX `EDEADLK` and File Provider errors now produce a
+cloud-sync / **Available offline** recovery message. Other read errors retain
+their native description; the bridge preserves error domain/code details for
+diagnostics. Missing native plugin support fails explicitly, without falling back
+to an uncoordinated read. Other platforms keep the existing Dart file I/O path.
+
+This change coordinates opening only. Save conflict checks and atomic replacement
+retain their existing implementation. File coordination and sandbox authorization
+are separate: coordination does not grant access or bypass an offline provider.
+
+Apple documents [asynchronous file coordination](https://developer.apple.com/documentation/foundation/improving-performance-and-stability-when-accessing-the-file-system)
+and [dataless file handling](https://developer.apple.com/documentation/technotes/tn3150-getting-ready-for-data-less-files).
+
+### Library choice
+
+Keep Flutter's [`file_selector`](https://pub.dev/packages/file_selector) for native
+pickers (already used here). [`macos_secure_bookmarks`](https://pub.dev/packages/macos_secure_bookmarks)
+is a relevant alternative for minting/resolving bookmarks, refreshing stale
+bookmarks, and balancing security scopes. Its documented API covers authorization,
+while coordinated reading still needs native integration. Migrating PoDoFo's
+existing bookmark persistence and moved-path aliases would be separate work, so
+this fix adds no dependency or permission entitlement.
+
 ## Recovery and saves
 
 Legacy records have no bookmarks. If the path is inaccessible, the record remains
@@ -36,6 +71,26 @@ the committed PDF remains saved and clean; the UI reports that permission may
 need granting again next launch.
 
 ## Validation
+
+### Coordinated reads — 2026-10-29
+
+- 24 focused Flutter regressions passed: persistent access, document notices,
+  native open/save/restore behavior, and highlight persistence. New coverage checks
+  that native bytes work even when the pathname is unreadable to Dart, grants
+  survive pending reads and release on failure, and a missing read bridge cannot
+  silently fall back to direct file I/O.
+- Native coordinated-read and bookmark-alias regressions passed. Static analysis,
+  changed-Dart formatting, and `git diff --check` passed.
+- The production reader opened the previously failing TRELLIS.2 Google Drive PDF:
+  32,886,191 bytes, 24 PDFKit pages, SHA-256
+  `06a8dd9e0b9331a6e336172f96e6544d8a99b6a18b2b1340933e9a0bd6b8462d`.
+  Before coordination it had `SF_DATALESS`, zero local blocks, and direct reads
+  failed with errno 11. Afterward the dataless flag cleared and a direct read
+  returned the PDF header. This was a read-only, unsandboxed native probe using
+  production reader code; it did not exercise the Flutter picker or app relaunch.
+- The macOS Debug app built and passed deep/strict signature verification. Logs
+  are in `podofo_frontend_one/build/coordinated-read-{tests,analyze,build}.log`.
+  Existing apps running from other worktrees were not restarted.
 
 ### Main integration — 2026-10-24
 
@@ -82,6 +137,21 @@ xcrun swiftc macos/Runner/FileAccessStore.swift tool/macos_file_access_store_tes
   -o /tmp/podofo-file-access-store-test
 /tmp/podofo-file-access-store-test
 ```
+
+The coordinated-read regression uses the production reader to check background
+I/O, concurrent requests, symlink resolution, detached bytes, missing-file errors,
+and classification of wrapped cloud errors versus permission errors:
+
+```sh
+xcrun swiftc macos/Runner/FileAccessStore.swift tool/macos_coordinated_read_test.swift \
+  -o /tmp/podofo-coordinated-read-test
+/tmp/podofo-coordinated-read-test
+```
+
+Optionally add `--read /absolute/path/to/cloud.pdf` to read a real cloud PDF and
+report its byte count, PDFKit page count, and SHA-256. This is read-only, but may
+download the document. The probe has a 45-second deadline and is not sandboxed;
+it does not by itself prove the Flutter app's sandbox or picker lifecycle.
 
 ### Native sandbox probe
 

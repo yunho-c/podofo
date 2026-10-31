@@ -1,5 +1,62 @@
 import Foundation
 
+/// Reads cloud-backed documents while File Provider coordinates materialization.
+/// The caller must hold its security-scoped lease until completion. The callback
+/// runs on a worker queue, and the returned bytes no longer depend on the file.
+final class CoordinatedFileReader {
+  struct Contents {
+    let path: String
+    let data: Data
+  }
+
+  private let queue: OperationQueue = {
+    let queue = OperationQueue()
+    queue.name = "PoDoFo.document-reads"
+    queue.qualityOfService = .userInitiated
+    return queue
+  }()
+
+  func read(_ path: String, completion: @escaping (Result<Contents, Error>) -> Void) {
+    let intent = NSFileAccessIntent.readingIntent(
+      with: URL(fileURLWithPath: path), options: [])
+    // Each request needs its own coordinator and an ordinary read intent so
+    // File Provider can download a dataless file before we read its contents.
+    let coordinator = NSFileCoordinator()
+    coordinator.coordinate(with: [intent], queue: queue) { error in
+      withExtendedLifetime(coordinator) {
+        if let error = error {
+          completion(.failure(error))
+          return
+        }
+        do {
+          // Use the coordinated URL, which can differ if the item moved. Avoid
+          // memory mapping: PDFium must remain independent of the source file.
+          let data = try Data(contentsOf: intent.url, options: [])
+          let path = intent.url.resolvingSymlinksInPath().path
+          completion(.success(Contents(path: path, data: data)))
+        } catch {
+          completion(.failure(error))
+        }
+      }
+    }
+  }
+
+  static func isCloudUnavailable(_ error: Error) -> Bool {
+    var current: NSError? = error as NSError
+    // Foundation often wraps a POSIX error in NSCocoaErrorDomain. Bound the
+    // traversal so even a malformed underlying-error chain cannot loop forever.
+    for _ in 0..<8 {
+      guard let cause = current else { return false }
+      if cause.domain == "NSFileProviderErrorDomain"
+        || (cause.domain == NSPOSIXErrorDomain && cause.code == Int(EDEADLK)) {
+        return true
+      }
+      current = cause.userInfo[NSUnderlyingErrorKey] as? NSError
+    }
+    return false
+  }
+}
+
 /// Owns the sandbox grants; document/history records can continue storing paths.
 /// Access is leased only around file I/O (the PDF itself is detached in memory).
 final class FileAccessStore {
