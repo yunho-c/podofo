@@ -8,6 +8,7 @@ import 'link_target.dart';
 import 'preview_text.dart';
 
 part 'reference_targets.dart';
+part 'figure_targets.dart';
 
 /// Pure selection over owned PDF text and layout. Scores are detector evidence,
 /// never interpreted as a probability that a source link names an object.
@@ -72,65 +73,8 @@ class LinkTargetResolver {
                   (identity.kind == LinkTargetKind.table)) {
             continue;
           }
-          final type = identity.kind == LinkTargetKind.figure
-              ? podoco.RegionCategory.figure
-              : podoco.RegionCategory.table;
-          final visuals = regions
-              .where(
-                (r) =>
-                    r.model.category == type &&
-                    _captionOverlap(r.bounds, caption) >= .5 &&
-                    _captionGap(r.bounds, caption) <= 80 &&
-                    !regions.any(
-                      (other) =>
-                          other.model.category ==
-                              podoco.RegionCategory.caption &&
-                          other.model.id != caption.model.id &&
-                          _captionOverlap(r.bounds, other) >= .5 &&
-                          _captionGap(r.bounds, other) + 3 <
-                              _captionGap(r.bounds, caption),
-                    ) &&
-                    !regions.any(
-                      (other) =>
-                          other.model.category ==
-                              podoco.RegionCategory.caption &&
-                          other.model.id != caption.model.id &&
-                          _captionBetween(other.bounds, r.bounds, caption),
-                    ),
-              )
-              .toList();
-          // Detectors can emit both image/chart parents and contained panels.
-          final distinct = <_Region>[];
-          visuals.sort((a, b) => _area(b.bounds).compareTo(_area(a.bounds)));
-          for (final v in visuals) {
-            if (!distinct.any((p) => _covers(p.bounds, v.bounds, .94))) {
-              distinct.add(v);
-            }
-          }
-          distinct.sort(
-            (a, b) => _captionGap(
-              a.bounds,
-              caption,
-            ).compareTo(_captionGap(b.bounds, caption)),
-          );
-          if (distinct.isEmpty || distinct.length > 3) continue;
-          // Panels must share a band on the same side of their caption. A
-          // visual on the opposite side is a competing figure, not a panel.
-          if (distinct.length > 1 &&
-              !distinct
-                  .skip(1)
-                  .every(
-                    (v) => _samePanelBand(
-                      distinct.first.bounds,
-                      v.bounds,
-                      caption,
-                    ),
-                  )) {
-            continue;
-          }
-          distinct.sort((a, b) => _readingCompare(a.bounds, b.bounds));
-          final components = [...distinct, caption]
-            ..sort((a, b) => _readingCompare(a.bounds, b.bounds));
+          final components = _figureComponents(caption, regions, identity.kind);
+          if (components == null) continue;
           candidates.add(
             _Candidate(
               identity,
@@ -455,13 +399,6 @@ bool _captionBetween(Rect other, Rect visual, _Region caption) =>
               math.max(visual.center.dx, caption.bounds.center.dx) &&
           _verticalOverlap(other, visual) > .5
     : _between(other, visual, caption.bounds);
-bool _samePanelBand(Rect a, Rect b, _Region caption) => _sideways(caption)
-    ? _horizontalOverlap(a, b) > .6 &&
-          (a.center.dx - caption.bounds.center.dx).sign ==
-              (b.center.dx - caption.bounds.center.dx).sign
-    : _verticalOverlap(a, b) > .6 &&
-          (a.center.dy - caption.bounds.center.dy).sign ==
-              (b.center.dy - caption.bounds.center.dy).sign;
 
 bool _startsContinuation(String text) => RegExp(r'^[=+−–-]').hasMatch(text);
 bool _equationContinuation(_Region a, _Region b) {

@@ -106,7 +106,7 @@ detector. Preparation used PyMuPDF 2.0 and refuses to overwrite a run directory.
 Named destination coordinates
 are converted from raw PDF space to displayed page space, including page transforms.
 The reviewed annotation files live under `test/fixtures/target_preview/m5_annotations/`.
-The first two development papers have eighteen reviewed cases, including two
+All six development papers have 53 reviewed cases: 48 eligible targets and five
 unsupported controls. Each document's annotations were completed before its
 resolver output was examined. Held-out documents have not been evaluated.
 
@@ -188,6 +188,54 @@ recorded unrelated Podoco worktree files still match their original hashes.
 The macOS Debug app also built and passed local deep/strict signature verification
 (`build/target-preview-m5-commit-build.log`). Native tests and building/signing ran
 serially. This build does not establish native-window acceptance.
+
+## Full development set and multipart figure correction
+
+The first six-document run, `papers-all-dev-v1`, exposed a clipped accepted figure:
+the two bottom plots and main caption were selected, while the two top plots and
+panel labels were missing. Detector-provided `(a)`/`(b)` captions had competed with
+the numbered figure caption, and grouping considered only the nearest row.
+
+Resolver version 5 distinguishes panel labels from numbered captions and follows
+adjacent visual rows/columns, stopping at intervening prose/headings or competing
+numbered captions. It includes panel labels in the selected components and rejects
+groups beyond eight detected visuals. This internal grouping limit does not change
+the renderer: crops still require a safe union or at most four parts within the
+existing pixel/memory bounds. The four-panel case, paired photographs with labels,
+and a competing numbered caption now have blocking geometry regressions.
+
+The follow-up `papers-all-dev-v2` reuses the first run's actual model cache through
+normal provenance checks and rerenders all 53 links. It passed the development
+acceptance checks, with these counts:
+
+| Group | Eligible | Resolved | Complete and excludes annotated neighbors |
+| --- | ---: | ---: | ---: |
+| Citations | 12 | 6 | 6 |
+| Figures/tables | 12 | 11 | 11 |
+| Equations | 12 | 7 | 7 |
+| Sections | 12 | 3 | 3 |
+
+All five unsupported controls fall back. No accepted target failed the annotated
+wrong-object/completeness checks; native handles returned to zero. The corrected
+four-panel image was visually checked against the source page. The focused run
+passed 35 tests. Failed captures remain retained, and the freeze identity now
+includes `figure_targets.dart` as part of the resolver implementation.
+
+These results demonstrate substantial remaining coverage gaps, not release
+qualification. Development failures include individually linked citation-list
+fragments, shared-author years, Roman/appendix labels, equations competing with
+another column, and section text blocks that end with a colon or continue across
+a page. Eligibility has not been reduced to hide those cases. Held-out annotations
+and evaluation remain pending.
+
+The panel correction passed the full Flutter suite (382 passed, 21 opt-in skips),
+the original fourteen-target native evaluation, static analysis, formatting and
+the pinned-engine verification. Logs use `build/target-preview-m5-panels-`; the
+original-target artifacts are under
+`build/target-preview-evaluation/m5-panels-regression/`.
+The macOS Debug build and deep/strict local signature verification passed
+(`build/target-preview-m5-panels-build.log`). All eighteen preserved unrelated
+Podoco files still match their recorded hashes.
 
 ## Remaining acceptance work
 
