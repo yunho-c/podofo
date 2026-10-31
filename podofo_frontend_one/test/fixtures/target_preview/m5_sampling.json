@@ -61,8 +61,10 @@
     },
     {
       "pdf": "1810.01497v2.pdf",
-      "split": "held_out",
-      "replaces_promoted_document": "2111.13850v2"
+      "split": "development",
+      "replaces_promoted_document": "2111.13850v2",
+      "promoted_from": "held_out_v2",
+      "promotion_reason": "Native link loading aborts on a reversed horizontal annotation rectangle before this paper reaches target resolution; promote the whole document before changing the loader."
     },
     {
       "pdf": "2206.07867v3.pdf",

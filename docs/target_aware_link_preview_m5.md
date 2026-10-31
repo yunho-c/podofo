@@ -1,10 +1,10 @@
 # Target-aware previews: M5 qualification in progress
 
-M5 is not complete. The latency/ownership harness now exercises the real bundled
-layout engine, and the first frozen held-out evaluation is complete. It failed
-section coverage and completeness gates. Papers driving changes have moved to
-development before those changes; replacement annotation is in progress. Native-window
-acceptance also remains unqualified.
+M5 is not complete. The first frozen held-out evaluation failed section coverage
+and completeness gates. The replenished second run stopped during PDF link loading
+before reaching any replacement target. Papers driving changes move to development
+before those changes; the interrupted run is preserved. Native-window acceptance
+also remains unqualified.
 
 ## Cache preparation latency
 
@@ -517,14 +517,33 @@ the first evaluation and did not drive rule changes; the 35 replacement links ar
 new. The current sample totals 137 links across sixteen papers, in addition to the
 eight earlier real-paper development links across two seeds.
 
-`m5_freeze.json` records resolver version 10 at `412a2c4` and hashes all six
+The second freeze records resolver version 10 at `412a2c4` and hashes all six
 annotations plus the 28 pipeline, model, sampling and evaluation inputs. This
 freeze is committed before the second held-out run. The first freeze, sample and
 failed results remain preserved in `m5_history/`.
 
+## Interrupted second held-out run
+
+`held-out-v2` captured all fifteen carryover links, then stopped before resolving
+any target in `1810.01497v2`. Its page-one external arXiv link (xref 8) has raw
+rectangle `[37.62, 250, 10.94, 603.96]`. The vendored PDF link loader normalizes
+vertical coordinates but passes the reversed horizontal pair to `PdfRect`, which
+asserts. The failure is unrelated to the sampled citation itself. Native analysis
+handles return to zero, but the run is incomplete and establishes no new accuracy
+result. See `build/target-preview-m5-held-out-v2.log` and its retained captures.
+
+The complete freeze, sample and compact partial results are archived as
+`m5_history/held_out_v2_*.json`. The active freeze is removed. The whole
+`1810.01497v2` document moves to development before changing the link loader; its
+eligibility and required/excluded bounds remain unchanged. It needs a new held-out
+replacement. The other three replacement papers still have no resolver/model
+output. The loader fix must be covered by a synthetic reversed-rectangle test,
+and the next freeze must also identify the reviewed vendored engine pin.
+
 ## Remaining acceptance work
 
-Evaluate every link in the replenished frozen held-out set with paired images,
+Fix and qualify native link loading, replenish the promoted document, then freeze
+and evaluate every held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback

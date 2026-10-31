@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "1810.01497v2.pdf",
-    "split": "held_out",
+    "split": "development",
     "replaces_promoted_document": "2111.13850v2",
     "id": "1810.01497v2",
     "sha256": "26b8bd004e384a027faa43f8719c53873534701d43715ad7e5e0fbe0df249dfb",
@@ -697,6 +697,8 @@
   "review": {
     "date": "2026-10-31",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "412a2c4"
+    "resolver_baseline": "412a2c4",
+    "promoted_from": "held_out_v2",
+    "promotion_reason": "Native link loading aborts on a reversed horizontal annotation rectangle before this paper reaches target resolution; promote the whole document before changing the loader."
   }
 }
