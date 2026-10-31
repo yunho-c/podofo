@@ -14,9 +14,10 @@ are implemented; see the [M1 report](target_aware_link_preview_m1.md). M2 cached
 semantic previews are implemented; see the [M2 report](target_aware_link_preview_m2.md).
 M3 on-demand layout analysis is implemented; see the [M3 report](target_aware_link_preview_m3.md).
 M4 complete-target grouping, bounded multipart rendering and adaptive presentation
-are implemented; see the [M4 report](target_aware_link_preview_m4.md). M5's held-out
-accuracy and native-window qualification remains pending. M5 performance/stress
-qualification is in progress; see the [M5 report](target_aware_link_preview_m5.md).
+are implemented; see the [M4 report](target_aware_link_preview_m4.md). M5's frozen
+corpus, full visual audit, performance/stress and automated reader checks pass.
+Native-window qualification remains open because Computer Use denies PoDoFo
+access; M5 is not complete. See the [M5 report](target_aware_link_preview_m5.md).
 
 ## Scope and behavior
 

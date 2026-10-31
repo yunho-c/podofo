@@ -1,9 +1,9 @@
 # Target-aware previews: M5 qualification in progress
 
-M5 is not complete. The sixth frozen held-out run passes automatic metrics, but
-the full visual audit finds a reference containing unrelated following entries.
-Papers driving changes move to development before those changes; all six
-evaluations are preserved. Native-window acceptance also remains unqualified.
+The seventh frozen run passes the corpus gates and full visual audit. Automated
+reader, cache/stress, loader, analysis and signed-build checks also pass. **M5 is
+not complete:** native-window acceptance remains unqualified because Computer
+Use denies PoDoFo access. All seven corpus evaluations remain preserved.
 
 ## Cache preparation latency
 
@@ -23,17 +23,17 @@ can identify cached results, while missing payloads still prevent both inference
 and custom-directory verification. Corrupt/oversized manifests, changed catalog
 pins, unsupported platforms and symlinked components remain rejected.
 
-The latest performance run is `performance-v6` at resolver version 14, on an Apple M4 Pro with
+The latest performance run is `performance-v7` at resolver version 15, on an Apple M4 Pro with
 48 GiB RAM, macOS 27.0.1 (26A434), Flutter 3.47.5 / Dart 3.13.4, using the bundled
 experimental mixed layout profile and the existing linked-object Figure 4 at 2x.
 These are fixture observations, not a corpus-wide or release-mode benchmark.
 
 | Path | Samples | Semantic p50 | Semantic p95 | Context p95 |
 | --- | ---: | ---: | ---: | ---: |
-| Decoded image and text reuse | 30 | 1.5 ms | 1.8 ms | 0.19 ms |
-| Persisted layout, fresh worker/coordinator | 20 | 7.5 ms | 11.1 ms | 1.4 ms |
-| Warm model, forced layout miss | 20 | 66.9 ms | 71.0 ms | 1.4 ms |
-| Cold app preparation | 20 | 624.2 ms | 666.3 ms | 5.7 ms |
+| Decoded image and text reuse | 30 | 2.0 ms | 2.7 ms | 0.19 ms |
+| Persisted layout, fresh worker/coordinator | 20 | 11.1 ms | 41.9 ms | 2.3 ms |
+| Warm model, forced layout miss | 20 | 72.9 ms | 79.3 ms | 2.0 ms |
+| Cold app preparation | 20 | 645.5 ms | 762.0 ms | 3.5 ms |
 
 Timing begins at `LinkPreviewWorker.load` and ends at the contextual future or
 semantic callback; it excludes the 350 ms hover debounce, captures and assertions.
@@ -44,7 +44,7 @@ not a disk-free path. New inference is counted explicitly, so a purported warm
 analysis sample cannot pass by accidentally reusing persisted layout.
 
 The initial failing run remains under `build/target-preview-m5/performance-v1/`;
-`performance-v2` through `performance-v6` retain subsequent raw samples. Both
+`performance-v2` through `performance-v7` retain subsequent raw samples. Both
 cached paths pass the p95 150 ms gate. Cold preparation continues to deliver the
 contextual image first; no inference deadline has been inferred from this sample.
 
@@ -921,15 +921,56 @@ Eight links are new; 42 unchanged carryovers did not drive rule changes. The
 whole sample has 204 links over twenty-four papers, plus eight links in the
 two development seeds. Annotations and freeze are committed before evaluation.
 
-## Remaining acceptance work
+## Seventh evaluation: corpus qualification passes
 
-Evaluate every frozen held-out link with paired images,
-required/excluded pixel metrics and per-group
-coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
-coverage and 90% completeness gates. Exercise the additional synthetic fallback
-cases and retain the final full-regression/build evidence.
+The `held-out-v7` run at `54a52cc` captures all fifty links with all 36 frozen
+identities intact, no unexpected selected pages and zero native handles after
+disposal. The original eligibility, coverage and completeness gates pass:
+
+| Target group | Eligible | Resolved | Complete | Wrong object |
+| --- | ---: | ---: | ---: | ---: |
+| Citations | 12 | 12 | 12 | 0 |
+| Figures/tables | 12 | 10 | 10 | 0 |
+| Equations | 12 | 12 | 12 | 0 |
+| Sections | 12 | 12 | 12 | 0 |
+
+Both unsupported footnote controls fall back. All 46 accepted crops have visual
+coverage: 38 exactly match the bytes of previously audited v6 crops, and eight
+changed/new crops were inspected individually. No accepted crop omits target
+content or includes unrelated neighboring content. Each visual decision and
+semantic-image hash is retained in `m5_history/held_out_v7_results.json`, beside
+the frozen inputs and sampling snapshot. Full paired images, source context,
+selected bounds, reasons, metrics and timings remain under
+`build/target-preview-m5/papers-held-out-v7/`.
+
+Both figure fallbacks belong to the newly reviewed paper: one has no complete
+figure match, and the other has an ambiguous selected fragment spanning panel
+references. They remain eligible. Its six other targets resolve completely.
+Five carryover papers were observed in earlier frozen runs and did not drive
+rule changes. Cohort counts are retained separately; this sequential convenience
+sample is an engineering qualification, not a population-accuracy estimate.
+
+The final version-15 `performance-v7` benchmark and payload guard pass, including
+90 timing samples and 100 cancellation cycles. The summary and raw-result hash
+are committed as `m5_history/performance_v7_summary.json`; raw samples stay local.
+Both cached p95 values remain below 150 ms. Owned cache peaks match the bounds
+above and all handles drain after disposal. The twelve reusable loader tests
+pass with `--no-pub`. Final logs are `build/target-preview-m5-final-performance.log`
+and `build/target-preview-m5-final-loader.log`. No Rust/C implementation or ABI
+changed; unrelated Podoco work remains preserved.
+
+## Remaining native-window acceptance
 
 Computer Use was retried after the user's earlier authorization but still
 returned `Computer Use was not approved to use PoDoFo`. Native-window edge,
 HiDPI, appearance, navigation, save, selection/narration and close checks remain
 open. Automated widget/native-library checks do not establish that acceptance.
+
+Use the signed Debug app and the committed `linked_objects.pdf` and
+`complex_objects.pdf` fixtures to finish this gate: hover at window edges in
+light/dark appearance and at high density; confirm the contextual-to-semantic
+replacement, click/Back and tab changes; save a disposable fixture copy while
+checking revision invalidation; exercise selection and narration; and close
+during cold inference. Confirm Analyze still has priority and the document
+state, pointer behavior and cleanup remain correct. No merge or push is implied
+by this qualification.
