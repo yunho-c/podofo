@@ -13,9 +13,9 @@ are implemented; its native-window acceptance check remains pending. See the
 are implemented; see the [M1 report](target_aware_link_preview_m1.md). M2 cached
 semantic previews are implemented; see the [M2 report](target_aware_link_preview_m2.md).
 M3 on-demand layout analysis is implemented; see the [M3 report](target_aware_link_preview_m3.md).
-M4 is in progress: its bounded multipart renderer and annotated fixtures are
-implemented; target grouping and adaptive presentation remain open. See the
-[M4 progress report](target_aware_link_preview_m4.md). M5 remains pending.
+M4 complete-target grouping, bounded multipart rendering and adaptive presentation
+are implemented; see the [M4 report](target_aware_link_preview_m4.md). M5's held-out
+accuracy, performance, stress and native-window qualification remains pending.
 
 ## Scope and behavior
 

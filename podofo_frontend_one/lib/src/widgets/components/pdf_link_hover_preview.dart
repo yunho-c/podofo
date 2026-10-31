@@ -4,7 +4,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart' as flutter;
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
-import '../../workers/link_preview_worker.dart';
+import '../../previews/link_target.dart';
 
 /// Inert, viewport-clamped content: clicks continue to reach the original link.
 class PdfLinkHoverPreview extends StatelessWidget {
@@ -18,40 +18,109 @@ class PdfLinkHoverPreview extends StatelessWidget {
   final String label;
   final ui.Image? image;
 
+  static Size rasterSize(Size viewport) => Size(
+    math.max(
+      0,
+      math.min(semanticPreviewMaxSize.width, viewport.width - 16) - 24,
+    ),
+    math.max(
+      0,
+      math.min(semanticPreviewMaxSize.height, viewport.height - 16) - 56,
+    ),
+  );
+
   @override
   Widget build(BuildContext context) => flutter.Positioned.fill(
     child: IgnorePointer(
       child: CustomSingleChildLayout(
         delegate: _HoverLayout(anchor),
-        child: Card(
-          padding: const EdgeInsets.all(12),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(label, maxLines: 4, overflow: TextOverflow.ellipsis).small(),
-              if (image != null)
-                Flexible(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Semantics(
-                      label: 'Preview of $label',
-                      image: true,
-                      child: SizedBox(
-                        width: LinkPreviewRegion.maxWidth,
-                        height: LinkPreviewRegion.maxHeight,
-                        child: RawImage(
-                          key: const ValueKey('pdf-link-preview-image'),
-                          image: image,
-                          fit: BoxFit.contain,
-                          filterQuality: FilterQuality.medium,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            if (constraints.maxWidth < 48 || constraints.maxHeight < 48) {
+              return const SizedBox.shrink();
+            }
+            final natural = image == null
+                ? null
+                : Size(image!.width.toDouble(), image!.height.toDouble());
+            final fitted = natural == null
+                ? null
+                : applyBoxFit(
+                    BoxFit.contain,
+                    natural,
+                    Size(
+                      math.max(0, constraints.maxWidth - 24),
+                      math.max(0, constraints.maxHeight - 56),
+                    ),
+                  ).destination;
+            return SizedBox(
+              width: fitted == null
+                  ? null
+                  : math.max(
+                      math.min(184, constraints.maxWidth),
+                      fitted.width + 24,
+                    ),
+              child: Card(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (image == null)
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 4,
+                          overflow: TextOverflow.ellipsis,
+                        ).small(),
+                      )
+                    else
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ).small(),
+                    if (image != null)
+                      Flexible(
+                        child: Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Semantics(
+                            label: 'Preview of $label',
+                            image: true,
+                            child: LayoutBuilder(
+                              builder: (context, constraints) {
+                                final size = applyBoxFit(
+                                  BoxFit.contain,
+                                  Size(
+                                    image!.width.toDouble(),
+                                    image!.height.toDouble(),
+                                  ),
+                                  constraints.biggest,
+                                ).destination;
+                                return Align(
+                                  heightFactor: 1,
+                                  child: SizedBox(
+                                    width: size.width,
+                                    height: size.height,
+                                    child: RawImage(
+                                      key: const ValueKey(
+                                        'pdf-link-preview-image',
+                                      ),
+                                      image: image,
+                                      fit: BoxFit.contain,
+                                      filterQuality: FilterQuality.medium,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
                         ),
                       ),
-                    ),
-                  ),
+                  ],
                 ),
-            ],
-          ),
+              ),
+            );
+          },
         ),
       ),
     ),
@@ -65,8 +134,14 @@ class _HoverLayout extends SingleChildLayoutDelegate {
   @override
   BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
       BoxConstraints(
-        maxWidth: math.min(384, math.max(0, constraints.maxWidth - 16)),
-        maxHeight: math.max(0, constraints.maxHeight - 16),
+        maxWidth: math.min(
+          semanticPreviewMaxSize.width,
+          math.max(0, constraints.maxWidth - 16),
+        ),
+        maxHeight: math.min(
+          semanticPreviewMaxSize.height,
+          math.max(0, constraints.maxHeight - 16),
+        ),
       );
 
   @override

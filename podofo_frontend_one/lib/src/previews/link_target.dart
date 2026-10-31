@@ -4,7 +4,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../services/pdf_session.dart';
 
-const linkResolverVersion = 2;
+const linkResolverVersion = 3;
 const semanticPreviewMaxSize = Size(480, 360);
 
 /// Consumer cancellation detaches subscriptions without stealing shared work.
@@ -94,6 +94,7 @@ class ResolvedLinkTarget {
     this.kind,
     this.label,
     this.evidenceIdentity,
+    this.continuationPage,
     List<({int page, Rect bounds})> parts = const [],
   }) : parts = List.unmodifiable(parts);
   final LinkTargetTier tier;
@@ -101,6 +102,9 @@ class ResolvedLinkTarget {
   final String reason;
   final String? label;
   final Object? evidenceIdentity;
+
+  /// Unresolved reference evidence may justify inspecting exactly this next page.
+  final int? continuationPage;
   final List<({int page, Rect bounds})> parts;
   Object cacheKey(LinkPreviewRequest request) => (
     request.identity,

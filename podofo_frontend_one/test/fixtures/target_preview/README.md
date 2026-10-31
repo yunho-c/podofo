@@ -109,6 +109,16 @@ The native test verifies source/destination geometry and renders the nine manual
 targets at 1x, 2x and a narrow envelope with DPR capped from 4x to 2x. Every
 composed pixel must match an independent native source crop. Paired context and
 composed PNGs plus accounting results are written to
-`build/target-preview-m4/compositor`. Automatic grouping, second-page inference
-and adaptive card validation remain open; see the
-[M4 progress report](../../../../docs/target_aware_link_preview_m4.md).
+`build/target-preview-m4/compositor`.
+
+`complex_target_resolver_test.dart` resolves the same nine targets from native
+source text with the hand layout annotations, verifies included/excluded source
+ink, and rejects missing or incompatible continuation evidence. It never presents
+these annotations as detector results. The separate opt-in
+`complex_preview_native_test.dart` uses actual bundled inference via the shared
+coordinator, captures every fallback, and requires its seven qualified targets to
+remain complete. Set `TARGET_PREVIEW_M4_RUN` to a fresh suffix; actual snapshots,
+paired crops and metrics go to `build/target-preview-m4/native-<suffix>/`.
+The detector currently omits the separated-panel and rotated-figure visual
+regions. Those two cases stay contextual. See the
+[M4 report](../../../../docs/target_aware_link_preview_m4.md).

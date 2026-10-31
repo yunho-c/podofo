@@ -7,6 +7,8 @@ import '../analysis/preview_layout_repository.dart';
 import 'link_target.dart';
 import 'preview_text.dart';
 
+part 'reference_targets.dart';
+
 /// Pure selection over owned PDF text and layout. Scores are detector evidence,
 /// never interpreted as a probability that a source link names an object.
 class LinkTargetResolver {
@@ -17,6 +19,8 @@ class LinkTargetResolver {
     LinkSourceText? source,
     PreviewTextPage? text,
     PreviewLayoutEvidence? layout,
+    PreviewTextPage? followingText,
+    PreviewLayoutEvidence? followingLayout,
   }) {
     final evidence = layout?.identity ?? evidenceIdentity;
     ResolvedLinkTarget miss(String reason) => ResolvedLinkTarget(
@@ -44,33 +48,14 @@ class LinkTargetResolver {
     final candidates = <_Candidate>[];
     switch (identity.kind) {
       case LinkTargetKind.citation:
-        for (final r in regions.where(
-          (r) => r.model.category == podoco.RegionCategory.text,
-        )) {
-          final reference = r.model.nativeSubtype == 'reference_content';
-          if (!reference &&
-              r.model.nativeSubtype != 'reference' &&
-              !RegExp(r'^\s*\[\d+\]').hasMatch(r.text)) {
-            continue;
-          }
-          final entries = _entries(r);
-          for (final entry in entries) {
-            if (!identity.matchesReference(entry.text)) continue;
-            // A region ending at the physical page edge cannot establish completion.
-            if (entry.bounds.bottom > destination.pageSize.height - 16) {
-              continue;
-            }
-            if (!RegExp(r'[.!?\]\)]$').hasMatch(entry.text.trim())) continue;
-            candidates.add(
-              _Candidate(
-                identity,
-                [entry.bounds],
-                [r.model.id],
-                reference ? 1 : 0,
-              ),
-            );
-          }
-        }
+        return _resolveReference(
+          destination,
+          identity,
+          regions,
+          evidence,
+          followingText: followingText,
+          followingLayout: followingLayout,
+        );
       case LinkTargetKind.figure:
       case LinkTargetKind.table:
         for (final caption in regions.where(
@@ -94,14 +79,23 @@ class LinkTargetResolver {
               .where(
                 (r) =>
                     r.model.category == type &&
-                    _horizontalOverlap(r.bounds, caption.bounds) >= .5 &&
-                    _verticalGap(r.bounds, caption.bounds) <= 80 &&
+                    _captionOverlap(r.bounds, caption) >= .5 &&
+                    _captionGap(r.bounds, caption) <= 80 &&
                     !regions.any(
                       (other) =>
                           other.model.category ==
                               podoco.RegionCategory.caption &&
                           other.model.id != caption.model.id &&
-                          _between(other.bounds, r.bounds, caption.bounds),
+                          _captionOverlap(r.bounds, other) >= .5 &&
+                          _captionGap(r.bounds, other) + 3 <
+                              _captionGap(r.bounds, caption),
+                    ) &&
+                    !regions.any(
+                      (other) =>
+                          other.model.category ==
+                              podoco.RegionCategory.caption &&
+                          other.model.id != caption.model.id &&
+                          _captionBetween(other.bounds, r.bounds, caption),
                     ),
               )
               .toList();
@@ -114,25 +108,36 @@ class LinkTargetResolver {
             }
           }
           distinct.sort(
-            (a, b) => _verticalGap(
+            (a, b) => _captionGap(
               a.bounds,
-              caption.bounds,
-            ).compareTo(_verticalGap(b.bounds, caption.bounds)),
+              caption,
+            ).compareTo(_captionGap(b.bounds, caption)),
           );
+          if (distinct.isEmpty || distinct.length > 3) continue;
+          // Panels must share a band on the same side of their caption. A
+          // visual on the opposite side is a competing figure, not a panel.
           if (distinct.length > 1 &&
-              _verticalGap(distinct[1].bounds, caption.bounds) >
-                  _verticalGap(distinct[0].bounds, caption.bounds) + 16) {
-            distinct.removeRange(1, distinct.length);
+              !distinct
+                  .skip(1)
+                  .every(
+                    (v) => _samePanelBand(
+                      distinct.first.bounds,
+                      v.bounds,
+                      caption,
+                    ),
+                  )) {
+            continue;
           }
-          if (distinct.length != 1) continue;
+          distinct.sort((a, b) => _readingCompare(a.bounds, b.bounds));
+          final components = [...distinct, caption]
+            ..sort((a, b) => _readingCompare(a.bounds, b.bounds));
           candidates.add(
             _Candidate(
               identity,
-              [
-                distinct.single.bounds,
-                caption.bounds.expandToInclude(caption.contentBounds),
-              ],
-              [distinct.single.model.id, caption.model.id],
+              components
+                  .map((r) => r.bounds.expandToInclude(r.contentBounds))
+                  .toList(),
+              components.map((r) => r.model.id).toList(),
             ),
           );
         }
@@ -152,11 +157,57 @@ class LinkTargetResolver {
               )
               .toList();
           if (formulas.length != 1) continue;
+          final group = <_Region>[formulas.single];
+          // Grow through short aligned line gaps. Another formula number or
+          // intervening prose is a boundary, including a number on an earlier
+          // line of the next equation.
+          var growing = true, ambiguous = false;
+          while (growing) {
+            growing = false;
+            final bounds = _union(group.map((r) => r.bounds));
+            final neighbors = regions
+                .where(
+                  (r) =>
+                      r.model.category == podoco.RegionCategory.formula &&
+                      r.model.displayKind != podoco.FormulaDisplayKind.inline &&
+                      !group.contains(r) &&
+                      _horizontalOverlap(bounds, r.bounds) >= .6 &&
+                      _verticalGap(bounds, r.bounds) <= 20 &&
+                      group.any((member) => _equationContinuation(member, r)) &&
+                      !regions.any(
+                        (other) =>
+                            other.model.id != number.model.id &&
+                            other.model.category ==
+                                podoco.RegionCategory.formulaNumber &&
+                            _verticalOverlap(other.bounds, r.bounds) >= .3,
+                      ) &&
+                      !regions.any(
+                        (other) =>
+                            other.model.category ==
+                                podoco.RegionCategory.text &&
+                            _between(other.bounds, bounds, r.bounds),
+                      ),
+                )
+                .toList();
+            if (neighbors.length > 2) {
+              ambiguous = true;
+              break;
+            }
+            if (neighbors.isNotEmpty) {
+              group.addAll(neighbors);
+              growing = true;
+            }
+          }
+          group.sort((a, b) => _readingCompare(a.bounds, b.bounds));
+          if (ambiguous || _startsContinuation(group.first.text)) continue;
           candidates.add(
             _Candidate(
               identity,
-              [formulas.single.bounds, number.contentBounds],
-              [formulas.single.model.id, number.model.id],
+              [
+                ...group.map((r) => r.bounds.expandToInclude(r.contentBounds)),
+                number.contentBounds,
+              ],
+              [...group.map((r) => r.model.id), number.model.id],
             ),
           );
         }
@@ -215,7 +266,6 @@ class LinkTargetResolver {
                   destination.y! <= c.bounds.bottom + 96),
         )
         .toList();
-    nearby.sort((a, b) => b.specificity.compareTo(a.specificity));
     final unique = <_Candidate>[];
     for (final c in nearby) {
       if (!unique.any(
@@ -229,27 +279,15 @@ class LinkTargetResolver {
       return miss(unique.isEmpty ? 'noCompleteMatch' : 'competingMatches');
     }
     final c = unique.single;
-    // M2 permits a single union only when it does not introduce another object.
-    final rect = c.bounds;
-    final foreign = regions.any(
-      (r) =>
-          !c.ids.contains(r.model.id) &&
-          !_covers(r.bounds, rect, .95) &&
-          !c.parts.any((p) => _covers(p, r.bounds, .90)) &&
-          _area(r.bounds.intersect(rect)) > _area(r.bounds) * .20,
-    );
-    if (foreign) return miss('unionContainsNeighbor');
-    final padding = identity.kind == LinkTargetKind.citation ? 1.0 : 3.0;
-    final crop = rect
-        .inflate(padding)
-        .intersect(Offset.zero & destination.pageSize);
+    final parts = _safeParts(c.parts, c.ids, regions, destination.pageSize);
+    if (parts == null) return miss('regionsContainNeighbor');
     return ResolvedLinkTarget(
       tier: LinkTargetTier.matchedIdentity,
       kind: identity.kind,
       label: identity.label,
       reason: 'matchedIdentity',
       evidenceIdentity: evidence,
-      parts: [(page: destination.page, bounds: crop)],
+      parts: [for (final part in parts) (page: destination.page, bounds: part)],
     );
   }
 }
@@ -269,13 +307,18 @@ class _Identity {
     LinkTargetKind.explicitArea => 'Target',
   };
   bool matchesReference(String text) {
-    if (year == null) return RegExp('^\\s*\\[$value\\]').hasMatch(text);
-    final first = text.substring(0, math.min(80, text.length));
+    if (year == null) return _referenceNumber(text) == value;
+    final first = text
+        .substring(0, math.min(80, text.length))
+        .replaceFirst(RegExp(r'^\s*(?:\[\d+\]|\d+\.)\s*'), '')
+        .split(RegExp(r',|\s+(?:and|&)\s+'))
+        .first;
     return RegExp(
-          '\\b${RegExp.escape(value)}\\b',
+          '(?:^|[^\\p{L}\\p{N}])${RegExp.escape(value)}(?=\$|[^\\p{L}\\p{N}])',
           caseSensitive: false,
+          unicode: true,
         ).hasMatch(first) &&
-        RegExp('\\b$year[a-z]?\\b').hasMatch(text);
+        RegExp('\\b${RegExp.escape(year!)}\\b').hasMatch(text);
   }
 }
 
@@ -284,6 +327,11 @@ _Identity? _sourceIdentity(LinkSourceText source) {
   final direct = RegExp(r'^(?:Citation\s*)?\[(\d+)\]$').firstMatch(selected);
   if (direct != null) {
     return _Identity(LinkTargetKind.citation, direct.group(1)!);
+  }
+  if (RegExp(r'^\d+$').hasMatch(selected) &&
+      RegExp(r'\[\s*$').hasMatch(source.before) &&
+      RegExp(r'^\s*\]').hasMatch(source.after)) {
+    return _Identity(LinkTargetKind.citation, selected);
   }
   final named = RegExp(
     r'\b(Figure|Fig\.?|Table|Equation|Eq\.?|Section|Sec\.?)\s*\(?\s*(\d+(?:\.\d+)*[a-z]?)\b',
@@ -322,17 +370,33 @@ _Identity? _sourceIdentity(LinkSourceText source) {
   if (equation != null) {
     return _Identity(LinkTargetKind.equation, equation.group(1)!);
   }
+  // Some PDFs link only the year, leaving the author immediately before it.
+  final authorText = RegExp(r'^\(?(?:19|20)\d{2}[a-z]?\)?$').hasMatch(selected)
+      ? '${source.before.substring(math.max(0, source.before.length - 80))}$selected'
+      : selected;
   final author = RegExp(
-    r'^\(?([A-Z][A-Za-z\-]+)\s+(?:et\s+al\.?|and\s+[A-Z][A-Za-z\-]+)[,\s]*(.*)$',
-  ).firstMatch(selected);
+    r'(?:^|\s|\()([\p{Lu}][\p{L}\-\x27’]+)(?:\s+(?:et\s+al\.?|and\s+[\p{Lu}][\p{L}\-\x27’]+))?[,\s]*\(?((?:19|20)\d{2}[a-z]?)\)?$',
+    unicode: true,
+  ).firstMatch(authorText);
   if (author != null) {
-    final year = RegExp(r'\b((?:19|20)\d{2})[a-z]?\b').firstMatch(
-      '${author.group(2)}${source.after.substring(0, math.min(24, source.after.length))}',
+    return _Identity(
+      LinkTargetKind.citation,
+      author.group(1)!,
+      year: author.group(2),
     );
+  }
+  final authorOnly = RegExp(
+    r'^\(?([\p{Lu}][\p{L}\-\x27’]+)\s+(?:et\s+al\.?|and\s+[\p{Lu}][\p{L}\-\x27’]+)[,\s]*$',
+    unicode: true,
+  ).firstMatch(selected);
+  if (authorOnly != null) {
+    final year = RegExp(
+      r'^\s*\(?((?:19|20)\d{2}[a-z]?)\b',
+    ).firstMatch(source.after.substring(0, math.min(24, source.after.length)));
     if (year != null) {
       return _Identity(
         LinkTargetKind.citation,
-        author.group(1)!,
+        authorOnly.group(1)!,
         year: year.group(1),
       );
     }
@@ -364,10 +428,75 @@ bool _between(Rect c, Rect a, Rect b) =>
 Rect _union(Iterable<Rect> rects) =>
     rects.reduce((a, b) => a.expandToInclude(b));
 
+int _readingCompare(Rect a, Rect b) => _verticalOverlap(a, b) > .5
+    ? a.left.compareTo(b.left)
+    : a.top.compareTo(b.top);
+bool _sideways(_Region caption) =>
+    caption.lines.isNotEmpty &&
+    caption.lines.where((l) => l.bounds.height > l.bounds.width * 2).length >
+        caption.lines.length / 2;
+double _captionGap(Rect visual, _Region caption) => _sideways(caption)
+    ? _horizontalGap(visual, caption.bounds)
+    : _verticalGap(visual, caption.bounds);
+double _captionOverlap(Rect visual, _Region caption) => _sideways(caption)
+    ? _verticalOverlap(visual, caption.bounds)
+    : _horizontalOverlap(visual, caption.bounds);
+bool _captionBetween(Rect other, Rect visual, _Region caption) =>
+    _sideways(caption)
+    ? other.center.dx > math.min(visual.center.dx, caption.bounds.center.dx) &&
+          other.center.dx <
+              math.max(visual.center.dx, caption.bounds.center.dx) &&
+          _verticalOverlap(other, visual) > .5
+    : _between(other, visual, caption.bounds);
+bool _samePanelBand(Rect a, Rect b, _Region caption) => _sideways(caption)
+    ? _horizontalOverlap(a, b) > .6 &&
+          (a.center.dx - caption.bounds.center.dx).sign ==
+              (b.center.dx - caption.bounds.center.dx).sign
+    : _verticalOverlap(a, b) > .6 &&
+          (a.center.dy - caption.bounds.center.dy).sign ==
+              (b.center.dy - caption.bounds.center.dy).sign;
+
+bool _startsContinuation(String text) => RegExp(r'^[=+−–-]').hasMatch(text);
+bool _equationContinuation(_Region a, _Region b) {
+  final upper = a.bounds.top < b.bounds.top ? a : b;
+  final lower = identical(upper, a) ? b : a;
+  return _startsContinuation(lower.text) ||
+      RegExp(r'[=+−–-]$').hasMatch(upper.text);
+}
+
+bool _containsForeign(
+  Rect rect,
+  List<Rect> selected,
+  List<int> ids,
+  List<_Region> regions,
+) => regions.any(
+  (r) =>
+      !ids.contains(r.model.id) &&
+      !_covers(r.bounds, rect, .95) &&
+      !selected.any((p) => _covers(p, r.bounds, .90)) &&
+      _area(r.bounds.intersect(rect)) > _area(r.bounds) * .20,
+);
+
+List<Rect>? _safeParts(
+  List<Rect> parts,
+  List<int> ids,
+  List<_Region> regions,
+  Size pageSize,
+) {
+  final page = Offset.zero & pageSize;
+  final union = _union(parts).inflate(3).intersect(page);
+  if (!_containsForeign(union, parts, ids, regions)) return [union];
+  if (parts.length > 4) return null;
+  final crops = parts.map((p) => p.inflate(3).intersect(page)).toList();
+  if (crops.any((p) => _containsForeign(p, parts, ids, regions))) return null;
+  return crops;
+}
+
 class _Line {
-  const _Line(this.text, this.bounds);
+  const _Line(this.text, this.bounds, this.advance);
   final String text;
   final Rect bounds;
+  final Offset advance;
 }
 
 class _Region {
@@ -377,7 +506,9 @@ class _Region {
     void flush() {
       final value = _clean(current.toString());
       if (value.isNotEmpty && boxes.isNotEmpty) {
-        lines.add(_Line(value, _union(boxes)));
+        lines.add(
+          _Line(value, _union(boxes), boxes.last.center - boxes.first.center),
+        );
       }
       current.clear();
       boxes.clear();
@@ -390,6 +521,16 @@ class _Region {
         continue;
       }
       if (!box.isEmpty && bounds.inflate(1).contains(box.center)) {
+        if (boxes.isNotEmpty &&
+            (box.left - boxes.last.right > math.max(24, bounds.width * .12) ||
+                ((box.center.dy - boxes.last.center.dy).abs() >
+                        math.max(box.height, boxes.last.height) * .8 &&
+                    (box.center.dx - boxes.last.center.dx).abs() >
+                        math.max(box.width, boxes.last.width) * 2))) {
+          // PDFium may join columns or omit the newline at a discretionary
+          // hyphen. Recover physical line boundaries from glyph geometry.
+          flush();
+        }
         current.write(char);
         boxes.add(box);
       } else if (char.trim().isEmpty && boxes.isNotEmpty) {
@@ -397,6 +538,22 @@ class _Region {
       }
     }
     flush();
+    if (lines.isNotEmpty) {
+      final vertical = lines
+          .where((l) => l.advance.dy.abs() > l.advance.dx.abs() * 2)
+          .toList();
+      if (vertical.length > lines.length / 2) {
+        final down = vertical.first.advance.dy > 0;
+        lines.sort(
+          (a, b) => down
+              ? b.bounds.center.dx.compareTo(a.bounds.center.dx)
+              : a.bounds.center.dx.compareTo(b.bounds.center.dx),
+        );
+      } else if (lines.where((l) => l.advance.dx < 0).length >
+          lines.length / 2) {
+        lines.sort((a, b) => b.bounds.center.dy.compareTo(a.bounds.center.dy));
+      }
+    }
   }
   final podoco.LayoutRegion model;
   final lines = <_Line>[];
@@ -411,41 +568,10 @@ class _Region {
   String get text => lines.map((l) => l.text).join(' ');
 }
 
-List<_Line> _entries(_Region r) {
-  final starts = <int>[];
-  for (var i = 0; i < r.lines.length; i++) {
-    if (RegExp(r'^\[\d+\]').hasMatch(r.lines[i].text)) starts.add(i);
-  }
-  if (starts.isEmpty) {
-    return r.lines.isEmpty ? [] : [_Line(r.text, r.contentBounds)];
-  }
-  return [
-    for (var i = 0; i < starts.length; i++)
-      _Line(
-        r.lines
-            .sublist(
-              starts[i],
-              i + 1 < starts.length ? starts[i + 1] : r.lines.length,
-            )
-            .map((l) => l.text)
-            .join(' '),
-        _union(
-          r.lines
-              .sublist(
-                starts[i],
-                i + 1 < starts.length ? starts[i + 1] : r.lines.length,
-              )
-              .map((l) => l.bounds),
-        ),
-      ),
-  ];
-}
-
 class _Candidate {
-  const _Candidate(this.identity, this.parts, this.ids, [this.specificity = 0]);
+  const _Candidate(this.identity, this.parts, this.ids);
   final _Identity identity;
   final List<Rect> parts;
   final List<int> ids;
-  final int specificity;
   Rect get bounds => _union(parts);
 }

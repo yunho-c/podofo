@@ -30,6 +30,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'fixtures/hover_pdf_fixture.dart';
 import 'support/fake_narrator.dart';
+import 'support/complex_preview_fixture.dart';
+import 'fixtures/analysis_fixture.dart';
 import 'analysis_native_test.dart' show ControlledEngine, ControlledJob;
 
 void main() {
@@ -72,6 +74,76 @@ void main() {
         tester,
         () => reader.session.navigationHistory.previous != null,
       );
+      expect(tester.takeException(), isNull);
+    },
+    variant: platform,
+  );
+  testWidgets(
+    'cross-page hover reports both pages, caches continuation and keeps original click destination',
+    (tester) async {
+      final reader = await _Reader.open(tester, complexFixture: true);
+      final matrix = reader.viewer.value.clone();
+      final point = await reader.linkPoint(3);
+      final link = (await _native(
+        tester,
+        () => reader.session.readLocked((pdf) => pdf.pages.first.loadLinks()),
+      ))[3];
+      expect(link.dest!.pageNumber, 4);
+      final destinationMatrix = reader.viewer
+          .calcMatrixForClampedToNearestBoundary(
+            reader.viewer.calcMatrixForDest(link.dest!)!,
+            viewSize: reader.viewer.viewSize,
+          );
+      await reader.mouse.moveTo(point);
+      await tester.pump(const Duration(milliseconds: 350));
+      await _wait(
+        tester,
+        () => find.text('Reference [51] · Pages 4–5').evaluate().isNotEmpty,
+      );
+      expect(reader.semanticEngine!.pages, [3, 4]);
+      expect(reader.viewer.value, matrix);
+      expect(reader.analysis!.visibleSnapshot, isNull);
+      expect(reader.session.navigationHistory.previous, isNull);
+      expect(reader.session.revision, 0);
+      final card = tester.getRect(find.byType(shadcn.Card).last);
+      expect(card.width, lessThanOrEqualTo(480));
+      expect(card.height, lessThanOrEqualTo(360));
+      await reader.mouse.moveTo(point + const Offset(1, 0));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 350));
+      await _wait(
+        tester,
+        () => find.text('Reference [51] · Pages 4–5').evaluate().isNotEmpty,
+      );
+      expect(reader.semanticEngine!.pages, [3, 4]);
+      await reader.mouse.down(point);
+      await tester.pump();
+      expect(find.byType(PdfLinkHoverPreview), findsNothing);
+      await reader.mouse.up();
+      await _wait(
+        tester,
+        () => reader.session.navigationHistory.previous != null,
+      );
+      await tester.pump(const Duration(milliseconds: 250));
+      // The destination is near page 4's bottom, so page 5 may occupy most of
+      // the viewport. Compare the actual destination transform, not that label.
+      for (var i = 0; i < 16; i++) {
+        expect(
+          reader.viewer.value.storage[i],
+          closeTo(destinationMatrix.storage[i], .01),
+        );
+      }
+      await reader.mouse.moveTo(
+        tester.getTopLeft(find.byType(PdfViewer)) + const Offset(2, 2),
+      );
+      await tester.pump(const Duration(milliseconds: 120));
+      await tester.tap(find.byKey(const ValueKey('pdf-link-back')));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      for (var i = 0; i < 16; i++) {
+        expect(reader.viewer.value.storage[i], closeTo(matrix.storage[i], .01));
+      }
+      expect(reader.session.navigationHistory.previous, isNull);
       expect(tester.takeException(), isNull);
     },
     variant: platform,
@@ -267,6 +339,7 @@ class _Reader {
     WidgetTester tester, {
     LinkPreviewRenderer? render,
     bool semanticFixture = false,
+    bool complexFixture = false,
   }) async {
     SharedPreferences.setMockInitialValues({});
     tester.view.physicalSize = const Size(1000, 900);
@@ -279,7 +352,10 @@ class _Reader {
     await tester.runAsync(() => pdfrxInitialize(tmpPath: temporary.path));
     final file = File('${temporary.path}/first.pdf')
       ..writeAsBytesSync(
-        semanticFixture
+        complexFixture
+            ? File('test/fixtures/target_preview/complex_objects.pdf')
+                  .readAsBytesSync()
+            : semanticFixture
             ? File('test/fixtures/target_preview/linked_objects.pdf')
                   .readAsBytesSync()
             : hoverPdfFixture(),
@@ -288,7 +364,9 @@ class _Reader {
     final narrator = NarrationController(
       open: (_) async => FakeNarratorSession(),
     );
-    final engine = semanticFixture ? _LayoutEngine() : null;
+    final engine = semanticFixture || complexFixture
+        ? _LayoutEngine(complex: complexFixture)
+        : null;
     final analysis = engine == null
         ? null
         : AnalysisController(
@@ -300,7 +378,11 @@ class _Reader {
             inspectPreviewProfile: () async => PreviewLayoutProfile(
               layoutManifest: engine.manifests.single,
               layoutProfile: engine.profile,
-              computePolicy: podoco.ComputePolicy.cpuAndNeuralEngine,
+              computePolicy: engine.computePolicy,
+              backend: complexFixture ? 'test' : 'coreml',
+              layoutAdapter: complexFixture
+                  ? 'app-fixture'
+                  : 'pp-doclayout-v3-v1',
             ),
           );
     final container = ProviderContainer(
@@ -384,6 +466,8 @@ class _Reader {
 }
 
 class _LayoutEngine extends ControlledEngine {
+  _LayoutEngine({this.complex = false});
+  final bool complex;
   final pages = <int>[];
   final snapshot =
       jsonDecode(
@@ -393,14 +477,19 @@ class _LayoutEngine extends ControlledEngine {
           )['snapshot']
           as Map;
   @override
-  String get profile => snapshot['page']['provenance']['pipeline']['profile'];
+  String get profile => complex
+      ? fixtureProfile
+      : snapshot['page']['provenance']['pipeline']['profile'];
   @override
   List<String> get manifests => [
-    snapshot['page']['provenance']['pipeline']['models'][0]['manifest_sha256'],
+    complex
+        ? fixtureManifest
+        : snapshot['page']['provenance']['pipeline']['models'][0]['manifest_sha256'],
   ];
   @override
-  podoco.ComputePolicy get computePolicy =>
-      podoco.ComputePolicy.cpuAndNeuralEngine;
+  podoco.ComputePolicy get computePolicy => complex
+      ? podoco.ComputePolicy.cpuOnly
+      : podoco.ComputePolicy.cpuAndNeuralEngine;
   @override
   Future<void> close() async {
     closeCount++;
@@ -423,13 +512,19 @@ class _LayoutEngine extends ControlledEngine {
       Future<void>(() async {
         try {
           await sink(
-            podoco.AnalysisUpdate.fromJson({
-              'schema_version': 0,
-              'analysis_id': job.id,
-              'document': source.document.toJson(),
-              'sequence': 0,
-              'payload': {'type': 'page_layout_ready', 'page': page},
-            }),
+            complex
+                ? ComplexPreviewFixture().updateForDocument(
+                    source.document,
+                    pageIndex + 1,
+                    analysisId: job.id,
+                  )
+                : podoco.AnalysisUpdate.fromJson({
+                    'schema_version': 0,
+                    'analysis_id': job.id,
+                    'document': source.document.toJson(),
+                    'sequence': 0,
+                    'payload': {'type': 'page_layout_ready', 'page': page},
+                  }),
           );
         } finally {
           job.finish();

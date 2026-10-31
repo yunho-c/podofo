@@ -92,7 +92,8 @@ class PdfLinkContext {
     PreviewLayoutRepository? repository, {
     PreviewCancellation? cancellation,
   }) async {
-    bool valid() => request.isCurrent && current();
+    bool valid() =>
+        request.isCurrent && current() && cancellation?.isCancelled != true;
     if (!valid()) return null;
     final geometry = await request.session.readLocked((pdf) async {
       if (!valid() ||
@@ -108,6 +109,7 @@ class PdfLinkContext {
       );
       if (!valid() || bounds == null) return null;
       return (
+        pageCount: pdf.pages.length,
         destination: normalizePreviewDestination(
           pdf.pages[request.destination.pageNumber - 1],
           request.destination,
@@ -160,18 +162,63 @@ class PdfLinkContext {
             layout.page.page.space.height != destination.pageSize.height)) {
       layout = null;
     }
-    return PreparedLinkPreview(
+    var resolution = const LinkTargetResolver().resolve(
       destination,
-      source,
-      target,
-      layout,
-      const LinkTargetResolver().resolve(
-        destination,
-        evidenceIdentity: layout?.identity,
-        source: source,
-        text: target,
-        layout: layout,
-      ),
+      evidenceIdentity: layout?.identity,
+      source: source,
+      text: target,
+      layout: layout,
     );
+    final continuation = resolution.continuationPage;
+    if (continuation != null &&
+        geometry != null &&
+        continuation == request.destination.pageNumber + 1 &&
+        continuation <= geometry.pageCount) {
+      try {
+        final nextText = await text(request, continuation, valid);
+        if (!valid()) return null;
+        if (nextText != null && nextText.snapshot.text.trim().isNotEmpty) {
+          final nextSize = await request.session.readLocked(
+            (pdf) async => valid() ? pdf.pages[continuation - 1].size : null,
+          );
+          if (!valid()) return null;
+          // A fresh page request reuses the same source/session cancellation,
+          // but never loops into another continuation or holds a PDF lock while
+          // awaiting disk/model work.
+          final nextLayout = await repository?.read(
+            LinkPreviewRequest(
+              session: request.session,
+              sourcePage: request.sourcePage,
+              annotationIndex: request.annotationIndex,
+              sourceRects: request.sourceRects,
+              destination: PdfDest(continuation, PdfDestCommand.fit, null),
+              pixelRatio: request.pixelRatio,
+              maxSize: request.maxSize,
+            ),
+            isCurrent: valid,
+            cancellation: cancellation,
+          );
+          if (!valid()) return null;
+          if (nextLayout != null &&
+              nextSize != null &&
+              nextLayout.page.page.space.width == nextSize.width &&
+              nextLayout.page.page.space.height == nextSize.height) {
+            resolution = const LinkTargetResolver().resolve(
+              destination,
+              evidenceIdentity: layout?.identity,
+              source: source,
+              text: target,
+              layout: layout,
+              followingText: nextText,
+              followingLayout: nextLayout,
+            );
+          }
+        }
+      } catch (_) {
+        /* Incomplete continuations retain the already delivered context. */
+      }
+    }
+    if (!valid()) return null;
+    return PreparedLinkPreview(destination, source, target, layout, resolution);
   }
 }

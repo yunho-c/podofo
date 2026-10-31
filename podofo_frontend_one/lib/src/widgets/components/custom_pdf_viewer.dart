@@ -794,6 +794,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             sourceRects: link.rects,
             destination: link.dest!,
             pixelRatio: ratio,
+            maxSize: PdfLinkHoverPreview.rasterSize(overlayBox.size),
           );
           final image = await _previews.load(
             session,
@@ -807,7 +808,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
               }
               final previous = _previewImage;
               _previewImage = image;
-              label = '${target.label} · Page ${target.parts.first.page}';
+              final first = target.parts.first.page,
+                  last = target.parts.last.page;
+              label =
+                  '${target.label} · ${first == last ? 'Page $first' : 'Pages $first–$last'}';
               previous?.dispose();
               _overlay?.markNeedsBuild();
             },
