@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PoDoFo rendering quality</title><link rel="icon" href="data:,">
+<style>
+[hidden]{display:none!important}
+:root{color-scheme:light;font:15px system-ui,sans-serif;color:#172333;background:#f4f6f8}body{margin:0;padding:28px;max-width:1800px;margin:auto}h1{font-size:26px;margin:0 0 8px}p{line-height:1.5}header{border-bottom:1px solid #cbd3dc;padding-bottom:16px}.controls{display:flex;gap:18px;flex-wrap:wrap;align-items:center;margin:20px 0}label{display:flex;gap:8px;align-items:center}select,button,input{font:inherit}select,button{padding:7px;border:1px solid #a9b7c6;border-radius:5px;background:white}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #176ab2;outline-offset:2px}.views{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}figure{margin:0;min-width:0}figcaption{font-weight:600;padding:8px;background:#e5ebf1}.scroll{height:440px;overflow:auto;background:#ccd3da;position:relative}.plane{position:relative;line-height:0}.plane img{display:block;image-rendering:pixelated;max-width:none}.overlay{position:absolute;top:0;left:0}.metrics{overflow:auto;margin:20px 0}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{text-align:left;padding:9px;border-bottom:1px solid #d2dbe4;white-space:nowrap}th{background:#e5ebf1}pre{overflow:auto;max-height:360px;background:#e5ebf1;padding:12px;font-size:12px}.error{color:#9c241d;font-weight:600}.muted{color:#536479}details{margin-top:16px}.crop{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.crop-scroll{overflow:auto;max-height:440px}.crop canvas{image-rendering:pixelated;background:white;max-width:none}#status{font-weight:600}.badge{padding:3px 7px;border-radius:4px;background:#dce8f4}@media(max-width:800px){body{padding:14px}.views{grid-template-columns:1fr}.scroll{height:320px}}
+</style>
+<header><h1>PoDoFo · Rendering quality</h1><div id="status"></div><p class="muted">Direct PDFium versus the production PoDoFo viewer, captured by Flutter tests. This report does not qualify the native macOS GPU/compositor. Pixel differences measure agreement, not perceptual quality.</p></header>
+<div class="controls">
+<label>Case <select id="case" aria-label="Rendering case"></select></label>
+<label>Image scale <select id="scale"><option value="0.25">25%</option><option value="0.5" selected>50%</option><option value="1">100% · native pixels</option><option value="2">200%</option><option value="4">400%</option></select></label>
+<label>Reference overlay <input id="opacity" type="range" min="0" max="1" step="0.05" value="0" aria-label="Reference overlay opacity"></label>
+<button id="blink" type="button">Blink (B)</button>
+<label>Region <select id="region"></select></label>
+</div>
+<p id="info"></p><p id="error" class="error" role="status"></p>
+<div class="views">
+<figure><figcaption>Direct PDFium</figcaption><div class="scroll"><div class="plane"><img id="reference" alt="Direct PDFium reference"></div></div></figure>
+<figure><figcaption>PoDoFo</figcaption><div class="scroll"><div class="plane"><img id="candidate" alt="PoDoFo capture"><img id="overlay" class="overlay" alt="Reference overlay" style="opacity:0"></div></div></figure>
+<figure><figcaption>Absolute RGB difference ×8 (unmasked)</figcaption><div class="scroll"><div class="plane"><img id="heat" alt="Amplified difference heatmap"></div></div></figure>
+</div>
+<div id="metrics" class="metrics"></div>
+<details open><summary>Matched region crops · 2× pixel inspection</summary><p class="muted">Reference on the left, PoDoFo on the right. Display enlargement uses nearest-neighbor; source images and measurements are unchanged.</p><div class="crop"><figure><figcaption>Direct PDFium · selected region</figcaption><div class="crop-scroll"><canvas id="cropRef" aria-label="Reference region crop"></canvas></div></figure><figure><figcaption>PoDoFo · selected region</figcaption><div class="crop-scroll"><canvas id="cropActual" aria-label="PoDoFo region crop"></canvas></div></figure></div></details>
+<details><summary>Measurement and geometry controls</summary><pre id="calibration"></pre></details>
+<details><summary>Case metadata</summary><pre id="metadata"></pre></details>
+<details><summary>Run provenance</summary><pre id="provenance"></pre></details>
+<script>
+'use strict';
+const data=/*REPORT_DATA*/null;
+const $ = id => document.getElementById(id);
+const cases = data.results.cases || [];
+const motion = matchMedia('(prefers-reduced-motion: reduce)');
+let current = null, timer = null;
+$('status').textContent = data.receipt.passed
+  ? 'Capture and harness checks completed'
+  : 'INCOMPLETE / FAILED — inspect the errors below';
+$('status').className = data.receipt.passed ? 'badge' : 'error';
+if (data.results.display_scale_requested) $('status').textContent += ' · display-scale refinement at every zoom';
+$('provenance').textContent = JSON.stringify(data.receipt, null, 2);
+$('calibration').textContent = JSON.stringify({
+  measurement: data.results.calibration,
+  geometry: data.results.geometry_calibration,
+}, null, 2);
+
+function option(text, value) {
+  const o = document.createElement('option');
+  o.textContent = text;
+  o.value = value;
+  return o;
+}
+cases.forEach((c, i) => $('case').append(option(`${c.id} · ${c.status}`, i)));
+
+function stop() {
+  clearInterval(timer);
+  timer = null;
+  $('blink').textContent = 'Blink (B)';
+  $('overlay').style.opacity = $('opacity').value;
+}
+
+function resize() {
+  for (const id of ['reference', 'candidate', 'overlay', 'heat']) {
+    $(id).style.width = `${(current?.capture_size?.[0] || 800) * Number($('scale').value)}px`;
+  }
+  crop();
+}
+
+function crop() {
+  const r = current?.metrics?.[$('region').value]?.rect;
+  if (!r) return;
+  for (const [source, target] of [['reference', 'cropRef'], ['candidate', 'cropActual']]) {
+    const im = $(source), canvas = $(target);
+    if (!im.complete || !im.naturalWidth) continue;
+    canvas.width = r[2] - r[0];
+    canvas.height = r[3] - r[1];
+    canvas.style.width = `${canvas.width * 2}px`;
+    canvas.style.height = `${canvas.height * 2}px`;
+    canvas.getContext('2d').drawImage(im, r[0], r[1], canvas.width, canvas.height,
+      0, 0, canvas.width, canvas.height);
+  }
+}
+
+function table() {
+  const table = document.createElement('table');
+  const head = table.insertRow();
+  for (const label of ['Region', 'RGB MAE', 'RGB RMSE', 'Pixels >2 levels',
+    'Edge energy ratio', 'Reference ink', 'PoDoFo ink']) {
+    const th = document.createElement('th');
+    th.textContent = label;
+    head.append(th);
+  }
+  for (const [name, m] of Object.entries(current?.metrics || {})) {
+    const row = table.insertRow();
+    for (const value of [name, m.mae_8bit?.toFixed(4), m.rmse_8bit?.toFixed(4),
+      `${(100 * m.different_fraction_gt_2).toFixed(2)}%`,
+      m.edge_energy_ratio?.toFixed(4) ?? 'n/a',
+      `${(100 * m.reference_ink_fraction).toFixed(2)}%`,
+      `${(100 * m.candidate_ink_fraction).toFixed(2)}%`]) {
+      row.insertCell().textContent = value;
+    }
+  }
+  $('metrics').replaceChildren(table);
+}
+
+function show() {
+  stop();
+  current = cases[Number($('case').value)];
+  const available = !!current?.metrics;
+  document.querySelector('.views').hidden = !available;
+  document.querySelector('.crop').hidden = !available;
+  for (const id of ['scale', 'opacity', 'blink', 'region']) $(id).disabled = !available;
+  $('case').disabled = !cases.length;
+  $('error').textContent = current?.error || data.results.error || data.receipt.error || '';
+  $('info').textContent = current
+    ? `Page ${current.page} · ${current.dpi} DPI target · ${current.dpr}× display · offset ${current.offset} physical px · ${current.mode || current.status} · ${current.uses_fractional_transform ? 'fractional transform' : 'standard renderer'} · ${current.settle_wall_ms?.toFixed(1) ?? '?'} ms to settled capture (test runner)`
+    : 'No case results';
+  $('metadata').textContent = JSON.stringify(current, null, 2);
+  $('region').replaceChildren(...Object.keys(current?.metrics || {}).map(k => option(k, k)));
+  for (const id of ['cropRef', 'cropActual']) $(id).width = $(id).height = 0;
+  for (const [id, file] of [['reference', 'reference.png'], ['candidate', 'podofo.png'],
+    ['overlay', 'reference.png'], ['heat', 'difference.png']]) {
+    const im = $(id);
+    im.hidden = !available;
+    im.onload = crop;
+    im.onerror = () => {
+      $('error').textContent = current?.error || 'A capture image is unavailable; this case is incomplete.';
+    };
+    if (available) im.src = `${encodeURIComponent(current.id)}/${file}`;
+    else im.removeAttribute('src');
+  }
+  table();
+  resize();
+  for (const s of document.querySelectorAll('.scroll, .crop-scroll')) s.scrollTo(0, 0);
+}
+
+function blink() {
+  if ($('blink').disabled) return;
+  if (timer) { stop(); return; }
+  if (motion.matches) {
+    $('error').textContent = 'Blink disabled by reduced-motion preference; use the overlay slider.';
+    return;
+  }
+  $('blink').textContent = 'Stop blink';
+  let reference = false;
+  timer = setInterval(() => { $('overlay').style.opacity = (reference = !reference) ? 1 : 0; }, 600);
+}
+
+$('blink').onclick = blink;
+$('opacity').oninput = stop;
+$('scale').onchange = resize;
+$('case').onchange = show;
+$('region').onchange = () => {
+  crop();
+  const r = current?.metrics?.[$('region').value]?.rect;
+  if (r) for (const s of document.querySelectorAll('.scroll')) {
+    s.scrollTo(r[0] * Number($('scale').value), r[1] * Number($('scale').value));
+  }
+  for (const s of document.querySelectorAll('.crop-scroll')) s.scrollTo(0, 0);
+};
+document.addEventListener('keydown', event => {
+  if (event.key.toLowerCase() === 'b' && !event.ctrlKey && !event.metaKey && !event.altKey &&
+    !['INPUT', 'SELECT', 'TEXTAREA', 'BUTTON'].includes(event.target.tagName)) {
+    event.preventDefault();
+    blink();
+  }
+});
+function synchronize(selector) {
+  let syncing = false;
+  const elements = document.querySelectorAll(selector);
+  for (const source of elements) source.addEventListener('scroll', () => {
+    if (syncing) return;
+    syncing = true;
+    for (const target of elements) if (target !== source) target.scrollTo(source.scrollLeft, source.scrollTop);
+    requestAnimationFrame(() => { syncing = false; });
+  });
+}
+synchronize('.scroll');
+synchronize('.crop-scroll');
+document.addEventListener('visibilitychange', () => { if (document.hidden) stop(); });
+motion.addEventListener('change', stop);
+show();
+</script></html>
