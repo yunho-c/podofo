@@ -56,6 +56,22 @@
     {
       "pdf": "2606.29940v2.pdf",
       "split": "held_out"
+    },
+    {
+      "pdf": "1810.01497v2.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "2111.13850v2"
+    },
+    {
+      "pdf": "2206.07867v3.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "2212.01330v1"
+    },
+    {
+      "pdf": "2410.06940v4.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "2312.02753v1"
     }
-  ]
+  ],
+  "replenishment_policy": "First three previously unused arXiv-named PDFs in filename order, at most 60 pages, with at least two unique named destinations in each target group. No resolver/model output inspected."
 }

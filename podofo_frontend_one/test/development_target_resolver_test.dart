@@ -14,6 +14,39 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test('section openings retain intervening descendant headings', () {
+    for (final labels in [('5', '5.1'), ('II', 'A')]) {
+      final target = _resolve([
+        _r('heading', [140, 100, 220, 115], '${labels.$1}. Results'),
+        _r('heading', [100, 125, 300, 140], '${labels.$2}. Overview'),
+        _r('text', [100, 150, 300, 180], 'The complete opening paragraph.'),
+      ], 'Section ${labels.$1}');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(
+        target.parts.any((p) => p.bounds.contains(const Offset(105, 129))),
+        true,
+        reason: 'The child heading belongs between the parent and paragraph',
+      );
+    }
+  });
+  test('a sibling heading prevents borrowing its opening paragraph', () {
+    final target = _resolve([
+      _r('heading', [140, 100, 220, 115], '5. Results'),
+      _r('heading', [100, 125, 300, 140], '6. Discussion'),
+      _r('text', [
+        100,
+        150,
+        300,
+        180,
+      ], 'This paragraph belongs to section six.'),
+    ], 'Section 5');
+    expect(target.tier, LinkTargetTier.unresolved);
+    expect(target.parts, isEmpty);
+  });
   test(
     'equations aligned across columns retain their own number and formula',
     () {

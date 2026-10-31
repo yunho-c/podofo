@@ -13,11 +13,51 @@ bool _sectionText(_Region r) =>
 
 bool _sectionTerminal(_Region r) => RegExp(r'[.!?:\]\)]$').hasMatch(r.text);
 
+String? _sectionHeadingLabel(_Region heading) =>
+    RegExp('^($_targetLabel)[.]?(?:\\s|\$)').firstMatch(heading.text)?.group(1);
+
+List<_Region>? _sectionOpeningHeadings(
+  _Region heading,
+  _Region paragraph,
+  List<_Region> regions,
+) {
+  final between =
+      regions
+          .where(
+            (r) =>
+                r.model.category == podoco.RegionCategory.heading &&
+                r.model.id != heading.model.id &&
+                r.bounds.top >= heading.bounds.bottom - 2 &&
+                r.bounds.top < paragraph.bounds.top &&
+                _horizontalOverlap(r.bounds, paragraph.bounds) >= .5,
+          )
+          .toList()
+        ..sort((a, b) => a.bounds.top.compareTo(b.bounds.top));
+  final headings = [heading];
+  var parent = _sectionHeadingLabel(heading);
+  for (final child in between) {
+    final label = _sectionHeadingLabel(child);
+    // The first opening paragraph may sit below an explicit descendant heading
+    // (5 -> 5.1, II -> A). Preserve that hierarchy; a sibling or unknown heading
+    // is a boundary, not content to omit while borrowing its paragraph.
+    if (parent == null ||
+        label == null ||
+        child.bounds.bottom > paragraph.bounds.top + 2 ||
+        !(label.startsWith('$parent.') ||
+            (RegExp(r'^[IVXLCDM]+$').hasMatch(parent) && label == 'A'))) {
+      return null;
+    }
+    headings.add(child);
+    parent = label;
+  }
+  return headings;
+}
+
 _Candidate _sectionCandidate(
   _Identity identity,
   _Region paragraph,
   List<_Region> regions, {
-  _Region? heading,
+  List<_Region> headings = const [],
 }) {
   final inline = regions
       .where(
@@ -30,14 +70,14 @@ _Candidate _sectionCandidate(
   return _Candidate(
     identity,
     [
-      if (heading != null) heading.contentBounds,
+      ...headings.map((r) => r.contentBounds),
       _union([
         paragraph.contentBounds,
         ...inline.map((r) => r.bounds.expandToInclude(r.contentBounds)),
       ]),
     ],
     [
-      if (heading != null) heading.model.id,
+      ...headings.map((r) => r.model.id),
       paragraph.model.id,
       ...inline.map((r) => r.model.id),
     ],
@@ -96,11 +136,13 @@ ResolvedLinkTarget _resolveSection(
       continue;
     }
     final paragraph = paragraphs.first;
+    final headings = _sectionOpeningHeadings(heading, paragraph, regions);
+    if (headings == null) continue;
     final target = _sectionCandidate(
       identity,
       paragraph,
       regions,
-      heading: heading,
+      headings: headings,
     );
     if (destination.y != null &&
         (destination.y! < target.bounds.top - 96 ||

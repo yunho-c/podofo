@@ -110,8 +110,8 @@ are converted from raw PDF space to displayed page space, including page transfo
 The reviewed annotation files live under `test/fixtures/target_preview/m5_annotations/`.
 All six development papers have 53 reviewed cases: 48 eligible targets and five
 unsupported controls. Each document's annotations were completed before its
-resolver output was examined. All six held-out papers now have independently
-reviewed source annotations, also completed before any resolver/model output.
+resolver output was examined. The initial six held-out papers received
+independently reviewed source annotations before any resolver/model output.
 
 The initial sampling baseline is resolver version 3 at `1a31463`. Development
 may still change the resolver. Freeze its final identity and all eligibility
@@ -381,10 +381,50 @@ a forward equation row among independently numbered rows, and an equation link
 whose source punctuation prevents unique classification. These results are
 reported as failures/fallbacks, not excluded from the coverage denominators.
 
+## Nested heading correction and replenishment
+
+Resolver version 8 includes an explicit descendant heading between the linked
+section heading and its opening paragraph. Numeric hierarchy (`5` then `5.1`) and
+Roman-section/alphabetic-subsection hierarchy (`II` then `A`) are preserved.
+A sibling or unrecognized intervening heading prevents resolution, so the
+resolver cannot borrow the next section's paragraph while omitting its heading.
+Both new geometry regressions failed before this change and pass afterward.
+
+The expanded development replay covers 79 links in nine documents: 72 eligible
+targets and seven controls. `papers-nested-headings-development-v2` resolves 17/18
+citations, 17/18 figures/tables, 17/18 equations and 15/18 sections. All 66 accepted
+targets pass completeness/neighbor checks; all controls fall back and native
+handles return to zero. Both corrected real-paper crops were visually reviewed.
+The focused run passed 48 tests. The three compound section labels remain
+development fallbacks and have not been reclassified as ineligible.
+
+The full Flutter suite passed 393 tests with 21 opt-in skips. The final native
+replay also passed the original fourteen-target evaluation and verified all 37
+current annotation/pipeline identities. Static analysis, formatting and the
+53-file pinned-engine check pass. Logs use `build/target-preview-m5-nested-headings-`;
+original-target captures are under
+`build/target-preview-evaluation/m5-nested-headings-regression/`. All eighteen
+recorded unrelated Podoco worktree files remain unchanged.
+
+The macOS Debug build and deep/strict local signature verification passed
+(`build/target-preview-m5-nested-headings-build.log`). Building/signing ran after
+native tests completed; native-window acceptance is still outstanding.
+
+Replacement papers are selected before their source review or resolver output:
+`1810.01497v2`, `2206.07867v3`, and `2410.06940v4`. Selection takes the first three
+previously unused arXiv-named PDFs in filename order, limited to 60 pages and at
+least two named destinations in each target group. It examined link metadata in
+17 candidates, without running the detector or resolver. The selection record is
+`test/fixtures/target_preview/m5_history/replenishment_v2_selection.json`.
+Independent preparation produced 27 new links and source-page images under
+`build/target-preview-m5/annotations-v3-replacements/`. Their eligibility and
+boundaries still need visual review; there is no replacement held-out result yet.
+
 ## Remaining acceptance work
 
-Fix the promoted section regressions, replenish the three held-out papers, and
-freeze and evaluate every held-out link with paired images, required/excluded pixel metrics and per-group
+Finish the promoted compound-section cases and replacement source annotations,
+then freeze and evaluate every held-out link with paired images,
+required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback
 cases and retain the final full-regression/build evidence.
