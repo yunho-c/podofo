@@ -273,6 +273,50 @@ The Debug app built and passed local deep/strict signature verification
 all nine cases after making the hand-built page/image metadata consistent. All
 eighteen preserved unrelated Podoco files remain unchanged.
 
+## Equation ownership and complete section openings
+
+Resolver version 7 excludes a vertically aligned formula in another column when
+that formula has its own closer equation number in its text direction. Equal-gap
+matches remain ambiguous. Section grouping now supports centered headings,
+complete opening text blocks ending in a colon, and inline-formula extents owned
+by the paragraph.
+
+An unfinished opening block at the bottom of its column can request only the next
+page. Continuation requires first-column body text with compatible font and width,
+a lowercase start and a complete ending; intervening headings, text in a later
+column on the same page, wrong page identity, or a still-unfinished continuation
+retain the contextual preview. The result stays
+within four parts across two adjacent pages. Section resolution is included in the
+qualification freeze identity through `section_targets.dart`.
+
+Crop padding now stops before neighboring model regions and can shrink from three
+points to one or zero, without shrinking selected content. This fixes a development
+failure where the next paragraph leaked 32 pixels into an otherwise complete
+two-page section preview. The failing capture remains in `papers-grouping-dev-v6`.
+Regression cases cover paired equations across columns, centered/colon headings,
+inline mathematics, dense paragraph spacing and bounded continuation.
+
+The final 53-link `papers-grouping-commit-v9` replay passed with 11/12 citations and 12/12
+in each of figures/tables, equations and sections resolved. Every accepted target
+passed required/excluded ink checks; all five unsupported controls fell back and
+native handles returned to zero. The focused run passed 47 tests, including the
+original fourteen-target native evaluation. The two
+cross-page section crops and the tight appendix/equation crops were visually
+reviewed. The remaining citation fallback has competing author/year matches.
+These are development results; held-out qualification remains pending.
+
+The full Flutter suite passed 391 tests with 21 opt-in skips. After the final
+same-page column guard, all focused resolver suites, the complete development
+replay and the original fourteen-target native evaluation passed again. Static
+analysis, formatting and the 53-file pinned-engine check pass. Test and analysis
+logs use `build/target-preview-m5-grouping-`; original-target captures are under
+`build/target-preview-evaluation/m5-grouping-regression/`. All eighteen preserved
+unrelated Podoco files retain their recorded hashes.
+
+The macOS Debug build and deep/strict local signature verification passed
+(`build/target-preview-m5-grouping-build.log`). Native tests and building/signing
+ran serially. This does not establish native-window acceptance.
+
 ## Remaining acceptance work
 
 Complete annotation and development replay, freeze rules, and evaluate every

@@ -10,6 +10,7 @@ import 'preview_text.dart';
 part 'reference_targets.dart';
 part 'figure_targets.dart';
 part 'source_identity.dart';
+part 'section_targets.dart';
 
 /// Pure selection over owned PDF text and layout. Scores are detector evidence,
 /// never interpreted as a probability that a source link names an object.
@@ -98,7 +99,8 @@ class LinkTargetResolver {
                     r.model.displayKind != podoco.FormulaDisplayKind.inline &&
                     _verticalOverlap(r.bounds, number.bounds) >= .4 &&
                     _horizontalGap(r.bounds, number.bounds) <
-                        destination.pageSize.width * .65,
+                        destination.pageSize.width * .65 &&
+                    !_hasCloserEquationNumber(r, number, regions),
               )
               .toList();
           if (formulas.length != 1) continue;
@@ -157,47 +159,14 @@ class LinkTargetResolver {
           );
         }
       case LinkTargetKind.section:
-        for (final heading in regions.where(
-          (r) => r.model.category == podoco.RegionCategory.heading,
-        )) {
-          if (!RegExp('^${RegExp.escape(identity.value)}[.]?(?:\\s|\$)')
-              .hasMatch(heading.text)) {
-            continue;
-          }
-          final paragraphs =
-              regions
-                  .where(
-                    (r) =>
-                        r.model.category == podoco.RegionCategory.text &&
-                        ![
-                          'reference',
-                          'reference_content',
-                        ].contains(r.model.nativeSubtype) &&
-                        r.bounds.top >= heading.bounds.bottom - 2 &&
-                        r.bounds.top - heading.bounds.bottom <= 50 &&
-                        (r.bounds.left - heading.bounds.left).abs() <=
-                            math.max(14, heading.bounds.width * .15),
-                  )
-                  .toList()
-                ..sort((a, b) => a.bounds.top.compareTo(b.bounds.top));
-          if (paragraphs.isEmpty) continue;
-          final p = paragraphs.first;
-          if (paragraphs.length > 1 &&
-              (paragraphs[1].bounds.top - p.bounds.top).abs() < 3) {
-            continue;
-          }
-          if (p.bounds.bottom > destination.pageSize.height - 16 ||
-              !RegExp(r'[.!?\]\)]$').hasMatch(p.text)) {
-            continue;
-          }
-          candidates.add(
-            _Candidate(
-              identity,
-              [heading.contentBounds, p.contentBounds],
-              [heading.model.id, p.model.id],
-            ),
-          );
-        }
+        return _resolveSection(
+          destination,
+          identity,
+          regions,
+          evidence,
+          followingText: followingText,
+          followingLayout: followingLayout,
+        );
       case LinkTargetKind.explicitArea:
         break;
     }
@@ -313,6 +282,30 @@ bool _captionBetween(Rect other, Rect visual, _Region caption) =>
     : _between(other, visual, caption.bounds);
 
 bool _startsContinuation(String text) => RegExp(r'^[=+−–-]').hasMatch(text);
+
+/// A nearby formula in another column may align vertically with this number.
+/// Exclude it only when a distinct, closer number follows that formula in its
+/// text direction. Equal-distance matches stay ambiguous; proximity alone never
+/// chooses between otherwise competing formulas.
+bool _hasCloserEquationNumber(
+  _Region formula,
+  _Region number,
+  List<_Region> regions,
+) {
+  final lines = [...formula.lines]
+    ..sort((a, b) => b.advance.dx.abs().compareTo(a.advance.dx.abs()));
+  final direction = lines.isNotEmpty && lines.first.advance.dx < 0 ? -1 : 1;
+  final gap = _horizontalGap(formula.bounds, number.bounds);
+  return regions.any(
+    (other) =>
+        other.model.category == podoco.RegionCategory.formulaNumber &&
+        other.model.id != number.model.id &&
+        _verticalOverlap(formula.bounds, other.bounds) >= .4 &&
+        (other.bounds.center.dx - formula.bounds.center.dx) * direction > 0 &&
+        _horizontalGap(formula.bounds, other.bounds) + 4 < gap,
+  );
+}
+
 bool _equationContinuation(_Region a, _Region b) {
   final upper = a.bounds.top < b.bounds.top ? a : b;
   final lower = identical(upper, a) ? b : a;
@@ -340,12 +333,73 @@ List<Rect>? _safeParts(
   Size pageSize,
 ) {
   final page = Offset.zero & pageSize;
-  final union = _union(parts).inflate(3).intersect(page);
-  if (!_containsForeign(union, parts, ids, regions)) return [union];
+  // Tight line spacing can leave no room for the preferred padding. Shrink
+  // only the margin, never any selected content, before trying separate crops.
+  for (final padding in [3.0, 1.0, 0.0]) {
+    final union = _padTarget(
+      _union(parts),
+      padding,
+      parts,
+      ids,
+      regions,
+    ).intersect(page);
+    if (!_containsForeign(union, parts, ids, regions)) return [union];
+  }
   if (parts.length > 4) return null;
-  final crops = parts.map((p) => p.inflate(3).intersect(page)).toList();
-  if (crops.any((p) => _containsForeign(p, parts, ids, regions))) return null;
+  final crops = <Rect>[];
+  for (final part in parts) {
+    final safe = [3.0, 1.0, 0.0]
+        .map(
+          (padding) =>
+              _padTarget(part, padding, parts, ids, regions).intersect(page),
+        )
+        .where((crop) => !_containsForeign(crop, parts, ids, regions))
+        .firstOrNull;
+    if (safe == null) return null;
+    crops.add(safe);
+  }
   return crops;
+}
+
+Rect _padTarget(
+  Rect content,
+  double padding,
+  List<Rect> selected,
+  List<int> ids,
+  List<_Region> regions,
+) {
+  var left = content.left - padding,
+      top = content.top - padding,
+      right = content.right + padding,
+      bottom = content.bottom + padding;
+  for (final r in regions) {
+    if (ids.contains(r.model.id) ||
+        _covers(r.bounds, content, .95) ||
+        selected.any((p) => _covers(p, r.bounds, .9))) {
+      continue;
+    }
+    // Neighbor models can touch a paragraph's preferred margin. Cap that margin
+    // before its next line; a small overlap would evade the coarse area guard.
+    // The selected content itself is never reduced to make a crop fit.
+    final b = r.bounds;
+    if (_horizontalOverlap(content, b) > 0) {
+      if (b.top >= content.bottom) {
+        bottom = math.min(bottom, math.max(content.bottom, b.top - .5));
+      }
+      if (b.bottom <= content.top) {
+        top = math.max(top, math.min(content.top, b.bottom + .5));
+      }
+    }
+    if (_verticalOverlap(content, b) > 0) {
+      if (b.left >= content.right) {
+        right = math.min(right, math.max(content.right, b.left - .5));
+      }
+      if (b.right <= content.left) {
+        left = math.max(left, math.min(content.left, b.right + .5));
+      }
+    }
+  }
+  return Rect.fromLTRB(left, top, right, bottom);
 }
 
 class _Line {

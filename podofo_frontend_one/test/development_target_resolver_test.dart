@@ -15,6 +15,175 @@ import 'fixtures/analysis_fixture.dart';
 
 void main() {
   test(
+    'equations aligned across columns retain their own number and formula',
+    () {
+      final regions = [
+        _r('formula', [80, 100, 220, 120], 'a = b + c'),
+        _r('formula_number', [240, 100, 255, 120], '(1)'),
+        _r('formula', [340, 100, 420, 120], 'd = e + f'),
+        _r('formula_number', [480, 100, 495, 120], '(2)'),
+      ];
+      for (final number in [1, 2]) {
+        final target = _resolve(regions, '($number)');
+        expect(
+          target.tier,
+          LinkTargetTier.matchedIdentity,
+          reason: target.reason,
+        );
+        expect(
+          target.parts.any(
+            (p) => p.bounds.contains(_rect(regions[(number - 1) * 2]).center),
+          ),
+          true,
+        );
+        expect(
+          target.parts.any(
+            (p) => p.bounds.overlaps(_rect(regions[(2 - number) * 2])),
+          ),
+          false,
+        );
+      }
+      final tall = [...regions];
+      tall[2] = _r('formula', [340, 90, 460, 180], 'd = e + f\n= g + h');
+      tall[3] = _r('formula_number', [480, 160, 495, 180], '(2)');
+      final target = _resolve(tall, '(1)');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.parts.any((p) => p.bounds.overlaps(_rect(tall[2]))), false);
+    },
+  );
+  test('centered headings retain a complete text block ending in a colon', () {
+    final regions = [
+      _r('heading', [160, 100, 240, 115], 'III. Method'),
+      _r('text', [
+        100,
+        130,
+        300,
+        165,
+      ], 'The first line introduces\nthe following expression:'),
+      _r('formula', [140, 175, 240, 195], 'x = y + z'),
+    ];
+    final target = _resolve(regions, 'Section III');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(
+      target.parts.any((p) => p.bounds.contains(const Offset(150, 149))),
+      true,
+    );
+    expect(
+      target.parts.any((p) => p.bounds.overlaps(_rect(regions.last))),
+      false,
+    );
+  });
+  test(
+    'inline formula extent belongs to its paragraph and not the next one',
+    () {
+      final regions = [
+        _r('heading', [100, 100, 300, 115], '2. Method'),
+        _r('text', [
+          100,
+          130,
+          300,
+          170,
+        ], 'An opening paragraph\ncontains inline mathematics.'),
+        _r('formula', [140, 141, 210, 163], '', inline: true),
+        _r('text', [100, 180, 300, 210], 'Unrelated following paragraph.'),
+      ];
+      final target = _resolve(regions, 'Section 2');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(
+        target.parts.any((p) => p.bounds.contains(const Offset(209, 162))),
+        true,
+      );
+      expect(
+        target.parts.any((p) => p.bounds.overlaps(_rect(regions.last))),
+        false,
+      );
+    },
+  );
+  test('padding stops before an immediately following paragraph', () {
+    final target = _resolve([
+      _r('heading', [100, 100, 300, 115], '2. Method'),
+      _r('text', [100, 130, 300, 139], 'Complete.'),
+      _r('text', [100, 139.5, 300, 180], 'Next paragraph.'),
+    ], 'Section 2');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(target.parts.last.bounds.bottom, lessThanOrEqualTo(139.5));
+    expect(target.parts.last.bounds.contains(const Offset(105, 137)), true);
+  });
+  test(
+    'section continuation is bounded and requires first-column evidence',
+    () {
+      final first = [
+        _r('heading', [100, 700, 300, 715], '4. Method'),
+        _r('text', [100, 735, 300, 785], 'An opening block continues with the'),
+      ];
+      final next = [
+        _r('figure', [100, 50, 500, 160], 'Floating figure'),
+        _r('caption', [100, 165, 500, 180], 'Figure 9. Other.'),
+        _r('text', [100, 200, 500, 240], 'remaining words on the next page.'),
+        _r('text', [100, 250, 500, 280], 'Another paragraph.'),
+      ];
+      final pending = _resolve(first, 'Section 4');
+      expect(pending.continuationPage, 2);
+      expect(pending.parts, isEmpty);
+      final target = _resolve(first, 'Section 4', following: next);
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.parts.map((p) => p.page).toSet(), {1, 2});
+      expect(target.parts.last.bounds.top, greaterThan(180));
+      expect(target.parts.last.bounds.bottom, lessThan(250));
+      expect(
+        _resolve(first, 'Section 4', following: next, followingPage: 3).reason,
+        'invalidContinuationPage',
+      );
+      final newSection = [
+        _r('heading', [100, 185, 500, 195], '5. Next section'),
+        ...next,
+      ];
+      expect(
+        _resolve(first, 'Section 4', following: newSection).tier,
+        LinkTargetTier.unresolved,
+      );
+      final unfinished = [...next]
+        ..[2] = _r('text', [100, 200, 500, 240], 'still unfinished and');
+      final rejected = _resolve(first, 'Section 4', following: unfinished);
+      expect(rejected.tier, LinkTargetTier.unresolved);
+      expect(rejected.continuationPage, isNull);
+      expect(
+        _resolve([
+          ...first,
+          _r('heading', [100, 787, 300, 798], '5. Next'),
+        ], 'Section 4').continuationPage,
+        isNull,
+      );
+      final laterColumn = _resolve(
+        [
+          ...first,
+          _r('text', [
+            330,
+            100,
+            550,
+            180,
+          ], 'Remaining text in the next column.'),
+        ],
+        'Section 4',
+        following: next,
+      );
+      expect(laterColumn.tier, LinkTargetTier.unresolved);
+      expect(laterColumn.continuationPage, isNull);
+    },
+  );
+  test(
     'plural equation prefixes apply only to a single linked list member',
     () {
       final regions = [
@@ -134,11 +303,12 @@ void main() {
   });
 }
 
-Map<String, Object?> _r(String category, List<double> bounds, String text) => {
-  'category': category,
-  'bounds': bounds,
-  'text': text,
-};
+Map<String, Object?> _r(
+  String category,
+  List<double> bounds,
+  String text, {
+  bool inline = false,
+}) => {'category': category, 'bounds': bounds, 'text': text, 'inline': inline};
 
 Rect _rect(Map<String, Object?> region) {
   final b = region['bounds'] as List<double>;
@@ -150,19 +320,62 @@ ResolvedLinkTarget _resolve(
   String selected, {
   String before = '',
   String after = '',
+  List<Map<String, Object?>>? following,
+  int followingPage = 2,
+}) {
+  final first = _page(regions);
+  final next = following == null
+      ? null
+      : _page(following, number: followingPage);
+  return const LinkTargetResolver().resolve(
+    const PreviewDestination(page: 1, pageSize: Size(600, 800)),
+    source: LinkSourceText(
+      [PreviewTextSpan(0, selected.length, selected, [])],
+      before,
+      after,
+      false,
+    ),
+    text: first.text,
+    layout: first.layout,
+    followingText: next?.text,
+    followingLayout: next?.layout,
+  );
+}
+
+({PreviewTextPage text, PreviewLayoutEvidence layout}) _page(
+  List<Map<String, Object?>> regions, {
+  int number = 1,
 }) {
   final content = StringBuffer(), boxes = <Rect>[];
   for (final r in regions) {
     final rect = _rect(r), text = r['text'] as String;
     content.writeln(text);
+    var column = 0, row = 0;
     for (var i = 0; i < text.length; i++) {
-      boxes.add(Rect.fromLTWH(rect.left + i * 3 + 1, rect.top + 1, 3, 7));
+      if (text[i] == '\n') {
+        boxes.add(Rect.zero);
+        column = 0;
+        row++;
+      } else {
+        boxes.add(
+          Rect.fromLTWH(
+            rect.left + column * 3 + 1,
+            rect.top + row * 12 + 1,
+            3,
+            7,
+          ),
+        );
+        column++;
+      }
     }
     boxes.add(Rect.zero);
   }
   final json = jsonDecode(
     jsonEncode(
-      analysisFixture(podoco.DocumentRef('grouping', 'fixture')).toJson(),
+      analysisFixture(
+        podoco.DocumentRef('grouping', 'fixture'),
+        pageIndex: number - 1,
+      ).toJson(),
     ),
   );
   final page = json['payload']['page'];
@@ -184,7 +397,7 @@ ResolvedLinkTarget _resolve(
         'native_subtype': null,
         'bounds': regions[i]['bounds'],
         'display_kind': regions[i]['category'] == 'formula'
-            ? 'displayed'
+            ? (regions[i]['inline'] == true ? 'inline' : 'displayed')
             : null,
         'polygon': null,
         'score': 1.0,
@@ -199,17 +412,10 @@ ResolvedLinkTarget _resolve(
           'state': {'state': 'not_requested'},
         },
   ];
-  return const LinkTargetResolver().resolve(
-    const PreviewDestination(page: 1, pageSize: Size(600, 800)),
-    source: LinkSourceText(
-      [PreviewTextSpan(0, selected.length, selected, [])],
-      before,
-      after,
-      false,
-    ),
+  return (
     text: PreviewTextPage(
       PdfTextSnapshot(
-        page: 1,
+        page: number,
         text: content.toString(),
         boxes: [
           for (final b in boxes)

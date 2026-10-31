@@ -84,6 +84,7 @@ void main() {
         'lib/src/previews/reference_targets.dart',
         'lib/src/previews/figure_targets.dart',
         'lib/src/previews/source_identity.dart',
+        'lib/src/previews/section_targets.dart',
         'lib/src/previews/pdf_link_context.dart',
         'lib/src/previews/preview_text.dart',
       ]) {
