@@ -7,6 +7,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:pdfium_dart/pdfium_dart.dart';
 import 'package:podofo_one/src/dark_mode/photo_analysis.dart';
 import 'package:podofo_one/src/dark_mode/photo_overrides.dart';
+import 'package:podofo_one/src/dark_mode/photo_quality.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,115 @@ void main() {
     await document.dispose();
     await PdfrxEntryFunctions.instance.stopBackgroundWorker();
   });
+
+  test('scaled isolated alpha renders preserve identity, crops, rotations and source pixels', () async {
+    const quality = PhotoQuality(alphaScale: 4, coverageDimension: 1024);
+    for (final number in [3, 11, 12, 13, 27, 30, 31, 32, 33, 34, 35, 36]) {
+      final page = document.pages[number - 1];
+      final before = (await page.render(
+        fullWidth: page.width * 2,
+        fullHeight: page.height * 2,
+      ))!;
+      final baseline = (await analyzePhotos(
+        document,
+        number,
+      )).candidates.single;
+      final high = (await analyzePhotos(
+        document,
+        number,
+        quality: quality,
+      )).candidates.single;
+      expect(high.reason, baseline.reason, reason: 'page $number');
+      expect(high.sampleHash, baseline.sampleHash, reason: 'page $number');
+      expect(high.coverage?.fingerprint, baseline.coverage?.fingerprint);
+      expect(
+        PhotoOverrides.target(page, high),
+        PhotoOverrides.target(page, baseline),
+      );
+      final render = high.renderCoverage!;
+      expect(render.limitation, isNull, reason: 'page $number');
+      expect(render.alphaScale, 4, reason: 'page $number');
+      expect(render.alphaWidth, baseline.renderCoverage!.alphaWidth * 4);
+      expect(render.alphaHeight, baseline.renderCoverage!.alphaHeight * 4);
+      if (high.coverage != null) {
+        expect(
+          render.opaque.width * render.opaque.height,
+          greaterThan(high.coverage!.width * high.coverage!.height),
+        );
+        // Interior classifications should agree through crops and rotations.
+        for (final x in [.15, .45, .85]) {
+          for (final y in [.15, .45, .85]) {
+            expect(
+              render.opaque.covers(x, y, x + .02, y + .02),
+              high.coverage!.covers(x, y, x + .02, y + .02),
+              reason: 'page $number at $x,$y',
+            );
+          }
+        }
+      }
+      final after = (await page.render(
+        fullWidth: page.width * 2,
+        fullHeight: page.height * 2,
+      ))!;
+      expect(
+        after.pixels,
+        before.pixels,
+        reason: 'Source page $number must remain untouched',
+      );
+      before.dispose();
+      after.dispose();
+    }
+  });
+
+  test(
+    'independent coverage resolution and dense budgets report effective sizes',
+    () async {
+      final baseline = (await analyzePhotos(document, 27)).candidates.single;
+      final gridOnly = (await analyzePhotos(
+        document,
+        27,
+        quality: const PhotoQuality(coverageDimension: 1024),
+      )).candidates.single;
+      // Enlarging the cap cannot invent pixels absent from the local native render.
+      expect(
+        gridOnly.renderCoverage!.alphaWidth,
+        baseline.renderCoverage!.alphaWidth,
+      );
+      expect(
+        gridOnly.renderCoverage!.opaque.width,
+        baseline.renderCoverage!.opaque.width,
+      );
+      final alphaOnly = (await analyzePhotos(
+        document,
+        27,
+        quality: const PhotoQuality(alphaScale: 2),
+      )).candidates.single;
+      expect(alphaOnly.renderCoverage!.alphaWidth, 320);
+      expect(alphaOnly.renderCoverage!.opaque.width, 256);
+      const quality = PhotoQuality(alphaScale: 4, coverageDimension: 1024);
+      final dense = await analyzePhotos(document, 38, quality: quality);
+      var bytes = 0;
+      for (final c in dense.candidates) {
+        final render = c.renderCoverage!;
+        expect(render.alphaScale, 2); // 512 * 4 squared exceeds the 4 MP limit.
+        expect(render.alphaWidth, 1024);
+        expect(render.opaque.width, 819);
+        expect(render.limitation, contains('alpha-pixel-budget'));
+        expect(render.limitation, contains('coverage-page-budget'));
+        bytes +=
+            (c.coverage?.bits.length ?? 0) +
+            (c.translucentCoverage?.bits.length ?? 0) +
+            render.opaque.bits.length +
+            render.nonzero.bits.length;
+      }
+      expect(bytes, lessThanOrEqualTo(quality.pageCoverageBytes));
+      expect(
+        quality.cachePages * quality.pageCoverageBytes,
+        lessThanOrEqualTo(PhotoQuality.cacheCoverageBytes),
+      );
+      expect(dense.regions, hasLength(100));
+    },
+  );
 
   test('nested transforms, clips, paint order, masks and bounded traversal', () async {
     final manifest = jsonDecode(

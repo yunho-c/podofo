@@ -85,6 +85,28 @@ void main() {
     }
   });
 
+  test('4096 texture resolves islands that disappear at 2048', () async {
+    final region = PhotoMaskRegion(
+      const ui.Rect.fromLTWH(100, 100, 3, 3),
+      coverage: PhotoCoverage.fromCells(2, 2, Uint8List.fromList([1, 0, 0, 0])),
+    );
+    const bounds = ui.Rect.fromLTWH(0, 0, 4096, 4096);
+    final low = await PhotoMask.create(bounds, [region]);
+    final high = await PhotoMask.create(bounds, [region], maxDimension: 4096);
+    try {
+      expect(low.image.width, 2048);
+      expect(low.regions, isEmpty);
+      expect(high.image.width, 4096);
+      expect(high.regions, contains(region));
+      final bytes = (await high.image.toByteData())!.buffer.asUint8List();
+      expect(bytes[(100 * 4096 + 100) * 4 + 3], 255);
+      expect(bytes[(101 * 4096 + 101) * 4 + 3], 0);
+    } finally {
+      low.dispose();
+      high.dispose();
+    }
+  });
+
   test(
     'subtexel opaque islands cannot fill a texel or be reported as preserved',
     () async {

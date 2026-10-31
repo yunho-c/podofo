@@ -1,5 +1,4 @@
 import 'dart:ffi';
-import 'dart:isolate';
 import 'dart:math' as math;
 import 'dart:typed_data';
 
@@ -10,6 +9,7 @@ import 'package:pdfium_dart/pdfium_dart.dart';
 
 import 'photo_classifier.dart';
 import 'photo_coverage.dart';
+import 'photo_quality.dart';
 
 /// Crop-relative, unrotated PDF coordinates (positive y upwards), like pdfrx.
 class PhotoRegion {
@@ -23,6 +23,35 @@ class PhotoRegion {
       top > other.bottom;
 }
 
+/// Actual native raster and detached rendering maps, independent of identity.
+class PhotoRenderCoverage {
+  const PhotoRenderCoverage({
+    required this.opaque,
+    required this.nonzero,
+    required this.alphaWidth,
+    required this.alphaHeight,
+    this.alphaScale = 1,
+    this.limitation,
+  });
+  final PhotoCoverage opaque, nonzero;
+  final int alphaWidth, alphaHeight, alphaScale;
+  final String? limitation;
+  PhotoRenderCoverage limited(String reason) => PhotoRenderCoverage(
+    opaque: opaque,
+    nonzero: nonzero,
+    alphaWidth: alphaWidth,
+    alphaHeight: alphaHeight,
+    alphaScale: alphaScale,
+    limitation: reason,
+  );
+  PhotoCoverage? select(bool translucent) {
+    final selected = translucent && nonzero.fingerprint != opaque.fingerprint
+        ? nonzero
+        : opaque;
+    return selected.isFull ? null : selected;
+  }
+}
+
 class PhotoCandidate {
   const PhotoCandidate(
     this.objectIndex,
@@ -32,6 +61,7 @@ class PhotoCandidate {
     this.sampleHash,
     this.coverage,
     this.translucentCoverage,
+    this.renderCoverage,
     this.objectPath = const [],
   });
   final int objectIndex;
@@ -52,8 +82,14 @@ class PhotoCandidate {
   /// Null when the strict coverage can be reused; may be a full rectangle.
   final PhotoCoverage? translucentCoverage;
 
-  PhotoCoverage? renderingCoverage({bool includeTranslucent = false}) =>
-      includeTranslucent ? translucentCoverage ?? coverage : coverage;
+  final PhotoRenderCoverage? renderCoverage;
+
+  PhotoCoverage? renderingCoverage({bool includeTranslucent = false}) {
+    if (renderCoverage != null) {
+      return renderCoverage!.select(includeTranslucent);
+    }
+    return includeTranslucent ? translucentCoverage ?? coverage : coverage;
+  }
 
   /// Hash of the cropped, oriented sample and, for masked images, its coverage.
   final String? sampleHash;
@@ -124,17 +160,23 @@ class PhotoPageAnalysis {
 /// per session read lock, yielding to pdfrx and other visible pages between calls.
 Future<PhotoPageAnalysis> analyzePhotos(
   PdfDocument document,
-  int pageNumber,
-) async {
+  int pageNumber, {
+  PhotoQuality quality = const PhotoQuality(),
+}) async {
   PhotoPageAnalysis? result;
   do {
-    result = await analyzePhotoBatch(document, pageNumber, previous: result);
+    result = await analyzePhotoBatch(
+      document,
+      pageNumber,
+      previous: result,
+      quality: quality,
+    );
   } while (!result.isComplete);
   return result;
 }
 
 /// Only detached metadata/coverage crosses batches. Caller supplies results from
-/// the same session, page and revision, holding its read lock until completion.
+/// the same session, page, revision and quality, holding its read lock until completion.
 Future<PhotoPageAnalysis> analyzePhotoBatch(
   PdfDocument document,
   int pageNumber, {
@@ -143,25 +185,27 @@ Future<PhotoPageAnalysis> analyzePhotoBatch(
   int maxImages = 8,
   int maxPixels = 8000000,
   Duration timeBudget = const Duration(milliseconds: 20),
+  PhotoQuality quality = const PhotoQuality(),
 }) {
+  // Obtain the address while serialized, then run on PDFium's owning worker.
+  // The caller's document/session lease spans both awaits. Importing resources
+  // can invoke isolate-local file/font callbacks, so a fresh Isolate.run is unsafe.
   final modulePath = Pdfrx.pdfiumModulePath;
-  return document.useNativeDocumentHandle(
-    (handle) => _analyzeOffThread(
-      handle,
-      pageNumber,
-      modulePath,
-      previous,
-      priority,
-      maxImages,
-      maxPixels,
-      timeBudget,
-    ),
+  return _queuePhotoBatch(
+    document,
+    pageNumber,
+    modulePath,
+    previous,
+    priority,
+    maxImages,
+    maxPixels,
+    timeBudget,
+    quality,
   );
 }
 
-// Separate scope prevents the isolate closure from capturing the document/lease.
-Future<PhotoPageAnalysis> _analyzeOffThread(
-  int handle,
+Future<PhotoPageAnalysis> _queuePhotoBatch(
+  PdfDocument document,
   int page,
   String? path,
   PhotoPageAnalysis? previous,
@@ -169,21 +213,38 @@ Future<PhotoPageAnalysis> _analyzeOffThread(
   int maxImages,
   int maxPixels,
   Duration timeBudget,
-) => Isolate.run(
-  () => inspectPhotoPage(
-    handle,
-    page,
-    path,
-    previous: previous,
-    priority: priority,
-    maxImages: maxImages,
-    maxPixels: maxPixels,
-    timeBudget: timeBudget,
-  ),
-);
+  PhotoQuality quality,
+) async {
+  final handle = await document.useNativeDocumentHandle((address) => address);
+  return PdfrxEntryFunctions.instance.compute(
+    (job) => inspectPhotoPage(
+      job.handle,
+      job.page,
+      job.path,
+      previous: job.previous,
+      priority: job.priority,
+      maxImages: job.maxImages,
+      maxPixels: job.maxPixels,
+      timeBudget: job.timeBudget,
+      quality: job.quality,
+    ),
+    (
+      handle: handle,
+      page: page,
+      path: path,
+      previous: previous,
+      priority: priority,
+      maxImages: maxImages,
+      maxPixels: maxPixels,
+      timeBudget: timeBudget,
+      quality: quality,
+    ),
+  );
+}
 
-/// Call only while PDFium is locked. The first batch inventories the page; each
-/// continuation decodes a bounded portion, re-resolving paths in a fresh page.
+/// Call on the owning PDFium worker with the document lease held. The first
+/// batch inventories the page; each continuation decodes a bounded portion,
+/// re-resolving paths in a fresh page.
 PhotoPageAnalysis inspectPhotoPage(
   int handle,
   int pageNumber,
@@ -193,6 +254,7 @@ PhotoPageAnalysis inspectPhotoPage(
   int maxImages = 8,
   int maxPixels = 8000000,
   Duration timeBudget = const Duration(milliseconds: 20),
+  PhotoQuality quality = const PhotoQuality(),
 }) {
   if (previous?.isComplete ?? false) return previous!;
   final watch = Stopwatch()..start();
@@ -204,6 +266,7 @@ PhotoPageAnalysis inspectPhotoPage(
   if (page == nullptr) {
     return PhotoPageAnalysis.failed(previous, 'page-unavailable');
   }
+  final scaledPage = _ScaledAnalysisPage(api, handle, pageNumber);
   try {
     if (previous != null) {
       final results = previous.candidates.toList();
@@ -216,12 +279,15 @@ PhotoPageAnalysis inspectPhotoPage(
       });
       var completed = 0, pixels = 0;
       for (final work in pending) {
+        final extraPixels = quality.alphaScale > 1
+            ? _scaledRenderPlan(work.localTransform, quality.alphaScale).pixels
+            : 0;
         // Always admit one bounded image, even when page loading consumed the
         // time slice or this image exceeds the batch's target pixel allowance.
         // Otherwise a costly image could remain pending forever.
         if (completed > 0 &&
             (completed >= maxImages ||
-                pixels + work.pixels > maxPixels ||
+                pixels + work.pixels + extraPixels > maxPixels ||
                 watch.elapsed > timeBudget)) {
           break;
         }
@@ -232,6 +298,7 @@ PhotoPageAnalysis inspectPhotoPage(
         String? sampleHash;
         PhotoCoverage? coverage;
         PhotoCoverage? translucentCoverage;
+        PhotoRenderCoverage? renderCoverage;
         if (object == nullptr) {
           reason = 'image-unavailable';
         } else {
@@ -255,6 +322,29 @@ PhotoPageAnalysis inspectPhotoPage(
                 // Keep strict resolution/identities unchanged for the preview.
                 maxCells: (512 * 1024 ~/ results.length.clamp(1, 2000)) * 8,
               );
+              if (inspected != null) {
+                renderCoverage = _describeCoverage(
+                  api,
+                  rendered,
+                  image,
+                  const PhotoQuality(),
+                  1,
+                  inspected,
+                );
+                // A larger coverage grid at 1x can reuse this exact native raster.
+                if (quality.customCoverage && quality.alphaScale == 1) {
+                  renderCoverage =
+                      _renderCoverage(
+                        api,
+                        rendered,
+                        image,
+                        quality,
+                        results.length,
+                        1,
+                      ) ??
+                      renderCoverage.limited('coverage-unavailable');
+                }
+              }
             } finally {
               api.FPDFBitmap_Destroy(rendered);
             }
@@ -297,6 +387,34 @@ PhotoPageAnalysis inspectPhotoPage(
             }
           }
         }
+        if (classification != null && quality.alphaScale > 1) {
+          final image = work.bind(object, before.objectPath);
+          final scaled = scaledPage.render(image, quality.alphaScale);
+          if (scaled.bitmap != nullptr) {
+            try {
+              pixels +=
+                  api.FPDFBitmap_GetWidth(scaled.bitmap) *
+                  api.FPDFBitmap_GetHeight(scaled.bitmap);
+              renderCoverage =
+                  _renderCoverage(
+                    api,
+                    scaled.bitmap,
+                    image,
+                    quality,
+                    results.length,
+                    scaled.scale,
+                    limitation: scaled.limitation,
+                  ) ??
+                  renderCoverage?.limited('scaled-coverage-unavailable');
+            } finally {
+              api.FPDFBitmap_Destroy(scaled.bitmap);
+            }
+          } else if (renderCoverage != null) {
+            renderCoverage = renderCoverage.limited(
+              scaled.limitation ?? 'alpha-render-unavailable',
+            );
+          }
+        }
         results[work.index] = PhotoCandidate(
           before.objectIndex,
           reason,
@@ -306,6 +424,7 @@ PhotoPageAnalysis inspectPhotoPage(
           sampleHash: sampleHash,
           coverage: coverage,
           translucentCoverage: translucentCoverage,
+          renderCoverage: renderCoverage,
         );
         completed++;
       }
@@ -458,6 +577,7 @@ PhotoPageAnalysis inspectPhotoPage(
       );
     });
   } finally {
+    scaledPage.dispose();
     api.FPDF_ClosePage(page);
   }
 }
@@ -947,6 +1067,7 @@ class _FilledPath {
   FPDF_BITMAP bitmap,
   _Object image, {
   required int maxCells,
+  int maxDimension = 256,
 }) {
   final width = api.FPDFBitmap_GetWidth(bitmap);
   final height = api.FPDFBitmap_GetHeight(bitmap);
@@ -1001,10 +1122,10 @@ class _FilledPath {
   }
   final scale = math.min(
     1.0,
-    math.min(256 / math.max(nx, ny), math.sqrt(maxCells / (nx * ny))),
+    math.min(maxDimension / math.max(nx, ny), math.sqrt(maxCells / (nx * ny))),
   );
-  final cols = (nx * scale).floor().clamp(1, 256);
-  final rows = (ny * scale).floor().clamp(1, 256);
+  final cols = (nx * scale).floor().clamp(1, maxDimension);
+  final rows = (ny * scale).floor().clamp(1, maxDimension);
   final cells = Uint8List(cols * rows);
   final nonzeroCells = Uint8List(cols * rows);
   final inverse = image.parentTransform.inverse;
@@ -1026,8 +1147,200 @@ class _FilledPath {
       if (alpha != 0) nonzeroCells[y * cols + x] = 1;
     }
   }
+  final opaque = PhotoCoverage.fromCells(cols, rows, cells);
+  final nonzero = PhotoCoverage.fromCells(cols, rows, nonzeroCells);
   return (
-    opaque: PhotoCoverage.fromCells(cols, rows, cells),
-    nonzero: PhotoCoverage.fromCells(cols, rows, nonzeroCells),
+    opaque: opaque,
+    nonzero: nonzero.fingerprint == opaque.fingerprint ? opaque : nonzero,
+  );
+}
+
+PhotoRenderCoverage? _renderCoverage(
+  PDFium api,
+  FPDF_BITMAP bitmap,
+  _Object image,
+  PhotoQuality quality,
+  int imageCount,
+  int scale, {
+  String? limitation,
+}) {
+  final cells = (quality.coverageBytesPerMap ~/ imageCount.clamp(1, 2000)) * 8;
+  final maps = _imageCoverage(
+    api,
+    bitmap,
+    image,
+    maxCells: cells,
+    maxDimension: quality.coverageDimension,
+  );
+  if (maps == null) return null;
+  return _describeCoverage(
+    api,
+    bitmap,
+    image,
+    quality,
+    scale,
+    maps,
+    limitation: limitation,
+  );
+}
+
+PhotoRenderCoverage _describeCoverage(
+  PDFium api,
+  FPDF_BITMAP bitmap,
+  _Object image,
+  PhotoQuality quality,
+  int scale,
+  ({PhotoCoverage opaque, PhotoCoverage nonzero}) maps, {
+  String? limitation,
+}) {
+  final width = api.FPDFBitmap_GetWidth(bitmap);
+  final height = api.FPDFBitmap_GetHeight(bitmap);
+  final local = image.parentTransform.inverse.rect(image.visible);
+  final bounds = image.localTransform.rect(const PhotoRegion(0, 0, 1, 1));
+  var nx = (local.right - local.left) * width / (bounds.right - bounds.left);
+  var ny = (local.top - local.bottom) * height / (bounds.top - bounds.bottom);
+  if (image.parentTransform.a.abs() < image.parentTransform.c.abs()) {
+    final swap = nx;
+    nx = ny;
+    ny = swap;
+  }
+  final unbudgeted = math.min(
+    1.0,
+    quality.coverageDimension / math.max(nx, ny),
+  );
+  final budgetLimited =
+      !maps.opaque.isFull &&
+      (maps.opaque.width <
+              (nx * unbudgeted).floor().clamp(1, quality.coverageDimension) ||
+          maps.opaque.height <
+              (ny * unbudgeted).floor().clamp(1, quality.coverageDimension));
+  final limitations = [?limitation, if (budgetLimited) 'coverage-page-budget'];
+  return PhotoRenderCoverage(
+    opaque: maps.opaque,
+    nonzero: maps.nonzero,
+    alphaWidth: width,
+    alphaHeight: height,
+    alphaScale: scale,
+    limitation: limitations.isEmpty ? null : limitations.join(', '),
+  );
+}
+
+/// Lazily imports one page per batch. All matrix edits are confined to this
+/// disposable document; the viewer's objects and dirty state are untouched.
+class _ScaledAnalysisPage {
+  _ScaledAnalysisPage(this.api, this.sourceHandle, this.pageNumber);
+  final PDFium api;
+  final int sourceHandle, pageNumber;
+  FPDF_DOCUMENT document = nullptr;
+  FPDF_PAGE page = nullptr;
+  bool attempted = false;
+
+  ({FPDF_BITMAP bitmap, int scale, String? limitation}) render(
+    _Object image,
+    int requestedScale,
+  ) {
+    final m = image.localTransform;
+    final scale = _scaledRenderPlan(m, requestedScale).scale;
+    if (scale == 1) {
+      return (bitmap: nullptr, scale: 1, limitation: 'alpha-pixel-budget');
+    }
+    if (!attempted) {
+      attempted = true;
+      document = api.FPDF_CreateNewDocument();
+      if (document != nullptr) {
+        using((arena) {
+          final index = arena<Int>()..value = pageNumber - 1;
+          if (api.FPDF_ImportPagesByIndex(
+                document,
+                Pointer<fpdf_document_t__>.fromAddress(sourceHandle),
+                index,
+                1,
+                0,
+              ) !=
+              0) {
+            page = api.FPDF_LoadPage(document, 0);
+          }
+        });
+      }
+    }
+    if (page == nullptr) {
+      return (bitmap: nullptr, scale: 1, limitation: 'alpha-copy-unavailable');
+    }
+    final object = _resolveImage(api, page, image.path);
+    if (object == nullptr) {
+      return (
+        bitmap: nullptr,
+        scale: 1,
+        limitation: 'alpha-copy-object-unavailable',
+      );
+    }
+    // Verify that importing preserved the addressed object's geometry. Do not
+    // render another object if a future importer changes the display-list order.
+    final matches = using((arena) {
+      final matrix = arena<FS_MATRIX>();
+      if (api.FPDFPageObj_GetMatrix(object, matrix) == 0) return false;
+      final actual = _Transform.fromNative(matrix.ref);
+      return (actual.a - m.a).abs() < .001 &&
+          (actual.b - m.b).abs() < .001 &&
+          (actual.c - m.c).abs() < .001 &&
+          (actual.d - m.d).abs() < .001 &&
+          (actual.e - m.e).abs() < .001 &&
+          (actual.f - m.f).abs() < .001;
+    });
+    if (!matches ||
+        api.FPDFImageObj_SetMatrix(
+              object,
+              m.a * scale,
+              m.b * scale,
+              m.c * scale,
+              m.d * scale,
+              m.e * scale,
+              m.f * scale,
+            ) ==
+            0) {
+      return (
+        bitmap: nullptr,
+        scale: 1,
+        limitation: 'alpha-copy-matrix-unavailable',
+      );
+    }
+    try {
+      final bitmap = api.FPDFImageObj_GetRenderedBitmap(document, page, object);
+      return (
+        bitmap: bitmap,
+        scale: scale,
+        limitation: bitmap == nullptr
+            ? 'alpha-render-unavailable'
+            : scale != requestedScale
+            ? 'alpha-pixel-budget'
+            : null,
+      );
+    } finally {
+      // Imported Form resources may be reused. Restore the copy before the next
+      // placement is resolved; the returned bitmap is independent of the object.
+      api.FPDFImageObj_SetMatrix(object, m.a, m.b, m.c, m.d, m.e, m.f);
+    }
+  }
+
+  void dispose() {
+    if (page != nullptr) api.FPDF_ClosePage(page);
+    if (document != nullptr) api.FPDF_CloseDocument(document);
+  }
+}
+
+({int scale, int pixels}) _scaledRenderPlan(
+  _Transform matrix,
+  int requestedScale,
+) {
+  final w = math.sqrt(matrix.a * matrix.a + matrix.c * matrix.c);
+  final h = math.sqrt(matrix.b * matrix.b + matrix.d * matrix.d);
+  var scale = requestedScale;
+  // Keep the existing 4 MP native allocation ceiling at every quality level.
+  while (scale > 1 && (w * scale).ceil() * (h * scale).ceil() > 4000000) {
+    scale ~/= 2;
+  }
+  return (
+    scale: scale,
+    pixels: scale == 1 ? 0 : (w * scale).ceil() * (h * scale).ceil(),
   );
 }

@@ -10,6 +10,7 @@ import 'photo_cache.dart';
 import 'photo_diagnostics.dart';
 import 'photo_geometry.dart';
 import 'photo_mask.dart';
+import 'photo_quality.dart';
 import 'photo_overrides.dart';
 import 'photo_override_overlay.dart';
 
@@ -30,6 +31,7 @@ class PhotoPreservingFilter extends StatefulWidget {
     required this.child,
     this.showDiagnostics = false,
     this.includeTranslucent = false,
+    this.quality = const PhotoQuality(),
     this.diagnostics,
   });
   final PdfSession session;
@@ -42,6 +44,7 @@ class PhotoPreservingFilter extends StatefulWidget {
   final Widget child;
   final bool showDiagnostics;
   final bool includeTranslucent;
+  final PhotoQuality quality;
   final PhotoDiagnosticsController? diagnostics;
 
   @override
@@ -52,18 +55,20 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
   static final _disabled = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
   late PhotoAnalysisCache _cache;
   FragmentShader? _shader;
-  final _masks = PhotoMaskCache();
+  late PhotoMaskCache _masks;
   List<Rect>? _maskLayout;
 
   @override
   void initState() {
     super.initState();
     _createCache();
+    _masks = PhotoMaskCache(maxDimension: widget.quality.textureDimension);
     _shader = widget.program?.fragmentShader();
   }
 
   void _createCache() {
     final session = widget.session;
+    final quality = widget.quality;
     _cache = PhotoAnalysisCache((page, previous, priority) {
       final revision = widget.revision;
       return session.readLocked((pdf) {
@@ -75,9 +80,10 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           page,
           previous: previous,
           priority: priority,
+          quality: quality,
         );
       });
-    });
+    }, capacity: quality.cachePages);
   }
 
   @override
@@ -86,7 +92,8 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
     if (oldWidget.diagnostics != widget.diagnostics) {
       oldWidget.diagnostics?.publish(null);
     }
-    if (!identical(oldWidget.session, widget.session)) {
+    if (!identical(oldWidget.session, widget.session) ||
+        !oldWidget.quality.sameCoverage(widget.quality)) {
       _cache.dispose();
       _masks.invalidate();
       _maskLayout = null;
@@ -94,6 +101,10 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
     } else if (oldWidget.revision != widget.revision) {
       _cache.invalidate();
       _masks.invalidate();
+    }
+    if (oldWidget.quality.textureDimension != widget.quality.textureDimension) {
+      _masks.dispose();
+      _masks = PhotoMaskCache(maxDimension: widget.quality.textureDimension);
     }
     if (oldWidget.program != widget.program) {
       final oldShader = _shader;
@@ -232,6 +243,14 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
                         ? 'preservation-off'
                         : shader == null
                         ? 'selective-shader-unavailable'
+                        : candidate
+                                  .renderingCoverage(
+                                    includeTranslucent:
+                                        widget.includeTranslucent,
+                                  )
+                                  ?.isEmpty ==
+                              true
+                        ? 'empty-rendering-coverage'
                         : _masks.failed
                         ? 'mask-unavailable'
                         : 'mask-pending',
@@ -260,6 +279,9 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
               revision: widget.revision,
               pages: diagnosticPages,
               omittedPages: omittedPages,
+              pageCapacity: _cache.capacity,
+              textureWidth: _masks.current?.image.width,
+              textureHeight: _masks.current?.image.height,
             )
           : null;
       widget.diagnostics?.publish(snapshot);

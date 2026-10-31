@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/dark_mode/photo_filter.dart';
+import 'package:podofo_one/src/dark_mode/photo_quality.dart';
 import 'package:podofo_one/src/dark_mode/photo_override_overlay.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 
@@ -151,6 +152,7 @@ void main() {
         final controller = PdfViewerController();
         var enabled = true, selective = true, pdfDowns = 0;
         var includeTranslucent = false;
+        var quality = const PhotoQuality();
         late StateSetter update;
         addTearDown(() async {
           await tester.pumpWidget(const SizedBox());
@@ -181,6 +183,7 @@ void main() {
                       enabled: enabled,
                       selective: selective,
                       includeTranslucent: includeTranslucent,
+                      quality: quality,
                       twoPages: false,
                       strength: 1,
                       defaultShader: original,
@@ -327,6 +330,46 @@ void main() {
           matchesRegion(preview, dark, plot.rect);
           expect(entries().map((e) => e.target), targets);
           expect(session.photoOverrides.count, 0);
+          final matrixBefore = controller.value.clone();
+          update(
+            () => quality = const PhotoQuality(
+              alphaScale: 4,
+              coverageDimension: 1024,
+              textureDimension: 4096,
+            ),
+          );
+          final high = await capture(name: 'photo-resolution-high');
+          matchesRegion(
+            high,
+            natural,
+            photo.rect,
+            holes: dark,
+            translucent: true,
+          );
+          matchesRegion(high, dark, plot.rect);
+          expect(entries().map((e) => e.target), targets);
+          expect(controller.value, matrixBefore);
+          // Rapid changes must discard stale native/texture results.
+          for (final q in [
+            const PhotoQuality(alphaScale: 2),
+            const PhotoQuality(),
+            const PhotoQuality(alphaScale: 4, coverageDimension: 512),
+          ]) {
+            update(() => quality = q);
+            await tester.pump();
+          }
+          matchesRegion(
+            await capture(),
+            natural,
+            photo.rect,
+            holes: dark,
+            translucent: true,
+          );
+          update(() => quality = const PhotoQuality());
+          final resetQuality = await capture();
+          expect(resetQuality, preview);
+          expect(entries().map((e) => e.target), targets);
+          expect(session.photoOverrides.count, 0);
           update(() => includeTranslucent = false);
           final restored = await capture();
           matchesRegion(restored, automatic, photo.rect);
@@ -436,7 +479,7 @@ Future<void> _wait(WidgetTester tester, bool Function() ready) async {
 }
 
 Future<void> _settle(WidgetTester tester) async {
-  for (var i = 0; i < 15; i++) {
+  for (var i = 0; i < 60; i++) {
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 10)),
     );

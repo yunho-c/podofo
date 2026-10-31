@@ -88,10 +88,14 @@ class PhotoDiagnosticsSnapshot {
     required this.revision,
     required this.pages,
     this.omittedPages = 0,
+    this.pageCapacity = 64,
+    this.textureWidth,
+    this.textureHeight,
   });
   final int revision;
   final List<PhotoDiagnosticPage> pages;
-  final int omittedPages;
+  final int omittedPages, pageCapacity;
+  final int? textureWidth, textureHeight;
   Iterable<PhotoDiagnosticEntry> get entries => pages.expand((p) => p.entries);
 }
 

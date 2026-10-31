@@ -49,10 +49,10 @@ class PhotoMask {
 
   static Future<PhotoMask> create(
     ui.Rect bounds,
-    List<PhotoMaskRegion> regions,
-  ) async {
-    const maxDimension =
-        2048; // At most 16 MiB RGBA; independent of panel count.
+    List<PhotoMaskRegion> regions, {
+    int maxDimension = 2048,
+  }) async {
+    assert(maxDimension == 2048 || maxDimension == 4096);
     final scale = maxDimension / math.max(bounds.width, bounds.height);
     final width = (bounds.width * scale).ceil().clamp(1, maxDimension);
     final height = (bounds.height * scale).ceil().clamp(1, maxDimension);
@@ -188,8 +188,11 @@ class _Request {
 /// One published mask, one in-flight build, and one coalesced latest request.
 /// Panning within the same page band changes shader uniforms, not the texture.
 class PhotoMaskCache extends ChangeNotifier {
-  PhotoMaskCache({PhotoMaskBuilder? builder})
-    : _builder = builder ?? PhotoMask.create;
+  PhotoMaskCache({PhotoMaskBuilder? builder, int maxDimension = 2048})
+    : _builder =
+          builder ??
+          ((bounds, regions) =>
+              PhotoMask.create(bounds, regions, maxDimension: maxDimension));
   final PhotoMaskBuilder _builder;
   PhotoMask? current;
   _Request? _wanted, _finished;

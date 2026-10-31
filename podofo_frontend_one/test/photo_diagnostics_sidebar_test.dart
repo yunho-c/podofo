@@ -11,6 +11,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/dark_mode/photo_analysis.dart';
 import 'package:podofo_one/src/dark_mode/photo_coverage.dart';
+import 'package:podofo_one/src/dark_mode/photo_quality.dart';
 import 'package:podofo_one/src/dark_mode/photo_diagnostics.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/photo_diagnostics_provider.dart';
@@ -85,6 +86,54 @@ void main() {
       await tester.pumpAndSettle();
       expect(container.read(showPhotoDiagnosticsProvider), isFalse);
       expect(container.read(includeTranslucentPhotoPixelsProvider), isFalse);
+      expect(container.read(photoQualityProvider).alphaScale, 1);
+      expect(container.read(photoQualityProvider).coverageDimension, 256);
+      expect(container.read(photoQualityProvider).textureDimension, 2048);
+      for (final key in [
+        'photo-alpha-scale-4',
+        'photo-coverage-size-1024',
+        'photo-texture-size-4096',
+      ]) {
+        final control = find.byKey(ValueKey(key));
+        await tester.ensureVisible(control);
+        await tester.tap(control);
+        await tester.pumpAndSettle();
+      }
+      final quality = container.read(photoQualityProvider);
+      expect(quality.alphaScale, 4);
+      expect(quality.coverageDimension, 1024);
+      expect(quality.textureDimension, 4096);
+      expect(quality.cachePages, 3);
+      expect(
+        quality.cachePages * quality.pageCoverageBytes,
+        lessThanOrEqualTo(PhotoQuality.cacheCoverageBytes),
+      );
+      expect(container.read(showPhotoDiagnosticsProvider), isFalse);
+      expect(container.read(includeTranslucentPhotoPixelsProvider), isFalse);
+      final reset = find.byKey(const ValueKey('photo-quality-reset'));
+      await tester.ensureVisible(reset);
+      await tester.tap(reset);
+      await tester.pumpAndSettle();
+      expect(container.read(photoQualityProvider).alphaScale, 1);
+      expect(container.read(photoQualityProvider).coverageDimension, 256);
+      expect(container.read(photoQualityProvider).textureDimension, 2048);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('photo-alpha-scale-1')),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(const ValueKey('sidebar-capture')),
+        );
+        final image = await boundary.toImage();
+        final file = File('build/photo-dark-mode/resolution-controls.png');
+        file.parent.createSync(recursive: true);
+        file.writeAsBytesSync(
+          (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer
+              .asUint8List(),
+        );
+        image.dispose();
+      });
       final translucentToggle = find.byKey(
         const ValueKey('photo-translucent-toggle'),
       );
@@ -160,6 +209,22 @@ void main() {
           2,
           Uint8List.fromList([1, 1, 1, 0]),
         ),
+        renderCoverage: PhotoRenderCoverage(
+          opaque: PhotoCoverage.fromCells(
+            2,
+            2,
+            Uint8List.fromList([1, 0, 1, 0]),
+          ),
+          nonzero: PhotoCoverage.fromCells(
+            2,
+            2,
+            Uint8List.fromList([1, 1, 1, 0]),
+          ),
+          alphaWidth: 640,
+          alphaHeight: 480,
+          alphaScale: 2,
+          limitation: 'coverage-page-budget',
+        ),
       );
       final maskedEntry = PhotoDiagnosticEntry(
         pageNumber: 1,
@@ -172,6 +237,8 @@ void main() {
       diagnostics.publish(
         PhotoDiagnosticsSnapshot(
           revision: session.revision,
+          textureWidth: 4096,
+          textureHeight: 2048,
           pages: [
             PhotoDiagnosticPage(1, PhotoPageAnalysis(candidates: [masked]), [
               maskedEntry,
@@ -181,6 +248,13 @@ void main() {
       );
       await tester.pumpAndSettle();
       await expand('${maskedEntry.label} · preserved');
+      expect(find.text('Alpha render: 640 × 480 (2×)'), findsOneWidget);
+      expect(find.text('Coverage: 2 × 2'), findsOneWidget);
+      expect(
+        find.text('Resolution limited: coverage-page-budget'),
+        findsOneWidget,
+      );
+      expect(find.text('Preservation texture: 4096 × 2048'), findsOneWidget);
       expect(
         find.textContaining('Nonzero-alpha footprint: 75.0%'),
         findsOneWidget,
@@ -234,6 +308,11 @@ void main() {
       await tester.pumpWidget(const SizedBox());
       container.read(includeTranslucentPhotoPixelsProvider.notifier).state =
           true;
+      container.read(photoQualityProvider.notifier).state = const PhotoQuality(
+        alphaScale: 4,
+        coverageDimension: 1024,
+        textureDimension: 4096,
+      );
       container.dispose();
       final fresh = ProviderContainer();
       expect(
@@ -241,6 +320,9 @@ void main() {
         isFalse,
         reason: 'Developer preview is not persisted',
       );
+      expect(fresh.read(photoQualityProvider).alphaScale, 1);
+      expect(fresh.read(photoQualityProvider).coverageDimension, 256);
+      expect(fresh.read(photoQualityProvider).textureDimension, 2048);
       fresh.dispose();
       await tester.runAsync(() async {
         await session.close();

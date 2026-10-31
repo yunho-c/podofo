@@ -76,6 +76,54 @@ write leaves the previous choice intact.
 
 ## Developer diagnostics
 
+**Resolution comparison** offers three independent, temporary controls:
+
+| Control | Options (default first) |
+| --- | --- |
+| Alpha-render scale | 1×, 2×, 4× relative to PDFium's local image matrix |
+| Per-image mask | 256, 512, 1024 cells on the longer side |
+| Preservation texture | 2048, 4096 texels on the longer side of the visible page band |
+
+They work independently of diagnostic outlines and **Include translucent pixels**.
+**Reset resolutions** restores 1× / 256 / 2048. No setting is persisted or stored
+with the document. Expand diagnostics to see each actual alpha raster and coverage
+grid, the current GPU texture size, and any limiting budget/fallback. A small local
+render can still limit a large requested grid; these controls do not add pixels by
+interpolating an existing alpha bitmap. The final texture still covers whole visible
+pages, not just the viewport, and does not automatically refine on zoom.
+
+Changing alpha/grid settings clears the analysis cache and reanalyzes visible pages;
+changing only texture size rebuilds the GPU texture. Native scaling imports the page
+into a disposable document and changes only copied image matrices. Copies, pages and
+bitmaps are released within the batch. All native work runs on pdfrx's owning worker:
+importing a page may invoke file/font callbacks that cannot run on another isolate.
+Canonical classification and override hashes always use the original 1× / 256-cell
+analysis; separate rendering coverage can change without changing those decisions.
+
+Scaled bitmaps retain the 4-million-pixel allocation limit. A requested 4× scale
+falls back to 2× or 1× when necessary (`alpha-pixel-budget`). Copy/render failures
+use canonical coverage and report the reason. Higher grid settings multiply the
+per-map page allowance by 4 or 16, to 2 or 8 MiB; dense pages can still have smaller
+grids (`coverage-page-budget`). Retained coverage reserves at most 64 MiB, excluding
+metadata and transient copies: the page allowance determines a conservative cache
+capacity of 64 pages at defaults, 32 for alpha-only experiments, 12 at 512 cells,
+and 3 at 1024 cells. Extreme zoom-out reports pages outside that working set.
+A 4096² RGBA texture is at most 64 MiB, versus 16 MiB at 2048²; in-flight and retiring
+textures can temporarily add to that allocation.
+
+These are resolution experiments. Both alpha criteria and conservative min-pooling
+remain binary; no background recomposition or smooth-alpha preservation is applied.
+
+Resolution-control validation on 2026-10-31: 42 focused native, widget, cache,
+override and Impeller tests passed, along with static analysis, format/diff
+checks and the macOS Debug build. Tests verify actual 4× alpha dimensions, independent grid limits, crops,
+rotations, unchanged source page pixels and canonical override keys, dense-page
+budget fallback, a fine feature visible only at 4096 texels, sidebar state/reset,
+and GPU output after rapid quality changes and restoration of defaults. Sidebar
+and high-resolution fixture captures were visually inspected. This does not
+establish the best quality setting for real scientific figures.
+
+
 Under **Developer → Dark Mode**, **Include translucent pixels** temporarily
 previews binary preservation of nonzero image alpha. It defaults off, is not
 persisted, and works independently of the diagnostic-outline toggle. Dark mode,
@@ -145,10 +193,11 @@ evidence, not a new Release application build or interactive acceptance.
 
 `photo_analysis.dart` reads the **live session document**, not a separately opened
 source file. `PdfSession.readLocked` holds a document lease and serializes against
-edits, save and close. `useNativeDocumentHandle` in the pinned pdfrx engine pauses
-its PDFium worker throughout the awaited callback. Raw calls execute in a short
-auxiliary isolate while that worker remains suspended. All native pages and
-bitmaps are closed in `finally`; only detached geometry/decisions return. The
+edits, save and close. `useNativeDocumentHandle` briefly pauses the worker while
+obtaining the document address; after it resumes, `PdfrxEntryFunctions.compute`
+runs the native batch on that same owning worker. The session lease spans both
+steps. All native pages, temporary documents and bitmaps are closed in `finally`;
+only detached geometry/decisions/coverage return. The
 prototype never initializes or destroys the shared PDFium runtime.
 
 Inspection flattens page objects and nested Form XObjects into paint order using
@@ -257,7 +306,7 @@ session and revision changes invalidate it. At most one build is active and one
 latest request is queued; stale results are disposed. The previous valid mask can
 remain active while new coverage is built. Empty coverage needs no texture.
 
-Each texture is bounded to 2048 by 2048 RGBA pixels (at most 16 MiB). Whole texels
+By default, each texture is bounded to 2048 by 2048 RGBA pixels (at most 16 MiB); the developer control allows 4096 (64 MiB). Whole texels
 are rounded inward and the shader requires full alpha, so rasterization can
 slightly shrink a preserved edge instead of spilling into adjacent text. At large
 zoom or extreme zoom-out this bounded resolution can become visible. Old textures
@@ -289,8 +338,8 @@ image clear of overlays. Each continuation reopens the native page and resolves
 saved object paths; only detached geometry, decisions, coverage and pending metadata cross
 batches. No native page/object/bitmap handle is retained across a released lock.
 
-The viewer holds a session read lock for one batch and releases it, including
-pdfrx's worker suspension, before yielding for 32 ms. Pending visible pages are
+The viewer holds a session read lock for one batch, runs native work on pdfrx's
+owning worker, and releases the lock before yielding for 32 ms. Pending visible pages are
 served round-robin, with on-screen panels prioritized within each page. Each
 batch targets at most 8 images, 8 million source-plus-rendered pixels, or 20 ms.
 At least one individually bounded image is processed so expensive page loading or
@@ -298,7 +347,7 @@ a small work allowance cannot cause starvation. Native loading/decoding is not
 interruptible: the time allowance is a soft scheduling target, not a latency
 ceiling. The inventory and per-image limits remain separate hard admission gates.
 
-A 64-page LRU retains both completed decisions and pending work. Leaving a page
+At default quality, a 64-page LRU retains both completed decisions and pending work. Leaving a page
 pauses continuation; returning resumes it. Successful classifications are not
 re-decoded. Decode failures are terminal for that candidate; failed/stalled
 continuations preserve previously accepted regions and terminate instead of
@@ -306,13 +355,13 @@ retrying forever. Session/revision invalidation discards stale results. Disablin
 analysis or closing the viewer cancels scheduled delays; an active batch retains
 its lease until completion. An evicted page must be inventoried again.
 
-Coverage is bit-packed, at most 256 cells on either axis and 8 KiB per map per masked
+Default coverage is bit-packed, at most 256 cells on either axis and 8 KiB per map per masked
 image. A 512 KiB/page allowance per map is divided evenly across inventoried images;
 dense pages use lower-resolution maps rather than exhausting a first-come image
 budget. The strict and nonzero-alpha maps together retain at most 1 MiB/page,
 or 64 MiB for 64 cached pages, plus metadata and transient batch/texture-building
 copies. An identical preview map reuses strict coverage. Fully opaque images
-retain no coverage bitmap. Neither source colors nor native bitmap handles are cached.
+use the rectangle path with constant-sized coverage metadata. Neither source colors nor native bitmap handles are cached.
 
 There is no page-wide image-count or cumulative decode-pixel cutoff. Individual
 source/rendered bitmaps remain limited to 4 million pixels each. Pathological

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
 import '../../dark_mode/photo_diagnostics.dart';
+import '../../dark_mode/photo_quality.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/photo_diagnostics_provider.dart';
 
@@ -13,6 +14,9 @@ class PhotoDiagnosticsControls extends ConsumerWidget {
     final enabled = ref.watch(showPhotoDiagnosticsProvider);
     final includeTranslucent = ref.watch(includeTranslucentPhotoPixelsProvider);
     final session = ref.watch(currentDocumentProvider)?.session;
+    final quality = ref.watch(photoQualityProvider);
+    void setQuality(PhotoQuality value) =>
+        ref.read(photoQualityProvider.notifier).state = value;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       spacing: 8,
@@ -54,6 +58,38 @@ class PhotoDiagnosticsControls extends ConsumerWidget {
         const Text(
           'Temporary preview: preserve nonzero alpha in the same eligible images. Requires dark mode and Preserve photos.',
         ).small(),
+        _ResolutionChoices(
+          label: 'Alpha-render scale',
+          id: 'photo-alpha-scale',
+          options: const [1, 2, 4],
+          value: quality.alphaScale,
+          suffix: '×',
+          onChanged: (value) => setQuality(quality.copyWith(alphaScale: value)),
+        ),
+        _ResolutionChoices(
+          label: 'Per-image mask',
+          id: 'photo-coverage-size',
+          options: const [256, 512, 1024],
+          value: quality.coverageDimension,
+          onChanged: (value) =>
+              setQuality(quality.copyWith(coverageDimension: value)),
+        ),
+        _ResolutionChoices(
+          label: 'Preservation texture',
+          id: 'photo-texture-size',
+          options: const [2048, 4096],
+          value: quality.textureDimension,
+          onChanged: (value) =>
+              setQuality(quality.copyWith(textureDimension: value)),
+        ),
+        Text(
+          'Temporary settings. Changing alpha or mask resolution reanalyzes visible pages. Coverage cache: up to ${quality.cachePages} pages within 64 MiB.',
+        ).small(),
+        GhostButton(
+          key: const ValueKey('photo-quality-reset'),
+          onPressed: () => setQuality(const PhotoQuality()),
+          child: const Text('Reset resolutions'),
+        ),
         if (enabled) ...[
           const Text(
             'Green: preserved · Orange: rejected · Gray: skipped or inactive',
@@ -76,9 +112,14 @@ class PhotoDiagnosticsControls extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   spacing: 8,
                   children: [
+                    Text(
+                      snapshot.textureWidth == null
+                          ? 'Preservation texture: not ready or inactive'
+                          : 'Preservation texture: ${snapshot.textureWidth} × ${snapshot.textureHeight}',
+                    ).small(),
                     if (snapshot.omittedPages > 0)
                       Text(
-                        '${snapshot.omittedPages} visible pages skipped: 64-page analysis limit.',
+                        '${snapshot.omittedPages} visible pages skipped: ${snapshot.pageCapacity}-page coverage-cache limit.',
                       ).small(),
                     for (final page in snapshot.pages) _PageDetails(page: page),
                   ],
@@ -152,6 +193,18 @@ class _EntryDetails extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(entry.reason).small(),
+          if (entry.candidate.renderCoverage case final render?) ...[
+            Text(
+              'Alpha render: ${render.alphaWidth} × ${render.alphaHeight} (${render.alphaScale}×)',
+            ).small(),
+            Text(
+              coverage == null || coverage.isFull
+                  ? 'Coverage: opaque rectangle'
+                  : 'Coverage: ${coverage.width} × ${coverage.height}',
+            ).small(),
+            if (render.limitation != null)
+              Text('Resolution limited: ${render.limitation}').small(),
+          ],
           if (coverage != null)
             Text(
               entry.includeTranslucent
@@ -188,4 +241,48 @@ class _EntryDetails extends StatelessWidget {
       ),
     );
   }
+}
+
+class _ResolutionChoices extends StatelessWidget {
+  const _ResolutionChoices({
+    required this.label,
+    required this.id,
+    required this.options,
+    required this.value,
+    required this.onChanged,
+    this.suffix = '',
+  });
+  final String label, id, suffix;
+  final List<int> options;
+  final int value;
+  final ValueChanged<int> onChanged;
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    spacing: 4,
+    children: [
+      Text(label).small(),
+      Row(
+        spacing: 4,
+        children: [
+          for (final option in options)
+            Expanded(
+              child: Semantics(
+                selected: value == option,
+                label: '$label $option$suffix',
+                child: Button(
+                  key: ValueKey('$id-$option'),
+                  style: value == option
+                      ? const ButtonStyle.primary(size: ButtonSize.small)
+                      : const ButtonStyle.outline(size: ButtonSize.small),
+                  onPressed: () => onChanged(option),
+                  child: Text('$option$suffix'),
+                ),
+              ),
+            ),
+        ],
+      ),
+    ],
+  );
 }

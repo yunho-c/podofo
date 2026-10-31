@@ -522,6 +522,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       child: PhotoPreservingFilter(
         showDiagnostics: ref.watch(showPhotoDiagnosticsProvider),
         includeTranslucent: ref.watch(includeTranslucentPhotoPixelsProvider),
+        quality: ref.watch(photoQualityProvider),
         diagnostics: ref.watch(photoDiagnosticsProvider(document.session)),
         session: document.session,
         revision: document.session.revision,
