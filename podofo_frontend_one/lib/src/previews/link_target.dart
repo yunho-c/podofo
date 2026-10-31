@@ -6,6 +6,31 @@ import '../services/pdf_session.dart';
 
 const linkResolverVersion = 2;
 
+/// Consumer cancellation detaches subscriptions without stealing shared work.
+class PreviewCancellation {
+  bool _cancelled = false;
+  final _listeners = <void Function()>{};
+  bool get isCancelled => _cancelled;
+  void Function() onCancel(void Function() listener) {
+    if (_cancelled) {
+      listener();
+    } else {
+      _listeners.add(listener);
+    }
+    return () => _listeners.remove(listener);
+  }
+
+  void cancel() {
+    if (_cancelled) return;
+    _cancelled = true;
+    final listeners = _listeners.toList();
+    _listeners.clear();
+    for (final listener in listeners) {
+      listener();
+    }
+  }
+}
+
 /// Immutable identity captured before any asynchronous preparation.
 class LinkPreviewRequest {
   LinkPreviewRequest({

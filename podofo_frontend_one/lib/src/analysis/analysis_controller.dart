@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:podoco/podoco.dart' as podoco;
+import 'package:path/path.dart' as p;
 
 import '../services/pdf_session.dart';
 import 'analysis_store.dart';
 import 'preview_layout_repository.dart';
 import 'analysis_engine.dart';
+import 'analysis_coordinator.dart';
+import 'preview_layout_store.dart';
 import 'pdf_analysis_source.dart';
 
 /// One analysis lane shared by reader tabs, with only the visible page retained.
@@ -16,10 +20,45 @@ class AnalysisController extends ChangeNotifier {
     required this.store,
     this.open = NativeAnalysisEngine.open,
     this.openBundled,
-  });
+    this.openBundledLayout,
+    PreviewLayoutStore? previewStore,
+    this.inspectPreviewProfile,
+  }) : previewStore =
+           previewStore ??
+           PreviewLayoutStore(
+             Directory(
+               p.join(store.directory.parent.path, 'preview-layout-v1'),
+             ),
+           );
   final AnalysisStore store;
   final Future<AnalysisEngine> Function(AnalysisModelPaths) open;
   final Future<AnalysisEngine> Function(void Function(String))? openBundled;
+  final Future<AnalysisEngine> Function(void Function(String))?
+  openBundledLayout;
+  final PreviewLayoutStore previewStore;
+  final Future<PreviewLayoutProfile> Function()? inspectPreviewProfile;
+  late final coordinator = AnalysisCoordinator(
+    store: previewStore,
+    manualStore: store,
+    manualEngine: () => _engine,
+    openLayout: () {
+      final paths = modelPaths;
+      if (paths != null) return open(AnalysisModelPaths(paths.layout));
+      final bundled = openBundledLayout;
+      if (bundled == null) throw StateError('Automatic layout is unavailable');
+      return bundled((_) {});
+    },
+    inspectProfile: () =>
+        inspectPreviewProfile?.call() ??
+        NativeAnalysisEngine.previewProfile(
+          modelPaths,
+          customFormulaManifest: _engine?.manifests.length == 2
+              ? _engine!.manifests[1]
+              : null,
+        ),
+  );
+  PreviewLayoutRepository get previewRepository =>
+      PreviewLayoutRepository.onDemand(coordinator);
   AnalysisModelPaths? modelPaths;
   AnalysisEngine? _engine;
   DocumentAnalysisJob? _job;
@@ -152,6 +191,7 @@ class AnalysisController extends ChangeNotifier {
     Future<AnalysisEngine?> Function() create, {
     bool retireAnalysis = true,
   }) async {
+    void Function()? release;
     if (retireAnalysis) {
       _generation++;
       _job?.cancel();
@@ -159,6 +199,9 @@ class AnalysisController extends ChangeNotifier {
     error = null;
     visibleSnapshot = null;
     try {
+      if (retireAnalysis) {
+        release = await coordinator.beginExplicit(configurationChanged: true);
+      }
       if (retireAnalysis) await _operation;
       final previous = _engine;
       _engine = null;
@@ -169,10 +212,12 @@ class AnalysisController extends ChangeNotifier {
         return;
       }
       _engine = candidate;
+      coordinator.configurationReady();
       await _restore();
     } catch (e) {
       if (!_disposed) error = e.toString();
     } finally {
+      release?.call();
       _configuration = null;
       preparation = null;
       _notify();
@@ -196,7 +241,10 @@ class AnalysisController extends ChangeNotifier {
 
   Future<void> _prepareAndAnalyze() async {
     final session = _session!, document = _document!, generation = _generation;
+    void Function()? release;
     try {
+      release = await coordinator.beginExplicit();
+      if (!_current(generation, session, document)) return;
       if (_engine == null) {
         final paths = modelPaths;
         final task = _configure(
@@ -209,7 +257,10 @@ class AnalysisController extends ChangeNotifier {
       }
       if (_engine == null || !_current(generation, session, document)) return;
       await _analyze();
+    } catch (e) {
+      if (_current(generation, session, document)) error = e.toString();
     } finally {
+      release?.call();
       _operation = null;
       _notify();
     }
@@ -234,6 +285,12 @@ class AnalysisController extends ChangeNotifier {
             update.analysisId == job!.id;
         if (!current()) return;
         final saved = await store.apply(key, update, current);
+        if (saved != null &&
+            current() &&
+            (update is podoco.PageLayoutReady ||
+                update is podoco.PageFinished)) {
+          await coordinator.publishManual(saved, current);
+        }
         if (saved != null &&
             current() &&
             saved.page.page.key.pageIndex == _pageIndex) {
@@ -282,6 +339,7 @@ class AnalysisController extends ChangeNotifier {
     ++_generation;
     ++_viewGeneration;
     _job?.cancel();
+    await coordinator.close();
     await _operation;
     await _configuration;
     final engine = _engine;

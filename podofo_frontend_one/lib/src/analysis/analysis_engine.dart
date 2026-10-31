@@ -2,6 +2,8 @@ import 'package:podoco/podoco.dart' as podoco;
 import 'package:podoco_flutter/podoco_flutter.dart';
 import 'package:podoco_app_models/app_models.dart';
 
+import 'preview_layout_store.dart';
+
 class AnalysisModelPaths {
   const AnalysisModelPaths(this.layout, {this.formula});
   final String layout;
@@ -18,6 +20,12 @@ abstract interface class AnalysisEngine {
     podoco.PageSource pages,
     Future<void> Function(podoco.AnalysisUpdate) sink,
   );
+  DocumentAnalysisJob analyzePage(
+    podoco.PageSource pages,
+    int pageIndex,
+    Future<void> Function(podoco.AnalysisUpdate) sink, {
+    podoco.FormulaScope formulaScope = podoco.FormulaScope.none,
+  });
   Future<void> close();
 }
 
@@ -39,12 +47,21 @@ class NativeAnalysisEngine implements AnalysisEngine {
   bool get recognizesFormulas => _analyzer.capabilities.formulaRecognition;
   @override
   String get profile => _analyzer.profile;
-  static Future<AnalysisEngine> openBundled(
+  static Future<AnalysisEngine> openBundled(void Function(String) progress) =>
+      _openBundled(progress, true);
+
+  static Future<AnalysisEngine> openBundledLayout(
     void Function(String) progress,
+  ) => _openBundled(progress, false);
+
+  static Future<AnalysisEngine> _openBundled(
+    void Function(String) progress,
+    bool includeFormula,
   ) async => NativeAnalysisEngine._(
     await FlutterPodoco.openAnalyzer(
       pack: AppAnalysisPacks.documentAnalysis,
-      options: _options(true),
+      options: _options(includeFormula),
+      includeFormula: includeFormula,
       onProgress: (value) => progress(analysisPreparationText(value)),
     ),
   );
@@ -76,6 +93,31 @@ class NativeAnalysisEngine implements AnalysisEngine {
     );
   }
 
+  static Future<PreviewLayoutProfile> previewProfile(
+    AnalysisModelPaths? paths, {
+    String? customFormulaManifest,
+  }) async {
+    final podoco.ModelBundle layout;
+    String? formula;
+    if (paths == null) {
+      final verified = await const FlutterModelLoader().verifyLayout(
+        pack: AppAnalysisPacks.documentAnalysis,
+      );
+      layout = verified.layout;
+      formula = verified.pack.manifestHashes['formula'];
+    } else {
+      layout = await podoco.ModelBundle.verify(paths.layout);
+      formula = customFormulaManifest;
+    }
+    return PreviewLayoutProfile(
+      layoutManifest: layout.manifestSha256,
+      layoutModelId: layout.id,
+      layoutProfile: layout.profile,
+      formulaManifest: formula,
+      computePolicy: podoco.ComputePolicy.cpuAndNeuralEngine,
+    );
+  }
+
   @override
   DocumentAnalysisJob analyze(
     podoco.PageSource pages,
@@ -93,6 +135,25 @@ class NativeAnalysisEngine implements AnalysisEngine {
       ),
     ),
   );
+  @override
+  DocumentAnalysisJob analyzePage(
+    podoco.PageSource pages,
+    int pageIndex,
+    Future<void> Function(podoco.AnalysisUpdate) sink, {
+    podoco.FormulaScope formulaScope = podoco.FormulaScope.none,
+  }) => _NativeDocumentAnalysisJob(
+    _analyzer.analyzePage(
+      page: pages.pages[pageIndex],
+      loadPage: pages.loadPage,
+      onUpdate: sink,
+      options: podoco.AnalysisOptions(
+        profile: profile,
+        formulaScope: formulaScope,
+        requireReadingOrder: true,
+      ),
+    ),
+  );
+
   @override
   Future<void> close() => _analyzer.dispose();
 }

@@ -80,6 +80,33 @@ void main() {
     );
     expect(resources.locations, 0);
   });
+  test(
+    'layout-only opening rejects formula options before locating any assets',
+    () async {
+      final selection = await pack();
+      await expectLater(
+        loader.openAnalyzer(
+          pack: selection,
+          includeFormula: false,
+          formulaOptions: FormulaOptions(),
+          options: AnalyzerOptions(
+            computePolicy: ComputePolicy.cpuOnly,
+            limits: ResourceLimits(
+              queuedJobs: 1,
+              inputBytes: 4,
+              pendingUpdates: 1,
+              resultBytes: 1024,
+              maxUpdateBytes: 1024,
+              tensorBytes: 1024,
+              decoderCacheBytes: 1,
+            ),
+          ),
+        ),
+        throwsArgumentError,
+      );
+      expect(resources.locations, 0);
+    },
+  );
   test('missing and changed catalogs fail without fallback', () async {
     final selection = await pack();
     resources.root = null;

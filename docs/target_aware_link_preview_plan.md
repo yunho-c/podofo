@@ -12,7 +12,8 @@ are implemented; its native-window acceptance check remains pending. See the
 [M0 baseline report](target_aware_link_preview_m0.md). M1 resolution foundations
 are implemented; see the [M1 report](target_aware_link_preview_m1.md). M2 cached
 semantic previews are implemented; see the [M2 report](target_aware_link_preview_m2.md).
-M3 and later milestones remain pending.
+M3 on-demand layout analysis is implemented; see the [M3 report](target_aware_link_preview_m3.md).
+M4 and M5 remain pending.
 
 ## Scope and behavior
 

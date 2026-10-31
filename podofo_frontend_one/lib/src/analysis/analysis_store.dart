@@ -139,10 +139,40 @@ class AnalysisStore {
     } else {
       snapshot = AnalysisPageSnapshot.fromUpdate(update);
     }
+    return _writeSnapshot(key, snapshot, isCurrent);
+  });
+
+  /// Persist an owned projection without inventing an SDK event. The caller
+  /// chooses a separate namespace when dropping richer analysis content.
+  Future<AnalysisPageSnapshot?> writeSnapshot(
+    String key,
+    AnalysisPageSnapshot snapshot,
+    bool Function() isCurrent,
+  ) => _lock.synchronized(() async {
+    if (!isCurrent()) return null;
+    final previous = await _read(
+      key,
+      snapshot.page.page.key.pageIndex,
+      snapshot.page.page.key.document,
+    );
+    if (!isCurrent()) return null;
+    if (previous?.analysisId == snapshot.analysisId &&
+        snapshot.sequence <= previous!.sequence) {
+      return previous;
+    }
+    return _writeSnapshot(key, snapshot, isCurrent);
+  });
+
+  Future<AnalysisPageSnapshot?> _writeSnapshot(
+    String key,
+    AnalysisPageSnapshot snapshot,
+    bool Function() isCurrent,
+  ) async {
+    if (!isCurrent()) return null;
     if (!_matches(key, snapshot)) {
       throw StateError('Unexpected cached analysis provenance');
     }
-    final file = _file(key, index);
+    final file = _file(key, snapshot.page.page.key.pageIndex);
     final bytes = utf8.encode(
       jsonEncode({
         'cache_version': 2,
@@ -165,7 +195,7 @@ class AnalysisStore {
     } finally {
       await staging.delete(recursive: true);
     }
-  });
+  }
 
   Future<void> _prune() async {
     final files = <({File file, int bytes, DateTime modified})>[];

@@ -488,6 +488,14 @@ class ControlledEngine implements AnalysisEngine {
     closeCount++;
     job.finish();
   }
+
+  @override
+  DocumentAnalysisJob analyzePage(
+    podoco.PageSource pages,
+    int pageIndex,
+    Future<void> Function(podoco.AnalysisUpdate) sink, {
+    podoco.FormulaScope formulaScope = podoco.FormulaScope.none,
+  }) => throw UnimplementedError('This fixture exercises document analysis');
 }
 
 class ControlledJob implements DocumentAnalysisJob {

@@ -46,6 +46,14 @@ engines, and dispose them. The loader itself does not create a global singleton
 or load anything at app startup. The pure Dart and Rust path-based APIs remain
 available for command-line clients and developer overrides.
 
+Pass `includeFormula: false` to `openAnalyzer` for a layout-only engine. This
+skips formula component verification and opening even when the catalog includes
+FormulaNet. The default remains `true` for existing callers. Formula options are
+rejected when formula loading is disabled. Math rules always load independently.
+`FlutterModelLoader.verifyLayout` verifies the layout payload and returns its
+profile plus catalog metadata without opening Core ML or reading formula/math
+payloads; callers can use that identity to find compatible persisted layouts.
+
 The macOS plugin returns paths under the running application's canonical bundle.
 Only metadata crosses its method channel. No model bytes cross Dart, and models
 are never copied into Application Support. The Dart loader verifies the bounded,

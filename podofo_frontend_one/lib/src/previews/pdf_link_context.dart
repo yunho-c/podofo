@@ -89,8 +89,9 @@ class PdfLinkContext {
   Future<PreparedLinkPreview?> prepare(
     LinkPreviewRequest request,
     bool Function() current,
-    PreviewLayoutRepository? repository,
-  ) async {
+    PreviewLayoutRepository? repository, {
+    PreviewCancellation? cancellation,
+  }) async {
     bool valid() => request.isCurrent && current();
     if (!valid()) return null;
     final geometry = await request.session.readLocked((pdf) async {
@@ -134,7 +135,20 @@ class PdfLinkContext {
     }
     if (!valid()) return null;
     try {
-      layout = await repository?.read(request, isCurrent: valid);
+      // An explicit area already resolves without a model. Missing/restricted
+      // text cannot establish identity, so it must not trigger automatic work.
+      if (geometry?.destination != null &&
+          geometry!.destination!.area == null &&
+          source != null &&
+          source.spans.isNotEmpty &&
+          !source.truncated &&
+          target != null) {
+        layout = await repository?.read(
+          request,
+          isCurrent: valid,
+          cancellation: cancellation,
+        );
+      }
     } catch (_) {
       /* Cache miss. */
     }

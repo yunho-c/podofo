@@ -29,11 +29,13 @@ abstract final class FlutterPodoco {
   static Future<Analyzer> openAnalyzer({
     required BundledAnalysisPack pack,
     required AnalyzerOptions options,
+    bool includeFormula = true,
     FormulaOptions? formulaOptions,
     void Function(ModelLoadProgress)? onProgress,
   }) => const FlutterModelLoader().openAnalyzer(
     pack: pack,
     options: options,
+    includeFormula: includeFormula,
     formulaOptions: formulaOptions,
     onProgress: onProgress,
   );
@@ -172,10 +174,10 @@ class FlutterModelLoader {
     }
   }
 
-  Future<Analyzer> openAnalyzer({
+  /// Verify only layout payloads; catalog metadata for other components is
+  /// retained without reading or opening their models.
+  Future<({LocatedAnalysisPack pack, ModelBundle layout})> verifyLayout({
     required BundledAnalysisPack pack,
-    required AnalyzerOptions options,
-    FormulaOptions? formulaOptions,
     void Function(ModelLoadProgress)? onProgress,
   }) async {
     onProgress?.call(
@@ -189,8 +191,23 @@ class FlutterModelLoader {
       await _component(located, 'layout'),
     );
     _identity(located, 'layout', layout.manifestSha256);
+    return (pack: located, layout: layout);
+  }
+
+  Future<Analyzer> openAnalyzer({
+    required BundledAnalysisPack pack,
+    required AnalyzerOptions options,
+    bool includeFormula = true,
+    FormulaOptions? formulaOptions,
+    void Function(ModelLoadProgress)? onProgress,
+  }) async {
+    if (!includeFormula && formulaOptions != null) {
+      throw ArgumentError('formulaOptions requires includeFormula');
+    }
+    final verified = await verifyLayout(pack: pack, onProgress: onProgress);
+    final located = verified.pack, layout = verified.layout;
     FormulaBundle? formula;
-    if (located.hasFormula) {
+    if (includeFormula && located.hasFormula) {
       onProgress?.call(
         const ModelLoadProgress(ModelLoadStage.verifying, 'formula'),
       );

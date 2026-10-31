@@ -132,17 +132,16 @@ class LinkPreviewRegion {
 double boundedPreviewPixelRatio(double value) =>
     value.isFinite ? (value.clamp(1.0, 2.0) * 2).ceil() / 2 : 1;
 
-class LinkPreviewCancellation {
-  bool _cancelled = false;
+class LinkPreviewCancellation extends PreviewCancellation {
   PdfPageRenderCancellationToken? _token;
-  bool get isCancelled => _cancelled;
   void attach(PdfPageRenderCancellationToken token) {
     _token = token;
-    if (_cancelled) token.cancel();
+    if (isCancelled) token.cancel();
   }
 
+  @override
   void cancel() {
-    _cancelled = true;
+    super.cancel();
     _token?.cancel();
   }
 }
@@ -420,6 +419,7 @@ class LinkPreviewWorker {
               job.request!,
               () => _valid(job),
               job.repository,
+              cancellation: job.cancellation,
             );
             if (_valid(job)) {
               _prepared = result;

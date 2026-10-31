@@ -7,6 +7,7 @@ class AnalysisPageSnapshot {
     required this.analysisId,
     required this.sequence,
     required this.complete,
+    this.projectedFromFormulaScope,
     required Map<String, Object?> page,
   }) : _pageJson = _immutable(page) as Map<String, Object?>,
        page = podoco.PageAnalysis.fromJson(page) {
@@ -17,6 +18,10 @@ class AnalysisPageSnapshot {
       throw const FormatException('Invalid progressive page snapshot');
     }
     final pipeline = this.page.provenance.pipeline;
+    if (projectedFromFormulaScope != null &&
+        (complete || this.page.formulaScope != podoco.FormulaScope.none)) {
+      throw const FormatException('Invalid layout projection');
+    }
     for (final formula in this.page.formulas) {
       final provenance = switch (formula.state) {
         podoco.FormulaFinishedState(
@@ -48,6 +53,10 @@ class AnalysisPageSnapshot {
   final String analysisId;
   final int sequence;
   final bool complete;
+
+  /// Original execution scope when a preview projection omits recognition.
+  /// App metadata, distinct from SDK page events and actual pipeline provenance.
+  final podoco.FormulaScope? projectedFromFormulaScope;
   final podoco.PageAnalysis page;
   final Map<String, Object?> _pageJson;
 
@@ -56,6 +65,12 @@ class AnalysisPageSnapshot {
         analysisId: j['analysis_id'] as String,
         sequence: j['sequence'] as int,
         complete: j['complete'] as bool,
+        projectedFromFormulaScope: switch (j['layout_projection_scope']) {
+          null => null,
+          'none' => podoco.FormulaScope.none,
+          'all' => podoco.FormulaScope.all,
+          _ => throw const FormatException('Invalid projection source scope'),
+        },
         page: Map<String, Object?>.from(j['page'] as Map),
       );
   factory AnalysisPageSnapshot.fromUpdate(podoco.AnalysisUpdate update) {
@@ -74,11 +89,14 @@ class AnalysisPageSnapshot {
     'analysis_id': analysisId,
     'sequence': sequence,
     'complete': complete,
+    if (projectedFromFormulaScope != null)
+      'layout_projection_scope': projectedFromFormulaScope!.name,
     'page': _pageJson,
   };
 
   AnalysisPageSnapshot merge(podoco.FormulaFinished update) {
-    if (update.analysisId != analysisId ||
+    if (projectedFromFormulaScope != null ||
+        update.analysisId != analysisId ||
         update.pageKey != page.page.key ||
         update.sequence <= sequence ||
         complete) {
