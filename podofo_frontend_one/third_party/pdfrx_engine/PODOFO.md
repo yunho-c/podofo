@@ -49,3 +49,10 @@ actual coordinate zero stays zero. PDFium reports zero zoom as no zoom change.
 Failure to read XYZ location leaves all three values unknown. Other destination
 commands retain their upstream parsing. No native ABI or dependency version changes.
 Native null/zero, rotated crop, navigation, and preview regressions cover this patch.
+
+M5 reader qualification also normalizes link-annotation rectangles on both axes.
+Missing, nonfinite or zero-area rectangles are skipped, preventing a failed read
+from borrowing a previous annotation's geometry. Each opened annotation closes in
+a `finally` block, including errors during destination/content parsing. A synthetic
+PDF with horizontal, vertical and doubly reversed links, an absent rectangle, and
+an external URL exercises the real PDFium path in `test/link_preview_native_test.dart`.

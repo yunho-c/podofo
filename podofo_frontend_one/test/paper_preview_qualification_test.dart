@@ -105,6 +105,8 @@ void main() {
         'test/paper_preview_qualification_test.dart',
         'test/fixtures/target_preview/m5_sampling.json',
         'pubspec.lock',
+        'third_party/pdfrx_engine-source.json',
+        'third_party/pdfrx_engine/lib/src/native/pdfrx_pdfium.dart',
         '.podoco/model_assets/models/pack.json',
         '.podoco/model_assets/models/layout/podoco-bundle.yaml',
       ]) {

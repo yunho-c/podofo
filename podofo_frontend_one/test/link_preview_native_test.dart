@@ -12,6 +12,41 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
+    'native link loading normalizes both axes and skips missing rectangles',
+    () async {
+      await pdfrxInitialize();
+      final document = await PdfDocument.openData(
+        hoverPdfFixture(
+          annotationRects: {
+            0: '350 645 75 670',
+            1: '75 620 350 595',
+            2: '350 570 75 545',
+            4: null,
+            6: '350 345 75 370',
+          },
+        ),
+      );
+      try {
+        final links = await document.pages.first.loadLinks();
+        expect(links, hasLength(6));
+        for (var i = 0; i < 4; i++) {
+          expect(links[i].dest!.pageNumber, i + 2);
+          expect(
+            links[i].rects.single,
+            PdfRect(75, 670.0 - i * 50, 350, 645.0 - i * 50),
+          );
+        }
+        expect(links[4].dest!.command, PdfDestCommand.fitR);
+        expect(links.last.url, Uri.parse('https://example.com/reference'));
+        expect(links.last.rects.single, const PdfRect(75, 370, 350, 345));
+      } finally {
+        await document.dispose();
+        await PdfrxEntryFunctions.instance.stopBackgroundWorker();
+      }
+    },
+  );
+
+  test(
     'native crops find the destination on offset and rotated pages',
     () async {
       final temporary = await Directory.systemTemp.createTemp(

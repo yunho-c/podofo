@@ -80,7 +80,12 @@
       "pdf": "2504.17670v2.pdf",
       "split": "held_out",
       "replaces_promoted_document": "2511.23342v3"
+    },
+    {
+      "pdf": "2509.22935v2.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "1810.01497v2"
     }
   ],
-  "replenishment_policy": "Previously unused arXiv documents in filename order, at most 60 pages, with at least two unique named destinations in each target group; exclude all versions of sampled paper IDs. Selection batches are preserved in m5_history/replenishment_v2_selection.json and replenishment_v3_selection.json. No resolver/model output was inspected for replacement selection."
+  "replenishment_policy": "Previously unused arXiv documents in filename order, at most 60 pages, with at least two unique named destinations in each target group; exclude all versions of sampled paper IDs. Selection batches are preserved in m5_history/replenishment_v*_selection.json. No resolver/model output was inspected for replacement selection."
 }

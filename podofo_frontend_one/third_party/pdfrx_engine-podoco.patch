@@ -1,6 +1,6 @@
 --- /dev/null
 +++ b/PODOFO.md
-@@ -0,0 +1,51 @@
+@@ -0,0 +1,58 @@
 +# PoDoFo exclusive image lease extension
 +
 +This is the runtime source of published **pdfrx_engine 0.6.1**, retaining its MIT
@@ -52,6 +52,13 @@
 +Failure to read XYZ location leaves all three values unknown. Other destination
 +commands retain their upstream parsing. No native ABI or dependency version changes.
 +Native null/zero, rotated crop, navigation, and preview regressions cover this patch.
++
++M5 reader qualification also normalizes link-annotation rectangles on both axes.
++Missing, nonfinite or zero-area rectangles are skipped, preventing a failed read
++from borrowing a previous annotation's geometry. Each opened annotation closes in
++a `finally` block, including errors during destination/content parsing. A synthetic
++PDF with horizontal, vertical and doubly reversed links, an absent rectangle, and
++an external URL exercises the real PDFium path in `test/link_preview_native_test.dart`.
 --- a/lib/src/native/pdfrx_pdfium.dart
 +++ b/lib/src/native/pdfrx_pdfium.dart
 @@ -1,4 +1,4 @@
@@ -60,7 +67,63 @@
  import 'dart:async';
  import 'dart:collection';
  import 'dart:convert';
-@@ -2093,21 +2093,76 @@
+@@ -1984,27 +1984,36 @@
+             final links = <PdfLink>[];
+             for (var i = 0; i < count; i++) {
+               final annot = pdfium.FPDFPage_GetAnnot(page, i);
+-              pdfium.FPDFAnnot_GetRect(annot, rectf);
+-              final r = rectf.ref;
+-              final rect = PdfRect(
+-                r.left,
+-                r.top > r.bottom ? r.top : r.bottom,
+-                r.right,
+-                r.top > r.bottom ? r.bottom : r.top,
+-              ).translate(-params.bbLeft, -params.bbBottom);
+-
+-              final annotation = _getAnnotationContent(annot, arena);
+-
+-              final dest = _processAnnotDest(annot, document, arena);
+-              if (dest != nullptr) {
+-                links.add(PdfLink([rect], dest: _pdfDestFromDest(dest, document, arena), annotation: annotation));
+-              } else {
+-                final uri = _processAnnotLink(annot, document, arena);
+-                if (uri != null || annotation != null) {
+-                  links.add(PdfLink([rect], url: uri, annotation: annotation));
++              if (annot == nullptr) continue;
++              try {
++                // A failed read must not reuse the previous annotation's rect.
++                if (pdfium.FPDFAnnot_GetRect(annot, rectf) == 0) continue;
++                final r = rectf.ref;
++                if (!r.left.isFinite || !r.right.isFinite || !r.top.isFinite || !r.bottom.isFinite) continue;
++                // PDFium can report an absent /Rect as a successful zero rect.
++                if (r.left == r.right || r.top == r.bottom) continue;
++                // PDF annotation corners may be reversed on either axis.
++                final rect = PdfRect(
++                  r.left < r.right ? r.left : r.right,
++                  r.top > r.bottom ? r.top : r.bottom,
++                  r.left < r.right ? r.right : r.left,
++                  r.top > r.bottom ? r.bottom : r.top,
++                ).translate(-params.bbLeft, -params.bbBottom);
++
++                final annotation = _getAnnotationContent(annot, arena);
++
++                final dest = _processAnnotDest(annot, document, arena);
++                if (dest != nullptr) {
++                  links.add(PdfLink([rect], dest: _pdfDestFromDest(dest, document, arena), annotation: annotation));
++                } else {
++                  final uri = _processAnnotLink(annot, document, arena);
++                  if (uri != null || annotation != null) {
++                    links.add(PdfLink([rect], url: uri, annotation: annotation));
++                  }
+                 }
++              } finally {
++                pdfium.FPDFPage_CloseAnnot(annot);
+               }
+-              pdfium.FPDFPage_CloseAnnot(annot);
+             }
+             return links;
+           } finally {
+@@ -2093,21 +2102,76 @@
    }
  }
  
@@ -142,7 +205,7 @@
    }
  }
  
-@@ -2121,6 +2176,18 @@
+@@ -2121,6 +2185,18 @@
    final values = arena<pdfium_bindings.FS_FLOAT>(4);
    final pageIndex = pdfium.FPDFDest_GetDestPageIndex(document, dest);
    final type = pdfium.FPDFDest_GetView(dest, pul, values);

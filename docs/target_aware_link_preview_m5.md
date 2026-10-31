@@ -540,10 +540,48 @@ replacement. The other three replacement papers still have no resolver/model
 output. The loader fix must be covered by a synthetic reversed-rectangle test,
 and the next freeze must also identify the reviewed vendored engine pin.
 
+## Native link rectangle recovery
+
+The vendored `pdfrx_engine` now normalizes both rectangle axes before creating a
+link. Failed reads, nonfinite coordinates and zero-area rectangles are skipped;
+PDFium reports an absent `/Rect` as a successful zero rectangle in the synthetic
+fixture. Each opened annotation closes in a `finally` block. The change remains
+in Dart's PDFium binding layer with the same engine/PDFium versions and native ABI.
+The synthetic native test failed with the original assertion before the fix and
+now covers reversed horizontal/vertical/both axes, missing geometry, preserved
+internal destinations and a valid external URL.
+
+The complete source patch was regenerated from all 52 hash-verified upstream
+files. Applying it in an isolated directory reproduces all 53 pinned vendored
+files byte for byte, including line endings. The evaluation identity now includes
+the engine pin and native Dart implementation, increasing pipeline identities
+from 28 to 30 for the next freeze.
+
+The full Flutter suite passes 398 tests with 21 opt-in skips; analysis and format
+checks pass. The real lease/import/cancellation/sink tests pass with the layout
+bundle (eight combined tests, with two separate corpus opt-ins skipped). The final
+native run also exercises the fourteen original targets and the M4 complex-target
+corpus. Its development replay, `papers-link-rect-development-v2`, covers 96 links
+across eleven papers: 21/22 citations, 21/22 figures/tables, 21/22 equations and
+22/22 sections resolve completely. All 85 accepted targets pass required/excluded
+ink checks, all eight controls fall back and native handles return to zero. All
+eight accepted crops from the promoted paper were visually reviewed against the
+original pages. Logs use `build/target-preview-m5-link-rect-`.
+
+The macOS Debug build passes local deep/strict signature verification. Native
+window access was retried after the earlier user authorization and is still denied
+by Computer Use, so that acceptance remains open.
+
+The same metadata-only replenishment policy selected `2509.22935v2`, recorded in
+`m5_history/replenishment_v4_selection.json`. Its source-only preparation contains
+nine links under `build/target-preview-m5/annotations-v5-loader-replacement/`.
+Independent visual review includes its cross-page reference and section opening;
+the annotation and next freeze still need committing before a held-out run.
+
 ## Remaining acceptance work
 
-Fix and qualify native link loading, replenish the promoted document, then freeze
-and evaluate every held-out link with paired images,
+Commit the replacement annotations, then freeze and evaluate every held-out link
+with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback
