@@ -1984,27 +1984,36 @@ class _PdfPagePdfium extends PdfPage with PdfPageLinkCache {
             final links = <PdfLink>[];
             for (var i = 0; i < count; i++) {
               final annot = pdfium.FPDFPage_GetAnnot(page, i);
-              pdfium.FPDFAnnot_GetRect(annot, rectf);
-              final r = rectf.ref;
-              final rect = PdfRect(
-                r.left,
-                r.top > r.bottom ? r.top : r.bottom,
-                r.right,
-                r.top > r.bottom ? r.bottom : r.top,
-              ).translate(-params.bbLeft, -params.bbBottom);
+              if (annot == nullptr) continue;
+              try {
+                // A failed read must not reuse the previous annotation's rect.
+                if (pdfium.FPDFAnnot_GetRect(annot, rectf) == 0) continue;
+                final r = rectf.ref;
+                if (!r.left.isFinite || !r.right.isFinite || !r.top.isFinite || !r.bottom.isFinite) continue;
+                // PDFium can report an absent /Rect as a successful zero rect.
+                if (r.left == r.right || r.top == r.bottom) continue;
+                // PDF annotation corners may be reversed on either axis.
+                final rect = PdfRect(
+                  r.left < r.right ? r.left : r.right,
+                  r.top > r.bottom ? r.top : r.bottom,
+                  r.left < r.right ? r.right : r.left,
+                  r.top > r.bottom ? r.bottom : r.top,
+                ).translate(-params.bbLeft, -params.bbBottom);
 
-              final annotation = _getAnnotationContent(annot, arena);
+                final annotation = _getAnnotationContent(annot, arena);
 
-              final dest = _processAnnotDest(annot, document, arena);
-              if (dest != nullptr) {
-                links.add(PdfLink([rect], dest: _pdfDestFromDest(dest, document, arena), annotation: annotation));
-              } else {
-                final uri = _processAnnotLink(annot, document, arena);
-                if (uri != null || annotation != null) {
-                  links.add(PdfLink([rect], url: uri, annotation: annotation));
+                final dest = _processAnnotDest(annot, document, arena);
+                if (dest != nullptr) {
+                  links.add(PdfLink([rect], dest: _pdfDestFromDest(dest, document, arena), annotation: annotation));
+                } else {
+                  final uri = _processAnnotLink(annot, document, arena);
+                  if (uri != null || annotation != null) {
+                    links.add(PdfLink([rect], url: uri, annotation: annotation));
+                  }
                 }
+              } finally {
+                pdfium.FPDFPage_CloseAnnot(annot);
               }
-              pdfium.FPDFPage_CloseAnnot(annot);
             }
             return links;
           } finally {
@@ -2176,6 +2185,18 @@ PdfDest? _pdfDestFromDest(pdfium_bindings.FPDF_DEST dest, pdfium_bindings.FPDF_D
   final values = arena<pdfium_bindings.FS_FLOAT>(4);
   final pageIndex = pdfium.FPDFDest_GetDestPageIndex(document, dest);
   final type = pdfium.FPDFDest_GetView(dest, pul, values);
+  if (type == PdfDestCommand.xyz.index) {
+    final hasX = arena<Int>(), hasY = arena<Int>(), hasZoom = arena<Int>();
+    final x = arena<pdfium_bindings.FS_FLOAT>();
+    final y = arena<pdfium_bindings.FS_FLOAT>();
+    final zoom = arena<pdfium_bindings.FS_FLOAT>();
+    final ok = pdfium.FPDFDest_GetLocationInPage(dest, hasX, hasY, hasZoom, x, y, zoom) != 0;
+    return PdfDest(pageIndex + 1, PdfDestCommand.xyz, [
+      ok && hasX.value != 0 ? x.value : null,
+      ok && hasY.value != 0 ? y.value : null,
+      ok && hasZoom.value != 0 ? zoom.value : null,
+    ]);
+  }
   if (type != 0) {
     return PdfDest(pageIndex + 1, PdfDestCommand.values[type], List.generate(pul.value, (index) => values[index]));
   }

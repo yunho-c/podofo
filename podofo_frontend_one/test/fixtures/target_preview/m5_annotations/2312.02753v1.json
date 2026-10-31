@@ -1,0 +1,811 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2312.02753v1.pdf",
+    "split": "development",
+    "id": "2312.02753v1",
+    "sha256": "f7232a889a0c3aded4b80d3adadfd75d84d737a704187dbc36dc5c86c05045c3",
+    "source_url": "https://arxiv.org/abs/2312.02753v1",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        792.0,
+        612.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        792.0,
+        612.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2312.02753v1-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 199,
+        "source_bounds": [
+          222.748,
+          382.158,
+          234.704,
+          390.91
+        ],
+        "source_text": "[43]",
+        "source_context": "l baselines with similar RD performance.\nOL-CHIC (Ladune et al. [43]) and makes",
+        "destination": {
+          "name": "cite.ladune2023cool",
+          "page": 10,
+          "raw_pdf_point": [
+            308.862,
+            405.519
+          ],
+          "point": [
+            308.862,
+            386.481
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              308,
+              388.5,
+              548,
+              444
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              308,
+              355,
+              548,
+              388.2
+            ]
+          },
+          {
+            "page": 10,
+            "bounds": [
+              308,
+              444.5,
+              548,
+              478
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Cool-chic: Coordinate-based"
+        ],
+        "reviewed": true,
+        "notes": "Complete entry 43 including its final back-reference list; adjacent entries 42 and 44 are separate."
+      },
+      {
+        "id": "2312.02753v1-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 200,
+        "source_bounds": [
+          267.347,
+          465.844,
+          279.302,
+          474.656
+        ],
+        "source_text": "[59]",
+        "source_context": "match the RD performance of\nsformer (Mentzer et al. [59]),\nsult, designing low",
+        "destination": {
+          "name": "cite.mentzer2022vct",
+          "page": 11,
+          "raw_pdf_point": [
+            50.112,
+            282.095
+          ],
+          "point": [
+            50.112,
+            509.905
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 11,
+            "bounds": [
+              49,
+              512,
+              289,
+              568
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 11,
+            "bounds": [
+              49,
+              456,
+              289,
+              511.5
+            ]
+          },
+          {
+            "page": 11,
+            "bounds": [
+              49,
+              569,
+              289,
+              612
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "VCT: A video compression transformer"
+        ],
+        "reviewed": true,
+        "notes": "Complete entry 59 including the wrapped final back-reference 28."
+      },
+      {
+        "id": "2312.02753v1-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 1,
+        "source_link_index_pymupdf": 4,
+        "source_xref": 203,
+        "source_bounds": [
+          238.34,
+          580.375,
+          240.83,
+          591.319
+        ],
+        "source_text": "",
+        "source_context": "coder mapping the latent vector back\nonstruction of the image. To be prac-\ncs, these models must generalize, i.e.,\ncompres\nto recons\nicantly s",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 1,
+          "raw_pdf_point": [
+            64.458,
+            99.929
+          ],
+          "point": [
+            64.458,
+            692.071
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Source and destination reviewed; footnote control outside the four target groups."
+      },
+      {
+        "id": "2312.02753v1-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 7,
+        "source_xref": 272,
+        "source_bounds": [
+          147.003,
+          476.761,
+          153.902,
+          487.704
+        ],
+        "source_text": "1)\necti",
+        "source_context": "proves its RD performance while maintaining a low\ning complexity (see Fig. 1). More specifically, we pr\nseries of simple and effective improvements to the o",
+        "destination": {
+          "name": "figure.caption.1",
+          "page": 1,
+          "raw_pdf_point": [
+            308.862,
+            549.638
+          ],
+          "point": [
+            308.862,
+            242.362
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 1,
+            "bounds": [
+              308,
+              247,
+              544,
+              408
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              308,
+              419,
+              548,
+              454
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 1,
+            "bounds": [
+              308,
+              475,
+              548,
+              510
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 1."
+        ],
+        "reviewed": true,
+        "notes": "Full scatterplot including both axis titles, every point label and the better arrow; complete three-line caption."
+      },
+      {
+        "id": "2312.02753v1-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 15,
+        "source_xref": 280,
+        "source_bounds": [
+          524.674,
+          427.163,
+          531.748,
+          438.107
+        ],
+        "source_text": "2",
+        "source_context": "age separately. In the following\nn COOL-CHIC. See Fig. 2 for",
+        "destination": {
+          "name": "figure.caption.2",
+          "page": 2,
+          "raw_pdf_point": [
+            50.112,
+            725.978
+          ],
+          "point": [
+            50.112,
+            66.022
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              49,
+              71,
+              547,
+              223
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              49,
+              230,
+              547,
+              264
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              49,
+              285,
+              289,
+              426
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              308,
+              285,
+              548,
+              388
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2."
+        ],
+        "reviewed": true,
+        "notes": "Both panels A/B, all flow arrows, full bitstream and inline colored caption symbols belong to the figure."
+      },
+      {
+        "id": "2312.02753v1-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 5,
+        "source_xref": 381,
+        "source_bounds": [
+          521.687,
+          334.2,
+          528.76,
+          343.126
+        ],
+        "source_text": "5",
+        "source_context": "ions necessary to apply C3 to\nxtensive ablations in Sec. 5 and\nion is beneficial and that their",
+        "destination": {
+          "name": "section.5",
+          "page": 6,
+          "raw_pdf_point": [
+            308.862,
+            451.977
+          ],
+          "point": [
+            308.862,
+            340.023
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 6,
+            "bounds": [
+              308,
+              340,
+              360,
+              358
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              308,
+              361,
+              420,
+              377
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              308,
+              381,
+              548,
+              562
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 6,
+            "bounds": [
+              308,
+              270,
+              548,
+              330
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              308,
+              570,
+              548,
+              620
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "5. Results",
+          "5.1. Image compression"
+        ],
+        "reviewed": true,
+        "notes": "Section 5 immediately begins with subsection 5.1; include both headings and the opening paragraph through the App. B reference."
+      },
+      {
+        "id": "2312.02753v1-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 12,
+        "source_xref": 389,
+        "source_bounds": [
+          400.039,
+          661.427,
+          424.169,
+          672.37
+        ],
+        "source_text": "A.2.4",
+        "source_context": "ature over the course of the optimization. See Fig. 3 \nvisualization and App. A.2.4 for details.",
+        "destination": {
+          "name": "subsubsection.A.2.4",
+          "page": 17,
+          "raw_pdf_point": [
+            50.112,
+            576.231
+          ],
+          "point": [
+            50.112,
+            215.769
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 17,
+            "bounds": [
+              49,
+              215,
+              144,
+              230
+            ]
+          },
+          {
+            "page": 17,
+            "bounds": [
+              49,
+              235,
+              547,
+              319.3
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 17,
+            "bounds": [
+              49,
+              197,
+              547,
+              207
+            ]
+          },
+          {
+            "page": 17,
+            "bounds": [
+              49,
+              319.5,
+              547,
+              345
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "A.2.4",
+          "Soft-rounding"
+        ],
+        "reviewed": true,
+        "notes": "Complete first paragraph through App. A.2.5; the indented Following Agustsson paragraph begins a separate block."
+      },
+      {
+        "id": "2312.02753v1-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 15,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 1095,
+        "source_bounds": [
+          302.787,
+          182.824,
+          309.771,
+          193.768
+        ],
+        "source_text": "(4)\nusi",
+        "source_context": "the RD objective in Eq. (4) that is used to fit the late\n to a particular image x using gradient-based optimiz",
+        "destination": {
+          "name": "equation.2.4",
+          "page": 3,
+          "raw_pdf_point": [
+            275.742,
+            154.93
+          ],
+          "point": [
+            275.742,
+            637.07
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              55,
+              642,
+              288,
+              665
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              49,
+              574,
+              289,
+              633
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              49,
+              665.5,
+              289,
+              714
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(4)"
+        ],
+        "reviewed": true,
+        "notes": "The linked definition is the original equation 4 on page 3, not its repeated unnumbered presentation in the appendix."
+      },
+      {
+        "id": "2312.02753v1-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 17,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 1149,
+        "source_bounds": [
+          457.834,
+          332.114,
+          469.59,
+          344.069
+        ],
+        "source_text": "to t\n(13)",
+        "source_context": "soft-rounding twice: first to the raw value z and\ndT (z, u) function in Eqs. (13) to (15) is given by",
+        "destination": {
+          "name": "equation.A.13",
+          "page": 16,
+          "raw_pdf_point": [
+            529.511,
+            705.058
+          ],
+          "point": [
+            529.511,
+            86.942
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 16,
+            "bounds": [
+              177,
+              92,
+              334,
+              106.5
+            ]
+          },
+          {
+            "page": 16,
+            "bounds": [
+              422,
+              92,
+              479,
+              106.5
+            ]
+          },
+          {
+            "page": 16,
+            "bounds": [
+              528,
+              92,
+              547,
+              106.5
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 16,
+            "bounds": [
+              137,
+              107.5,
+              547,
+              122.5
+            ]
+          },
+          {
+            "page": 16,
+            "bounds": [
+              149,
+              122.5,
+              547,
+              137
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "forward",
+          "(13)"
+        ],
+        "reviewed": true,
+        "notes": "Only the forward row is equation 13, including its forward label and noise-distribution clause. Backward rows 14 and 15 are separate numbered equations."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "0f10834",
+    "promoted_from": "held_out_v1",
+    "promotion_reason": "Missing intervening subsection heading drives a blocking complete-target regression."
+  }
+}

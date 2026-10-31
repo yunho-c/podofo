@@ -1,0 +1,697 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2211.02854v3.pdf",
+    "split": "development",
+    "id": "2211.02854v3",
+    "sha256": "547d810e78790a8dcc0e392f88d2c2b874911baca216c78056f20906935e3967",
+    "source_url": "https://arxiv.org/abs/2211.02854v3",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2211.02854v3-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 97,
+        "source_bounds": [
+          182.204,
+          571.422,
+          189.178,
+          582.365
+        ],
+        "source_text": "[1]",
+        "source_context": "ously driven the pursuit of better compression tec\ns for the past decades [1], [2], [6]. Built upon t\ns of deep neural networks (DNNs), recent years ha",
+        "destination": {
+          "name": "cite.JPEG",
+          "page": 13,
+          "raw_pdf_point": [
+            48.964,
+            198.421
+          ],
+          "point": [
+            48.964,
+            593.579
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 13,
+            "bounds": [
+              52,
+              596,
+              302,
+              614
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 13,
+            "bounds": [
+              145,
+              580,
+              205,
+              589
+            ]
+          },
+          {
+            "page": 13,
+            "bounds": [
+              52,
+              614.5,
+              302,
+              650
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "[1]",
+          "G. Wallace"
+        ],
+        "reviewed": true,
+        "notes": "Two-line JPEG entry; exclude References heading and entry 2."
+      },
+      {
+        "id": "2211.02854v3-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 98,
+        "source_bounds": [
+          201.468,
+          571.422,
+          208.442,
+          582.365
+        ],
+        "source_text": "[2]",
+        "source_context": "driven the pursuit of better compression tech-\n the past decades [1], [2], [6]. Built upon the\ndeep neural networks (DNNs), recent years have",
+        "destination": {
+          "name": "cite.BPG",
+          "page": 13,
+          "raw_pdf_point": [
+            48.964,
+            178.887
+          ],
+          "point": [
+            48.964,
+            613.113
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 13,
+            "bounds": [
+              52,
+              614.5,
+              302,
+              650
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 13,
+            "bounds": [
+              52,
+              596,
+              302,
+              614
+            ]
+          },
+          {
+            "page": 13,
+            "bounds": [
+              52,
+              650.5,
+              302,
+              677
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "[2]",
+          "high efficiency video coding"
+        ],
+        "reviewed": true,
+        "notes": "Actual target entry 2 is HEVC despite the PDF named destination cite.BPG; annotate printed content."
+      },
+      {
+        "id": "2211.02854v3-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 2,
+        "source_link_index_pymupdf": 7,
+        "source_xref": 202,
+        "source_bounds": [
+          292.55,
+          261.249,
+          298.528,
+          273.77
+        ],
+        "source_text": "on\nk1.",
+        "source_context": "nship between quantization\nce in the compression task1.\nion Optimized PTQ (RDO-\nposed RDO-PTQ is e\nby extensive compari\ndrawn in Sec. VII. T",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 2,
+          "raw_pdf_point": [
+            60.421,
+            128.608
+          ],
+          "point": [
+            60.421,
+            663.392
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Footnote control outside the four target groups."
+      },
+      {
+        "id": "2211.02854v3-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 9,
+        "source_xref": 206,
+        "source_bounds": [
+          288.237,
+          453.414,
+          295.21,
+          464.358
+        ],
+        "source_text": "3)",
+        "source_context": "he range is further adapted\nwise adaptation (see Fig. 3).\nination of the bias, a bias\nwith better performa\ndevelopment of LIC",
+        "destination": {
+          "name": "figure.3",
+          "page": 6,
+          "raw_pdf_point": [
+            340.692,
+            523.456
+          ],
+          "point": [
+            340.692,
+            268.544
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 6,
+            "bounds": [
+              320,
+              58,
+              555,
+              263
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              311,
+              270,
+              565,
+              325
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 6,
+            "bounds": [
+              311,
+              344,
+              565,
+              438
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              48,
+              55,
+              301,
+              324
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 3."
+        ],
+        "reviewed": true,
+        "notes": "All four plots, axis labels and two panel labels plus complete caption."
+      },
+      {
+        "id": "2211.02854v3-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 2,
+        "source_link_index_pymupdf": 13,
+        "source_xref": 208,
+        "source_bounds": [
+          330.828,
+          225.87,
+          339.456,
+          236.814
+        ],
+        "source_text": "II",
+        "source_context": "common practice\nsub-optimal from\nThe remaining parts of this p\nSec. II briefly reviews related w\nthe fundamental ideas used for",
+        "destination": {
+          "name": "section.2",
+          "page": 2,
+          "raw_pdf_point": [
+            311.978,
+            483.541
+          ],
+          "point": [
+            311.978,
+            308.459
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              393,
+              310,
+              482,
+              322
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              325,
+              565,
+              384
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              213,
+              565,
+              296
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              400,
+              565,
+              447
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "II.",
+          "RELATED WORK"
+        ],
+        "reviewed": true,
+        "notes": "Centered heading and complete five-line opening paragraph before subsection A."
+      },
+      {
+        "id": "2211.02854v3-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 2,
+        "source_link_index_pymupdf": 14,
+        "source_xref": 209,
+        "source_bounds": [
+          507.614,
+          225.87,
+          519.559,
+          236.814
+        ],
+        "source_text": "III",
+        "source_context": "of this paper are structured as follows:\nelated works, while Sec. III introduces\nused for model quantization. The pro-",
+        "destination": {
+          "name": "section.3",
+          "page": 3,
+          "raw_pdf_point": [
+            311.978,
+            295.159
+          ],
+          "point": [
+            311.978,
+            496.841
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              359,
+              498,
+              516,
+              510
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              311,
+              513,
+              565,
+              560
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              311,
+              441,
+              565,
+              487
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              311,
+              561,
+              565,
+              596
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "III.",
+          "QUANTIZATION FUNDAMENTAL"
+        ],
+        "reviewed": true,
+        "notes": "Centered heading and four-line first paragraph; next indented paragraph introduces the formula."
+      },
+      {
+        "id": "2211.02854v3-figure_table-2",
+        "group": "figure_table",
+        "kind": "table",
+        "source_page": 2,
+        "source_link_index_pymupdf": 18,
+        "source_xref": 213,
+        "source_bounds": [
+          538.551,
+          273.691,
+          543.861,
+          284.635
+        ],
+        "source_text": "I",
+        "source_context": "Sec. V. Conclusions are finally\nhe understanding, Table I lists\nis paper.",
+        "destination": {
+          "name": "table.1",
+          "page": 2,
+          "raw_pdf_point": [
+            311.978,
+            727.562
+          ],
+          "point": [
+            311.978,
+            64.438
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              351,
+              58,
+              524,
+              168
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              188,
+              565,
+              295
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "TABLE I",
+          "NOTATIONS"
+        ],
+        "reviewed": true,
+        "notes": "Roman numeral table title, header, eight notation rows, and bottom rule."
+      },
+      {
+        "id": "2211.02854v3-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 3,
+        "source_link_index_pymupdf": 42,
+        "source_xref": 287,
+        "source_bounds": [
+          369.166,
+          672.704,
+          376.14,
+          683.259
+        ],
+        "source_text": "(1)",
+        "source_context": "33] be-\nameters\nthe linear scaling factor.\nFollowing (1), an input xfloat is con\nx in the range of [0, 2b−1]. Then x",
+        "destination": {
+          "name": "equation.3.1",
+          "page": 3,
+          "raw_pdf_point": [
+            360.306,
+            192.444
+          ],
+          "point": [
+            360.306,
+            599.556
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              359,
+              596,
+              517,
+              622
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              550,
+              603,
+              565,
+              615
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              311,
+              561,
+              565,
+              596
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              311,
+              624,
+              565,
+              670
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Complete fraction, floor/ceiling, superscript and number."
+      },
+      {
+        "id": "2211.02854v3-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 4,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 308,
+        "source_bounds": [
+          97.144,
+          493.297,
+          104.118,
+          504.241
+        ],
+        "source_text": "(4)",
+        "source_context": "Thus, how to select the proper sx i\nas in Eq. (4), existing works mostly\nerror between vectorized elements x",
+        "destination": {
+          "name": "equation.3.4",
+          "page": 4,
+          "raw_pdf_point": [
+            126.481,
+            621.47
+          ],
+          "point": [
+            126.481,
+            170.53
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              125,
+              168,
+              224,
+              192
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              287,
+              175,
+              301,
+              186
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              48,
+              155,
+              160,
+              164
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              48,
+              194,
+              301,
+              239
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(4)"
+        ],
+        "reviewed": true,
+        "notes": "Complete dynamic range expression, denominator, parameters and number."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "dbc0649"
+  }
+}

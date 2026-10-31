@@ -1,0 +1,787 @@
+{
+  "schema_version": 1,
+  "run": "held-out-v2",
+  "evaluation_commit": "e1f0495",
+  "resolver_version": 10,
+  "status": "incomplete_link_loading_failure",
+  "capture_complete": false,
+  "raw_results_path": "build/target-preview-m5/papers-held-out-v2/results.json",
+  "raw_results_sha256": "9d913e1d99ff6d1c0ed4c4e74b3d68a570432d04c65f1a5ff462ebc4b17444d0",
+  "freeze_file": "test/fixtures/target_preview/m5_history/held_out_v2_freeze.json",
+  "freeze_sha256": "5db5b7a174ec411b3692aa61a00869e452eb7ae867f6b4b277a2e04cf3773f31",
+  "summary": {
+    "citation": {
+      "sampled": 4,
+      "eligible": 4,
+      "resolved": 4,
+      "complete": 4,
+      "wrong": 0
+    },
+    "equation": {
+      "sampled": 3,
+      "eligible": 3,
+      "resolved": 2,
+      "complete": 2,
+      "wrong": 0
+    },
+    "figure_table": {
+      "sampled": 4,
+      "eligible": 4,
+      "resolved": 4,
+      "complete": 4,
+      "wrong": 0
+    },
+    "unsupported_control": {
+      "sampled": 1,
+      "eligible": 0,
+      "resolved": 0,
+      "complete": 0,
+      "wrong": 0
+    },
+    "section": {
+      "sampled": 3,
+      "eligible": 3,
+      "resolved": 3,
+      "complete": 3,
+      "wrong": 0
+    }
+  },
+  "native_handles_after_close": 0,
+  "failure": {
+    "document": "1810.01497v2",
+    "source_page": 1,
+    "annotation_xref": 8,
+    "rect_raw_pdf": [
+      37.62,
+      250,
+      10.94,
+      603.96
+    ],
+    "error": "PdfRect assertion left <= right in _PdfPagePdfium._loadAnnotLinks",
+    "sampled_target": false
+  },
+  "interpretation": "Only the 15 carryover links were captured. This is not a completed held-out quality evaluation. The four new papers have no target-resolution outputs from this run.",
+  "promoted_documents": {
+    "1810.01497v2": "Native link loading aborts on a reversed horizontal annotation rectangle before this paper reaches target resolution; promote the whole document before changing the loader."
+  },
+  "records": [
+    {
+      "id": "1809.02736v1-citation-1",
+      "document": "1809.02736v1",
+      "split": "held_out",
+      "group": "citation",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 2615,
+      "covered_ink": 2615,
+      "kind": "citation",
+      "reason": "matchedCompleteReference",
+      "label": "Reference [1]",
+      "evidence": "d5328b7b02c125926676fcbd20d6b4dfa5df73298814cc46e0ffdcfe35a6b93f",
+      "resolution_us": 1019527,
+      "render_us": 3369,
+      "parts": [
+        {
+          "page": 8,
+          "bounds": [
+            112.85771179199219,
+            631.5045471191406,
+            505.70782470703125,
+            652.6127624511719
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 8,
+          "required": [
+            {
+              "ink": 2615,
+              "covered": 2615
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 7967,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1809.02736v1-citation-2",
+      "document": "1809.02736v1",
+      "split": "held_out",
+      "group": "citation",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 7967,
+      "covered_ink": 7967,
+      "kind": "citation",
+      "reason": "matchedCompleteReference",
+      "label": "Reference [2]",
+      "evidence": "(d5328b7b02c125926676fcbd20d6b4dfa5df73298814cc46e0ffdcfe35a6b93f, 5bf4088cb49cdced3622a0377e4c253075c7a7b33385a46c112f43355bfe4511)",
+      "resolution_us": 83488,
+      "render_us": 2847,
+      "parts": [
+        {
+          "page": 8,
+          "bounds": [
+            112.85771179199219,
+            655.3145446777344,
+            506.1626892089844,
+            710.0175094604492
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 8,
+          "required": [
+            {
+              "ink": 7967,
+              "covered": 7967
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 2615,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1809.02736v1-equation-1",
+      "document": "1809.02736v1",
+      "split": "held_out",
+      "group": "equation",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 1843,
+      "covered_ink": 1843,
+      "kind": "equation",
+      "reason": "matchedIdentity",
+      "label": "Equation (1)",
+      "evidence": "9266c5b74a1c745132d3143b95d38c885abab3a2f1c20ea032a4b6ab6afee4dc",
+      "resolution_us": 78805,
+      "render_us": 1481,
+      "parts": [
+        {
+          "page": 2,
+          "bounds": [
+            152.98828125,
+            108.24951171875,
+            506.52215576171875,
+            143.5843505859375
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 2,
+          "required": [
+            {
+              "ink": 1786,
+              "covered": 1786
+            },
+            {
+              "ink": 57,
+              "covered": 57
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 3938,
+              "covered": 0
+            },
+            {
+              "ink": 16207,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1809.02736v1-figure_table-1",
+      "document": "1809.02736v1",
+      "split": "held_out",
+      "group": "figure_table",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 30392,
+      "covered_ink": 30392,
+      "kind": "figure",
+      "reason": "matchedIdentity",
+      "label": "Figure 1",
+      "evidence": "0dcac06cd01bfe05663aa489cbaa54586c31bac0b3bb71a477f5938cdfc2d4d7",
+      "resolution_us": 76416,
+      "render_us": 4668,
+      "parts": [
+        {
+          "page": 3,
+          "bounds": [
+            101.4404296875,
+            68.4462890625,
+            509.9619140625,
+            297.462158203125
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 3,
+          "required": [
+            {
+              "ink": 20023,
+              "covered": 20023
+            },
+            {
+              "ink": 10369,
+              "covered": 10369
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 1936,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1809.02736v1-unsupported_control-1",
+      "document": "1809.02736v1",
+      "split": "held_out",
+      "group": "unsupported_control",
+      "eligible": false,
+      "semantic": false,
+      "complete": false,
+      "wrong_object": false,
+      "required_ink": 0,
+      "covered_ink": 0,
+      "kind": null,
+      "reason": "ambiguousSource",
+      "label": null,
+      "evidence": "9266c5b74a1c745132d3143b95d38c885abab3a2f1c20ea032a4b6ab6afee4dc",
+      "resolution_us": 2305,
+      "render_us": null,
+      "parts": [],
+      "metrics": []
+    },
+    {
+      "id": "1809.02736v1-figure_table-2",
+      "document": "1809.02736v1",
+      "split": "held_out",
+      "group": "figure_table",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 17678,
+      "covered_ink": 17678,
+      "kind": "table",
+      "reason": "matchedIdentity",
+      "label": "Table 1",
+      "evidence": "2ab63ccc108bd93cb9ec5d5a61fe76ef2cef9ba43bdd429465a03c6be38148e7",
+      "resolution_us": 71181,
+      "render_us": 3036,
+      "parts": [
+        {
+          "page": 4,
+          "bounds": [
+            100.693359375,
+            67.745361328125,
+            510.111328125,
+            234.98291015625
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 4,
+          "required": [
+            {
+              "ink": 7733,
+              "covered": 7733
+            },
+            {
+              "ink": 9945,
+              "covered": 9945
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 15459,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "1809.02736v1-section-1",
+      "document": "1809.02736v1",
+      "split": "held_out",
+      "group": "section",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 21597,
+      "covered_ink": 21597,
+      "kind": "section",
+      "reason": "matchedCompleteSection",
+      "label": "Section 3",
+      "evidence": "2ab63ccc108bd93cb9ec5d5a61fe76ef2cef9ba43bdd429465a03c6be38148e7",
+      "resolution_us": 4030,
+      "render_us": 2855,
+      "parts": [
+        {
+          "page": 4,
+          "bounds": [
+            104.58250427246094,
+            537.2529449462891,
+            508.16497802734375,
+            695.1315155029297
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 4,
+          "required": [
+            {
+              "ink": 762,
+              "covered": 762
+            },
+            {
+              "ink": 20835,
+              "covered": 20835
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 13633,
+              "covered": 0
+            },
+            {
+              "ink": 3123,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2606.29940v2-citation-1",
+      "document": "2606.29940v2",
+      "split": "held_out",
+      "group": "citation",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 3610,
+      "covered_ink": 3610,
+      "kind": "citation",
+      "reason": "matchedCompleteReference",
+      "label": "Reference [1]",
+      "evidence": "3c6d9ec1689b7697670d6b20cfe45811ba3dac53ed40271570204d9a665ac011",
+      "resolution_us": 678921,
+      "render_us": 1663,
+      "parts": [
+        {
+          "page": 9,
+          "bounds": [
+            112.85771179199219,
+            92.77056884765625,
+            504.8734130859375,
+            125.61553955078125
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 9,
+          "required": [
+            {
+              "ink": 3610,
+              "covered": 3610
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 3172,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2606.29940v2-citation-2",
+      "document": "2606.29940v2",
+      "split": "held_out",
+      "group": "citation",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 3172,
+      "covered_ink": 3172,
+      "kind": "citation",
+      "reason": "matchedCompleteReference",
+      "label": "Reference [2]",
+      "evidence": "3c6d9ec1689b7697670d6b20cfe45811ba3dac53ed40271570204d9a665ac011",
+      "resolution_us": 3418,
+      "render_us": 1217,
+      "parts": [
+        {
+          "page": 9,
+          "bounds": [
+            112.85771942138672,
+            136.45660400390625,
+            504.5248107910156,
+            159.487548828125
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 9,
+          "required": [
+            {
+              "ink": 3172,
+              "covered": 3172
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 3610,
+              "covered": 0
+            },
+            {
+              "ink": 3819,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2606.29940v2-figure_table-1",
+      "document": "2606.29940v2",
+      "split": "held_out",
+      "group": "figure_table",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 68086,
+      "covered_ink": 68086,
+      "kind": "figure",
+      "reason": "matchedIdentity",
+      "label": "Figure 1",
+      "evidence": "c3540d8b5a18391fe3ba365f59cedabf5099d9382b636be16444a26bacdf38ef",
+      "resolution_us": 119221,
+      "render_us": 46646,
+      "parts": [
+        {
+          "page": 1,
+          "bounds": [
+            101.4404296875,
+            465.0233459472656,
+            509.3642578125,
+            720.097412109375
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 1,
+          "required": [
+            {
+              "ink": 58197,
+              "covered": 58197
+            },
+            {
+              "ink": 9889,
+              "covered": 9889
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 1493,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2606.29940v2-figure_table-2",
+      "document": "2606.29940v2",
+      "split": "held_out",
+      "group": "figure_table",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 37219,
+      "covered_ink": 37219,
+      "kind": "figure",
+      "reason": "matchedIdentity",
+      "label": "Figure 2",
+      "evidence": "3831365f4ae86eeea40e21312f25b4d7688d336caf25d5a94ca2596d54e4d976",
+      "resolution_us": 88956,
+      "render_us": 12667,
+      "parts": [
+        {
+          "page": 4,
+          "bounds": [
+            101.4404296875,
+            70.839111328125,
+            508.4677734375,
+            223.067138671875
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 4,
+          "required": [
+            {
+              "ink": 30195,
+              "covered": 30195
+            },
+            {
+              "ink": 7024,
+              "covered": 7024
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 2944,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2606.29940v2-section-1",
+      "document": "2606.29940v2",
+      "split": "held_out",
+      "group": "section",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 6439,
+      "covered_ink": 6439,
+      "kind": "section",
+      "reason": "matchedCompleteSection",
+      "label": "Section B.7",
+      "evidence": "9837e4ff0bf2ddb361a6b2a79c1a53f80c1b1ac852fd7e2d23ada64f9394e0bd",
+      "resolution_us": 76391,
+      "render_us": 1936,
+      "parts": [
+        {
+          "page": 16,
+          "bounds": [
+            105.04993438720703,
+            652.7777404785156,
+            506.8041687011719,
+            725.1617813110352
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 16,
+          "required": [
+            {
+              "ink": 220,
+              "covered": 220
+            },
+            {
+              "ink": 6219,
+              "covered": 6219
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 22777,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2606.29940v2-section-2",
+      "document": "2606.29940v2",
+      "split": "held_out",
+      "group": "section",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 16610,
+      "covered_ink": 16610,
+      "kind": "section",
+      "reason": "matchedCompleteSection",
+      "label": "Section 3",
+      "evidence": "057dc3ec863b92346f7bb5a354add3eefe7d1f23305371ed542adc4a6cae7d0b",
+      "resolution_us": 71602,
+      "render_us": 2937,
+      "parts": [
+        {
+          "page": 3,
+          "bounds": [
+            104.26274871826172,
+            368.67095947265625,
+            506.98345947265625,
+            505.4859313964844
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 3,
+          "required": [
+            {
+              "ink": 317,
+              "covered": 317
+            },
+            {
+              "ink": 16293,
+              "covered": 16293
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 18000,
+              "covered": 0
+            },
+            {
+              "ink": 14107,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2606.29940v2-equation-1",
+      "document": "2606.29940v2",
+      "split": "held_out",
+      "group": "equation",
+      "eligible": true,
+      "semantic": true,
+      "complete": true,
+      "wrong_object": false,
+      "required_ink": 932,
+      "covered_ink": 932,
+      "kind": "equation",
+      "reason": "matchedIdentity",
+      "label": "Equation (1)",
+      "evidence": "3831365f4ae86eeea40e21312f25b4d7688d336caf25d5a94ca2596d54e4d976",
+      "resolution_us": 7857,
+      "render_us": 1424,
+      "parts": [
+        {
+          "page": 4,
+          "bounds": [
+            193.1806640625,
+            494.87158203125,
+            506.5152587890625,
+            515.595703125
+          ]
+        }
+      ],
+      "metrics": [
+        {
+          "page": 4,
+          "required": [
+            {
+              "ink": 875,
+              "covered": 875
+            },
+            {
+              "ink": 57,
+              "covered": 57
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 2080,
+              "covered": 0
+            },
+            {
+              "ink": 11327,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "2606.29940v2-equation-2",
+      "document": "2606.29940v2",
+      "split": "held_out",
+      "group": "equation",
+      "eligible": true,
+      "semantic": false,
+      "complete": false,
+      "wrong_object": false,
+      "required_ink": 665,
+      "covered_ink": 0,
+      "kind": null,
+      "reason": "ambiguousSource",
+      "label": null,
+      "evidence": "1a6bfb97114454343d5b542a09e7776f5a0ebf0beb2fc03c7893a284b3d33977",
+      "resolution_us": 92825,
+      "render_us": null,
+      "parts": [],
+      "metrics": [
+        {
+          "page": 5,
+          "required": [
+            {
+              "ink": 601,
+              "covered": 0
+            },
+            {
+              "ink": 64,
+              "covered": 0
+            }
+          ],
+          "excluded": [
+            {
+              "ink": 7693,
+              "covered": 0
+            },
+            {
+              "ink": 6914,
+              "covered": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:crypto/crypto.dart';
 import 'package:podoco/podoco.dart';
+import 'package:yaml/yaml.dart';
 
 import 'model_resources.dart';
 
@@ -25,15 +26,33 @@ class LocatedAnalysisPack {
   bool get hasMath => manifestHashes.containsKey('math');
 }
 
+/// Pinned manifest metadata for comparing already-computed results. This is not
+/// a verified model bundle and cannot be used to open an analyzer. Payloads are
+/// still fully verified by [FlutterModelLoader.verifyLayout] before inference.
+class BundledLayoutIdentity {
+  const BundledLayoutIdentity._(
+    this.pack,
+    this.modelId,
+    this.profile,
+    this.adapter,
+    this.backend,
+  );
+  final LocatedAnalysisPack pack;
+  final String modelId, profile, adapter, backend;
+  String get manifestSha256 => pack.manifestHashes['layout']!;
+}
+
 abstract final class FlutterPodoco {
   static Future<Analyzer> openAnalyzer({
     required BundledAnalysisPack pack,
     required AnalyzerOptions options,
+    bool includeFormula = true,
     FormulaOptions? formulaOptions,
     void Function(ModelLoadProgress)? onProgress,
   }) => const FlutterModelLoader().openAnalyzer(
     pack: pack,
     options: options,
+    includeFormula: includeFormula,
     formulaOptions: formulaOptions,
     onProgress: onProgress,
   );
@@ -172,10 +191,10 @@ class FlutterModelLoader {
     }
   }
 
-  Future<Analyzer> openAnalyzer({
+  /// Verify only layout payloads; catalog metadata for other components is
+  /// retained without reading or opening their models.
+  Future<({LocatedAnalysisPack pack, ModelBundle layout})> verifyLayout({
     required BundledAnalysisPack pack,
-    required AnalyzerOptions options,
-    FormulaOptions? formulaOptions,
     void Function(ModelLoadProgress)? onProgress,
   }) async {
     onProgress?.call(
@@ -189,8 +208,82 @@ class FlutterModelLoader {
       await _component(located, 'layout'),
     );
     _identity(located, 'layout', layout.manifestSha256);
+    return (pack: located, layout: layout);
+  }
+
+  /// Read a bounded, hash-pinned layout manifest without reading model weights.
+  /// Suitable only for cache compatibility. Missing or altered catalogs,
+  /// manifests and linked/special files still fail closed; missing payloads are
+  /// detected when [verifyLayout] is called to open the model.
+  Future<BundledLayoutIdentity> readLayoutIdentity(
+    BundledAnalysisPack pack,
+  ) async {
+    final located = await locatePack(pack);
+    final root = await _component(located, 'layout');
+    final path = '$root${Platform.pathSeparator}podoco-bundle.yaml';
+    try {
+      if (await FileSystemEntity.type(path, followLinks: false) !=
+          FileSystemEntityType.file) {
+        throw _invalid('Layout manifest must be a regular file');
+      }
+      final file = await File(path).open();
+      late List<int> bytes;
+      try {
+        bytes = await file.read(1024 * 1024 + 1);
+      } finally {
+        await file.close();
+      }
+      if (bytes.length > 1024 * 1024) {
+        throw _invalid('Layout manifest exceeds metadata budget');
+      }
+      _identity(located, 'layout', sha256.convert(bytes).toString());
+      final manifest = loadYaml(utf8.decode(bytes));
+      if (manifest is! Map ||
+          manifest['schema_version'] != 1 ||
+          manifest['profile'] is! Map ||
+          manifest['runtime'] is! Map) {
+        throw _invalid('Invalid layout identity metadata');
+      }
+      String field(Object? value) {
+        if (value is! String || value.isEmpty || value.length > 256) {
+          throw _invalid('Invalid layout identity field');
+        }
+        return value;
+      }
+
+      return BundledLayoutIdentity._(
+        located,
+        field(manifest['id']),
+        field(manifest['profile']['id']),
+        field(manifest['profile']['adapter']),
+        field(manifest['runtime']['kind']),
+      );
+    } on FileSystemException catch (error) {
+      throw PodocoException(
+        'io',
+        'Cannot read layout identity: ${error.message}',
+      );
+    } on YamlException {
+      throw _invalid('Invalid layout manifest YAML');
+    } on FormatException {
+      throw _invalid('Invalid layout manifest encoding');
+    }
+  }
+
+  Future<Analyzer> openAnalyzer({
+    required BundledAnalysisPack pack,
+    required AnalyzerOptions options,
+    bool includeFormula = true,
+    FormulaOptions? formulaOptions,
+    void Function(ModelLoadProgress)? onProgress,
+  }) async {
+    if (!includeFormula && formulaOptions != null) {
+      throw ArgumentError('formulaOptions requires includeFormula');
+    }
+    final verified = await verifyLayout(pack: pack, onProgress: onProgress);
+    final located = verified.pack, layout = verified.layout;
     FormulaBundle? formula;
-    if (located.hasFormula) {
+    if (includeFormula && located.hasFormula) {
       onProgress?.call(
         const ModelLoadProgress(ModelLoadStage.verifying, 'formula'),
       );

@@ -1,0 +1,704 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "1810.01497v2.pdf",
+    "split": "development",
+    "replaces_promoted_document": "2111.13850v2",
+    "id": "1810.01497v2",
+    "sha256": "26b8bd004e384a027faa43f8719c53873534701d43715ad7e5e0fbe0df249dfb",
+    "source_url": "https://arxiv.org/abs/1810.01497v2",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "1810.01497v2-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 54,
+        "source_bounds": [
+          83.244,
+          467.844,
+          90.156,
+          476.556
+        ],
+        "source_text": "[1]",
+        "source_context": "181\nof attacks include side-channel at\ncaches [1], fault injection attacks",
+        "destination": {
+          "name": "cite.YaromFlushReload2014",
+          "page": 14,
+          "raw_pdf_point": [
+            312.9,
+            251.223
+          ],
+          "point": [
+            312.9,
+            540.777
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 14,
+            "bounds": [
+              315,
+              548,
+              564,
+              584
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 14,
+            "bounds": [
+              315,
+              584.5,
+              564,
+              602
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "FLUSH+RELOAD"
+        ],
+        "reviewed": true,
+        "notes": "Complete four-line reference including venue, pages and year; exclude entry 2."
+      },
+      {
+        "id": "1810.01497v2-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 55,
+        "source_bounds": [
+          268.524,
+          467.844,
+          275.436,
+          476.556
+        ],
+        "source_text": "[2]",
+        "source_context": "nel attacks against shared CPU\nattacks against DRAM [2], and\npages, it only pa\nslice; and on san",
+        "destination": {
+          "name": "cite.SeabornRH2015",
+          "page": 14,
+          "raw_pdf_point": [
+            312.9,
+            214.124
+          ],
+          "point": [
+            312.9,
+            577.876
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 14,
+            "bounds": [
+              315,
+              584.5,
+              564,
+              602
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 14,
+            "bounds": [
+              315,
+              548,
+              564,
+              584
+            ]
+          },
+          {
+            "page": 14,
+            "bounds": [
+              315,
+              602.5,
+              564,
+              638
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Exploiting the DRAM rowhammer bug"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line reference; neighboring references remain separate."
+      },
+      {
+        "id": "1810.01497v2-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 1,
+        "source_link_index_pymupdf": 12,
+        "source_xref": 73,
+        "source_bounds": [
+          480.684,
+          506.724,
+          496.476,
+          515.436
+        ],
+        "source_text": "VII",
+        "source_context": "aches in the literature discuss algorithms for\neviction sets, see Section VII for an overview.",
+        "destination": {
+          "name": "section.7",
+          "page": 13,
+          "raw_pdf_point": [
+            48.874,
+            224.592
+          ],
+          "point": [
+            48.874,
+            567.408
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 13,
+            "bounds": [
+              127,
+              579,
+              223,
+              591
+            ]
+          },
+          {
+            "page": 13,
+            "bounds": [
+              48,
+              595,
+              302,
+              690
+            ]
+          },
+          {
+            "page": 13,
+            "bounds": [
+              312,
+              285,
+              564,
+              309
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 13,
+            "bounds": [
+              312,
+              310,
+              564,
+              345
+            ]
+          },
+          {
+            "page": 13,
+            "bounds": [
+              48,
+              700,
+              301,
+              720
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "VII. RELATED WORK"
+        ],
+        "reviewed": true,
+        "notes": "Heading and complete opening paragraph, which continues at the top of the right body column below the floating figure. Exclude next paragraph and left-column footnote."
+      },
+      {
+        "id": "1810.01497v2-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 8,
+        "source_xref": 105,
+        "source_bounds": [
+          482.244,
+          478.524,
+          489.156,
+          487.356
+        ],
+        "source_text": "1",
+        "source_context": "e denote them by set(y). The most significant\nm the tag of y. See Figure 1 for a visualization",
+        "destination": {
+          "name": "figure.caption.7",
+          "page": 3,
+          "raw_pdf_point": [
+            48.874,
+            757.583
+          ],
+          "point": [
+            48.874,
+            34.417
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              48,
+              50,
+              301,
+              137
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              48,
+              141,
+              301,
+              225
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              48,
+              248,
+              301,
+              284
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 1:"
+        ],
+        "reviewed": true,
+        "notes": "Complete mapping diagram, all side labels and brace annotations, followed by the full seven-line caption."
+      },
+      {
+        "id": "1810.01497v2-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 3,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 123,
+        "source_bounds": [
+          182.244,
+          270.597,
+          187.2,
+          281.556
+        ],
+        "source_text": "m\ns1",
+        "source_context": "n pages of size 2. Common page sizes are 4KB (\n, or 2MB for huge pages1 (i.e. p = 21).",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 3,
+          "raw_pdf_point": [
+            60.437,
+            82.097
+          ],
+          "point": [
+            60.437,
+            709.903
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Source and destination reviewed; unsupported footnote control. Destination geometry does not change its eligibility."
+      },
+      {
+        "id": "1810.01497v2-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 124,
+        "source_bounds": [
+          92.004,
+          368.844,
+          113.916,
+          377.796
+        ],
+        "source_text": "III-C.",
+        "source_context": "frame number (PFN). We discuss how p\nin Section III-C. Figure 1 includes a visu",
+        "destination": {
+          "name": "subsection.3.3",
+          "page": 4,
+          "raw_pdf_point": [
+            48.874,
+            122.209
+          ],
+          "point": [
+            48.874,
+            669.791
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              48,
+              682,
+              199,
+              693
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              48,
+              696,
+              301,
+              720
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              312,
+              147,
+              564,
+              171
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              48,
+              651,
+              301,
+              674
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              312,
+              172,
+              564,
+              240
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "C. The Distribution of Eviction Sets"
+        ],
+        "reviewed": true,
+        "notes": "III-C source names the C subsection of III. Include its full opening paragraph across the page columns; Choosing Candidate Sets starts a separate paragraph."
+      },
+      {
+        "id": "1810.01497v2-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 3,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 130,
+        "source_bounds": [
+          188.964,
+          665.844,
+          195.876,
+          674.676
+        ],
+        "source_text": "2.",
+        "source_context": "ding physical address. This process, also known as a\nk, is illustrated in Figure 2. The bits of the VPN are",
+        "destination": {
+          "name": "figure.caption.9",
+          "page": 3,
+          "raw_pdf_point": [
+            48.874,
+            389.006
+          ],
+          "point": [
+            48.874,
+            402.994
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              48,
+              417,
+              301,
+              505
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              48,
+              509,
+              301,
+              580
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              48,
+              594,
+              301,
+              689
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 2:"
+        ],
+        "reviewed": true,
+        "notes": "Include every page-table level, bit labels, CR3 input, physical-address output and full six-line caption."
+      },
+      {
+        "id": "1810.01497v2-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 3,
+        "source_link_index_pymupdf": 5,
+        "source_xref": 136,
+        "source_bounds": [
+          532.404,
+          344.244,
+          539.316,
+          353.076
+        ],
+        "source_text": "(1)",
+        "source_context": "say that addresses are partially\n first term of Equation (1), i.e.,",
+        "destination": {
+          "name": "equation.3.1",
+          "page": 3,
+          "raw_pdf_point": [
+            319.404,
+            503.072
+          ],
+          "point": [
+            319.404,
+            288.928
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              318,
+              289,
+              542,
+              302
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              550,
+              290,
+              564,
+              302
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              312,
+              272,
+              472,
+              283
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              312,
+              308,
+              564,
+              320
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Complete equality/conjunction expression and independent equation number, excluding adjacent prose."
+      },
+      {
+        "id": "1810.01497v2-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 16,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 558,
+        "source_bounds": [
+          290.724,
+          89.844,
+          297.756,
+          98.676
+        ],
+        "source_text": "(2)",
+        "source_context": "d\na+1 elements that are not\ne first express recurrence (2)\nWe introduce the foll\n|S ∩P|. With this, (3",
+        "destination": {
+          "name": "equation.4.2",
+          "page": 7,
+          "raw_pdf_point": [
+            114.157,
+            279.276
+          ],
+          "point": [
+            114.158,
+            512.724
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 7,
+            "bounds": [
+              113,
+              506,
+              236,
+              532
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              288,
+              513,
+              301,
+              525
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 7,
+            "bounds": [
+              48,
+              501,
+              94,
+              512
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              48,
+              535,
+              301,
+              547
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Include the full recurrence with its numerator and denominator, plus the number."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "412a2c4",
+    "promoted_from": "held_out_v2",
+    "promotion_reason": "Native link loading aborts on a reversed horizontal annotation rectangle before this paper reaches target resolution; promote the whole document before changing the loader."
+  }
+}

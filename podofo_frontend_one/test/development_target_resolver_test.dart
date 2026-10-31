@@ -1,0 +1,808 @@
+import 'dart:convert';
+import 'dart:ui';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:pdfrx/pdfrx.dart';
+import 'package:podoco/podoco.dart' as podoco;
+import 'package:podofo_one/src/analysis/analysis_snapshot.dart';
+import 'package:podofo_one/src/analysis/preview_layout_repository.dart';
+import 'package:podofo_one/src/narration/source_map.dart';
+import 'package:podofo_one/src/previews/link_target.dart';
+import 'package:podofo_one/src/previews/link_target_resolver.dart';
+import 'package:podofo_one/src/previews/preview_text.dart';
+
+import 'fixtures/analysis_fixture.dart';
+
+void main() {
+  test(
+    'a selected abbreviation period requires its immediate named prefix',
+    () {
+      final regions = [
+        _r('figure', [100, 60, 450, 175], 'Complete diagram'),
+        _r('caption', [90, 190, 470, 215], 'Figure 2. Complete caption.'),
+      ];
+      final target = _resolve(regions, '.2,', before: 'As shown in Fig');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.label, 'Figure 2');
+      for (final before in ['', 'Value', 'Fig. 1', 'Fig shows', 'Figure']) {
+        expect(
+          _resolve(regions, '.2,', before: before).tier,
+          LinkTargetTier.unresolved,
+        );
+      }
+      expect(
+        _resolve(regions, '.2, 3', before: 'Fig').tier,
+        LinkTargetTier.unresolved,
+      );
+    },
+  );
+  test('loose prose boxes do not remove an equation stroke margin', () {
+    final regions = [
+      _r(
+        'text',
+        [90, 582, 522, 630],
+        'A preceding theorem with several lines.\n'
+            'Its assumptions include several variables.\n'
+            'With the stated probability over all tasks and\n'
+            'samples),',
+      ),
+      _r('formula', [200, 631, 411, 656], 'norm <= bound'),
+      _r('formula_number', [507, 638, 520, 651], '(1)'),
+    ];
+    final target = _resolve(regions, '(1)');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    // Radical overbars are vector strokes, outside the PDF's glyph boxes.
+    const stroke = Rect.fromLTRB(290, 629.5, 340, 630.5);
+    expect(target.parts.single.bounds.intersect(stroke), stroke);
+    expect(
+      target.parts.single.bounds.overlaps(
+        const Rect.fromLTRB(91, 619, 134, 627),
+      ),
+      false,
+    );
+
+    // Native glyphs within the requested margin still constrain it. Textless
+    // regions retain their model bounds because empty extraction proves nothing.
+    for (final text in ['Genuine neighboring ink.', '']) {
+      final crowded = _resolve([
+        _r('text', [280, 620, 400, 631], text),
+        ...regions.skip(1),
+      ], '(1)');
+      expect(
+        crowded.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: crowded.reason,
+      );
+      expect(
+        crowded.parts.single.bounds.overlaps(
+          const Rect.fromLTRB(281, 621, 340, 628),
+        ),
+        false,
+      );
+      if (text.isEmpty) {
+        expect(crowded.parts.single.bounds.top, greaterThanOrEqualTo(631));
+      }
+    }
+  });
+  test(
+    'partially selected parenthesized panels retain a single panel identity',
+    () {
+      final regions = [
+        _r('figure', [100, 60, 450, 175], 'Both panels'),
+        _r('caption', [90, 190, 470, 215], 'Figure 2. (a) First; (b) second.'),
+      ];
+      for (final c in [
+        ('2(', 'Fig. ', 'a), as shown.'),
+        ('2(a)', 'Fig. ', ', as shown.'),
+        ('Figure 2(a)', '', ', as shown.'),
+        ('Fig. 2(', '', 'a).'),
+      ]) {
+        final target = _resolve(regions, c.$1, before: c.$2, after: c.$3);
+        expect(
+          target.tier,
+          LinkTargetTier.matchedIdentity,
+          reason: target.reason,
+        );
+        expect(target.label, 'Figure 2a');
+        expect(
+          target.parts.single.bounds.contains(const Offset(440, 170)),
+          true,
+        );
+      }
+      for (final c in [
+        ('2(', 'Eq. ', 'a).'),
+        ('2(', 'Fig. ', 'a and b).'),
+        ('2(', 'Fig. ', 'a)3'),
+        ('2(', '', 'a).'),
+        ('2(', 'Fig. ', 'c).'),
+        ('Figure 2(', '', 'c).'),
+        ('Figure 2(', '', 'one).'),
+        ('Figure 2(a) and 2(b)', '', ''),
+        ('2(a), 2(b)', 'Figs. ', ''),
+      ]) {
+        expect(
+          _resolve(regions, c.$1, before: c.$2, after: c.$3).tier,
+          LinkTargetTier.unresolved,
+        );
+      }
+    },
+  );
+  test(
+    'caption-backed panel headings belong to their complete parent figure',
+    () {
+      final regions = [
+        _r('text', [100, 45, 270, 57], 'a) Original'),
+        _r('heading', [280, 45, 450, 57], 'b) Decoded'),
+        _r('figure', [100, 60, 270, 175], 'Original image'),
+        _r('figure', [280, 60, 450, 175], 'Decoded image'),
+        _r('caption', [90, 190, 470, 215], 'Figure 2. a) First; b) second.'),
+        _r('text', [90, 240, 470, 265], 'Unrelated paragraph.'),
+      ];
+      final target = _resolve(regions, '2a', before: 'Fig. ');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      for (final r in regions.take(5)) {
+        expect(
+          target.parts.any((p) => p.bounds.contains(_rect(r).center)),
+          true,
+        );
+      }
+      expect(
+        target.parts.any((p) => p.bounds.overlaps(_rect(regions.last))),
+        false,
+      );
+      expect(_resolve(regions, 'Figure 2c').tier, LinkTargetTier.unresolved);
+      final unproved = [...regions]
+        ..[4] = _r('caption', [90, 190, 470, 215], 'Figure 2. Comparison.');
+      expect(_resolve(unproved, 'Figure 2a').tier, LinkTargetTier.unresolved);
+      final distant = [...regions]
+        ..[0] = _r('text', [100, 10, 270, 22], 'a) Other text');
+      final spaced = _resolve(distant, 'Figure 2a');
+      expect(
+        spaced.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: spaced.reason,
+      );
+      expect(
+        spaced.parts.any((p) => p.bounds.overlaps(_rect(distant.first))),
+        false,
+      );
+    },
+  );
+  test('a panel link retains the whole figure and visual-footnote labels', () {
+    final regions = [
+      _r('figure', [100, 60, 270, 175], 'Original'),
+      _r('figure', [280, 60, 450, 175], 'Decoded'),
+      _r(
+        'text',
+        [150, 180, 230, 190],
+        '(a) Original',
+        subtype: 'vision_footnote',
+      ),
+      _r('caption', [330, 180, 410, 190], '(b) Decoded'),
+      _r('caption', [90, 205, 470, 230], 'Figure 2. Comparison.'),
+      _r('text', [90, 245, 470, 270], 'Unrelated paragraph.'),
+    ];
+    final target = _resolve(regions, '2a', before: 'Fig. ');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(target.label, 'Figure 2a');
+    for (final r in regions.take(5)) {
+      expect(target.parts.any((p) => p.bounds.contains(_rect(r).center)), true);
+    }
+    expect(
+      target.parts.any((p) => p.bounds.overlaps(_rect(regions.last))),
+      false,
+    );
+    expect(_resolve(regions, 'Figure 2').tier, LinkTargetTier.matchedIdentity);
+    expect(_resolve(regions, 'Figure 2c').tier, LinkTargetTier.unresolved);
+    final prose = [...regions]
+      ..[2] = _r('text', [150, 180, 230, 190], '(a) Ordinary prose.');
+    expect(_resolve(prose, 'Figure 2a').tier, LinkTargetTier.unresolved);
+  });
+  test('parent figure matching requires its own explicit panel marker', () {
+    final regions = [
+      _r('figure', [100, 60, 450, 175], 'Target'),
+      _r('caption', [90, 190, 470, 215], 'Figure 2. (a) First; (b) second.'),
+    ];
+    expect(_resolve(regions, 'Figure 2a').tier, LinkTargetTier.matchedIdentity);
+    expect(_resolve(regions, 'Figure 2b').tier, LinkTargetTier.matchedIdentity);
+    final noMarker = [...regions]
+      ..[1] = _r('caption', [90, 190, 470, 215], 'Figure 2. Unlabelled image.');
+    expect(_resolve(noMarker, 'Figure 2a').tier, LinkTargetTier.unresolved);
+    expect(
+      _resolve([
+        ...noMarker,
+        _r('caption', [90, 300, 470, 325], '(a) Another figure panel'),
+      ], 'Figure 2a').tier,
+      LinkTargetTier.unresolved,
+    );
+    final exact = [...regions]
+      ..[1] = _r('caption', [
+        90,
+        190,
+        470,
+        215,
+      ], 'Figure 2a. Independent caption.');
+    expect(_resolve(exact, 'Figure 2a').tier, LinkTargetTier.matchedIdentity);
+    expect(_resolve(exact, 'Figure 2b').tier, LinkTargetTier.unresolved);
+    expect(
+      _resolve([
+        _r('table', [100, 60, 450, 175], 'Table cells'),
+        _r('caption', [90, 190, 470, 215], 'Table 2. (a) First; (b) second.'),
+      ], 'Table 2a').tier,
+      LinkTargetTier.unresolved,
+    );
+  });
+  test(
+    'compound section labels retain parent identity and destination evidence',
+    () {
+      final regions = [
+        _r('heading', [100, 80, 300, 95], 'II. Related work'),
+        _r('heading', [100, 120, 300, 135], 'C. Earlier codecs'),
+        _r('text', [100, 145, 300, 180], 'A complete opening paragraph.'),
+        _r('heading', [330, 120, 550, 135], 'III. Method'),
+      ];
+      final target = _resolve(regions, 'II-C.', before: 'Details in Sec. ');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.label, 'Section II-C');
+      final wrongParent = [...regions]
+        ..[0] = _r('heading', [100, 80, 300, 95], 'III. Method');
+      expect(
+        _resolve(wrongParent, 'Section II-C').tier,
+        LinkTargetTier.unresolved,
+      );
+      final continuedPage = regions.sublist(1);
+      expect(
+        _resolve(continuedPage, 'Section II-C').tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(
+        _resolve(
+          continuedPage,
+          'Section II-C',
+          destinationPoint: const Offset(100, 118),
+        ).tier,
+        LinkTargetTier.matchedIdentity,
+      );
+      expect(
+        _resolve(
+          continuedPage,
+          'Section II-C',
+          destinationPoint: const Offset(100, 300),
+        ).tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(
+        _resolve(regions, 'Sections II-C and III-A').tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(
+        _resolve(regions, 'II-C', before: 'Figure ').tier,
+        LinkTargetTier.unresolved,
+      );
+    },
+  );
+  test('an opening paragraph continues into the next column without a page request', () {
+    final first = [
+      _r('heading', [60, 700, 280, 715], '4. Method'),
+      _r('text', [60, 735, 280, 785], 'The opening continues with the'),
+    ];
+    final continuation = _r('text', [
+      330,
+      80,
+      550,
+      120,
+    ], 'remaining text in the next column.');
+    final target = _resolve([
+      ...first,
+      continuation,
+      _r('text', [330, 140, 550, 170], 'A separate paragraph.'),
+    ], 'Section 4');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(target.parts.map((p) => p.page).toSet(), {1});
+    expect(
+      target.parts.any((p) => p.bounds.contains(const Offset(335, 84))),
+      true,
+    );
+    expect(
+      target.parts.every((p) => !p.bounds.contains(const Offset(335, 144))),
+      true,
+    );
+    expect(target.continuationPage, isNull);
+    final blocked = _resolve([
+      ...first,
+      _r('heading', [330, 50, 550, 65], '5. Next section'),
+      continuation,
+    ], 'Section 4');
+    expect(blocked.tier, LinkTargetTier.unresolved);
+    expect(blocked.continuationPage, isNull);
+    final unfinished = _resolve([
+      ...first,
+      _r('text', [
+        330,
+        80,
+        550,
+        120,
+      ], 'remaining text that is still unfinished'),
+    ], 'Section 4');
+    expect(unfinished.tier, LinkTargetTier.unresolved);
+    expect(unfinished.continuationPage, isNull);
+  });
+  test('section openings retain intervening descendant headings', () {
+    for (final labels in [('5', '5.1'), ('II', 'A')]) {
+      final target = _resolve([
+        _r('heading', [140, 100, 220, 115], '${labels.$1}. Results'),
+        _r('heading', [100, 125, 300, 140], '${labels.$2}. Overview'),
+        _r('text', [100, 150, 300, 180], 'The complete opening paragraph.'),
+      ], 'Section ${labels.$1}');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(
+        target.parts.any((p) => p.bounds.contains(const Offset(105, 129))),
+        true,
+        reason: 'The child heading belongs between the parent and paragraph',
+      );
+    }
+  });
+  test('a sibling heading prevents borrowing its opening paragraph', () {
+    final target = _resolve([
+      _r('heading', [140, 100, 220, 115], '5. Results'),
+      _r('heading', [100, 125, 300, 140], '6. Discussion'),
+      _r('text', [
+        100,
+        150,
+        300,
+        180,
+      ], 'This paragraph belongs to section six.'),
+    ], 'Section 5');
+    expect(target.tier, LinkTargetTier.unresolved);
+    expect(target.parts, isEmpty);
+  });
+  test(
+    'equations aligned across columns retain their own number and formula',
+    () {
+      final regions = [
+        _r('formula', [80, 100, 220, 120], 'a = b + c'),
+        _r('formula_number', [240, 100, 255, 120], '(1)'),
+        _r('formula', [340, 100, 420, 120], 'd = e + f'),
+        _r('formula_number', [480, 100, 495, 120], '(2)'),
+      ];
+      for (final number in [1, 2]) {
+        final target = _resolve(regions, '($number)');
+        expect(
+          target.tier,
+          LinkTargetTier.matchedIdentity,
+          reason: target.reason,
+        );
+        expect(
+          target.parts.any(
+            (p) => p.bounds.contains(_rect(regions[(number - 1) * 2]).center),
+          ),
+          true,
+        );
+        expect(
+          target.parts.any(
+            (p) => p.bounds.overlaps(_rect(regions[(2 - number) * 2])),
+          ),
+          false,
+        );
+      }
+      final tall = [...regions];
+      tall[2] = _r('formula', [340, 90, 460, 180], 'd = e + f\n= g + h');
+      tall[3] = _r('formula_number', [480, 160, 495, 180], '(2)');
+      final target = _resolve(tall, '(1)');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.parts.any((p) => p.bounds.overlaps(_rect(tall[2]))), false);
+    },
+  );
+  test('centered headings retain a complete text block ending in a colon', () {
+    final regions = [
+      _r('heading', [160, 100, 240, 115], 'III. Method'),
+      _r('text', [
+        100,
+        130,
+        300,
+        165,
+      ], 'The first line introduces\nthe following expression:'),
+      _r('formula', [140, 175, 240, 195], 'x = y + z'),
+    ];
+    final target = _resolve(regions, 'Section III');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(
+      target.parts.any((p) => p.bounds.contains(const Offset(150, 149))),
+      true,
+    );
+    expect(
+      target.parts.any((p) => p.bounds.overlaps(_rect(regions.last))),
+      false,
+    );
+  });
+  test(
+    'inline formula extent belongs to its paragraph and not the next one',
+    () {
+      final regions = [
+        _r('heading', [100, 100, 300, 115], '2. Method'),
+        _r('text', [
+          100,
+          130,
+          300,
+          170,
+        ], 'An opening paragraph\ncontains inline mathematics.'),
+        _r('formula', [140, 141, 210, 163], '', inline: true),
+        _r('text', [100, 180, 300, 210], 'Unrelated following paragraph.'),
+      ];
+      final target = _resolve(regions, 'Section 2');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(
+        target.parts.any((p) => p.bounds.contains(const Offset(209, 162))),
+        true,
+      );
+      expect(
+        target.parts.any((p) => p.bounds.overlaps(_rect(regions.last))),
+        false,
+      );
+    },
+  );
+  test('padding stops before an immediately following paragraph', () {
+    final target = _resolve([
+      _r('heading', [100, 100, 300, 115], '2. Method'),
+      _r('text', [100, 130, 300, 139], 'Complete.'),
+      _r('text', [100, 139.5, 300, 180], 'Next paragraph.'),
+    ], 'Section 2');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(target.parts.last.bounds.bottom, lessThanOrEqualTo(139.5));
+    expect(target.parts.last.bounds.contains(const Offset(105, 137)), true);
+  });
+  test(
+    'section continuation is bounded and requires first-column evidence',
+    () {
+      final first = [
+        _r('heading', [100, 700, 300, 715], '4. Method'),
+        _r('text', [100, 735, 300, 785], 'An opening block continues with the'),
+      ];
+      final next = [
+        _r('figure', [100, 50, 500, 160], 'Floating figure'),
+        _r('caption', [100, 165, 500, 180], 'Figure 9. Other.'),
+        _r('text', [100, 200, 500, 240], 'remaining words on the next page.'),
+        _r('text', [100, 250, 500, 280], 'Another paragraph.'),
+      ];
+      final pending = _resolve(first, 'Section 4');
+      expect(pending.continuationPage, 2);
+      expect(pending.parts, isEmpty);
+      final target = _resolve(first, 'Section 4', following: next);
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.parts.map((p) => p.page).toSet(), {1, 2});
+      expect(target.parts.last.bounds.top, greaterThan(180));
+      expect(target.parts.last.bounds.bottom, lessThan(250));
+      expect(
+        _resolve(first, 'Section 4', following: next, followingPage: 3).reason,
+        'invalidContinuationPage',
+      );
+      final newSection = [
+        _r('heading', [100, 185, 500, 195], '5. Next section'),
+        ...next,
+      ];
+      expect(
+        _resolve(first, 'Section 4', following: newSection).tier,
+        LinkTargetTier.unresolved,
+      );
+      final unfinished = [...next]
+        ..[2] = _r('text', [100, 200, 500, 240], 'still unfinished and');
+      final rejected = _resolve(first, 'Section 4', following: unfinished);
+      expect(rejected.tier, LinkTargetTier.unresolved);
+      expect(rejected.continuationPage, isNull);
+      expect(
+        _resolve([
+          ...first,
+          _r('heading', [100, 787, 300, 798], '5. Next'),
+        ], 'Section 4').continuationPage,
+        isNull,
+      );
+      final laterColumn = _resolve(
+        [
+          ...first,
+          _r('text', [
+            330,
+            100,
+            550,
+            180,
+          ], 'Remaining text in the next column.'),
+        ],
+        'Section 4',
+        following: next,
+      );
+      expect(laterColumn.tier, LinkTargetTier.unresolved);
+      expect(laterColumn.continuationPage, isNull);
+    },
+  );
+  test(
+    'plural equation prefixes apply only to a single linked list member',
+    () {
+      final regions = [
+        _r('formula', [100, 100, 220, 120], 'a = b + c'),
+        _r('formula_number', [240, 100, 255, 120], '(1)'),
+        _r('formula', [100, 160, 220, 180], 'd = e + f'),
+        _r('formula_number', [240, 160, 255, 180], '(2)'),
+      ];
+      expect(_resolve(regions, '1,', before: 'Eqs. ').label, 'Equation (1)');
+      expect(_resolve(regions, '2', before: 'Eqs. 1, ').label, 'Equation (2)');
+      expect(
+        _resolve(regions, '2', before: 'Eqs. 1, unrelated text ').tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(_resolve(regions, 'Eqs. 1, 2').tier, LinkTargetTier.unresolved);
+    },
+  );
+  test(
+    'Roman and appendix labels preserve explicit identity and ambiguity',
+    () {
+      final sections = [
+        _r('heading', [100, 100, 300, 120], 'III. Methods'),
+        _r('text', [100, 130, 300, 160], 'A complete opening paragraph.'),
+        _r('heading', [100, 200, 300, 220], 'A.1 Appendix method'),
+        _r('text', [100, 230, 300, 260], 'Another complete opening paragraph.'),
+      ];
+      expect(
+        _resolve(sections, 'III', before: 'Section ').label,
+        'Section III',
+      );
+      expect(
+        _resolve(sections, 'A.1.', before: 'Appendix ').label,
+        'Section A.1',
+      );
+      expect(
+        _resolve(sections, 'Sections II and III').tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(
+        _resolve(sections, 'Appendices A.1, A.2').tier,
+        LinkTargetTier.unresolved,
+      );
+      final table = [
+        _r('caption', [100, 100, 300, 120], 'TABLE I. Notations'),
+        _r('table', [100, 130, 300, 200], 'All table rows'),
+      ];
+      expect(_resolve(table, 'I', before: 'Table ').label, 'Table I');
+      expect(_resolve(table, 'I').tier, LinkTargetTier.unresolved);
+    },
+  );
+  test('a two-row figure retains every panel and its panel captions', () {
+    final regions = [
+      _r('figure', [310, 60, 420, 140], 'Panel one'),
+      _r('figure', [440, 60, 550, 140], 'Panel two'),
+      _r('caption', [390, 145, 480, 155], '(a) Upper row'),
+      _r('figure', [310, 165, 420, 245], 'Panel three'),
+      _r('figure', [440, 165, 550, 245], 'Panel four'),
+      _r('caption', [390, 250, 480, 260], '(b) Lower row'),
+      _r('caption', [310, 270, 550, 300], 'Figure 3. Four panels.'),
+      _r('text', [310, 330, 550, 380], 'Unrelated following paragraph.'),
+    ];
+    final target = _resolve(regions, 'Figure 3');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    for (final r in regions.take(7)) {
+      expect(target.parts.any((p) => p.bounds.contains(_rect(r).center)), true);
+    }
+    expect(
+      target.parts.any((p) => p.bounds.overlaps(_rect(regions.last))),
+      false,
+    );
+    expect(target.parts.length, lessThanOrEqualTo(4));
+  });
+
+  test(
+    'panel labels do not steal a pair of images from their main caption',
+    () {
+      final regions = [
+        _r('figure', [100, 60, 270, 175], 'Original'),
+        _r('figure', [280, 60, 450, 175], 'Decoded'),
+        _r('caption', [150, 180, 230, 190], '(a) Original'),
+        _r('caption', [330, 180, 410, 190], '(b) Decoded'),
+        _r('caption', [90, 205, 470, 230], 'Figure 1. Comparison.'),
+        _r('caption', [90, 245, 470, 270], 'Table 1. Unrelated table.'),
+        _r('table', [90, 280, 470, 330], 'Other results'),
+      ];
+      final target = _resolve(regions, 'Figure 1');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      for (final r in regions.take(5)) {
+        expect(
+          target.parts.any((p) => p.bounds.contains(_rect(r).center)),
+          true,
+        );
+      }
+      for (final r in regions.skip(5)) {
+        expect(target.parts.any((p) => p.bounds.overlaps(_rect(r))), false);
+      }
+    },
+  );
+
+  test('another numbered caption stops growth into a different figure', () {
+    final regions = [
+      _r('figure', [310, 60, 550, 140], 'Another figure'),
+      _r('caption', [310, 145, 550, 155], 'Figure 2. Other.'),
+      _r('figure', [310, 185, 550, 250], 'Target'),
+      _r('caption', [310, 270, 550, 300], 'Figure 3. Target.'),
+    ];
+    final target = _resolve(regions, 'Figure 3');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(
+      target.parts.any((p) => p.bounds.overlaps(_rect(regions.first))),
+      false,
+    );
+  });
+}
+
+Map<String, Object?> _r(
+  String category,
+  List<double> bounds,
+  String text, {
+  bool inline = false,
+  String? subtype,
+}) => {
+  'category': category,
+  'bounds': bounds,
+  'text': text,
+  'inline': inline,
+  'subtype': subtype,
+};
+
+Rect _rect(Map<String, Object?> region) {
+  final b = region['bounds'] as List<double>;
+  return Rect.fromLTRB(b[0], b[1], b[2], b[3]);
+}
+
+ResolvedLinkTarget _resolve(
+  List<Map<String, Object?>> regions,
+  String selected, {
+  String before = '',
+  String after = '',
+  List<Map<String, Object?>>? following,
+  int followingPage = 2,
+  Offset? destinationPoint,
+}) {
+  final first = _page(regions);
+  final next = following == null
+      ? null
+      : _page(following, number: followingPage);
+  return const LinkTargetResolver().resolve(
+    PreviewDestination(
+      page: 1,
+      pageSize: const Size(600, 800),
+      x: destinationPoint?.dx,
+      y: destinationPoint?.dy,
+    ),
+    source: LinkSourceText(
+      [PreviewTextSpan(0, selected.length, selected, [])],
+      before,
+      after,
+      false,
+    ),
+    text: first.text,
+    layout: first.layout,
+    followingText: next?.text,
+    followingLayout: next?.layout,
+  );
+}
+
+({PreviewTextPage text, PreviewLayoutEvidence layout}) _page(
+  List<Map<String, Object?>> regions, {
+  int number = 1,
+}) {
+  final content = StringBuffer(), boxes = <Rect>[];
+  for (final r in regions) {
+    final rect = _rect(r), text = r['text'] as String;
+    content.writeln(text);
+    var column = 0, row = 0;
+    for (var i = 0; i < text.length; i++) {
+      if (text[i] == '\n') {
+        boxes.add(Rect.zero);
+        column = 0;
+        row++;
+      } else {
+        boxes.add(
+          Rect.fromLTWH(
+            rect.left + column * 3 + 1,
+            rect.top + row * 12 + 1,
+            3,
+            7,
+          ),
+        );
+        column++;
+      }
+    }
+    boxes.add(Rect.zero);
+  }
+  final json = jsonDecode(
+    jsonEncode(
+      analysisFixture(
+        podoco.DocumentRef('grouping', 'fixture'),
+        pageIndex: number - 1,
+      ).toJson(),
+    ),
+  );
+  final page = json['payload']['page'];
+  page['page']['space'] = [600, 800];
+  page['provenance']['image'] = {
+    'width': 600,
+    'height': 800,
+    'row_stride': 2400,
+    'format': 'bgra8',
+    'alpha': 'opaque',
+  };
+  page['regions'] = [
+    for (var i = 0; i < regions.length; i++)
+      {
+        'id': i,
+        'model_class_id': 0,
+        'model_label': 'hand-annotated-fixture',
+        'category': regions[i]['category'],
+        'native_subtype': regions[i]['subtype'],
+        'bounds': regions[i]['bounds'],
+        'display_kind': regions[i]['category'] == 'formula'
+            ? (regions[i]['inline'] == true ? 'inline' : 'displayed')
+            : null,
+        'polygon': null,
+        'score': 1.0,
+        'diagnostics': [],
+      },
+  ];
+  page['formulas'] = [
+    for (var i = 0; i < regions.length; i++)
+      if (regions[i]['category'] == 'formula')
+        {
+          'region_id': i,
+          'state': {'state': 'not_requested'},
+        },
+  ];
+  page['reading_order'] = {
+    'region_ids': [for (var i = 0; i < regions.length; i++) i],
+    'profile': 'hand-annotated-fixture',
+  };
+  return (
+    text: PreviewTextPage(
+      PdfTextSnapshot(
+        page: number,
+        text: content.toString(),
+        boxes: [
+          for (final b in boxes)
+            PdfRect(b.left, 800 - b.top, b.right, 800 - b.bottom),
+        ],
+      ),
+      boxes,
+    ),
+    layout: PreviewLayoutEvidence(
+      AnalysisPageSnapshot.fromUpdate(
+        podoco.AnalysisUpdate.fromJson(Map<String, Object?>.from(json)),
+      ),
+    ),
+  );
+}

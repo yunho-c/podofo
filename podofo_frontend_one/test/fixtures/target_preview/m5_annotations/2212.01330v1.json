@@ -1,0 +1,660 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2212.01330v1.pdf",
+    "split": "development",
+    "id": "2212.01330v1",
+    "sha256": "6f91f156823363c12af55e1f189a959e27edb499831716179501d5e6e816e73f",
+    "source_url": "https://arxiv.org/abs/2212.01330v1",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2212.01330v1-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 36,
+        "source_bounds": [
+          235.261,
+          445.319,
+          242.235,
+          456.263
+        ],
+        "source_text": "[1]",
+        "source_context": "n methods can be categorized into two\nal codecs such as HEVC [1] and the state-\nnd learning-based codecs such as [3], [4]\ndifferen\nverting \ndiscretiz",
+        "destination": {
+          "name": "cite.hevc_2012overview",
+          "page": 5,
+          "raw_pdf_point": [
+            311.978,
+            534.894
+          ],
+          "point": [
+            311.978,
+            257.106
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              315,
+              260,
+              564,
+              286
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              315,
+              287,
+              564,
+              322
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "high efficiency video coding"
+        ],
+        "reviewed": true,
+        "notes": "Complete HEVC entry; number and all three lines."
+      },
+      {
+        "id": "2212.01330v1-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 37,
+        "source_bounds": [
+          115.684,
+          457.274,
+          122.658,
+          468.218
+        ],
+        "source_text": "[2]",
+        "source_context": "approaches: traditional codecs such as HEV\nof-the-art VVC [2], and learning-based cod\nand [5]. These learning-based compression\n.01",
+        "destination": {
+          "name": "cite.vvc",
+          "page": 5,
+          "raw_pdf_point": [
+            311.978,
+            506.394
+          ],
+          "point": [
+            311.978,
+            285.606
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              315,
+              287,
+              564,
+              322
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              315,
+              260,
+              564,
+              286
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              315,
+              323,
+              564,
+              349
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "versatile video coding"
+        ],
+        "reviewed": true,
+        "notes": "Complete VVC entry including page range and year; exclude entries 1 and 3."
+      },
+      {
+        "id": "2212.01330v1-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 1,
+        "source_link_index_pymupdf": 9,
+        "source_xref": 45,
+        "source_bounds": [
+          291.554,
+          696.699,
+          298.528,
+          707.643
+        ],
+        "source_text": "1.",
+        "source_context": "g, leading to visible errors\noder as illustrated in Fig. 1.\nare quantized for bo\nwhereas activations a\na solution to large los",
+        "destination": {
+          "name": "figure.1",
+          "page": 1,
+          "raw_pdf_point": [
+            340.555,
+            457.587
+          ],
+          "point": [
+            340.555,
+            334.413
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 1,
+            "bounds": [
+              311,
+              241,
+              564,
+              327
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              311,
+              337,
+              564,
+              373
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 1,
+            "bounds": [
+              311,
+              397,
+              564,
+              440
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 1."
+        ],
+        "reviewed": true,
+        "notes": "Both corrupted and reconstructed images, plus the complete four-line caption."
+      },
+      {
+        "id": "2212.01330v1-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 2,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 73,
+        "source_bounds": [
+          245.76,
+          404.009,
+          264.898,
+          414.953
+        ],
+        "source_text": "II-A",
+        "source_context": "d image compression model which we\nth is shown in Section II-A and the\nexplained in Section II-B. Experimental\nin the entrop\nsubnetwork, w",
+        "destination": {
+          "name": "subsection.2.1",
+          "page": 2,
+          "raw_pdf_point": [
+            48.964,
+            155.169
+          ],
+          "point": [
+            48.964,
+            636.831
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              48,
+              641,
+              247,
+              652
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              48,
+              657,
+              301,
+              716
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              69,
+              564,
+              140
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              48,
+              478,
+              301,
+              620
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              141,
+              564,
+              212
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "A. Description of baseline",
+          "a) Analysis-synthesis part"
+        ],
+        "reviewed": true,
+        "notes": "Opening paragraph crosses from bottom of left column to top of right column on the same page; include the inline a) label and all continuation lines through reference 12."
+      },
+      {
+        "id": "2212.01330v1-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 2,
+        "source_link_index_pymupdf": 4,
+        "source_xref": 74,
+        "source_bounds": [
+          223.934,
+          415.964,
+          242.524,
+          426.908
+        ],
+        "source_text": "II-B.",
+        "source_context": "ts with is shown in Section II-A and the\nod is explained in Section II-B. Experimental\ned in Section III and conclusions are given\nsubnetw\nThe m",
+        "destination": {
+          "name": "subsection.2.2",
+          "page": 2,
+          "raw_pdf_point": [
+            311.978,
+            441.188
+          ],
+          "point": [
+            311.978,
+            350.812
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              353,
+              412,
+              364
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              370,
+              564,
+              417
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              419,
+              564,
+              536
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              259,
+              564,
+              341
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "B. Quantization method"
+        ],
+        "reviewed": true,
+        "notes": "Heading and first four-line paragraph through the Fig. 2 reference; the indented quantization equation explanation is a new paragraph."
+      },
+      {
+        "id": "2212.01330v1-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 2,
+        "source_link_index_pymupdf": 7,
+        "source_xref": 77,
+        "source_bounds": [
+          244.527,
+          499.412,
+          250.504,
+          511.933
+        ],
+        "source_text": "xpe\n)1",
+        "source_context": "xperiment with. Our experiments are\n Call for Proposals (CfP)1 response of\ns a variational autoencoder with color-\noff betwe\nincrease th\nbut includ",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 2,
+          "raw_pdf_point": [
+            60.421,
+            66.85
+          ],
+          "point": [
+            60.421,
+            725.15
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Source and destination reviewed; footnote control outside the four target groups."
+      },
+      {
+        "id": "2212.01330v1-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 9,
+        "source_xref": 80,
+        "source_bounds": [
+          220.672,
+          536.855,
+          227.645,
+          547.798
+        ],
+        "source_text": "2.",
+        "source_context": "onal coding, and with context model and\nmodel as shown in Fig. 2. The CfP model\nional online tools providing rate distortion\nthus",
+        "destination": {
+          "name": "figure.2",
+          "page": 3,
+          "raw_pdf_point": [
+            240.988,
+            411.862
+          ],
+          "point": [
+            240.988,
+            380.138
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              50,
+              89,
+              565,
+              367
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              213,
+              383,
+              400,
+              392
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              89,
+              420,
+              263,
+              470
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              311,
+              414,
+              564,
+              477
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 2."
+        ],
+        "reviewed": true,
+        "notes": "Entire multi-branch codec diagram including red routes, rightmost hyper-decoder and all green network boxes. Figures 3/4 and following prose are separate."
+      },
+      {
+        "id": "2212.01330v1-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 2,
+        "source_link_index_pymupdf": 16,
+        "source_xref": 89,
+        "source_bounds": [
+          546.012,
+          200.969,
+          552.986,
+          211.525
+        ],
+        "source_text": "(1)",
+        "source_context": "model. Per color component\nprobability model as in (1).",
+        "destination": {
+          "name": "equation.2.1",
+          "page": 2,
+          "raw_pdf_point": [
+            344.084,
+            566.047
+          ],
+          "point": [
+            344.084,
+            225.953
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              343,
+              219,
+              532,
+              253
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              550,
+              230,
+              564,
+              242
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              141,
+              564,
+              212
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              259,
+              564,
+              341
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Full Gaussian mixture including summation limits, conditioning subscripts and equation number."
+      },
+      {
+        "id": "2212.01330v1-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 2,
+        "source_link_index_pymupdf": 18,
+        "source_xref": 91,
+        "source_bounds": [
+          432.457,
+          430.15,
+          439.43,
+          440.705
+        ],
+        "source_text": "(2)",
+        "source_context": "he main equation for quantization to a b-bit integer w\ncted range is written in (2), where s is the scaling \nmeter, clamp(x; X, X) is the function clipping",
+        "destination": {
+          "name": "equation.2.2",
+          "page": 2,
+          "raw_pdf_point": [
+            347.385,
+            248.046
+          ],
+          "point": [
+            347.385,
+            543.954
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              346,
+              541,
+              529,
+              566
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              550,
+              548,
+              564,
+              560
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              419,
+              564,
+              536
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              572,
+              564,
+              617
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Include fraction denominator, rounding delimiters, signed clamp bounds and the number."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "0f10834",
+    "promoted_from": "held_out_v1",
+    "promotion_reason": "Compound section identities II-A and II-B, including a cross-column opening paragraph, drive section resolver development."
+  }
+}

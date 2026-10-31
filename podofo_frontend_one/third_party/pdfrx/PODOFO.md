@@ -98,3 +98,11 @@ PoDoFo's hover preview uses the same predicate to skip annotation-only entries.
 `test/pdf_viewer_tap_test.dart` ports staging's mouse/touch, debounce, overlay,
 double-tap, drag, and real-PDF link/annotation regressions and checks annotation
 pixels, cursors, semantics, parameter updates, and custom rendering access.
+
+The link painter also invalidates queued annotation loads on document/page
+changes and disposal. It checks its generation before touching the page and
+after awaiting extraction, so stale work cannot access a closed document or
+repopulate the new viewer's cache. Failed optional annotation reads retain an
+empty entry until the next page invalidation. The cross-page hover/click/Back
+case in `test/reader_hover_preview_test.dart` reproduces the disposal race that
+motivated this local guard; it is not claimed as an upstream change.

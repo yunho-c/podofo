@@ -1,0 +1,723 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "1802.01436v2.pdf",
+    "split": "development",
+    "id": "1802.01436v2",
+    "sha256": "48f2accf70d56f3e8a807ec7cb9dfbdec57183a4fa8a1c6fb6f90a2d8406d94f",
+    "source_url": "https://arxiv.org/abs/1802.01436v2",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "1802.01436v2-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 91,
+        "source_bounds": [
+          444.566,
+          432.987,
+          466.484,
+          443.89
+        ],
+        "source_text": "2017;",
+        "source_context": "ssion have generated significant interest\nunities (e.g., Ballé et al., 2017; Theis et\n7). Like all lossy compression methods,",
+        "destination": {
+          "name": "cite.0@BaLaSi17",
+          "page": 12,
+          "raw_pdf_point": [
+            108.0,
+            294.747
+          ],
+          "point": [
+            108.0,
+            497.253
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within the page budget",
+        "required_parts": [
+          {
+            "page": 12,
+            "bounds": [
+              108,
+              501,
+              505,
+              522
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 12,
+            "bounds": [
+              108,
+              468,
+              505,
+              500
+            ]
+          },
+          {
+            "page": 12,
+            "bounds": [
+              108,
+              523,
+              505,
+              544
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "End-to-end Optimized Image Compression",
+          "1611.01704"
+        ],
+        "reviewed": true,
+        "notes": "Ditto-author entry: the preceding Balle author list establishes identity; only the complete 2017 entry is required."
+      },
+      {
+        "id": "1802.01436v2-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 92,
+        "source_bounds": [
+          122.572,
+          443.945,
+          144.49,
+          454.849
+        ],
+        "source_text": "2017;",
+        "source_context": "in both the machine learning and \nal., 2017; Toderici et al., 2017; R\nthey operate on a simple principle:\n14",
+        "destination": {
+          "name": "cite.0@ThShCuHu17",
+          "page": 13,
+          "raw_pdf_point": [
+            108.0,
+            545.456
+          ],
+          "point": [
+            108.0,
+            246.544
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within the page budget",
+        "required_parts": [
+          {
+            "page": 13,
+            "bounds": [
+              108,
+              249,
+              505,
+              270
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 13,
+            "bounds": [
+              108,
+              228,
+              505,
+              248
+            ]
+          },
+          {
+            "page": 13,
+            "bounds": [
+              108,
+              271,
+              505,
+              303
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Lossy Image Compression with Compressive Autoencoders",
+          "1703.00395"
+        ],
+        "reviewed": true,
+        "notes": "The year-only source annotation is disambiguated by the preceding author; two complete reference lines."
+      },
+      {
+        "id": "1802.01436v2-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 2,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 96,
+        "source_bounds": [
+          482.362,
+          324.653,
+          489.336,
+          335.183
+        ],
+        "source_text": "(1)",
+        "source_context": "the hope is that the amount of\nde length achieved in eq. (1) by\n instance, JPEG (1992) models",
+        "destination": {
+          "name": "equation.1.1",
+          "page": 1,
+          "raw_pdf_point": [
+            252.231,
+            137.066
+          ],
+          "point": [
+            252.231,
+            654.934
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within the page budget",
+        "required_parts": [
+          {
+            "page": 1,
+            "bounds": [
+              251,
+              657,
+              361,
+              672
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              491,
+              658,
+              505,
+              670
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 1,
+            "bounds": [
+              108,
+              637,
+              505,
+              657
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              108,
+              673,
+              505,
+              694
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Include the complete expression, subscript and separate equation number."
+      },
+      {
+        "id": "1802.01436v2-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 138,
+        "source_bounds": [
+          137.718,
+          407.676,
+          144.692,
+          418.206
+        ],
+        "source_text": "4",
+        "source_context": "methods. The parameters θg and\nsection 4 for details).",
+        "destination": {
+          "name": "section.4",
+          "page": 6,
+          "raw_pdf_point": [
+            108.0,
+            358.557
+          ],
+          "point": [
+            108.0,
+            433.443
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within the page budget",
+        "required_parts": [
+          {
+            "page": 6,
+            "bounds": [
+              108,
+              442,
+              201,
+              455
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              108,
+              465,
+              505,
+              487
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 6,
+            "bounds": [
+              108,
+              375,
+              505,
+              426
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              108,
+              499,
+              505,
+              594
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "EXPERIMENTS",
+          "Tensorflow"
+        ],
+        "reviewed": true,
+        "notes": "Section heading and complete two-line opening paragraph; exclude the next subsection."
+      },
+      {
+        "id": "1802.01436v2-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 4,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 152,
+        "source_bounds": [
+          203.274,
+          84.074,
+          210.247,
+          94.977
+        ],
+        "source_text": "1)",
+        "source_context": "inference model (figure 1). The synthesis transform\na reconstructed image from the latent representati",
+        "destination": {
+          "name": "figure.caption.1",
+          "page": 2,
+          "raw_pdf_point": [
+            108.0,
+            715.618
+          ],
+          "point": [
+            108.0,
+            76.382
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within the page budget",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              110,
+              84,
+              502,
+              185
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              108,
+              197,
+              505,
+              273
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              108,
+              292,
+              505,
+              444
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 1:"
+        ],
+        "reviewed": true,
+        "notes": "Three diagrams, their labels, and the entire seven-line caption are required."
+      },
+      {
+        "id": "1802.01436v2-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 4,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 162,
+        "source_bounds": [
+          417.666,
+          515.107,
+          424.64,
+          525.637
+        ],
+        "source_text": "(2)",
+        "source_context": "entropy model. Note that this term represents a\ndiscrete) entropy as in eq. (2), due to the uniform\nhowever, they are close approximations of each",
+        "destination": {
+          "name": "equation.2.2",
+          "page": 3,
+          "raw_pdf_point": [
+            224.438,
+            320.975
+          ],
+          "point": [
+            224.438,
+            471.025
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within the page budget",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              223,
+              473,
+              389,
+              487
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              491,
+              474,
+              505,
+              486
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              108,
+              447,
+              505,
+              468
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              108,
+              491,
+              505,
+              603
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Include nested delimiters and subscripts, and the separate equation number; surrounding prose is unrelated."
+      },
+      {
+        "id": "1802.01436v2-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 4,
+        "source_xref": 165,
+        "source_bounds": [
+          146.017,
+          558.943,
+          160.463,
+          569.847
+        ],
+        "source_text": "6.1",
+        "source_context": "et al. (2017), we model the prior usin\nappendix 6.1 for details):",
+        "destination": {
+          "name": "subsection.6.1",
+          "page": 14,
+          "raw_pdf_point": [
+            108.0,
+            472.488
+          ],
+          "point": [
+            108.0,
+            319.512
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within the page budget",
+        "required_parts": [
+          {
+            "page": 14,
+            "bounds": [
+              108,
+              327,
+              340,
+              338
+            ]
+          },
+          {
+            "page": 14,
+            "bounds": [
+              108,
+              348,
+              505,
+              435
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 14,
+            "bounds": [
+              108,
+              302,
+              181,
+              314
+            ]
+          },
+          {
+            "page": 14,
+            "bounds": [
+              108,
+              443,
+              505,
+              462
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "UNIVARIATE NON-PARAMETRIC DENSITY MODEL"
+        ],
+        "reviewed": true,
+        "notes": "Subsection heading and the full eight-line first paragraph; the following definition paragraph is unrelated."
+      },
+      {
+        "id": "1802.01436v2-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 4,
+        "source_link_index_pymupdf": 6,
+        "source_xref": 167,
+        "source_bounds": [
+          216.933,
+          656.194,
+          223.907,
+          667.261
+        ],
+        "source_text": "2",
+        "source_context": "he center panel in figure 2 visualizes a subset of th\nodel trained in this way. Visually, it is clear that the",
+        "destination": {
+          "name": "figure.caption.2",
+          "page": 3,
+          "raw_pdf_point": [
+            108.0,
+            715.618
+          ],
+          "point": [
+            108.0,
+            76.382
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within the page budget",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              108,
+              81,
+              505,
+              229
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              108,
+              238,
+              505,
+              313
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              108,
+              330,
+              505,
+              416
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2:"
+        ],
+        "reviewed": true,
+        "notes": "Four adjacent image panels and the entire seven-line caption; exclude the body paragraph below."
+      },
+      {
+        "id": "1802.01436v2-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": null,
+        "source_page": 6,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 202,
+        "source_bounds": [
+          328.768,
+          561.988,
+          334.746,
+          574.481
+        ],
+        "source_text": "y su\n.1",
+        "source_context": "n shown to be particularly suitable for density model\n016a; Ballé et al., 2017).1 ha and hs are composed\nunits). To make the hyperprior model and the factor",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 6,
+          "raw_pdf_point": [
+            124.139,
+            82.064
+          ],
+          "point": [
+            124.139,
+            709.936
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Footnote control remains outside the four supported target groups."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant visual review of full source/target pages at 1.5x with independent MuPDF text geometry, before resolver or model output",
+    "resolver_baseline": "1a31463"
+  }
+}

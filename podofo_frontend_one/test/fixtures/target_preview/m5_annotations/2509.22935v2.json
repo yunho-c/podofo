@@ -1,0 +1,794 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2509.22935v2.pdf",
+    "split": "development",
+    "replaces_promoted_document": "1810.01497v2",
+    "id": "2509.22935v2",
+    "sha256": "06430a2b15746f1469761b6fbc2b82eab6e1020b18da17099f2b4645cea11062",
+    "source_url": "https://arxiv.org/abs/2509.22935v2",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2509.22935v2-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 19,
+        "source_bounds": [
+          69.87,
+          69.131,
+          72.361,
+          74.738
+        ],
+        "source_text": "",
+        "source_context": "",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 1,
+          "raw_pdf_point": [
+            70.866,
+            87.459
+          ],
+          "point": [
+            70.866,
+            704.541
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Source-page author footnote; unsupported control outside the four target groups."
+      },
+      {
+        "id": "2509.22935v2-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 20,
+        "source_bounds": [
+          469.286,
+          502.706,
+          510.49,
+          514.659
+        ],
+        "source_text": "(Xu et al.,\nantar et al",
+        "source_context": "lications gain traction (Xu et al., 2024),\nmodel compression (Frantar et al., 2022;",
+        "destination": {
+          "name": "cite.xu2024ondevicelanguagemodelscomprehensive",
+          "page": 15,
+          "raw_pdf_point": [
+            45.96,
+            159.354
+          ],
+          "point": [
+            45.96,
+            632.646
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 15,
+            "bounds": [
+              70,
+              636,
+              543,
+              658
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 15,
+            "bounds": [
+              70,
+              664,
+              544,
+              719
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "On-device language models: A comprehensive review"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line reference including all authors, year and URL; exclude the following Zhang entry."
+      },
+      {
+        "id": "2509.22935v2-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 22,
+        "source_bounds": [
+          456.416,
+          514.661,
+          515.303,
+          526.614
+        ],
+        "source_text": "(Frantar et al.,\naining (QAT) (",
+        "source_context": "pplications gain traction (Xu et al., 2024),\nvia model compression (Frantar et al., 2022;\n quantization-aware training (QAT) (Chen",
+        "destination": {
+          "name": "cite.frantar2023gptqaccurateposttrainingquantization",
+          "page": 12,
+          "raw_pdf_point": [
+            45.96,
+            88.619
+          ],
+          "point": [
+            45.96,
+            703.381
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 12,
+            "bounds": [
+              70,
+              707,
+              543,
+              718
+            ]
+          },
+          {
+            "page": 13,
+            "bounds": [
+              80,
+              66,
+              543,
+              88
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 12,
+            "bounds": [
+              70,
+              668,
+              543,
+              701
+            ]
+          },
+          {
+            "page": 13,
+            "bounds": [
+              70,
+              94,
+              544,
+              159
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "GPTQ: accurate post-training quantization"
+        ],
+        "reviewed": true,
+        "notes": "Reference starts on the last line of page 12 and finishes in the first two lines of page 13, including the DOI URL. Both portions are required."
+      },
+      {
+        "id": "2509.22935v2-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 337,
+        "source_bounds": [
+          392.891,
+          232.648,
+          399.864,
+          244.601
+        ],
+        "source_text": "1",
+        "source_context": "e statistic.\nThis finding allows higher-quality q\ncompute budget (figure 1 (Left)).",
+        "destination": {
+          "name": "figure.caption.1",
+          "page": 2,
+          "raw_pdf_point": [
+            70.866,
+            446.851
+          ],
+          "point": [
+            70.866,
+            345.149
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              70,
+              352,
+              544,
+              530
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              70,
+              539,
+              544,
+              627
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              70,
+              649,
+              171,
+              667
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 1"
+        ],
+        "reviewed": true,
+        "notes": "Both plots, every axis/title/colorbar and separate legends below, plus the full eight-line shared caption."
+      },
+      {
+        "id": "2509.22935v2-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 4,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 385,
+        "source_bounds": [
+          145.773,
+          378.401,
+          152.745,
+          389.192
+        ],
+        "source_text": "2",
+        "source_context": "it can also predict the optimal fraction w\nprecision. Figure 2 provides a comparison b\nthe two approaches.\nIt is clearly seen",
+        "destination": {
+          "name": "figure.caption.2",
+          "page": 4,
+          "raw_pdf_point": [
+            306.0,
+            525.319
+          ],
+          "point": [
+            306.0,
+            266.681
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              306,
+              229,
+              544,
+              535
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              305,
+              547,
+              544,
+              625
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              70,
+              258,
+              291,
+              424
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              70,
+              642,
+              544,
+              685
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2"
+        ],
+        "reviewed": true,
+        "notes": "Both vertically stacked plots, labels, legend and the complete seven-line caption. Exclude adjacent left-column prose and the full-width results paragraph below."
+      },
+      {
+        "id": "2509.22935v2-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 5,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 392,
+        "source_bounds": [
+          372.577,
+          101.75,
+          387.297,
+          112.541
+        ],
+        "source_text": "3.2.",
+        "source_context": "tilize all available data is to model the loss scaling l\nfocus on this in section 3.2.",
+        "destination": {
+          "name": "subsection.3.2",
+          "page": 5,
+          "raw_pdf_point": [
+            70.866,
+            606.256
+          ],
+          "point": [
+            70.866,
+            185.744
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              70,
+              199,
+              181,
+              215
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              69,
+              220,
+              544,
+              474
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              70,
+              487,
+              544,
+              510
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.2",
+          "Loss Scaling Law"
+        ],
+        "reviewed": true,
+        "notes": "Heading and complete opening explanation through equation (3.1) and its variable definitions. The pre-equation block ending in form of is incomplete; stop before Loss Scaling Law Fit Results."
+      },
+      {
+        "id": "2509.22935v2-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 5,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 393,
+        "source_bounds": [
+          171.772,
+          219.964,
+          178.744,
+          231.916
+        ],
+        "source_text": "2,\nthi",
+        "source_context": "As described in section 2, Chen et al. (2025b) we\n(D = 0). We extend this idea by making the lo",
+        "destination": {
+          "name": "section.2",
+          "page": 2,
+          "raw_pdf_point": [
+            70.866,
+            153.743
+          ],
+          "point": [
+            70.866,
+            638.257
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              70,
+              649,
+              171,
+              667
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              70,
+              676,
+              544,
+              725
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              70,
+              65,
+              544,
+              173
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              70,
+              539,
+              544,
+              627
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              70,
+              186,
+              544,
+              269
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "2",
+          "Related Work"
+        ],
+        "reviewed": true,
+        "notes": "Heading and the complete Quantization of LLMs opening paragraph, continuing through the first nine lines of page 3. Loss Scaling Laws starts a separate run-in paragraph."
+      },
+      {
+        "id": "2509.22935v2-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 6,
+        "source_xref": 398,
+        "source_bounds": [
+          483.261,
+          255.829,
+          497.98,
+          267.782
+        ],
+        "source_text": "2.1,\nich c",
+        "source_context": "it-widths. However, we do not follow\n is because in equation 2.1, the QAT\nwth of token count, which causes the",
+        "destination": {
+          "name": "equation.2.1",
+          "page": 3,
+          "raw_pdf_point": [
+            192.059,
+            471.993
+          ],
+          "point": [
+            192.059,
+            320.007
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              191,
+              314,
+              421,
+              355
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              521,
+              323,
+              544,
+              336
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              70,
+              284,
+              543,
+              305
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              70,
+              364,
+              543,
+              389
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2.1)"
+        ],
+        "reviewed": true,
+        "notes": "Complete scaling-law expression, both underbraces and their labels, fractions, exponents and equation number."
+      },
+      {
+        "id": "2509.22935v2-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 8,
+        "source_xref": 400,
+        "source_bounds": [
+          166.235,
+          462.124,
+          180.954,
+          472.915
+        ],
+        "source_text": "3.1.",
+        "source_context": "QAT fraction on tokens-per-parameter-byte as d\ndescribed in equation 3.1.",
+        "destination": {
+          "name": "equation.3.1",
+          "page": 5,
+          "raw_pdf_point": [
+            522.991,
+            436.845
+          ],
+          "point": [
+            522.991,
+            355.155
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              137,
+              324,
+              476,
+              410
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              521,
+              361,
+              544,
+              374
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              70,
+              304,
+              226,
+              316
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              70,
+              420,
+              543,
+              473
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(3.1)"
+        ],
+        "reviewed": true,
+        "notes": "Both aligned expression rows, every underbrace and description, all fraction terms and the shared equation number."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "412a2c4",
+    "promoted_from": "held_out_v3",
+    "promotion_reason": "Accepted Xu (2024) reference contains the entire next Zhang entry; bibliography boundary and cross-page entry regressions drive further development."
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "policy": "Next previously unused arXiv document in filename order, at most 60 pages and at least two unique linked named destinations per group; exclude every version of sampled paper IDs. No detector or resolver output inspected.",
+  "candidate_documents_scanned": 37,
+  "selected": [
+    {
+      "pdf": "2605.10938v2.pdf",
+      "pages": 39,
+      "unique_named_targets": {
+        "citation": 92,
+        "equation": 3,
+        "figure_table": 33,
+        "section": 9
+      }
+    }
+  ],
+  "replaced_development_documents": [
+    "2512.05117v3"
+  ],
+  "annotation_status": "pending_source_review",
+  "resolver_output_examined": false,
+  "excluded_document_sources": [
+    "m5_sampling.json",
+    "real_papers.json (development seeds)"
+  ]
+}

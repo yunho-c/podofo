@@ -1,0 +1,607 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2608.04891v1.pdf",
+    "split": "held_out",
+    "replaces_promoted_document": "2605.10938v2",
+    "id": "2608.04891v1",
+    "sha256": "8bd21f879a0e348018bc1ec9639522f63e5df71d7a3fedf48b0fed61b58ab221",
+    "source_url": "https://arxiv.org/abs/2608.04891v1",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2608.04891v1-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 16,
+        "source_xref": 173,
+        "source_bounds": [
+          352.472,
+          437.805,
+          358.634,
+          445.433
+        ],
+        "source_text": "[9,",
+        "source_context": "gnment pro-\n lightweight\nleveraging data-driven spatial-tempo\nmethods [9, 11, 14\u201316, 18, 19] have achie",
+        "destination": {
+          "name": "cite.fvc",
+          "page": 9,
+          "raw_pdf_point": [
+            57.041,
+            315.786
+          ],
+          "point": [
+            57.041,
+            476.214
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 9,
+            "bounds": [
+              56,
+              478,
+              297,
+              511
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 9,
+            "bounds": [
+              53,
+              511,
+              297,
+              542
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "FVC: A new framework towards deep video compression in feature space"
+        ],
+        "reviewed": true,
+        "notes": "Complete reference [9], including venue, pages and DOI. Exclude the following Isola reference [10]."
+      },
+      {
+        "id": "2608.04891v1-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 17,
+        "source_xref": 174,
+        "source_bounds": [
+          360.221,
+          437.805,
+          370.552,
+          445.352
+        ],
+        "source_text": ", 11,",
+        "source_context": "ment pro-\nghtweight\nleveraging data-driven spatial-temporal \nmethods [9, 11, 14\u201316, 18, 19] have achieved",
+        "destination": {
+          "name": "cite.DCVCRT",
+          "page": 9,
+          "raw_pdf_point": [
+            53.798,
+            252.025
+          ],
+          "point": [
+            53.798,
+            539.975
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 9,
+            "bounds": [
+              53,
+              542.5,
+              297,
+              582
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 9,
+            "bounds": [
+              53,
+              511,
+              297,
+              542
+            ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              53,
+              582.5,
+              297,
+              606
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Towards practical real-time neural video compression"
+        ],
+        "reviewed": true,
+        "notes": "Complete reference [11], including the wrapped DOI on the fifth line; exclude [10] and [12]."
+      },
+      {
+        "id": "2608.04891v1-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 10,
+        "source_xref": 229,
+        "source_bounds": [
+          488.867,
+          207.041,
+          495.112,
+          217.309
+        ],
+        "source_text": "1,",
+        "source_context": "e among coding speed, compression efficiency,\nn fidelity. As shown in Fig. 1, it supports real-\nssion on a single consumer-grade NVIDIA RTX",
+        "destination": {
+          "name": "figure.caption.5",
+          "page": 2,
+          "raw_pdf_point": [
+            53.798,
+            713.793
+          ],
+          "point": [
+            53.798,
+            78.207
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              54,
+              82,
+              292,
+              379
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              53,
+              389,
+              297,
+              466
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              53,
+              492,
+              297,
+              588
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Coding efficiency and runtime comparison"
+        ],
+        "reviewed": true,
+        "notes": "Whole Figure 1 performance comparison, including all rows, column headings and full caption/footnotes. Exclude continued prose below."
+      },
+      {
+        "id": "2608.04891v1-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 3,
+        "source_link_index_pymupdf": 14,
+        "source_xref": 337,
+        "source_bounds": [
+          523.271,
+          634.272,
+          529.349,
+          644.706
+        ],
+        "source_text": "3)",
+        "source_context": "odel implemented using Diffusers [29].\ng on an RTX 4090 GPU (Fig. 3) reveals",
+        "destination": {
+          "name": "figure.caption.7",
+          "page": 3,
+          "raw_pdf_point": [
+            317.955,
+            537.195
+          ],
+          "point": [
+            317.955,
+            254.805
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              328,
+              257,
+              550,
+              436
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              448,
+              561,
+              469
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              494,
+              561,
+              579
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              53,
+              260,
+              297,
+              447
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Inference latency of the individual modules"
+        ],
+        "reviewed": true,
+        "notes": "Complete Figure 3: both stacked-bar comparisons, arrows, speed labels, axes, shared color legend and two-line caption. Exclude section headings/prose below and neighboring left-column body."
+      },
+      {
+        "id": "2608.04891v1-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 4,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 344,
+        "source_bounds": [
+          196.315,
+          453.477,
+          202.477,
+          463.606
+        ],
+        "source_text": "(1)",
+        "source_context": "RT encoder [11], maps the current frame into a latent\nion \ud835\udc66\ud835\udc61as formulated in Eq. (1):",
+        "destination": {
+          "name": "equation.1",
+          "page": 4,
+          "raw_pdf_point": [
+            145.676,
+            327.253
+          ],
+          "point": [
+            145.676,
+            464.747
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              144,
+              468,
+              296,
+              480
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              53,
+              437,
+              297,
+              464
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              53,
+              484,
+              297,
+              505
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Complete encoder equation, subscripted terms and number; exclude surrounding prose."
+      },
+      {
+        "id": "2608.04891v1-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 4,
+        "source_link_index_pymupdf": 5,
+        "source_xref": 346,
+        "source_bounds": [
+          105.3,
+          538.797,
+          111.462,
+          548.926
+        ],
+        "source_text": "(2)",
+        "source_context": "DCVC-RT decoder [11], using the temporal \nshown in Eq. (2):\n\u02c6=( \u02c6)",
+        "destination": {
+          "name": "equation.2",
+          "page": 4,
+          "raw_pdf_point": [
+            143.364,
+            245.035
+          ],
+          "point": [
+            143.364,
+            546.965
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              142,
+              548.5,
+              296,
+              562
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              53,
+              528,
+              297,
+              548.25
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              53,
+              564,
+              297,
+              585
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Complete feature-decoder equation including hats, subscripts and number. Exclude surrounding prose."
+      },
+      {
+        "id": "2608.04891v1-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 12,
+        "source_xref": 353,
+        "source_bounds": [
+          452.442,
+          656.19,
+          464.952,
+          666.624
+        ],
+        "source_text": "3.4)",
+        "source_context": "ffloading the burden of generative space projection en-\nthe decoder (details in Sec. 3.4), this asymmetric design\nhe encoding complexity. Concurrently, driven by the end-",
+        "destination": {
+          "name": "subsection.3.4",
+          "page": 5,
+          "raw_pdf_point": [
+            53.798,
+            708.314
+          ],
+          "point": [
+            53.798,
+            83.686
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              53,
+              85,
+              284,
+              98
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              53,
+              100,
+              298,
+              188
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              53,
+              188.5,
+              298,
+              241
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Soft LFQ for Generative Space Alignment"
+        ],
+        "reviewed": true,
+        "notes": "Section 3.4 heading and complete first paragraph ending regularization strategy. Exclude the indented However paragraph."
+      },
+      {
+        "id": "2608.04891v1-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 5,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 354,
+        "source_bounds": [
+          128.667,
+          100.191,
+          141.177,
+          110.46
+        ],
+        "source_text": "3.1,",
+        "source_context": "As discussed in Sec. 3.1, relying on explicit generat\ndiffusion at the decoder side introduces significant lat",
+        "destination": {
+          "name": "subsection.3.1",
+          "page": 3,
+          "raw_pdf_point": [
+            317.955,
+            284.103
+          ],
+          "point": [
+            317.955,
+            507.897
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              509,
+              523,
+              522
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              525,
+              561,
+              579
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              494,
+              449,
+              506
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              580,
+              561,
+              655
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Motivation and Bottleneck Analysis"
+        ],
+        "reviewed": true,
+        "notes": "Subsection 3.1 heading and entire first paragraph through paradigm [27]. Exclude the parent section heading and next paragraph."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "e8ab05bf91fb20e2ef930f18234b36b5789ea42f"
+  }
+}

@@ -1,0 +1,659 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2111.13850v2.pdf",
+    "split": "development",
+    "id": "2111.13850v2",
+    "sha256": "39deb44255ce67154186ce99fda82a94cc056b7a88c0b9fe8abfd35390bd369a",
+    "source_url": "https://arxiv.org/abs/2111.13850v2",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2111.13850v2-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 172,
+        "source_bounds": [
+          192.137,
+          516.701,
+          199.111,
+          527.645
+        ],
+        "source_text": "[1]",
+        "source_context": "decades, several video coding standards have been\n including H.264/AVC [1], H.265/HEVC [2], and\nC [3].",
+        "destination": {
+          "name": "cite.wiegand2003overview",
+          "page": 10,
+          "raw_pdf_point": [
+            311.978,
+            243.253
+          ],
+          "point": [
+            311.978,
+            548.747
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              315,
+              551,
+              564,
+              578
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              315,
+              579,
+              564,
+              614
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "H.264/AVC video coding standard"
+        ],
+        "reviewed": true,
+        "notes": "Three-line numbered entry, excluding entry 2."
+      },
+      {
+        "id": "2111.13850v2-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 173,
+        "source_bounds": [
+          269.487,
+          516.701,
+          276.461,
+          527.645
+        ],
+        "source_text": "[2]",
+        "source_context": "deo coding standards have been\nAVC [1], H.265/HEVC [2], and\nbenefits on optim\ncodecs due to th",
+        "destination": {
+          "name": "cite.sullivan2012overview",
+          "page": 10,
+          "raw_pdf_point": [
+            311.978,
+            214.753
+          ],
+          "point": [
+            311.978,
+            577.247
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              315,
+              578.5,
+              564,
+              614
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              315,
+              551,
+              564,
+              578
+            ]
+          },
+          {
+            "page": 10,
+            "bounds": [
+              315,
+              614.5,
+              564,
+              650
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "high efficiency video coding"
+        ],
+        "reviewed": true,
+        "notes": "Complete four-line HEVC entry, including page range and year."
+      },
+      {
+        "id": "2111.13850v2-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 2,
+        "source_link_index_pymupdf": 6,
+        "source_xref": 240,
+        "source_bounds": [
+          85.011,
+          308.987,
+          103.601,
+          319.931
+        ],
+        "source_text": "II-C.",
+        "source_context": "playing any tricks to harm it. More \nin Sec. II-C. In addition, many sc\n[27], [37] used the auto-regressive en",
+        "destination": {
+          "name": "subsection.2.3",
+          "page": 3,
+          "raw_pdf_point": [
+            48.964,
+            469.366
+          ],
+          "point": [
+            48.964,
+            322.634
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              48,
+              327,
+              292,
+              338
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              48,
+              344,
+              301,
+              750
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              48,
+              253,
+              564,
+              307
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              311,
+              327,
+              564,
+              409
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "C. Traditional Video Codecs"
+        ],
+        "reviewed": true,
+        "notes": "Source II-C names subsection C of section II; include its entire single opening paragraph through the final 40 percent sentence."
+      },
+      {
+        "id": "2111.13850v2-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 13,
+        "source_xref": 247,
+        "source_bounds": [
+          137.218,
+          404.628,
+          144.192,
+          415.572
+        ],
+        "source_text": "1",
+        "source_context": "entropy model could further boost the compres\na large margin. Fig. 1 compares the compress\nrunning time on 1080p videos. Our scheme ac",
+        "destination": {
+          "name": "figure.1",
+          "page": 1,
+          "raw_pdf_point": [
+            555.085,
+            500.775
+          ],
+          "point": [
+            555.085,
+            291.225
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 1,
+            "bounds": [
+              320,
+              175,
+              552,
+              305
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              311,
+              315,
+              564,
+              351
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 1,
+            "bounds": [
+              311,
+              377,
+              564,
+              550
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 1."
+        ],
+        "reviewed": true,
+        "notes": "Both the rate-saving bar chart and encoding-time scatterplot belong to the figure; include all axis labels and the four-line caption."
+      },
+      {
+        "id": "2111.13850v2-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 2,
+        "source_link_index_pymupdf": 15,
+        "source_xref": 249,
+        "source_bounds": [
+          292.391,
+          690.272,
+          301.019,
+          701.215
+        ],
+        "source_text": "II",
+        "source_context": "nized as follows. Section II\nk. Section III describes the\nentropy model to ex\nlatent representations \nfrom residual coding t",
+        "destination": {
+          "name": "section.2",
+          "page": 2,
+          "raw_pdf_point": [
+            311.978,
+            739.517
+          ],
+          "point": [
+            311.978,
+            52.483
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              393,
+              57,
+              482,
+              68
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              78,
+              453,
+              89
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              97,
+              564,
+              359
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              311,
+              385,
+              564,
+              430
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "II.",
+          "RELATED WORK",
+          "A. Traditional Video Compression"
+        ],
+        "reviewed": true,
+        "notes": "Section II starts directly with subsection A. Include the intervening subheading and its opening paragraph; exclude subsection B."
+      },
+      {
+        "id": "2111.13850v2-figure_table-2",
+        "group": "figure_table",
+        "kind": "table",
+        "source_page": 3,
+        "source_link_index_pymupdf": 5,
+        "source_xref": 271,
+        "source_bounds": [
+          235.207,
+          451.168,
+          240.517,
+          462.112
+        ],
+        "source_text": "I.",
+        "source_context": "atio. For example, the gap between x265\n0%, as shown in Table I. Secondly, an\nod of 10 or 12 is used to limit temporal\noptical \nvt for e",
+        "destination": {
+          "name": "table.1",
+          "page": 7,
+          "raw_pdf_point": [
+            48.964,
+            478.874
+          ],
+          "point": [
+            48.964,
+            313.126
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 7,
+            "bounds": [
+              197,
+              319,
+              415,
+              337
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              93,
+              345,
+              520,
+              439
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              93,
+              440,
+              520,
+              467
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 7,
+            "bounds": [
+              48,
+              295,
+              555,
+              304
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              93,
+              479,
+              520,
+              600
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "TABLE I",
+          "BD-RATE FOR PSNR"
+        ],
+        "reviewed": true,
+        "notes": "Include the caption above, all rows/columns and both explanatory table notes beneath; Table II is separate."
+      },
+      {
+        "id": "2111.13850v2-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 10,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 745,
+        "source_bounds": [
+          288.237,
+          461.402,
+          295.21,
+          471.958
+        ],
+        "source_text": "(1)",
+        "source_context": "etwork layers, we add more\nction (fe) module in Eq. (1),\nle in Eq. (4), and the frame\nscheme outperforms \nsettings for low-dela",
+        "destination": {
+          "name": "equation.3.1",
+          "page": 4,
+          "raw_pdf_point": [
+            393.153,
+            355.635
+          ],
+          "point": [
+            393.153,
+            436.365
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              366,
+              459,
+              510,
+              475
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              550,
+              461,
+              564,
+              472
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              311,
+              393,
+              564,
+              450
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              311,
+              484,
+              564,
+              540
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Include the indexed feature expression, complete l range, and detached equation number."
+      },
+      {
+        "id": "2111.13850v2-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 10,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 746,
+        "source_bounds": [
+          227.56,
+          473.358,
+          234.534,
+          483.913
+        ],
+        "source_text": "(4)",
+        "source_context": "he feature extraction (fe) module in Eq. (1),\nment (cr) module in Eq. (4), and the frame\nFig. 2 of 1L1C model to make the MACs\nsetting\nfar be",
+        "destination": {
+          "name": "equation.3.4",
+          "page": 4,
+          "raw_pdf_point": [
+            422.943,
+            100.93
+          ],
+          "point": [
+            422.943,
+            691.07
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              353,
+              713,
+              522,
+              731
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              550,
+              718,
+              564,
+              729
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              311,
+              648,
+              564,
+              705
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              48,
+              676,
+              301,
+              748
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(4)"
+        ],
+        "reviewed": true,
+        "notes": "Include all overbars, superscripts/subscripts and refinement expression; exclude preceding explanation and the left column."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "0f10834",
+    "promoted_from": "held_out_v1",
+    "promotion_reason": "Missing intervening subsection heading; compound section identity and table fallback need development review."
+  }
+}

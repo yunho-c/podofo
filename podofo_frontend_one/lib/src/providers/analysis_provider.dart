@@ -31,6 +31,7 @@ final analysisControllerProvider = FutureProvider<AnalysisController>((
   final controller = AnalysisController(
     store: AnalysisStore(Directory(p.join(root.path, 'podoco', 'pages-v2'))),
     openBundled: NativeAnalysisEngine.openBundled,
+    openBundledLayout: NativeAnalysisEngine.openBundledLayout,
   );
   if (!ref.mounted) {
     controller.dispose();

@@ -1,0 +1,222 @@
+{
+  "elapsed_us": 69663,
+  "snapshot": {
+    "analysis_id": "podoco-f651203d90308fb04c54506ae23c28da",
+    "sequence": 1,
+    "complete": true,
+    "page": {
+      "page": {
+        "key": {
+          "document": {
+            "id": "738a678b6787eaa18f36874a909d11bf7bd7aadcca28e0efe0758895d92cd5e6",
+            "revision": "23f5ac42892f238a98b87edf58029ef75a47f2a4068a3f4605abdee151af1262"
+          },
+          "page_index": 2
+        },
+        "space": [
+          612.0,
+          792.0
+        ]
+      },
+      "provenance": {
+        "pipeline": {
+          "sdk_version": "0.1.0",
+          "backend": "coreml",
+          "compute_policy": "cpu_and_neural_engine",
+          "adapter": "pp-doclayout-v3-v1",
+          "profile": "pp-doclayout-v3-transformers-5.8.1-score030-stable-v1",
+          "models": [
+            {
+              "model_id": "pp-doclayout-v3-coreml-mixed-v1",
+              "manifest_sha256": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef",
+              "artifacts": {
+                "checkpoint/README.md": "77adba6b875c9019f90d79215e802f88c866ba937fc73100e8f410391e0b4e52",
+                "checkpoint/config.json": "3cf834b91d23a756b1519bce4db42c09e852f3e35c35092dd5a3e253a50c071a",
+                "checkpoint/inference.yml": "506fcfac13b3b546ae40d7886b44126420f392adb694e3f8bb6a6286a1f90fdc",
+                "checkpoint/preprocessor_config.json": "519fe0187a43a1ca429e3ad8317bab8700f0d5e8fb3a6e3a0a413ffac078ba42",
+                "optimized-mixed.mlmodelc/analytics/coremldata.bin": "07976d395240a5519d145ceb9293919c9e5dda9e9830262d3c64994bfdf66dcd",
+                "optimized-mixed.mlmodelc/coremldata.bin": "55e7a3b77735360d813a271b52a727dc3e3ef8c4fb9086da0039b92d18939159",
+                "optimized-mixed.mlmodelc/metadata.json": "0bc6e0fc06f5247757f63d5a788eb7eca27bddad8df2df6ee0c959c0bea304f9",
+                "optimized-mixed.mlmodelc/model.mil": "f25e4e771e10e5afeb6a8e0f01fce2394aa10b1fbe348ed2b7c3bd8d9705300f",
+                "optimized-mixed.mlmodelc/weights/weight.bin": "55b7bbd7ec0b1478cdb92a8c77cd11f2c69ec64ef667ded8dc8cec9774cd255a",
+                "optimized-mixed.mlpackage/Data/com.apple.CoreML/model.mlmodel": "533d82680ab431ba5739fc8001d8c92db490a08df597162246aa950a2405576c",
+                "optimized-mixed.mlpackage/Data/com.apple.CoreML/weights/weight.bin": "55b7bbd7ec0b1478cdb92a8c77cd11f2c69ec64ef667ded8dc8cec9774cd255a",
+                "optimized-mixed.mlpackage/Manifest.json": "26690c6c5b8c2bbc23f9df118c42b2cb44e61a7183ea46c80eaad2bdb3618665"
+              }
+            }
+          ]
+        },
+        "render_profile": "pdfrx-0.6.1-white-no-annotations-144dpi-edge2048-v1",
+        "image": {
+          "width": 1224,
+          "height": 1584,
+          "row_stride": 4896,
+          "format": "bgra8",
+          "alpha": "opaque"
+        },
+        "pixel_to_page": [
+          0.5,
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0
+        ]
+      },
+      "formula_scope": "none",
+      "regions": [
+        {
+          "id": 67,
+          "category": "heading",
+          "model_class_id": 17,
+          "model_label": "paragraph_title",
+          "native_subtype": "paragraph_title",
+          "display_kind": null,
+          "bounds": [
+            46.131591796875,
+            28.84075927734375,
+            151.842041015625,
+            48.45465087890625
+          ],
+          "polygon": null,
+          "score": 0.879767894744873,
+          "diagnostics": []
+        },
+        {
+          "id": 157,
+          "category": "caption",
+          "model_class_id": 7,
+          "model_label": "figure_title",
+          "native_subtype": "figure_title",
+          "display_kind": null,
+          "bounds": [
+            46.09423828125,
+            75.79083251953125,
+            321.16552734375,
+            91.36834716796875
+          ],
+          "polygon": null,
+          "score": 0.32777586579322815,
+          "diagnostics": []
+        },
+        {
+          "id": 172,
+          "category": "text",
+          "model_class_id": 22,
+          "model_label": "text",
+          "native_subtype": "text",
+          "display_kind": null,
+          "bounds": [
+            46.09423828125,
+            75.79083251953125,
+            321.16552734375,
+            91.36834716796875
+          ],
+          "polygon": null,
+          "score": 0.6390605568885803,
+          "diagnostics": []
+        },
+        {
+          "id": 21,
+          "category": "table",
+          "model_class_id": 21,
+          "model_label": "table",
+          "native_subtype": "table",
+          "display_kind": null,
+          "bounds": [
+            46.4677734375,
+            108.3779296875,
+            547.6025390625,
+            251.2705078125
+          ],
+          "polygon": null,
+          "score": 0.9662197828292847,
+          "diagnostics": []
+        },
+        {
+          "id": 122,
+          "category": "text",
+          "model_class_id": 22,
+          "model_label": "text",
+          "native_subtype": "text",
+          "display_kind": null,
+          "bounds": [
+            45.79541015625,
+            293.77935791015625,
+            311.00537109375,
+            307.56829833984375
+          ],
+          "polygon": null,
+          "score": 0.7732163667678833,
+          "diagnostics": []
+        },
+        {
+          "id": 147,
+          "category": "text",
+          "model_class_id": 22,
+          "model_label": "text",
+          "native_subtype": "text",
+          "display_kind": null,
+          "bounds": [
+            45.720703125,
+            308.8311767578125,
+            326.91796875,
+            323.0672607421875
+          ],
+          "polygon": null,
+          "score": 0.7647159099578857,
+          "diagnostics": []
+        },
+        {
+          "id": 33,
+          "category": "footer",
+          "model_class_id": 8,
+          "model_label": "footer",
+          "native_subtype": "footer",
+          "display_kind": null,
+          "bounds": [
+            46.09423828125,
+            746.7357788085938,
+            200.58837890625,
+            757.6001586914062
+          ],
+          "polygon": null,
+          "score": 0.8714748620986938,
+          "diagnostics": []
+        },
+        {
+          "id": 91,
+          "category": "other",
+          "model_class_id": 16,
+          "model_label": "number",
+          "native_subtype": "number",
+          "display_kind": null,
+          "bounds": [
+            548.515380859375,
+            747.0650634765625,
+            556.551025390625,
+            757.2708740234375
+          ],
+          "polygon": null,
+          "score": 0.7040584087371826,
+          "diagnostics": []
+        }
+      ],
+      "formulas": [],
+      "reading_order": {
+        "region_ids": [
+          67,
+          157,
+          172,
+          21,
+          122,
+          147,
+          33,
+          91
+        ],
+        "profile": "transformers-5.8.1-global-pointer-votes-query-id-v1"
+      },
+      "diagnostics": []
+    }
+  }
+}

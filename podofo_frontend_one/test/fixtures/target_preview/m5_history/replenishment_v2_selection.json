@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "policy": "First three previously unused arXiv-named PDFs in filename order, at most 60 pages, with at least two unique named destinations in each target group. No resolver/model output inspected.",
+  "candidate_documents_scanned": 17,
+  "selected": [
+    {
+      "pdf": "1810.01497v2.pdf",
+      "pages": 16,
+      "counts": {
+        "citation": 36,
+        "figure_table": 17,
+        "equation": 3,
+        "section": 15
+      }
+    },
+    {
+      "pdf": "2206.07867v3.pdf",
+      "pages": 42,
+      "counts": {
+        "citation": 10,
+        "figure_table": 18,
+        "equation": 4,
+        "section": 15
+      }
+    },
+    {
+      "pdf": "2410.06940v4.pdf",
+      "pages": 43,
+      "counts": {
+        "citation": 96,
+        "figure_table": 21,
+        "equation": 5,
+        "section": 7
+      }
+    }
+  ],
+  "replaced_development_documents": [
+    "2111.13850v2",
+    "2212.01330v1",
+    "2312.02753v1"
+  ],
+  "annotation_status": "pending_source_review",
+  "resolver_output_examined": false
+}

@@ -5641,6 +5641,7 @@ class _CanvasLinkPainter {
   final _PdfViewerState _state;
   MouseCursor _cursor = MouseCursor.defer;
   final _links = <int, List<PdfLink>>{};
+  int _generation = 0;
 
   bool get isEnabled => _state.widget.params.linkHandlerParams != null;
 
@@ -5654,6 +5655,7 @@ class _CanvasLinkPainter {
 
   /// Reset all the internal data.
   void resetAll() {
+    _generation++;
     _cursor = MouseCursor.defer;
     _links.clear();
   }
@@ -5664,6 +5666,7 @@ class _CanvasLinkPainter {
 
   /// Release the page data.
   void releaseLinksForPage(int pageNumber) {
+    _generation++;
     _links.remove(pageNumber);
   }
 
@@ -5671,17 +5674,30 @@ class _CanvasLinkPainter {
     if (!page.isLoaded) return null;
     final links = _links[page.pageNumber];
     if (links != null) return links;
-    synchronized(() async {
+    final generation = _generation;
+    final document = _state._document;
+    bool current() => _state.mounted && generation == _generation && identical(document, _state._document);
+    unawaited(synchronized<void>(() async {
+      if (!current()) return;
       final links = _links[page.pageNumber];
-      if (links != null) return links;
+      if (links != null) return;
       final enableAutoLinkDetection = _state.widget.params.linkHandlerParams?.enableAutoLinkDetection ?? true;
-      _links[page.pageNumber] = await page.loadLinks(compact: true, enableAutoLinkDetection: enableAutoLinkDetection);
+      List<PdfLink> loaded;
+      try {
+        loaded = await page.loadLinks(compact: true, enableAutoLinkDetection: enableAutoLinkDetection);
+      } catch (_) {
+        // Annotation loading is optional. A closed or malformed page must not
+        // leave an unhandled future or repeatedly queue the same failed load.
+        loaded = const [];
+      }
+      if (!current()) return;
+      _links[page.pageNumber] = loaded;
       if (onLoaded != null) {
         onLoaded();
       } else {
         _state._invalidate();
       }
-    });
+    }));
     return null;
   }
 

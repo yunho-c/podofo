@@ -95,11 +95,16 @@ void main() {
   test('document replacement suppresses late analysis and close releases a late engine', () async {
     for (final close in [false, true]) {
       final gate = Completer<LazyEngine>(), engine = LazyEngine();
+      var opening = false;
       final analysis = AnalysisController(
         store: AnalysisStore(temporary),
-        openBundled: (_) => gate.future,
+        openBundled: (_) {
+          opening = true;
+          return gate.future;
+        },
       )..select(document, 0);
       final work = analysis.analyze();
+      await until(() => opening);
       if (!close) analysis.select(null, 0);
       final closing = close ? analysis.close() : null;
       gate.complete(engine);

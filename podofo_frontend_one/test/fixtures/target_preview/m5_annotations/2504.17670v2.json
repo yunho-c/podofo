@@ -1,0 +1,633 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2504.17670v2.pdf",
+    "split": "development",
+    "replaces_promoted_document": "2511.23342v3",
+    "id": "2504.17670v2",
+    "sha256": "c39235f49a638734e83a0034653187068dcc4cf6ebeea9b89eea668b68a4dd15",
+    "source_url": "https://arxiv.org/abs/2504.17670v2",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2504.17670v2-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 87,
+        "source_bounds": [
+          320.087,
+          673.126,
+          379.272,
+          683.171
+        ],
+        "source_text": "[Mildenhall et al. 2",
+        "source_context": "nificant attention, largely due to the advance\n[Mildenhall et al. 2021] and 3DGS [Kerbl et al.\nforming them into the mesh poses a challen",
+        "destination": {
+          "name": "cite.mildenhall2021nerf",
+          "page": 10,
+          "raw_pdf_point": [
+            290.325,
+            217.156
+          ],
+          "point": [
+            290.325,
+            574.844
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              317,
+              577,
+              562,
+              601
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              317,
+              601.5,
+              562,
+              625
+            ]
+          },
+          {
+            "page": 10,
+            "bounds": [
+              327,
+              561,
+              561,
+              577
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Nerf: Representing scenes as neural radiance fields"
+        ],
+        "reviewed": true,
+        "notes": "Complete three-line entry including all authors, journal, volume and pages."
+      },
+      {
+        "id": "2504.17670v2-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 89,
+        "source_bounds": [
+          440.804,
+          673.126,
+          480.663,
+          683.171
+        ],
+        "source_text": "[Kerbl et al. 2",
+        "source_context": "nt attention, largely due to the advancements made by NeRF\nenhall et al. 2021] and 3DGS [Kerbl et al. 2023]. However, trans-\nng them into the mesh poses a challenge. In this paper, we",
+        "destination": {
+          "name": "cite.kerbl20233d",
+          "page": 10,
+          "raw_pdf_point": [
+            290.325,
+            703.332
+          ],
+          "point": [
+            290.325,
+            88.668
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              317,
+              91,
+              562,
+              115
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              317,
+              115.5,
+              562,
+              147
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3D Gaussian Splatting for Real-Time Radiance Field Rendering"
+        ],
+        "reviewed": true,
+        "notes": "Complete three-line entry including all authors and ACM journal information."
+      },
+      {
+        "id": "2504.17670v2-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 20,
+        "source_xref": 122,
+        "source_bounds": [
+          278.871,
+          486.825,
+          284.949,
+          497.259
+        ],
+        "source_text": ". 2(",
+        "source_context": "st, the reliance on RGB images as\nin training. As shown in Fig. 2(a),\ning geometry, thereby leading to\nimprovement of 32\nIn general, our c",
+        "destination": {
+          "name": "figure.caption.3",
+          "page": 2,
+          "raw_pdf_point": [
+            51.806,
+            718.775
+          ],
+          "point": [
+            51.806,
+            73.225
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              51,
+              77,
+              296,
+              320
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              51,
+              322,
+              296,
+              372
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              51,
+              378,
+              296,
+              413
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              317,
+              82,
+              562,
+              150
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 2."
+        ],
+        "reviewed": true,
+        "notes": "All three stacked panels including labels, arrows, input/output examples and complete shared caption; the source references panel (a) of the shared Figure 2."
+      },
+      {
+        "id": "2504.17670v2-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 3,
+        "source_link_index_pymupdf": 153,
+        "source_xref": 363,
+        "source_bounds": [
+          379.132,
+          329.669,
+          385.219,
+          339.938
+        ],
+        "source_text": "3,",
+        "source_context": "2023;\n4a,b;\nAs shown in Fig. 3, the objective of our DiMeR\n3D mesh geometry from normal maps and deri",
+        "destination": {
+          "name": "figure.caption.4",
+          "page": 4,
+          "raw_pdf_point": [
+            51.806,
+            718.775
+          ],
+          "point": [
+            51.806,
+            73.225
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              51,
+              79,
+              562,
+              252
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              51,
+              254,
+              562,
+              265
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              51,
+              270,
+              296,
+              300
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              270,
+              562,
+              300
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 3."
+        ],
+        "reviewed": true,
+        "notes": "Both geometry and texture branches, all supervision paths and the right-hand legend, plus the full shared caption."
+      },
+      {
+        "id": "2504.17670v2-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 154,
+        "source_xref": 364,
+        "source_bounds": [
+          489.226,
+          351.587,
+          501.375,
+          361.856
+        ],
+        "source_text": "3.1,",
+        "source_context": "from normal maps and derive texture from RGB\nce Geometry Branch in Sec. 3.1, Texture Branch\nlications in Sec. 3.3.",
+        "destination": {
+          "name": "subsection.3.1",
+          "page": 3,
+          "raw_pdf_point": [
+            317.955,
+            409.428
+          ],
+          "point": [
+            317.955,
+            382.572
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              384,
+              414,
+              396
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              399,
+              563,
+              585
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              586,
+              562,
+              618
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.1",
+          "Geometry Branch"
+        ],
+        "reviewed": true,
+        "notes": "Heading and full seventeen-line opening paragraph; the following Network Structure run-in starts a separate paragraph."
+      },
+      {
+        "id": "2504.17670v2-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 155,
+        "source_xref": 365,
+        "source_bounds": [
+          342.961,
+          362.546,
+          355.265,
+          372.815
+        ],
+        "source_text": "3.2,",
+        "source_context": "hey are limited\nwith the input\nimages. We introduce Geometry Branc\nin Sec. 3.2, and applications in Sec. 3.3",
+        "destination": {
+          "name": "subsection.3.2",
+          "page": 5,
+          "raw_pdf_point": [
+            51.806,
+            513.553
+          ],
+          "point": [
+            51.806,
+            278.447
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              51,
+              278,
+              137,
+              290
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              51,
+              293,
+              297,
+              483
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              51,
+              487,
+              296,
+              508
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.2",
+          "Texture Branch"
+        ],
+        "reviewed": true,
+        "notes": "Heading and complete Network Structure opening paragraph, including interleaved displayed equations (9)-(11). The comma-ended text before (9) is incomplete; stop before the Optimization run-in."
+      },
+      {
+        "id": "2504.17670v2-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 7,
+        "source_link_index_pymupdf": 5,
+        "source_xref": 683,
+        "source_bounds": [
+          330.548,
+          205.745,
+          336.664,
+          216.013
+        ],
+        "source_text": "1",
+        "source_context": "FlexiCubes\nOurs\n0.037\n0.028\n0.975\n0.992\nRegularization Loss. As demo\nEq. 1 and Eq. 2 can replace the or\nCubes, performing improved perf",
+        "destination": {
+          "name": "equation.3.1",
+          "page": 4,
+          "raw_pdf_point": [
+            327.793,
+            393.956
+          ],
+          "point": [
+            327.793,
+            398.044
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              327,
+              398,
+              543,
+              414
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              550,
+              402,
+              562,
+              413
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              383,
+              412,
+              393
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              421,
+              562,
+              455
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Full eikonal expression, sampling condition and equation number, excluding explanatory prose."
+      },
+      {
+        "id": "2504.17670v2-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 7,
+        "source_link_index_pymupdf": 6,
+        "source_xref": 684,
+        "source_bounds": [
+          366.084,
+          205.745,
+          372.2,
+          216.013
+        ],
+        "source_text": "2",
+        "source_context": "Ours\n0.028\n0.992\nRegularization Loss. As demonstrated i\nEq. 1 and Eq. 2 can replace the original loss\nCubes, performing improved performance.",
+        "destination": {
+          "name": "equation.3.2",
+          "page": 4,
+          "raw_pdf_point": [
+            376.58,
+            331.677
+          ],
+          "point": [
+            376.58,
+            460.323
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              376,
+              461,
+              503,
+              476
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              550,
+              464,
+              562,
+              475
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              432,
+              562,
+              455
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              484,
+              562,
+              505
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Complete squared SDF loss including both norm indices and equation number."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "412a2c4",
+    "promoted_from": "held_out_v3",
+    "promotion_reason": "Figure 2(a) annotation selects 2( with a) immediately after it; source-boundary parsing falls back and drives figure identity development."
+  }
+}

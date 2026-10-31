@@ -1,0 +1,8 @@
+{
+  "schema_version": 1,
+  "source_run": "held-out-v1",
+  "document": "2511.23342v3",
+  "reason": "Panel-qualified Figure 2a source points to whole Figure 2; the preserved first held-out fallback drives explicit panel-to-parent identity development.",
+  "eligibility_and_boundaries_changed": false,
+  "figure_rules_changed_before_promotion": false
+}

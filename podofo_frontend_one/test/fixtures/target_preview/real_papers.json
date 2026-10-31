@@ -1,0 +1,563 @@
+{
+  "schema_version": 1,
+  "coordinate_space": "displayed_page_points_top_left",
+  "split": "development_seed",
+  "annotation_status": "visually_reviewed_seed_not_held_out",
+  "documents": [
+    {
+      "id": "2501.07088v2",
+      "pdf": "2501.07088v2.pdf",
+      "sha256": "d0c540675b15df8495a7cc817e6a3f3b82dd2e5cc929d1003256720a60e0182f",
+      "source_url": "https://arxiv.org/abs/2501.07088v2",
+      "page_sizes": [
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ]
+      ],
+      "cases": [
+        {
+          "id": "mathreader-reference-1",
+          "source_page": 1,
+          "source_link_index_pymupdf": 0,
+          "source_bounds": [
+            244.279,
+            499.615,
+            251.253,
+            510.558
+          ],
+          "source_text": "[1]",
+          "source_context": "oft Edge [1] and Ado",
+          "destination": {
+            "name": "cite.microsoftedge",
+            "page": 4,
+            "command": "xyz",
+            "raw_pdf_point": [
+              311.978,
+              119.178
+            ],
+            "point": [
+              311.978,
+              672.822
+            ]
+          },
+          "required_parts": [
+            [
+              315,
+              675,
+              564,
+              702
+            ]
+          ],
+          "excluded_neighbors": [
+            [
+              315,
+              703,
+              564,
+              720
+            ]
+          ],
+          "expected_target_text": [
+            "Microsoft.",
+            "2024-09-13."
+          ],
+          "notes": "Numbered entry spans three lines; the next reference starts immediately below.",
+          "kind": "citation"
+        }
+      ]
+    },
+    {
+      "id": "2610.13023v1",
+      "pdf": "2610.13023v1.pdf",
+      "sha256": "53cc60a4171f470a26cbabd3dbca4a8d364e34d255386d0a8a981e6cce4a2936",
+      "source_url": "https://arxiv.org/abs/2610.13023v1",
+      "page_sizes": [
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ],
+        [
+          612.0,
+          792.0
+        ]
+      ],
+      "cases": [
+        {
+          "id": "unigvc-bross-2021",
+          "source_page": 1,
+          "source_link_index_pymupdf": 0,
+          "source_bounds": [
+            377.603,
+            545.732,
+            426.999,
+            556.676
+          ],
+          "source_text": "(Bross et al.,",
+          "source_context": "6/VVC (Bross et al., 2021),",
+          "destination": {
+            "name": "cite.bross2021overview",
+            "page": 10,
+            "command": "xyz",
+            "raw_pdf_point": [
+              83.093,
+              529.576
+            ],
+            "point": [
+              83.093,
+              262.424
+            ]
+          },
+          "required_parts": [
+            [
+              108,
+              266,
+              505,
+              298
+            ]
+          ],
+          "excluded_neighbors": [
+            [
+              108,
+              235,
+              505,
+              256
+            ],
+            [
+              108,
+              307,
+              505,
+              340
+            ]
+          ],
+          "expected_target_text": [
+            "Benjamin Bross",
+            "3736\u20133764, 2021."
+          ],
+          "notes": "Author/year link is split across annotations; this case records its first rectangle.",
+          "kind": "citation"
+        },
+        {
+          "id": "unigvc-figure-1",
+          "source_page": 2,
+          "source_link_index_pymupdf": 0,
+          "source_bounds": [
+            332.62,
+            461.461,
+            339.594,
+            472.474
+          ],
+          "source_text": "1)",
+          "source_context": "VC (Fig. 1), a unifie",
+          "destination": {
+            "name": "figure.caption.1",
+            "page": 2,
+            "command": "xyz",
+            "raw_pdf_point": [
+              108.0,
+              715.618
+            ],
+            "point": [
+              108.0,
+              76.382
+            ]
+          },
+          "required_parts": [
+            [
+              108,
+              82,
+              505,
+              252
+            ],
+            [
+              108,
+              263,
+              505,
+              328
+            ]
+          ],
+          "excluded_neighbors": [
+            [
+              108,
+              351,
+              505,
+              383
+            ]
+          ],
+          "expected_target_text": [
+            "Figure 1: Training and inference pipeline of UniGVC."
+          ],
+          "notes": "All four labeled panels and the full six-line caption are required.",
+          "kind": "figure"
+        },
+        {
+          "id": "unigvc-figure-4",
+          "source_page": 5,
+          "source_link_index_pymupdf": 6,
+          "source_bounds": [
+            414.91,
+            243.436,
+            421.884,
+            254.38
+          ],
+          "source_text": "4",
+          "source_context": "AR. Fig. 4 validates",
+          "destination": {
+            "name": "figure.caption.4",
+            "page": 4,
+            "command": "xyz",
+            "raw_pdf_point": [
+              108.0,
+              553.563
+            ],
+            "point": [
+              108.0,
+              238.437
+            ]
+          },
+          "required_parts": [
+            [
+              107,
+              242,
+              303,
+              374
+            ],
+            [
+              108,
+              381,
+              303,
+              413
+            ]
+          ],
+          "excluded_neighbors": [
+            [
+              309,
+              242,
+              505,
+              413
+            ]
+          ],
+          "expected_target_text": [
+            "Figure 4: Visual analysis of different codec-"
+          ],
+          "notes": "Figure 5 is adjacent in the right column and shares this PDF destination; source identity must distinguish them.",
+          "kind": "figure"
+        },
+        {
+          "id": "unigvc-figure-5",
+          "source_page": 6,
+          "source_link_index_pymupdf": 18,
+          "source_bounds": [
+            346.038,
+            282.889,
+            353.012,
+            296.92
+          ],
+          "source_text": "5,",
+          "source_context": "dition c to enhance t\n In Fig. 5, we train\nination. The high-d",
+          "destination": {
+            "name": "figure.caption.4",
+            "page": 4,
+            "command": "xyz",
+            "raw_pdf_point": [
+              108.0,
+              553.563
+            ],
+            "point": [
+              108.0,
+              238.437
+            ]
+          },
+          "required_parts": [
+            [
+              309,
+              242,
+              505,
+              374
+            ],
+            [
+              310,
+              381,
+              505,
+              413
+            ]
+          ],
+          "excluded_neighbors": [
+            [
+              107,
+              242,
+              303,
+              413
+            ]
+          ],
+          "expected_target_text": [
+            "Figure 5: Visual analysis on the codec condi-"
+          ],
+          "notes": "Shares the exact destination of Figure 4, but source text identifies Figure 5 in the right column.",
+          "kind": "figure"
+        },
+        {
+          "id": "unigvc-table-1",
+          "source_page": 8,
+          "source_link_index_pymupdf": 0,
+          "source_bounds": [
+            297.981,
+            557.618,
+            304.955,
+            566.614
+          ],
+          "source_text": "1",
+          "source_context": "Table 1",
+          "destination": {
+            "name": "table.caption.8",
+            "page": 8,
+            "command": "xyz",
+            "raw_pdf_point": [
+              313.922,
+              226.322
+            ],
+            "point": [
+              313.922,
+              565.678
+            ]
+          },
+          "required_parts": [
+            [
+              313,
+              571,
+              505,
+              604
+            ],
+            [
+              323,
+              613,
+              495,
+              718
+            ]
+          ],
+          "excluded_neighbors": [
+            [
+              108,
+              558,
+              304,
+              733
+            ],
+            [
+              108,
+              293,
+              505,
+              511
+            ]
+          ],
+          "expected_target_text": [
+            "Table 1: Ablation on DiT attention.",
+            "Causal (w = 1)"
+          ],
+          "notes": "Caption is above the table; exclude left prose and the unrelated Table 2 above.",
+          "kind": "table"
+        },
+        {
+          "id": "unigvc-equation-3",
+          "source_page": 15,
+          "source_link_index_pymupdf": 1,
+          "source_bounds": [
+            474.856,
+            346.426,
+            481.829,
+            357.494
+          ],
+          "source_text": "3,",
+          "source_context": "video stages use\n5 in Eq. 3, then",
+          "destination": {
+            "name": "equation.3",
+            "page": 4,
+            "command": "xyz",
+            "raw_pdf_point": [
+              230.939,
+              339.411
+            ],
+            "point": [
+              230.939,
+              452.589
+            ]
+          },
+          "required_parts": [
+            [
+              230,
+              453,
+              505,
+              477
+            ]
+          ],
+          "excluded_neighbors": [
+            [
+              108,
+              483,
+              505,
+              504
+            ]
+          ],
+          "expected_target_text": [
+            "(3)"
+          ],
+          "notes": "Include formula, summation subscript, and equation number; exclude explanatory prose.",
+          "kind": "equation"
+        },
+        {
+          "id": "unigvc-section-4-3",
+          "source_page": 5,
+          "source_link_index_pymupdf": 9,
+          "source_bounds": [
+            405.309,
+            315.167,
+            419.755,
+            326.111
+          ],
+          "source_text": "4.3.",
+          "source_context": "n in Sec. 4.3. LoRA a",
+          "destination": {
+            "name": "subsection.4.3",
+            "page": 8,
+            "command": "xyz",
+            "raw_pdf_point": [
+              108.0,
+              258.637
+            ],
+            "point": [
+              108.0,
+              533.363
+            ]
+          },
+          "required_parts": [
+            [
+              108,
+              536,
+              210,
+              547
+            ],
+            [
+              108,
+              558,
+              304,
+              733
+            ]
+          ],
+          "excluded_neighbors": [
+            [
+              313,
+              571,
+              505,
+              718
+            ]
+          ],
+          "expected_target_text": [
+            "ABLATION STUDY",
+            "Bidirectional and causal attention."
+          ],
+          "notes": "Include heading and opening left-column paragraph; exclude the separate right-column table.",
+          "kind": "section"
+        }
+      ]
+    }
+  ],
+  "page_numbering": "one_based"
+}

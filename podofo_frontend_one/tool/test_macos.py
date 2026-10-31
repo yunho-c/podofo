@@ -10,10 +10,11 @@ def main():
     app = Path(__file__).resolve().parents[1]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--flutter-sdk", type=Path, default=app.parent / ".fvm/flutter_sdk")
+    parser.add_argument("--build-mode", choices=["debug", "profile", "release"], default="release")
     parser.add_argument("tests", nargs="*", default=["test"])
     args = parser.parse_args()
     sdk = args.flutter_sdk.resolve(strict=True)
-    native = app / "build/macos/Build/Products/Release/PoDoFo.app/Contents/Frameworks/ObjectBox.framework/ObjectBox"
+    native = app / f"build/macos/Build/Products/{args.build_mode.title()}/PoDoFo.app/Contents/Frameworks/ObjectBox.framework/ObjectBox"
     native = native.resolve(strict=True)
     links = app / ".mlsr/test-libs"
     links.mkdir(parents=True, exist_ok=True)

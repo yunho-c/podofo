@@ -1,0 +1,750 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2202.07513v2.pdf",
+    "split": "development",
+    "id": "2202.07513v2",
+    "sha256": "21ca59942fb8bfaf5feb6cd3cfecdf2eef960e43aa1b4ad9f12de69110d32e9b",
+    "source_url": "https://arxiv.org/abs/2202.07513v2",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2202.07513v2-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 189,
+        "source_bounds": [
+          194.593,
+          532.694,
+          239.803,
+          543.598
+        ],
+        "source_text": "[Ballé et al.,",
+        "source_context": "In recent years, learned data compression techniques have\nremarkable progress [Ballé et al., 2017, 2018, Minnen et a\nSingh, 2020, He et al., 2021, Guo et al., 2021, He et al., 20",
+        "destination": {
+          "name": "cite.balle2016end",
+          "page": 10,
+          "raw_pdf_point": [
+            83.093,
+            502.615
+          ],
+          "point": [
+            83.093,
+            289.385
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              107,
+              292,
+              507,
+              313
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              107,
+              265,
+              505,
+              286
+            ]
+          },
+          {
+            "page": 10,
+            "bounds": [
+              107,
+              319,
+              506,
+              340
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "End-to-end optimized image compression",
+          "2017"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line author/year reference with given names preceding surname."
+      },
+      {
+        "id": "2202.07513v2-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 191,
+        "source_bounds": [
+          267.912,
+          532.694,
+          290.009,
+          543.598
+        ],
+        "source_text": "2018,",
+        "source_context": ", learned data compression techniques have attracted a l\nogress [Ballé et al., 2017, 2018, Minnen et al., 2018, Che\nHe et al., 2021, Guo et al., 2021, He et al., 2022]. Recentl",
+        "destination": {
+          "name": "cite.balle2018variational",
+          "page": 10,
+          "raw_pdf_point": [
+            83.093,
+            475.415
+          ],
+          "point": [
+            83.093,
+            316.585
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              107,
+              319,
+              506,
+              340
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              107,
+              292,
+              507,
+              313
+            ]
+          },
+          {
+            "page": 10,
+            "bounds": [
+              107,
+              346,
+              505,
+              367
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Variational image compression",
+          "2018"
+        ],
+        "reviewed": true,
+        "notes": "The source shares the preceding author in a year list; target is uniquely named and separate from 2017 and 2019."
+      },
+      {
+        "id": "2202.07513v2-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 4,
+        "source_xref": 224,
+        "source_bounds": [
+          368.556,
+          371.883,
+          375.43,
+          382.787
+        ],
+        "source_text": "e 1)",
+        "source_context": "ailed decoding (See Figure 1). As cross-platform transm\nctical image coding systems, this inconsistency is cr",
+        "destination": {
+          "name": "figure.1",
+          "page": 2,
+          "raw_pdf_point": [
+            150.765,
+            579.989
+          ],
+          "point": [
+            150.765,
+            212.011
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              131,
+              76,
+              481,
+              204
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              214,
+              505,
+              247
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              257,
+              505,
+              278
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 1:"
+        ],
+        "reviewed": true,
+        "notes": "Both photographs and sublabels plus the entire three-line caption."
+      },
+      {
+        "id": "2202.07513v2-figure_table-2",
+        "group": "figure_table",
+        "kind": "table",
+        "source_page": 2,
+        "source_link_index_pymupdf": 30,
+        "source_xref": 272,
+        "source_bounds": [
+          240.55,
+          674.042,
+          247.574,
+          684.946
+        ],
+        "source_text": "1",
+        "source_context": "ot a common practice of model quantization commun\nmentioned issues in Table 1 to highlight that the float\noblem. Solution with good properties is wanted.",
+        "destination": {
+          "name": "table.1",
+          "page": 2,
+          "raw_pdf_point": [
+            147.454,
+            538.286
+          ],
+          "point": [
+            147.454,
+            253.714
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              257,
+              505,
+              278
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              123,
+              285,
+              487,
+              353
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              214,
+              505,
+              247
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              373,
+              505,
+              408
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Table 1:"
+        ],
+        "reviewed": true,
+        "notes": "Caption above table and all headings, rows, and bottom rule."
+      },
+      {
+        "id": "2202.07513v2-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 29,
+        "source_xref": 385,
+        "source_bounds": [
+          328.92,
+          599.107,
+          345.578,
+          610.011
+        ],
+        "source_text": "A.1.",
+        "source_context": "ests to adopt a per-channel quantization on weights [K\nwe introduce in Appendix A.1.",
+        "destination": {
+          "name": "subsection.A.1",
+          "page": 12,
+          "raw_pdf_point": [
+            108.0,
+            702.069
+          ],
+          "point": [
+            108.0,
+            89.931
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              96,
+              272,
+              108
+            ]
+          },
+          {
+            "page": 12,
+            "bounds": [
+              106,
+              116,
+              506,
+              182
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              73,
+              505,
+              85
+            ]
+          },
+          {
+            "page": 12,
+            "bounds": [
+              240,
+              182.5,
+              505,
+              194
+            ]
+          },
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              195,
+              505,
+              207
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "A.1",
+          "Per-channel weight quantization"
+        ],
+        "reviewed": true,
+        "notes": "Heading and opening text block ending with a colon; following display equation and where clause are separate blocks."
+      },
+      {
+        "id": "2202.07513v2-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 5,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 418,
+        "source_bounds": [
+          415.793,
+          226.082,
+          422.766,
+          236.986
+        ],
+        "source_text": "3.",
+        "source_context": "An offline-constrained integer-arithmetic-only\nich we discuss in Section 3.",
+        "destination": {
+          "name": "section.3",
+          "page": 5,
+          "raw_pdf_point": [
+            108.0,
+            358.052
+          ],
+          "point": [
+            108.0,
+            433.948
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              442,
+              426,
+              456
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              467,
+              507,
+              555
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              367,
+              506,
+              423
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              560,
+              507,
+              656
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3",
+          "Offline-constrained integer-arithmetic-only requantization"
+        ],
+        "reviewed": true,
+        "notes": "Complete eight-line opening paragraph, ending with Figure 3(a)."
+      },
+      {
+        "id": "2202.07513v2-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 4,
+        "source_xref": 412,
+        "source_bounds": [
+          498.002,
+          300.251,
+          504.996,
+          311.155
+        ],
+        "source_text": "3",
+        "source_context": "y, the approximation error\nntization described in eq. 3",
+        "destination": {
+          "name": "equation.2.3",
+          "page": 4,
+          "raw_pdf_point": [
+            327.77,
+            136.026
+          ],
+          "point": [
+            327.77,
+            655.974
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              234,
+              674,
+              378,
+              692
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              491,
+              678,
+              505,
+              690
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              637,
+              505,
+              670
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              698,
+              505,
+              723
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(3)"
+        ],
+        "reviewed": true,
+        "notes": "All superscripts/subscripts and rounding delimiters, plus separate number."
+      },
+      {
+        "id": "2202.07513v2-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 15,
+        "source_xref": 427,
+        "source_bounds": [
+          425.985,
+          571.155,
+          432.859,
+          582.059
+        ],
+        "source_text": "4",
+        "source_context": "s based on QAT [Jacob et al., 2018, Yao et al.,\nal. [2018] where m0 in eq. 4 is always set to an\nh 32 bits. We find it risky, as this 32-bit integer",
+        "destination": {
+          "name": "equation.2.4",
+          "page": 5,
+          "raw_pdf_point": [
+            236.049,
+            535.679
+          ],
+          "point": [
+            236.049,
+            256.321
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              278,
+              270,
+              335,
+              285
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              491,
+              272,
+              505,
+              284
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              259,
+              235,
+              270
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              288,
+              506,
+              322
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(4)"
+        ],
+        "reviewed": true,
+        "notes": "Short scalar formula and equation number; exclude surrounding prose."
+      },
+      {
+        "id": "2202.07513v2-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 7,
+        "source_link_index_pymupdf": 11,
+        "source_xref": 495,
+        "source_bounds": [
+          170.612,
+          633.541,
+          176.589,
+          646.033
+        ],
+        "source_text": "nds\nn3.",
+        "source_context": "and lower bounds, we will adopt Golomb \nimplementation3. This situation is quite ra\nand adopting Golomb coding will not dama",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 7,
+          "raw_pdf_point": [
+            124.14,
+            91.925
+          ],
+          "point": [
+            124.14,
+            700.075
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Footnote control outside the four target groups."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "dbc0649"
+  }
+}
