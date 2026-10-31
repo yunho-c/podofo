@@ -14,6 +14,105 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test(
+    'compound section labels retain parent identity and destination evidence',
+    () {
+      final regions = [
+        _r('heading', [100, 80, 300, 95], 'II. Related work'),
+        _r('heading', [100, 120, 300, 135], 'C. Earlier codecs'),
+        _r('text', [100, 145, 300, 180], 'A complete opening paragraph.'),
+        _r('heading', [330, 120, 550, 135], 'III. Method'),
+      ];
+      final target = _resolve(regions, 'II-C.', before: 'Details in Sec. ');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.label, 'Section II-C');
+      final wrongParent = [...regions]
+        ..[0] = _r('heading', [100, 80, 300, 95], 'III. Method');
+      expect(
+        _resolve(wrongParent, 'Section II-C').tier,
+        LinkTargetTier.unresolved,
+      );
+      final continuedPage = regions.sublist(1);
+      expect(
+        _resolve(continuedPage, 'Section II-C').tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(
+        _resolve(
+          continuedPage,
+          'Section II-C',
+          destinationPoint: const Offset(100, 118),
+        ).tier,
+        LinkTargetTier.matchedIdentity,
+      );
+      expect(
+        _resolve(
+          continuedPage,
+          'Section II-C',
+          destinationPoint: const Offset(100, 300),
+        ).tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(
+        _resolve(regions, 'Sections II-C and III-A').tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(
+        _resolve(regions, 'II-C', before: 'Figure ').tier,
+        LinkTargetTier.unresolved,
+      );
+    },
+  );
+  test('an opening paragraph continues into the next column without a page request', () {
+    final first = [
+      _r('heading', [60, 700, 280, 715], '4. Method'),
+      _r('text', [60, 735, 280, 785], 'The opening continues with the'),
+    ];
+    final continuation = _r('text', [
+      330,
+      80,
+      550,
+      120,
+    ], 'remaining text in the next column.');
+    final target = _resolve([
+      ...first,
+      continuation,
+      _r('text', [330, 140, 550, 170], 'A separate paragraph.'),
+    ], 'Section 4');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(target.parts.map((p) => p.page).toSet(), {1});
+    expect(
+      target.parts.any((p) => p.bounds.contains(const Offset(335, 84))),
+      true,
+    );
+    expect(
+      target.parts.every((p) => !p.bounds.contains(const Offset(335, 144))),
+      true,
+    );
+    expect(target.continuationPage, isNull);
+    final blocked = _resolve([
+      ...first,
+      _r('heading', [330, 50, 550, 65], '5. Next section'),
+      continuation,
+    ], 'Section 4');
+    expect(blocked.tier, LinkTargetTier.unresolved);
+    expect(blocked.continuationPage, isNull);
+    final unfinished = _resolve([
+      ...first,
+      _r('text', [
+        330,
+        80,
+        550,
+        120,
+      ], 'remaining text that is still unfinished'),
+    ], 'Section 4');
+    expect(unfinished.tier, LinkTargetTier.unresolved);
+    expect(unfinished.continuationPage, isNull);
+  });
   test('section openings retain intervening descendant headings', () {
     for (final labels in [('5', '5.1'), ('II', 'A')]) {
       final target = _resolve([
@@ -355,13 +454,19 @@ ResolvedLinkTarget _resolve(
   String after = '',
   List<Map<String, Object?>>? following,
   int followingPage = 2,
+  Offset? destinationPoint,
 }) {
   final first = _page(regions);
   final next = following == null
       ? null
       : _page(following, number: followingPage);
   return const LinkTargetResolver().resolve(
-    const PreviewDestination(page: 1, pageSize: Size(600, 800)),
+    PreviewDestination(
+      page: 1,
+      pageSize: const Size(600, 800),
+      x: destinationPoint?.dx,
+      y: destinationPoint?.dy,
+    ),
     source: LinkSourceText(
       [PreviewTextSpan(0, selected.length, selected, [])],
       before,
@@ -445,6 +550,10 @@ ResolvedLinkTarget _resolve(
           'state': {'state': 'not_requested'},
         },
   ];
+  page['reading_order'] = {
+    'region_ids': [for (var i = 0; i < regions.length; i++) i],
+    'profile': 'hand-annotated-fixture',
+  };
   return (
     text: PreviewTextPage(
       PdfTextSnapshot(

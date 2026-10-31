@@ -2,8 +2,8 @@
 
 M5 is not complete. The latency/ownership harness now exercises the real bundled
 layout engine, and the first frozen held-out evaluation is complete. It failed
-section coverage and completeness gates. Three papers have moved to development
-before resolver changes; the held-out set needs replenishment. Native-window
+section coverage and completeness gates. Papers driving changes have moved to
+development before those changes; replacement annotation is in progress. Native-window
 acceptance also remains unqualified.
 
 ## Cache preparation latency
@@ -420,10 +420,59 @@ Independent preparation produced 27 new links and source-page images under
 `build/target-preview-m5/annotations-v3-replacements/`. Their eligibility and
 boundaries still need visual review; there is no replacement held-out result yet.
 
+## Compound sections and same-page column continuation
+
+Resolver version 9 preserves IEEE-style compound identities such as `II-C`.
+When the printed heading contains only the child label, it checks the closest
+preceding Roman heading in detector reading order. A contradictory parent is
+rejected. If the parent is on an earlier page, the actual PDF destination must
+fall within 32 points of the uniquely matching child heading; a page-only link
+cannot establish that context. Multiple selected labels and non-section prefixes
+still fall back.
+
+An unfinished opening paragraph now checks the next body column before requesting
+another page. The same completion, typography, heading-boundary and crop checks
+apply to both paths. Figures/tables do not supply prose continuations. A new
+heading, reversed reading order or an unfinished continuation remains unresolved;
+the resolver does not skip that column to search a later page.
+
+The 79-link `papers-compound-sections-development-v1` replay resolves all 18
+sections completely. Citations, figures/tables and equations each remain 17/18;
+all 69 accepted targets pass required/excluded ink checks, all seven controls fall
+back and native handles return to zero. The focused suite passed 50 tests. The
+compound-label and cross-column regressions both failed before the fix. The
+corrected two-column opening and long subsection crop were visually reviewed.
+This remains development evidence; replacement held-out annotations and the next
+frozen qualification run are still required.
+
+The full Flutter suite passed 395 tests with 21 opt-in skips. Static analysis,
+formatting and the pinned-engine check pass. The final native run also passed
+the original fourteen-target evaluation. Logs use
+`build/target-preview-m5-compound-sections-` and original-target captures are in
+`build/target-preview-evaluation/m5-compound-sections-regression/`.
+
+The macOS Debug app also builds and passes deep, strict verification of its local
+signature. The build log is
+`build/target-preview-m5-compound-sections-build.log`. Native-window acceptance
+remains pending.
+
+Before changing figure rules, `2511.23342v3` was also promoted from the original
+held-out run: its individually linked `Fig. 2a` points to the whole Figure 2 and
+currently falls back. Its eligibility and boundaries are unchanged. The promotion
+is recorded in `m5_history/panel_reference_promotion.json`. This expands development
+to 87 links in ten papers; `papers-compound-sections-development-v2` resolves 19/20
+citations, 18/20 figures/tables, 19/20 equations and 20/20 sections, with all 76
+accepted targets complete and native handles returning to zero.
+
+The next metadata-only selection chose `2504.17670v2` as its replacement, excluding
+all versions of previously sampled paper IDs. Its eight source-only cases and page
+renderings are under `build/target-preview-m5/annotations-v4-panel-replacement/`;
+source annotations are pending. See `m5_history/replenishment_v3_selection.json`.
+
 ## Remaining acceptance work
 
-Finish the promoted compound-section cases and replacement source annotations,
-then freeze and evaluate every held-out link with paired images,
+Finish remaining promoted cases and replacement source annotations, then freeze
+and evaluate every held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback

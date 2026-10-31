@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "policy": "Next previously unused arXiv document in filename order, at most 60 pages and at least two named destinations per group; exclude every version of sampled paper IDs. No detector or resolver output inspected.",
+  "candidate_documents_scanned": 18,
+  "selected": [
+    {
+      "pdf": "2504.17670v2.pdf",
+      "pages": 11,
+      "counts": {
+        "citation": 87,
+        "figure_table": 12,
+        "equation": 4,
+        "section": 3
+      }
+    }
+  ],
+  "replaced_development_documents": [
+    "2511.23342v3"
+  ],
+  "annotation_status": "pending_source_review",
+  "resolver_output_examined": false
+}

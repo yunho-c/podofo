@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "2511.23342v3.pdf",
-    "split": "held_out",
+    "split": "development",
     "id": "2511.23342v3",
     "sha256": "c47224211665bc4d79f52c5797597038b17c604de2e1cac24e16935bbb59d251",
     "source_url": "https://arxiv.org/abs/2511.23342v3",
@@ -722,6 +722,8 @@
   "review": {
     "date": "2026-10-30",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "0f10834"
+    "resolver_baseline": "0f10834",
+    "promoted_from": "held_out_v1",
+    "promotion_reason": "Panel-qualified Figure 2a source points to whole Figure 2; the preserved first held-out fallback drives explicit panel-to-parent identity development."
   }
 }

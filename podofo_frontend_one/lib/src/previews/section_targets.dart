@@ -13,8 +13,62 @@ bool _sectionText(_Region r) =>
 
 bool _sectionTerminal(_Region r) => RegExp(r'[.!?:\]\)]$').hasMatch(r.text);
 
+bool _sectionInsideVisual(_Region r, List<_Region> regions) => regions.any(
+  (v) =>
+      (v.model.category == podoco.RegionCategory.figure ||
+          v.model.category == podoco.RegionCategory.table ||
+          v.model.category == podoco.RegionCategory.caption) &&
+      _covers(v.bounds, r.bounds, .9),
+);
+
+bool _sectionFlow(_Region r, List<_Region> regions) =>
+    (_sectionText(r) ||
+        r.model.category == podoco.RegionCategory.heading ||
+        (r.model.category == podoco.RegionCategory.formula &&
+            r.model.displayKind != podoco.FormulaDisplayKind.inline)) &&
+    !_sectionInsideVisual(r, regions);
+
 String? _sectionHeadingLabel(_Region heading) =>
     RegExp('^($_targetLabel)[.]?(?:\\s|\$)').firstMatch(heading.text)?.group(1);
+
+bool _sectionHeadingMatches(
+  _Identity identity,
+  PreviewDestination destination,
+  _Region heading,
+  List<_Region> regions,
+  List<int>? readingOrder,
+) {
+  if (RegExp('^${RegExp.escape(identity.value)}[.]?(?:\\s|\$)')
+      .hasMatch(heading.text)) {
+    return true;
+  }
+  final compound = identity.value.split('-');
+  if (compound.length != 2 ||
+      _sectionHeadingLabel(heading) != compound[1] ||
+      readingOrder == null) {
+    return false;
+  }
+  final position = readingOrder.indexOf(heading.model.id);
+  final parents =
+      regions.where((r) {
+        final label = _sectionHeadingLabel(r);
+        return r.model.category == podoco.RegionCategory.heading &&
+            label != null &&
+            RegExp(r'^[IVXLCDM]+$').hasMatch(label) &&
+            readingOrder.indexOf(r.model.id) < position;
+      }).toList()..sort(
+        (a, b) => readingOrder
+            .indexOf(b.model.id)
+            .compareTo(readingOrder.indexOf(a.model.id)),
+      );
+  if (parents.isNotEmpty) {
+    return _sectionHeadingLabel(parents.first) == compound[0];
+  }
+  // The parent can be on the previous page. A page-only link cannot establish
+  // that context; a destination beside the uniquely matched child can.
+  return destination.y != null &&
+      (destination.y! - heading.bounds.top).abs() <= 32;
+}
 
 List<_Region>? _sectionOpeningHeadings(
   _Region heading,
@@ -94,6 +148,7 @@ ResolvedLinkTarget _resolveSection(
   _Identity identity,
   List<_Region> regions,
   Object? evidence, {
+  List<int>? readingOrder,
   PreviewTextPage? followingText,
   PreviewLayoutEvidence? followingLayout,
 }) {
@@ -109,8 +164,13 @@ ResolvedLinkTarget _resolveSection(
   for (final heading in regions.where(
     (r) => r.model.category == podoco.RegionCategory.heading,
   )) {
-    if (!RegExp('^${RegExp.escape(identity.value)}[.]?(?:\\s|\$)')
-        .hasMatch(heading.text)) {
+    if (!_sectionHeadingMatches(
+      identity,
+      destination,
+      heading,
+      regions,
+      readingOrder,
+    )) {
       continue;
     }
     final paragraphs =
@@ -173,62 +233,66 @@ ResolvedLinkTarget _resolveSection(
   ];
   if (!_sectionTerminal(paragraph)) {
     // Only an identified, unfinished opening block at the end of its column
-    // justifies reading the next page. Prose/equations below it or in a later
-    // column are a boundary; never skip intervening text to find a continuation.
+    // justifies continuation. Inspect the next body column first; never skip
+    // intervening text by requesting a later page.
     if (paragraph.bounds.bottom < destination.pageSize.height * .78 ||
         regions.any(
           (r) =>
               r.model.id != paragraph.model.id &&
-              (_sectionText(r) ||
-                  r.model.category == podoco.RegionCategory.heading ||
-                  (r.model.category == podoco.RegionCategory.formula &&
-                      r.model.displayKind !=
-                          podoco.FormulaDisplayKind.inline)) &&
-              ((r.bounds.top >= paragraph.bounds.bottom &&
-                      _horizontalOverlap(r.bounds, paragraph.bounds) >= .5) ||
-                  r.bounds.left >= paragraph.bounds.right - 2),
+              _sectionFlow(r, regions) &&
+              r.bounds.top >= paragraph.bounds.bottom &&
+              _horizontalOverlap(r.bounds, paragraph.bounds) >= .5,
         )) {
       return miss('uncertainSectionBoundary');
     }
-    if (followingText == null || followingLayout == null) {
-      return miss(
-        'sectionNeedsContinuation',
-        continuation: destination.page + 1,
-      );
+    var continuationPage = destination.page;
+    var next = regions, nextSize = destination.pageSize;
+    final laterColumn = regions.any(
+      (r) =>
+          _sectionFlow(r, regions) &&
+          r.bounds.left >= paragraph.bounds.right - 2,
+    );
+    if (!laterColumn) {
+      if (followingText == null || followingLayout == null) {
+        return miss(
+          'sectionNeedsContinuation',
+          continuation: destination.page + 1,
+        );
+      }
+      if (followingText.snapshot.page != destination.page + 1 ||
+          followingLayout.page.page.key.pageIndex != destination.page) {
+        return miss('invalidContinuationPage');
+      }
+      usedEvidence = (evidence, followingLayout.identity);
+      final space = followingLayout.page.page.space;
+      nextSize = Size(space.width, space.height);
+      next = followingLayout.page.regions
+          .map((r) => _Region(r, followingText))
+          .toList();
+      continuationPage++;
     }
-    if (followingText.snapshot.page != destination.page + 1 ||
-        followingLayout.page.page.key.pageIndex != destination.page) {
-      return miss('invalidContinuationPage');
-    }
-    usedEvidence = (evidence, followingLayout.identity);
-    final space = followingLayout.page.page.space;
-    final nextSize = Size(space.width, space.height);
-    final next = followingLayout.page.regions
-        .map((r) => _Region(r, followingText))
-        .toList();
     final body = next
         .where(
           (r) =>
               _sectionText(r) &&
               r.bounds.top <= nextSize.height * .45 &&
-              !next.any(
-                (v) =>
-                    (v.model.category == podoco.RegionCategory.figure ||
-                        v.model.category == podoco.RegionCategory.table ||
-                        v.model.category == podoco.RegionCategory.caption) &&
-                    _covers(v.bounds, r.bounds, .9),
-              ),
+              (!laterColumn || r.bounds.left >= paragraph.bounds.right - 2) &&
+              !_sectionInsideVisual(r, next),
         )
         .toList();
     if (body.isEmpty) return miss('missingSectionContinuation');
-    // Start in the first body column, allowing a floating figure/table above it.
+    // Start in the first available body column, allowing a float above it.
     final left = body.map((r) => r.bounds.left).reduce(math.min);
     body.removeWhere(
       (r) => r.bounds.left > left + math.max(18, nextSize.width * .05),
     );
     body.sort((a, b) => a.bounds.top.compareTo(b.bounds.top));
     final continuation = body.first;
-    if (next.any(
+    if ((laterColumn &&
+            readingOrder != null &&
+            readingOrder.indexOf(continuation.model.id) <=
+                readingOrder.indexOf(paragraph.model.id)) ||
+        next.any(
           (r) =>
               r.model.category == podoco.RegionCategory.heading &&
               r.bounds.top < continuation.bounds.top &&
@@ -253,7 +317,7 @@ ResolvedLinkTarget _resolveSection(
     final nextParts = _safeParts(target.parts, target.ids, next, nextSize);
     if (nextParts == null) return miss('sectionContinuationContainsNeighbor');
     parts.addAll([
-      for (final b in nextParts) (page: destination.page + 1, bounds: b),
+      for (final b in nextParts) (page: continuationPage, bounds: b),
     ]);
   } else if (paragraph.bounds.bottom > destination.pageSize.height - 16) {
     return miss('uncertainSectionBoundary');

@@ -164,6 +164,7 @@ class LinkTargetResolver {
           identity,
           regions,
           evidence,
+          readingOrder: layout.page.readingOrder?.regionIds,
           followingText: followingText,
           followingLayout: followingLayout,
         );

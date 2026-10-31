@@ -51,7 +51,9 @@
     },
     {
       "pdf": "2511.23342v3.pdf",
-      "split": "held_out"
+      "split": "development",
+      "promoted_from": "held_out_v1",
+      "promotion_reason": "Panel-qualified Figure 2a source points to whole Figure 2; the preserved first held-out fallback drives explicit panel-to-parent identity development."
     },
     {
       "pdf": "2606.29940v2.pdf",
@@ -71,6 +73,11 @@
       "pdf": "2410.06940v4.pdf",
       "split": "held_out",
       "replaces_promoted_document": "2312.02753v1"
+    },
+    {
+      "pdf": "2504.17670v2.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "2511.23342v3"
     }
   ],
   "replenishment_policy": "First three previously unused arXiv-named PDFs in filename order, at most 60 pages, with at least two unique named destinations in each target group. No resolver/model output inspected."

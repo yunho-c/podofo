@@ -55,6 +55,25 @@ _Identity? _sourceIdentity(LinkSourceText source) {
   final citation = _listCitation(selected, source.before, source.after);
   if (citation != null) return _Identity(LinkTargetKind.citation, citation);
 
+  // IEEE-style subsection links print the parent and child together (II-C),
+  // while the target heading may print only C. Keep the full identity for the
+  // resolver to check against parent-heading or precise destination evidence.
+  final compound = RegExp(
+    r'^(?:(Sections?|Secs?\.?)\s+)?\(?([IVXLCDM]+[-–][A-Z])[),.]*$',
+    caseSensitive: false,
+  ).firstMatch(selected);
+  if (compound != null &&
+      (compound.group(1) != null ||
+          RegExp(
+            r'\b(?:Sections?|Secs?\.?)\s*$',
+            caseSensitive: false,
+          ).hasMatch(_clean(source.before)))) {
+    return _Identity(
+      LinkTargetKind.section,
+      compound.group(2)!.replaceAll('–', '-').toUpperCase(),
+    );
+  }
+
   final named = RegExp(
     '\\b$_targetPrefix\\s*\\(?\\s*($_targetLabel)\\b',
     caseSensitive: false,
