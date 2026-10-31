@@ -677,10 +677,29 @@ so this remains an explicit unsupported boundary case. The cross-page reference
 whose year appears only on the following page and equation-interleaved section
 openings also remain fallbacks. No eligibility or target annotations changed.
 
+## Fourth source-reviewed freeze
+
+The unchanged metadata-only replacement policy selected `2512.05016v2`,
+`2512.05117v3` and `2603.26571v4`. The selection excludes every version of all
+previously sampled papers, including the two development seeds; its record is
+`m5_history/replenishment_v5_selection.json`. The 25 new links were independently
+reviewed against full source/target pages and MuPDF text geometry, with no
+resolver/model output. All source hashes, page bounds, nonempty ink and disjoint
+required/excluded regions validate. Review includes two cross-page section
+openings and a composite figure containing a table, plot, explanatory note and
+shared caption. The footnote remains an unsupported control.
+
+The fourth freeze fixes resolver version 12 at baseline `8c1afbe` and all 36
+pipeline/annotation identities. It contains 49 links across six held-out papers:
+12 citations, 12 figures/tables, 11 equations, 11 sections and three controls.
+Twenty-five links are newly reviewed; 24 unchanged links in three papers are
+carryovers that did not drive rule changes. The full sample now contains 171 links
+over twenty papers, plus eight links in the two earlier development seeds. The
+source annotations and freeze are committed before the next held-out run.
+
 ## Remaining acceptance work
 
-Replenish and freeze the
-held-out documents, then evaluate every held-out link with paired images,
+Evaluate every frozen held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback

@@ -1,0 +1,809 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2512.05117v3.pdf",
+    "split": "held_out",
+    "replaces_promoted_document": "2504.17670v2",
+    "id": "2512.05117v3",
+    "sha256": "6ad33f3bf99be813938bb4c32abf967ef0638525660f178e50bff9f9539f059f",
+    "source_url": "https://arxiv.org/abs/2512.05117v3",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2512.05117v3-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 496,
+        "source_bounds": [
+          361.894,
+          533.374,
+          368.868,
+          545.329
+        ],
+        "source_text": ".1)",
+        "source_context": "datasets, even with different loss functions and \nts of these models (Fig.1) suggests that although\nes, individually, they are all part of an unusually",
+        "destination": {
+          "name": "figure.caption.1",
+          "page": 2,
+          "raw_pdf_point": [
+            91.801,
+            702.937
+          ],
+          "point": [
+            91.801,
+            89.063
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              91,
+              88,
+              527,
+              284
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              91,
+              294,
+              522,
+              405
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              91,
+              421,
+              210,
+              435
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              91,
+              450,
+              522,
+              510
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Deep Networks Exhibit Shared, Low-Rank (Universal) Subspaces"
+        ],
+        "reviewed": true,
+        "notes": "Whole Figure 1: large multi-model spectrum and both right-hand plots, axes, legends, arrows and labels, plus the complete multi-line caption. Exclude Introduction."
+      },
+      {
+        "id": "2512.05117v3-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 3,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 500,
+        "source_bounds": [
+          392.801,
+          120.446,
+          443.332,
+          132.401
+        ],
+        "source_text": "(Jacot et al.,",
+        "source_context": "limit, training dynamics are governed by a limiting\ntialization distribution (Jacot et al., 2018). Similarly,\necifically its own universality hypothesis (Olah et al.,",
+        "destination": {
+          "name": "cite.jacot2018ntk",
+          "page": 17,
+          "raw_pdf_point": [
+            66.894,
+            473.218
+          ],
+          "point": [
+            66.894,
+            318.782
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 17,
+            "bounds": [
+              91,
+              323,
+              522,
+              358
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 17,
+            "bounds": [
+              91,
+              368,
+              522,
+              427
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Neural tangent kernel: Convergence and generalization in neural networks"
+        ],
+        "reviewed": true,
+        "notes": "Complete three-line Jacot 2018 entry; exclude the next Jiang entry."
+      },
+      {
+        "id": "2512.05117v3-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 3,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 502,
+        "source_bounds": [
+          470.122,
+          132.401,
+          518.428,
+          144.356
+        ],
+        "source_text": "(Olah et al.,",
+        "source_context": "tion (Jacot et al., 2018). Similarly,\nuniversality hypothesis (Olah et al.,\nnd patterns within specific layers of",
+        "destination": {
+          "name": "cite.olah2020zoom",
+          "page": 19,
+          "raw_pdf_point": [
+            66.894,
+            667.53
+          ],
+          "point": [
+            66.894,
+            124.47
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 19,
+            "bounds": [
+              91,
+              128,
+              522,
+              164
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 19,
+            "bounds": [
+              91,
+              172,
+              522,
+              207
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Zoom in: An introduction to circuits"
+        ],
+        "reviewed": true,
+        "notes": "Complete Olah 2020 entry including author list, DOI and final URL; exclude Ortiz-Jimenez."
+      },
+      {
+        "id": "2512.05117v3-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 26,
+        "source_xref": 857,
+        "source_bounds": [
+          175.147,
+          623.172,
+          182.121,
+          633.964
+        ],
+        "source_text": "2",
+        "source_context": "methods specifically designed to break this c\nas follows. Section 2 explains our analysis m\nempirical evidence of the Universal subspac",
+        "destination": {
+          "name": "section.2",
+          "page": 4,
+          "raw_pdf_point": [
+            91.801,
+            568.008
+          ],
+          "point": [
+            91.801,
+            223.992
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              91,
+              232,
+              267,
+              246
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              91,
+              259,
+              522,
+              426
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              91,
+              432,
+              522,
+              511
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Universal Subspace Analysis"
+        ],
+        "reviewed": true,
+        "notes": "Heading and complete long opening paragraph; exclude the following Analysis methodology paragraph."
+      },
+      {
+        "id": "2512.05117v3-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 27,
+        "source_xref": 858,
+        "source_bounds": [
+          391.564,
+          623.172,
+          398.537,
+          633.964
+        ],
+        "source_text": "4",
+        "source_context": "nvergence? The remainder of this paper is organ\nthodology and Section 4 presents the comprehe\ns, including their application to new tasks in Se",
+        "destination": {
+          "name": "section.4",
+          "page": 8,
+          "raw_pdf_point": [
+            91.801,
+            244.731
+          ],
+          "point": [
+            91.801,
+            547.269
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 8,
+            "bounds": [
+              91,
+              555,
+              522,
+              569
+            ]
+          },
+          {
+            "page": 8,
+            "bounds": [
+              91,
+              581,
+              522,
+              653
+            ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              91,
+              395,
+              522,
+              431
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 8,
+            "bounds": [
+              91,
+              504,
+              522,
+              538
+            ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              91,
+              94,
+              522,
+              374
+            ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              91,
+              437,
+              522,
+              497
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Results across Modalities, Tasks, Architectures, and Training Mechanisms"
+        ],
+        "reviewed": true,
+        "notes": "Heading plus full first paragraph continuing onto page 9 after the floating Figure 2. Exclude the figure, preceding paragraph and the next paragraph beginning These experiments."
+      },
+      {
+        "id": "2512.05117v3-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 9,
+        "source_link_index_pymupdf": 6,
+        "source_xref": 175,
+        "source_bounds": [
+          453.932,
+          617.06,
+          493.33,
+          629.015
+        ],
+        "source_text": "(Figure 2)",
+        "source_context": "ation of the joint subspace, but we still\nf the weight matrices (Figure 2). We\nace preserves competitive performance",
+        "destination": {
+          "name": "figure.caption.3",
+          "page": 9,
+          "raw_pdf_point": [
+            91.801,
+            702.937
+          ],
+          "point": [
+            91.801,
+            89.063
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 9,
+            "bounds": [
+              133,
+              94,
+              478,
+              135
+            ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              133,
+              135,
+              480,
+              313
+            ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              100,
+              311,
+              513,
+              344
+            ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              91,
+              352,
+              522,
+              374
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 9,
+            "bounds": [
+              91,
+              395,
+              522,
+              431
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Universal subspaces in CNNs"
+        ],
+        "reviewed": true,
+        "notes": "Whole Figure 2 includes the unnumbered performance table above the plot, complete plot/axes, explanatory Note and shared figure caption. Exclude continued section prose below."
+      },
+      {
+        "id": "2512.05117v3-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 25,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 710,
+        "source_bounds": [
+          320.45,
+          371.467,
+          327.424,
+          385.814
+        ],
+        "source_text": "1",
+        "source_context": "2/δ) ≥ln 2, so that 1 +\n2 ln(2/δ) ≤\n1/\nln\ns-task term of equation 1 with c1 = 3 and c2 = 2",
+        "destination": {
+          "name": "equation.1",
+          "page": 6,
+          "raw_pdf_point": [
+            202.866,
+            156.867
+          ],
+          "point": [
+            202.866,
+            635.133
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 6,
+            "bounds": [
+              202,
+              629,
+              522,
+              658
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 6,
+            "bounds": [
+              91,
+              583,
+              522,
+              628
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Complete numbered operator-norm bound, including radical, fraction, superscripts and equation number; exclude theorem prose above."
+      },
+      {
+        "id": "2512.05117v3-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 25,
+        "source_link_index_pymupdf": 4,
+        "source_xref": 713,
+        "source_bounds": [
+          239.607,
+          403.807,
+          246.581,
+          414.6
+        ],
+        "source_text": "2.",
+        "source_context": "n bound and Davis–Kahan. Combining (ii)–(\n6 then implies equation 2.",
+        "destination": {
+          "name": "equation.2",
+          "page": 7,
+          "raw_pdf_point": [
+            185.586,
+            669.664
+          ],
+          "point": [
+            185.586,
+            122.336
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 7,
+            "bounds": [
+              184,
+              115,
+              522,
+              146
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 7,
+            "bounds": [
+              91,
+              97,
+              204,
+              110
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              91,
+              156,
+              403,
+              173
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Complete numbered projector bound, including the large parentheses, radical, fraction and equation number. Exclude its condition above and definitions below."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "8c1afbe4c55aed6e9d6b4aca29736507bc575ccd"
+  }
+}

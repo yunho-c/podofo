@@ -1,0 +1,666 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2512.05016v2.pdf",
+    "split": "held_out",
+    "replaces_promoted_document": "2206.07867v3",
+    "id": "2512.05016v2",
+    "sha256": "515525b6955b93808066203a3a665b879fe7d0b3dc5ff5128621ff0e186f6395",
+    "source_url": "https://arxiv.org/abs/2512.05016v2",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2512.05016v2-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 19,
+        "source_bounds": [
+          216.424,
+          518.469,
+          227.383,
+          526.702
+        ],
+        "source_text": "[38]",
+        "source_context": "alitative comparison on ultra-low bitrate video compres\noaches such as GLC-Video [38] yield sharper textures but in",
+        "destination": {
+          "name": "cite.qi2025generative",
+          "page": 10,
+          "raw_pdf_point": [
+            58.5,
+            215.063
+          ],
+          "point": [
+            58.5,
+            576.937
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              58,
+              580,
+              296,
+              635
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              58,
+              637,
+              296,
+              690
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Generative latent coding for ultra-low bitrate image and video compression"
+        ],
+        "reviewed": true,
+        "notes": "Complete reference [38], including its final backlink line; exclude [39]."
+      },
+      {
+        "id": "2512.05016v2-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 20,
+        "source_bounds": [
+          208.343,
+          529.428,
+          214.819,
+          539.477
+        ],
+        "source_text": "2)",
+        "source_context": "proaches such as GLC-Video [38] yield sharper textures bu\nemporal flickering (see Fig. 2). Leveraging a video-native\nral stability. Zoom in for best view.",
+        "destination": {
+          "name": "figure.caption.1",
+          "page": 3,
+          "raw_pdf_point": [
+            58.5,
+            725.978
+          ],
+          "point": [
+            58.5,
+            66.022
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              58,
+              57,
+              554,
+              192
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              58,
+              193,
+              554,
+              225
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              58,
+              233,
+              554,
+              276
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2. (a) Spatial"
+        ],
+        "reviewed": true,
+        "notes": "Whole Figure 2: spatial comparisons, t-x slices and complete error plot with axes/legend, both panel labels and full caption. Exclude two-column prose below."
+      },
+      {
+        "id": "2512.05016v2-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 2,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 94,
+        "source_bounds": [
+          211.466,
+          188.94,
+          223.422,
+          197.866
+        ],
+        "source_text": "[16,",
+        "source_context": "o compression (NVC) [16, 18, 24–27, 31,\nno\nth",
+        "destination": {
+          "name": "cite.FVC",
+          "page": 9,
+          "raw_pdf_point": [
+            317.25,
+            621.692
+          ],
+          "point": [
+            317.25,
+            170.308
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 9,
+            "bounds": [
+              317,
+              174,
+              554,
+              218
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 9,
+            "bounds": [
+              317,
+              219,
+              554,
+              273
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fvc: A new framework towards deep video compression in feature space"
+        ],
+        "reviewed": true,
+        "notes": "Complete four-line reference [16]; the source annotation selects the first member of a citation list. Exclude [17]."
+      },
+      {
+        "id": "2512.05016v2-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 29,
+        "source_xref": 123,
+        "source_bounds": [
+          451.026,
+          432.926,
+          458.0,
+          443.869
+        ],
+        "source_text": "1",
+        "source_context": "nerative approaches—even under extreme bitrate\nnts—as illustrated in Fig. 1 and Fig. 2.\nmmary, our main contributions are as follows:",
+        "destination": {
+          "name": "figure.1",
+          "page": 1,
+          "raw_pdf_point": [
+            97.412,
+            288.337
+          ],
+          "point": [
+            97.412,
+            503.663
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 1,
+            "bounds": [
+              58,
+              229,
+              554,
+              497
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              58,
+              507,
+              554,
+              551
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 1,
+            "bounds": [
+              150,
+              559,
+              220,
+              575
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              58,
+              590,
+              295,
+              714
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Qualitative comparison on ultra-low bitrate video compression"
+        ],
+        "reviewed": true,
+        "notes": "Whole Figure 1: both large comparisons and all comparison tiles, rate/method labels and complete caption. Exclude the abstract heading and prose."
+      },
+      {
+        "id": "2512.05016v2-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 57,
+        "source_xref": 194,
+        "source_bounds": [
+          495.531,
+          667.344,
+          509.977,
+          677.899
+        ],
+        "source_text": "3.1)",
+        "source_context": "while mitigating flickering artifacts. We\nerall framework (Section 3.1), followed\noral latent compression (Section 3.2), the",
+        "destination": {
+          "name": "subsection.3.1",
+          "page": 4,
+          "raw_pdf_point": [
+            58.5,
+            457.17
+          ],
+          "point": [
+            58.5,
+            334.83
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              58,
+              336,
+              201,
+              349
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              58,
+              353,
+              296,
+              401
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              58,
+              409,
+              296,
+              456
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.1. Framework of GNVC-VD"
+        ],
+        "reviewed": true,
+        "notes": "Heading plus complete opening paragraph ending in a colon before Equation (1); exclude the following display and definitions."
+      },
+      {
+        "id": "2512.05016v2-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 58,
+        "source_xref": 195,
+        "source_bounds": [
+          519.812,
+          679.299,
+          534.258,
+          690.243
+        ],
+        "source_text": "3.2)",
+        "source_context": "ramework (Section 3.1), followed\nent compression (Section 3.2), the\nnement (Section 3.3), and the two-",
+        "destination": {
+          "name": "subsection.3.2",
+          "page": 4,
+          "raw_pdf_point": [
+            317.25,
+            119.69
+          ],
+          "point": [
+            317.25,
+            672.31
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              316,
+              673,
+              515,
+              686
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              316,
+              691,
+              555,
+              715
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              58,
+              74,
+              296,
+              147
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              608,
+              554,
+              667
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              58,
+              148,
+              296,
+              194
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.2. Spatio-Temporal Latent Compression"
+        ],
+        "reviewed": true,
+        "notes": "Heading and full opening paragraph across pages 4-5, including the latent-sequence description and temporal downsampling sentence. Exclude preceding prose and next indented paragraph."
+      },
+      {
+        "id": "2512.05016v2-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 213,
+        "source_bounds": [
+          186.732,
+          244.227,
+          193.706,
+          254.782
+        ],
+        "source_text": "(2)",
+        "source_context": "d into both the analysis transform ga and the synthe-\nnsform gs, extending Eq. (2) to:",
+        "destination": {
+          "name": "equation.2",
+          "page": 4,
+          "raw_pdf_point": [
+            83.067,
+            283.102
+          ],
+          "point": [
+            83.067,
+            508.898
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              82,
+              510,
+              296,
+              526
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              58,
+              457,
+              296,
+              505
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              58,
+              533,
+              296,
+              583
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Both quantization/synthesis expressions, hats, subscripts, delimiters and equation number; exclude preceding and following prose."
+      },
+      {
+        "id": "2512.05016v2-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 9,
+        "source_xref": 219,
+        "source_bounds": [
+          347.96,
+          447.172,
+          354.934,
+          457.727
+        ],
+        "source_text": "(9)",
+        "source_context": "of I- and P-\nnce and tex-\ntransformer blocks to estimate the\nin Eq. (9). These adapters take th\n1+T/4",
+        "destination": {
+          "name": "equation.9",
+          "page": 5,
+          "raw_pdf_point": [
+            363.53,
+            532.479
+          ],
+          "point": [
+            363.53,
+            259.521
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              362,
+              261,
+              554,
+              294
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              317,
+              241,
+              554,
+              253
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              317,
+              301,
+              554,
+              349
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(9)"
+        ],
+        "reviewed": true,
+        "notes": "Complete velocity equation including both underbraces and their labels, fraction and equation number; exclude the introduction and explanatory paragraph."
+      },
+      {
+        "id": "2512.05016v2-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 12,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 391,
+        "source_bounds": [
+          99.287,
+          260.06,
+          105.264,
+          272.581
+        ],
+        "source_text": "ua\n51",
+        "source_context": "We\nevaluate\ntwo\nrepresentative\nHM-16.251\nand\nVTM-17.02.\nnally in 10-bit YUV444, and fin",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 12,
+          "raw_pdf_point": [
+            72.846,
+            148.309
+          ],
+          "point": [
+            72.846,
+            643.691
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Superscript source link in Traditional Codecs points to a software URL footnote; unsupported control outside the four target groups."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "8c1afbe4c55aed6e9d6b4aca29736507bc575ccd"
+  }
+}
