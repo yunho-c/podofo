@@ -14,6 +14,73 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test(
+    'full-name author boundaries exclude the following bibliography entry',
+    () {
+      for (final merged in [false, true]) {
+        for (final nextAuthor in [
+          'Ben Morris and Cara Ng',
+          'Ben K. Morris, Cara Ng',
+        ]) {
+          final fixture = _references(
+            [
+              'Alice Rivera, Dan Wu. First. 2024.',
+              'URL https://example.test/first.',
+              '$nextAuthor. Second. 2023.',
+              'URL https://example.test/second.',
+              'Dana Sato, Evan Wu. Third. 2022.',
+            ],
+            indents: [0, 10, 0, 10, 0],
+            merged: merged,
+          );
+          final first = fixture.resolve('Rivera et al.,', after: '2024).');
+          expect(
+            first.tier,
+            LinkTargetTier.matchedIdentity,
+            reason: first.reason,
+          );
+          expect(
+            first.parts.single.bounds.contains(const Offset(31, 58)),
+            true,
+          );
+          expect(
+            first.parts.single.bounds.contains(const Offset(25, 72)),
+            false,
+          );
+          final second = fixture.resolve('Morris et al.,', after: '2023).');
+          expect(
+            second.tier,
+            LinkTargetTier.matchedIdentity,
+            reason: second.reason,
+          );
+          expect(
+            second.parts.single.bounds.contains(const Offset(31, 86)),
+            true,
+          );
+          expect(
+            second.parts.single.bounds.contains(const Offset(25, 100)),
+            false,
+          );
+        }
+      }
+    },
+  );
+  test('indented author-like text remains inside its bibliography entry', () {
+    final fixture = _references(
+      [
+        'Alice Rivera, Dan Wu. First. 2024.',
+        'Ben Morris and Cara Ng, editors.',
+        'URL https://example.test/first.',
+        'Dana Sato, Evan Wu. Next. 2022.',
+      ],
+      indents: [0, 10, 10, 0],
+      merged: true,
+    );
+    final target = fixture.resolve('Rivera et al.,', after: '2024).');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(target.parts.single.bounds.contains(const Offset(31, 72)), true);
+    expect(target.parts.single.bounds.contains(const Offset(25, 86)), false);
+  });
   test('one linked list member resolves without accepting a multi-number annotation', () {
     final fixture = _references([
       '[13] Rivera. First.',
@@ -130,15 +197,20 @@ void main() {
   });
 }
 
-_Fixture _references(List<String> lines, {double gap = 14}) {
+_Fixture _references(
+  List<String> lines, {
+  double gap = 14,
+  List<double>? indents,
+  bool merged = false,
+}) {
   final text = StringBuffer(),
       boxes = <Rect>[],
       regions = <Map<String, Object?>>[];
   for (var i = 0; i < lines.length; i++) {
-    final line = lines[i], y = 40 + i * gap;
+    final line = lines[i], y = 40 + i * gap, x = 20 + (indents?[i] ?? 0);
     text.write('$line\n');
     for (var char = 0; char < line.length; char++) {
-      boxes.add(Rect.fromLTWH(20 + char * 3, y, 3, 8));
+      boxes.add(Rect.fromLTWH(x + char * 3, y, 3, 8));
     }
     boxes.add(Rect.zero);
     regions.add({
@@ -147,12 +219,25 @@ _Fixture _references(List<String> lines, {double gap = 14}) {
       'model_label': 'reference',
       'category': 'text',
       'native_subtype': 'reference_content',
-      'bounds': [19, y - 1, 21 + line.length * 3, y + 9],
+      'bounds': [x - 1, y - 1, x + 1 + line.length * 3, y + 9],
       'display_kind': null,
       'polygon': null,
       'score': 1.0,
       'diagnostics': [],
     });
+  }
+  if (merged) {
+    final bounds = boxes
+        .where((b) => !b.isEmpty)
+        .reduce((a, b) => a.expandToInclude(b));
+    regions
+      ..removeRange(1, regions.length)
+      ..single['bounds'] = [
+        bounds.left - 1,
+        bounds.top - 1,
+        bounds.right + 1,
+        bounds.bottom + 1,
+      ];
   }
   final json = jsonDecode(
     jsonEncode(

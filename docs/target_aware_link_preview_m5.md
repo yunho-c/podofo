@@ -616,9 +616,29 @@ captures remain under `build/target-preview-m5/papers-held-out-v3/`, with the lo
 this is not a completed manual audit of all 39 accepted crops. The active freeze
 is removed and the three promoted documents must be replenished.
 
+## Bibliography boundary correction
+
+Resolver version 11 recognizes full first-author names followed by `and`, and
+names containing a spaced middle initial, when separating bibliography entries.
+The existing left-margin check still prevents an indented editor/author line
+inside a reference from starting a new entry. Synthetic tests cover separate and
+merged layout regions, retain URL continuation lines and exclude the next entry.
+The full-name boundary test failed before the correction and now passes.
+
+The focused resolver/native-fixture run passes all 53 tests. The development
+replay `papers-reference-boundary-development-v1` captures all 122 links from
+fourteen documents: 26/28 citations, 24/28 figures/tables, 27/28 equations and
+26/28 sections resolve completely; all ten controls fall back. All 103 accepted
+targets pass required/excluded ink checks and native handles return to zero.
+The corrected Xu (2024) crop was visually checked against the original page:
+all 2,890 required ink pixels remain and zero of the 8,256 excluded neighboring
+pixels remain. The prior failed held-out captures and annotations are unchanged.
+The cross-page reference with its year on the following page still falls back.
+This development replay does not replace the pending held-out qualification.
+
 ## Remaining acceptance work
 
-Fix the promoted bibliography and figure regressions, replenish and freeze the
+Fix the promoted figure regressions, replenish and freeze the
 held-out documents, then evaluate every held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10

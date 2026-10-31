@@ -6,7 +6,9 @@ String? _referenceNumber(String text) {
 }
 
 bool _authorStart(String text) => RegExp(
-  r'^(?:[\p{Lu}][\p{L}\x27’\-]+\s+){0,3}[\p{Lu}][\p{L}\x27’\-]+,\s*[\p{Lu}]|^(?:[\p{Lu}]\.\s*)+[\p{Lu}][\p{L}\x27’\-]+|^[\p{Lu}][\p{L}\x27’\-]+\s+(?:et\s+al\.?|and\s+[\p{Lu}][\p{L}\x27’\-]+)',
+  r'^(?:[\p{Lu}](?:[\p{L}\x27’\-]+|\.)\s+){0,3}'
+  r'[\p{Lu}][\p{L}\x27’\-]+(?:,\s*[\p{Lu}]|\s+(?:et\s+al\.?|and\s+[\p{Lu}]))'
+  r'|^(?:[\p{Lu}]\.\s*)+[\p{Lu}][\p{L}\x27’\-]+',
   unicode: true,
 ).hasMatch(text);
 
