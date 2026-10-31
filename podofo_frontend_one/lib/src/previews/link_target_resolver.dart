@@ -9,6 +9,7 @@ import 'preview_text.dart';
 
 part 'reference_targets.dart';
 part 'figure_targets.dart';
+part 'source_identity.dart';
 
 /// Pure selection over owned PDF text and layout. Scores are detector evidence,
 /// never interpreted as a probability that a source link names an object.
@@ -63,12 +64,12 @@ class LinkTargetResolver {
           (r) => r.model.category == podoco.RegionCategory.caption,
         )) {
           final match = RegExp(
-            r'\b(Figure|Fig\.?|Table)\s+(\d+[a-z]?)\b',
+            '\\b(Figure|Fig\\.?|Table)\\s+($_targetLabel)\\b',
             caseSensitive: false,
           ).firstMatch(caption.text);
           if (match == null ||
               match.start > 32 ||
-              match.group(2)!.toLowerCase() != identity.value ||
+              _canonicalLabel(match.group(2)!) != identity.value ||
               (match.group(1)!.toLowerCase() == 'table') !=
                   (identity.kind == LinkTargetKind.table)) {
             continue;
@@ -264,95 +265,6 @@ class _Identity {
         ).hasMatch(first) &&
         RegExp('\\b${RegExp.escape(year!)}\\b').hasMatch(text);
   }
-}
-
-_Identity? _sourceIdentity(LinkSourceText source) {
-  final selected = _clean(source.spans.map((s) => s.text).join(' '));
-  final direct = RegExp(r'^(?:Citation\s*)?\[(\d+)\]$').firstMatch(selected);
-  if (direct != null) {
-    return _Identity(LinkTargetKind.citation, direct.group(1)!);
-  }
-  if (RegExp(r'^\d+$').hasMatch(selected) &&
-      RegExp(r'\[\s*$').hasMatch(source.before) &&
-      RegExp(r'^\s*\]').hasMatch(source.after)) {
-    return _Identity(LinkTargetKind.citation, selected);
-  }
-  final named = RegExp(
-    r'\b(Figure|Fig\.?|Table|Equation|Eq\.?|Section|Sec\.?|Appendix|App\.?)\s*\(?\s*(\d+(?:\.\d+)*[a-z]?)\b',
-    caseSensitive: false,
-  );
-  final directNames = named.allMatches(selected).toList();
-  if (directNames.length > 1) return null;
-  var match = directNames.singleOrNull;
-  if (match == null &&
-      RegExp(r'^\(?\d+(?:\.\d+)*[a-z]?[),.]*$').hasMatch(selected)) {
-    final before = source.before.length > 32
-        ? source.before.substring(source.before.length - 32)
-        : source.before;
-    final combined = '$before$selected';
-    final matches = named
-        .allMatches(combined)
-        .where((m) => m.end >= before.length)
-        .toList();
-    if (matches.length == 1) match = matches.single;
-  }
-  if (match != null) {
-    if (RegExp(r'\b\d+(?:\.\d+)*[a-z]?\b').allMatches(selected).length > 1) {
-      return null;
-    }
-    final prefix = match.group(1)!.toLowerCase();
-    final kind = prefix.startsWith('fig')
-        ? LinkTargetKind.figure
-        : prefix.startsWith('tab')
-        ? LinkTargetKind.table
-        : prefix.startsWith('eq')
-        ? LinkTargetKind.equation
-        : LinkTargetKind.section;
-    return _Identity(kind, match.group(2)!.toLowerCase());
-  }
-  final equation = RegExp(r'^\((\d+[a-z]?)\)$').firstMatch(selected);
-  if (equation != null) {
-    return _Identity(LinkTargetKind.equation, equation.group(1)!);
-  }
-  // Some PDFs link only the year, leaving the author immediately before it.
-  // Bibliography links often include a trailing citation-list separator. It is
-  // punctuation, not another identity; multiple linked years remain ambiguous.
-  if (RegExp(r'\b(?:19|20)\d{2}[a-z]?\b').allMatches(selected).length > 1) {
-    return null;
-  }
-  final authorSelected = selected.replaceFirst(RegExp(r'[;,]$'), '');
-  final authorText =
-      RegExp(r'^\(?(?:19|20)\d{2}[a-z]?\)?$').hasMatch(authorSelected)
-      ? '${_clean(source.before.substring(math.max(0, source.before.length - 80)))} $authorSelected'
-      : authorSelected;
-  final author = RegExp(
-    r'(?:^|\s|\()([\p{Lu}][\p{L}\-\x27’]+)(?:\s+(?:et\s+al\.?|and\s+[\p{Lu}][\p{L}\-\x27’]+))?[,\s]*\(?\s*((?:19|20)\d{2}[a-z]?)\)?$',
-    unicode: true,
-  ).firstMatch(authorText);
-  if (author != null) {
-    return _Identity(
-      LinkTargetKind.citation,
-      author.group(1)!,
-      year: author.group(2),
-    );
-  }
-  final authorOnly = RegExp(
-    r'^\(?([\p{Lu}][\p{L}\-\x27’]+)\s+(?:et\s+al\.?|and\s+[\p{Lu}][\p{L}\-\x27’]+)[,\s]*$',
-    unicode: true,
-  ).firstMatch(selected);
-  if (authorOnly != null) {
-    final year = RegExp(
-      r'^\s*\(?((?:19|20)\d{2}[a-z]?)\b',
-    ).firstMatch(source.after.substring(0, math.min(24, source.after.length)));
-    if (year != null) {
-      return _Identity(
-        LinkTargetKind.citation,
-        authorOnly.group(1)!,
-        year: year.group(1),
-      );
-    }
-  }
-  return null;
 }
 
 String _clean(String s) =>

@@ -244,9 +244,16 @@ void main() {
         layout: evidence,
       );
       expect(numeric.label, 'Reference [31]');
-      final ambiguous = const LinkTargetResolver().resolve(
+      final listMember = const LinkTargetResolver().resolve(
         p.destination,
         source: source('31', 'See [30, ', ']'),
+        text: p.targetText,
+        layout: evidence,
+      );
+      expect(listMember.label, 'Reference [31]');
+      final ambiguous = const LinkTargetResolver().resolve(
+        p.destination,
+        source: source('30, 31', 'See [', ']'),
         text: p.targetText,
         layout: evidence,
       );

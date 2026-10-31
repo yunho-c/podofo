@@ -14,6 +14,57 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test(
+    'plural equation prefixes apply only to a single linked list member',
+    () {
+      final regions = [
+        _r('formula', [100, 100, 220, 120], 'a = b + c'),
+        _r('formula_number', [240, 100, 255, 120], '(1)'),
+        _r('formula', [100, 160, 220, 180], 'd = e + f'),
+        _r('formula_number', [240, 160, 255, 180], '(2)'),
+      ];
+      expect(_resolve(regions, '1,', before: 'Eqs. ').label, 'Equation (1)');
+      expect(_resolve(regions, '2', before: 'Eqs. 1, ').label, 'Equation (2)');
+      expect(
+        _resolve(regions, '2', before: 'Eqs. 1, unrelated text ').tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(_resolve(regions, 'Eqs. 1, 2').tier, LinkTargetTier.unresolved);
+    },
+  );
+  test(
+    'Roman and appendix labels preserve explicit identity and ambiguity',
+    () {
+      final sections = [
+        _r('heading', [100, 100, 300, 120], 'III. Methods'),
+        _r('text', [100, 130, 300, 160], 'A complete opening paragraph.'),
+        _r('heading', [100, 200, 300, 220], 'A.1 Appendix method'),
+        _r('text', [100, 230, 300, 260], 'Another complete opening paragraph.'),
+      ];
+      expect(
+        _resolve(sections, 'III', before: 'Section ').label,
+        'Section III',
+      );
+      expect(
+        _resolve(sections, 'A.1.', before: 'Appendix ').label,
+        'Section A.1',
+      );
+      expect(
+        _resolve(sections, 'Sections II and III').tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(
+        _resolve(sections, 'Appendices A.1, A.2').tier,
+        LinkTargetTier.unresolved,
+      );
+      final table = [
+        _r('caption', [100, 100, 300, 120], 'TABLE I. Notations'),
+        _r('table', [100, 130, 300, 200], 'All table rows'),
+      ];
+      expect(_resolve(table, 'I', before: 'Table ').label, 'Table I');
+      expect(_resolve(table, 'I').tier, LinkTargetTier.unresolved);
+    },
+  );
   test('a two-row figure retains every panel and its panel captions', () {
     final regions = [
       _r('figure', [310, 60, 420, 140], 'Panel one'),
@@ -116,6 +167,13 @@ ResolvedLinkTarget _resolve(
   );
   final page = json['payload']['page'];
   page['page']['space'] = [600, 800];
+  page['provenance']['image'] = {
+    'width': 600,
+    'height': 800,
+    'row_stride': 2400,
+    'format': 'bgra8',
+    'alpha': 'opaque',
+  };
   page['regions'] = [
     for (var i = 0; i < regions.length; i++)
       {
@@ -132,6 +190,14 @@ ResolvedLinkTarget _resolve(
         'score': 1.0,
         'diagnostics': [],
       },
+  ];
+  page['formulas'] = [
+    for (var i = 0; i < regions.length; i++)
+      if (regions[i]['category'] == 'formula')
+        {
+          'region_id': i,
+          'state': {'state': 'not_requested'},
+        },
   ];
   return const LinkTargetResolver().resolve(
     const PreviewDestination(page: 1, pageSize: Size(600, 800)),

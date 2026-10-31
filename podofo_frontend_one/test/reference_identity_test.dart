@@ -14,6 +14,65 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test('one linked list member resolves without accepting a multi-number annotation', () {
+    final fixture = _references([
+      '[13] Rivera. First.',
+      '[19] Sato. Second.',
+      '[25] Morris. Third.',
+    ]);
+    for (final c in [
+      ('[13,', '', ' 19, 25]', '13'),
+      ('19,', 'See [13, ', ' 25].', '19'),
+      ('25]', 'See [13, 19, ', '.', '25'),
+      ('19', 'See [13, ', ', 25].', '19'),
+      ('19,', 'See [13, ', '20, 29–32, 34-37].', '19'),
+    ]) {
+      final target = fixture.resolve(c.$1, before: c.$2, after: c.$3);
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.label, 'Reference [${c.$4}]');
+    }
+    for (final c in [
+      ('[13, 19]', '', ''),
+      ('19,', 'See 13, ', '25.'),
+      ('19,', 'See [13-', '25]'),
+      ('19,', 'See [13, ', 'twenty-five]'),
+      ('19,', 'See [13, ', '25'),
+      ('19–25', 'See [13, ', '].'),
+    ]) {
+      expect(
+        fixture.resolve(c.$1, before: c.$2, after: c.$3).tier,
+        LinkTargetTier.unresolved,
+      );
+    }
+  });
+  test(
+    'author-only and subsequent-year links retain the same first author',
+    () {
+      final fixture = _references([
+        'Alice Rivera, Ben Sato. First. 2023.',
+        'Alice Rivera, Ben Sato. Second. 2024.',
+        'Ben Sato, Alice Rivera. Third. 2024.',
+      ]);
+      final first = fixture.resolve('[Rivera et al.,', after: ' 2023, 2024].');
+      expect(first.label, 'Rivera (2023)');
+      final second = fixture.resolve('2024,', before: '[Rivera et al., 2023, ');
+      expect(second.label, 'Rivera (2024)');
+      expect(second.parts.single.bounds.contains(const Offset(25, 58)), true);
+      expect(second.parts.single.bounds.contains(const Offset(25, 72)), false);
+      expect(
+        fixture.resolve('2024,', before: '[Rivera et al., 2023; ').tier,
+        LinkTargetTier.unresolved,
+      );
+      expect(
+        fixture.resolve('2023, 2024', before: '[Rivera et al., ').tier,
+        LinkTargetTier.unresolved,
+      );
+    },
+  );
   test('ditto authors inherit only author identity, keeping years and crops separate', () {
     final fixture = _references([
       'Rivera, Alice (2022). First.',
@@ -125,16 +184,19 @@ class _Fixture {
   _Fixture(this.text, this.layout);
   final PreviewTextPage text;
   final PreviewLayoutEvidence layout;
-  ResolvedLinkTarget resolve(String selected, {String before = ''}) =>
-      const LinkTargetResolver().resolve(
-        const PreviewDestination(page: 1, pageSize: Size(260, 360)),
-        text: text,
-        layout: layout,
-        source: LinkSourceText(
-          [PreviewTextSpan(0, selected.length, selected, [])],
-          before,
-          '',
-          false,
-        ),
-      );
+  ResolvedLinkTarget resolve(
+    String selected, {
+    String before = '',
+    String after = '',
+  }) => const LinkTargetResolver().resolve(
+    const PreviewDestination(page: 1, pageSize: Size(260, 360)),
+    text: text,
+    layout: layout,
+    source: LinkSourceText(
+      [PreviewTextSpan(0, selected.length, selected, [])],
+      before,
+      after,
+      false,
+    ),
+  );
 }

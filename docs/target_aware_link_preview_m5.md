@@ -237,6 +237,42 @@ The macOS Debug build and deep/strict local signature verification passed
 (`build/target-preview-m5-panels-build.log`). All eighteen preserved unrelated
 Podoco files still match their recorded hashes.
 
+## Source identity in lists and named labels
+
+Resolver version 6 recognizes a single annotated member inside a well-formed
+bracketed citation list, including when other members are ranges. It requires
+member boundaries on both sides: a selected range, a range endpoint, multiple
+selected numbers, malformed context and a truncated list remain unresolved.
+The previous fixture treating an individually linked `31` within `[30, 31]` as
+ambiguous now expects reference 31; an annotation spanning `30, 31` still rejects.
+
+Author-only links can include an opening bracket, and a year-only link can inherit
+the immediately preceding author across a comma-separated year list. It does not
+cross semicolon-separated entries or borrow the earlier year. Plural named
+prefixes carry across contiguous comma-separated labels, so the second individually
+linked number in `Eqs. 1, 2` remains an equation. Roman and appendix labels are
+matched explicitly; multiple labels under one annotation remain ambiguous.
+Source parsing lives in `source_identity.dart`, which is included in the freeze
+identity alongside the rest of the resolver.
+
+The 53-link `papers-labels-dev-v4` replay passed with 11/12 citations, 12/12
+figures/tables, 9/12 equations and 3/12 sections resolved. Every accepted result
+passed the required/excluded ink checks; all five unsupported controls fell back
+and native handles returned to zero. New citation-list and Roman-table crops were
+visually reviewed. The focused run passed 41 tests. One author/year reference
+still has competing matches; the remaining equation and section failures require
+grouping work. These remain development observations, with no held-out run yet.
+
+The source-identity changes also passed the full Flutter suite (386 passed,
+21 opt-in skips), the original fourteen-target native evaluation, static analysis,
+formatting and the pinned-engine check. Logs use
+`build/target-preview-m5-labels-`; original-target captures are retained under
+`build/target-preview-evaluation/m5-labels-regression/`.
+The Debug app built and passed local deep/strict signature verification
+(`build/target-preview-m5-labels-build.log`). A final fixture-only replay passed
+all nine cases after making the hand-built page/image metadata consistent. All
+eighteen preserved unrelated Podoco files remain unchanged.
+
 ## Remaining acceptance work
 
 Complete annotation and development replay, freeze rules, and evaluate every
