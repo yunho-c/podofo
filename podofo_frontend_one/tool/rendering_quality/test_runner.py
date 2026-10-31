@@ -10,10 +10,24 @@ import time
 import unittest
 
 from report import write_report
-from run import build_cases, capture_process, positive
+from run import build_cases, capture_process, positive, rendering_defines
 
 
 class RunnerTest(unittest.TestCase):
+    def test_rendering_overrides_preserve_defaults_and_explicit_opt_out(self):
+        self.assertEqual(rendering_defines(), [])
+        self.assertEqual(rendering_defines(False, False), [
+            '--dart-define=PODOFO_FRACTIONAL_RENDERING=false',
+            '--dart-define=PODOFO_DISPLAY_SCALE_RENDERING=false',
+        ])
+        self.assertEqual(rendering_defines(True, False), [
+            '--dart-define=PODOFO_FRACTIONAL_RENDERING=true',
+            '--dart-define=PODOFO_DISPLAY_SCALE_RENDERING=false',
+        ])
+        self.assertEqual(rendering_defines(display_scale=True), [
+            '--dart-define=PODOFO_DISPLAY_SCALE_RENDERING=true',
+        ])
+
     def test_default_matrix_covers_threshold_and_fractional_placement(self):
         cases = build_cases()
         self.assertEqual(len(cases), 21)

@@ -77,6 +77,14 @@ def label_cases(cases):
     return cases
 
 
+def rendering_defines(fractional=None, display_scale=None):
+    # Omitted options exercise the app's defaults, rather than overriding them.
+    return [f'--dart-define={name}={str(value).lower()}' for name, value in [
+        ('PODOFO_FRACTIONAL_RENDERING', fractional),
+        ('PODOFO_DISPLAY_SCALE_RENDERING', display_scale),
+    ] if value is not None]
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--pdf', type=Path, help='Local PDF; otherwise generate the embedded-font fixture')
@@ -89,8 +97,10 @@ def main():
     parser.add_argument('--native-frameworks', type=Path, help='Existing app Contents/Frameworks directory; never modified')
     parser.add_argument('--pdfium', type=Path, help='Explicit PDFium binary; also accepts PDFIUM_PATH')
     parser.add_argument('--timeout', type=positive, default=600, help='Whole capture-job timeout in seconds')
-    parser.add_argument('--fractional', action='store_true', help='Enable experimental fractional viewport rendering')
-    parser.add_argument('--display-scale', action='store_true', help='Refine at every zoom after 150 ms without a viewport change')
+    parser.add_argument('--fractional', action=argparse.BooleanOptionalAction, default=None,
+                        help='Override fractional viewport rendering (omitted: app default)')
+    parser.add_argument('--display-scale', action=argparse.BooleanOptionalAction, default=None,
+                        help='Override settled display-scale refinement (omitted: app default)')
     parser.add_argument('--suite', choices=['baseline', 'low-zoom'], default='baseline', help='Built-in capture matrix')
     args = parser.parse_args()
     if platform.system() != 'Darwin':
@@ -128,6 +138,7 @@ def main():
         receipt['flutter_revision'] = subprocess.check_output(
             ['git', '-C', str(args.flutter_sdk.resolve()), 'rev-parse', 'HEAD'], text=True).strip()
         sources = sorted(set(APP.glob('lib/**/*.dart')) | set(APP.glob('third_party/pdfrx/lib/**/*.dart')) |
+                         set(APP.glob('third_party/pdfrx_engine/lib/**/*.dart')) |
                          set((APP / 'tool/rendering_quality').glob('*.dart')) |
                          set((APP / 'tool/rendering_quality').glob('*.py')) |
                          set((APP / 'tool/rendering_quality').glob('*.html')) |
@@ -149,8 +160,7 @@ def main():
             env['DYLD_LIBRARY_PATH'] = str(links) + (':' + env['DYLD_LIBRARY_PATH'] if env.get('DYLD_LIBRARY_PATH') else '')
             receipt['objectbox'] = {'path': str(objectbox.resolve()), 'sha256': digest(objectbox)}
         command = [str(dart.resolve()), str(snapshot.resolve()), 'test', '--no-pub',
-                   f'--dart-define=PODOFO_FRACTIONAL_RENDERING={str(args.fractional).lower()}',
-                   f'--dart-define=PODOFO_DISPLAY_SCALE_RENDERING={str(args.display_scale).lower()}',
+                   *rendering_defines(args.fractional, args.display_scale),
                    '--reporter', 'expanded', 'tool/rendering_quality/capture_test.dart']
         receipt['command'] = command
         receipt['cwd'] = str(APP)

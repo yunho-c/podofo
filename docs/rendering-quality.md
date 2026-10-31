@@ -3,8 +3,24 @@
 The harness compares PoDoFo's **production `CustomPdfViewer`** with a direct
 PDFium render at the same physical pixel size, page position, and scale. It is
 intended to guide changes to bitmap sizing, cache policy, and Flutter image
-placement. The viewer's default rendering policy is unchanged; the experiments
-below are opt-in.
+placement. On macOS, the main viewer uses fractional page transforms and renders
+at the settled display scale by default. Other platforms retain their existing
+defaults. Both policies can be overridden independently for diagnosis.
+
+The macOS default was promoted after the user confirmed substantially sharper
+text and acceptable interactive performance with both flags enabled on
+2026-10-31. This is native-app visual acceptance, not a formal performance
+benchmark or an automated native-compositor qualification.
+
+After fast-forwarding the rendering branch to `main` at `ce0765f`, captures with
+no rendering defines reproduced all 24 low-zoom and all 21 standard-matrix PNGs
+from the earlier combined opt-in path byte for byte. Explicitly disabling both
+policies reproduced all 21 old-policy control PNGs. Every repeat was stable.
+The 22 focused Flutter regressions, 8 Python runner checks, and Flutter analyzer
+passed. Local reports are `promoted-default-low-zoom`,
+`promoted-default-all-zooms`, and `promoted-opt-out-control` under
+`podofo_frontend_one/build/rendering-quality/`; their comparison is recorded in
+`default-promotion-evaluation.json` alongside them.
 
 This first version runs in a headless Flutter widget test on macOS. It exercises
 the real viewer and its rendering caches, but **does not qualify the native
@@ -14,9 +30,9 @@ introduced by the viewer's render requests and presentation. It is not an
 independent assessment of PDFium's raster quality. A native capture path and a
 second renderer such as PDF.js are future extensions.
 
-## Fractional-transform prototype
+## Fractional page transforms
 
-The opt-in prototype preserves the exact page scale and fractional translation
+The viewport renderer preserves the exact page scale and fractional translation
 inside PDFium's matrix renderer. It rounds only the output tile bounds outwards
 on the physical screen grid, then paints that tile at one bitmap pixel per
 physical pixel. The visible-page clip prevents the rounded tile from covering
@@ -24,28 +40,34 @@ adjacent page backgrounds. The cache checks the tile's placement as well as its
 zoom and visible rectangle; stale/cancelled images are disposed. Native work
 holds the editable document's backing lease through the PDFium worker operation.
 
-Enable it in the capture harness with `--fractional`, or in the macOS app with:
+No flags are needed in the macOS app. To compare with the previous rendering
+behavior, disable both policies explicitly:
 
 ```sh
-flutter run -d macos --dart-define=PODOFO_FRACTIONAL_RENDERING=true
+flutter run -d macos \
+  --dart-define=PODOFO_FRACTIONAL_RENDERING=false \
+  --dart-define=PODOFO_DISPLAY_SCALE_RENDERING=false
 ```
 
-The prototype is **off by default**. It handles PoDoFo's editable document
-sessions on macOS. Interactive forms, other document implementations/platforms,
+The fractional renderer is **on by default on macOS**. It handles PoDoFo's
+editable document sessions on macOS. Interactive forms, other document
+implementations/platforms,
 the magnifier, and the preview cache use the existing path. The debug sidebar
 and case metadata identify when the fractional renderer actually supplied the
 displayed image. The harness fails if an eligible full-resolution capture
-silently falls back while `--fractional` is selected.
+silently falls back while fractional rendering is enabled.
 
 Run paired comparisons from the frontend directory, adding
 `--native-frameworks /path/to/PoDoFo.app/Contents/Frameworks` when needed:
 
 ```sh
-python3 tool/rendering_quality/run.py --output build/rendering-quality/control
-python3 tool/rendering_quality/run.py --fractional --output build/rendering-quality/fractional
+python3 tool/rendering_quality/run.py --no-fractional --no-display-scale \
+  --output build/rendering-quality/control
+python3 tool/rendering_quality/run.py --output build/rendering-quality/default
 ```
 
-Initial headless qualification against the baseline at `1ed864e`:
+Initial headless qualification against the baseline at `1ed864e`, before default
+promotion (the fractional-only column kept the old preview policy):
 
 | Case group | Standard path | Fractional prototype |
 | --- | --- | --- |
@@ -75,13 +97,13 @@ This establishes headless pixel agreement for these inputs, not general visual
 superiority or native compositor/performance qualification. Arbitrary animated
 ancestor transforms, continuous scrolling/zooming on native GPUs, interactive
 form matrix rendering, broader PDF coverage, and release memory/latency remain
-qualification work before considering a default change. Native rasterization
+follow-up qualification work. Native rasterization
 is synchronous on the existing worker; cancellation discards an obsolete result
 rather than interrupting PDFium mid-call.
 
-## Settled display-scale prototype
+## Settled display-scale rendering
 
-`--display-scale` enables a second, independent experiment: render the main
+The display-scale policy, also on by default on macOS, renders the main
 viewport at its actual physical display scale at **every zoom**, including at
 or below 200 DPI. The existing 200-DPI preview remains available during startup
 and interaction. PoDoFo requests a replacement viewport bitmap after 150 ms
@@ -89,22 +111,22 @@ without a change to the requested geometry. Identical repaints neither restart
 that delay nor cancel an in-flight matching render. Returning to a cached
 viewport cancels a pending request for a different viewport.
 
-Use it together with fractional transforms for the improved rendering path:
+The default combines it with fractional transforms:
 
 ```sh
-flutter run -d macos \
-  --dart-define=PODOFO_DISPLAY_SCALE_RENDERING=true \
-  --dart-define=PODOFO_FRACTIONAL_RENDERING=true
+flutter run -d macos
 
 python3 tool/rendering_quality/run.py --suite low-zoom \
-  --display-scale --fractional \
   --output build/rendering-quality/low-zoom-combined
 ```
 
 Add `--native-frameworks /path/to/PoDoFo.app/Contents/Frameworks` if needed.
-Run the same suite without either flag for the preview control, and with only
-`--display-scale` to isolate the cache-policy change. Both flags are **off by
-default**. The debug sidebar identifies the policy and reports `Refining…`
+Run the same suite with `--no-display-scale --no-fractional` for the preview
+control, or `--display-scale --no-fractional` to isolate the cache-policy change.
+Omitted switches use the app's defaults; `--fractional` / `--no-fractional` and
+`--display-scale` / `--no-display-scale` explicitly override each policy. The
+config records omitted overrides as null and results record the effective values.
+The debug sidebar identifies the policy and reports `Refining…`
 while waiting, then `Inactive` once the preview has been replaced, even below
 200 DPI. The flags remain independent for these controlled comparisons.
 
@@ -148,8 +170,9 @@ edge energy is 0.99945 of the reference and the maximum channel difference is
 origin exposes native rasterization sensitivity; the precise PDFium internal
 cause has not been established. These are retained as nonzero measurements.
 
-The default 21-case matrix remains byte-identical to the committed control, and
-all 15 above-200-DPI cases still match exactly with both flags. Regression tests
+With both policies disabled, the 21-case matrix remained byte-identical to the
+committed control, and all 15 above-200-DPI cases still match exactly with both
+flags. Regression tests
 exercise preview availability, settling after repeated zoom changes, immunity
 to unrelated repaints, cancellation when returning to a cached viewport, and
 annotation creation/recolor/undo/redo/removal below 200 DPI.
@@ -173,8 +196,9 @@ full-viewport origin reproduces the reference exactly.
 
 This policy adds viewport rasters below the old threshold while retaining the
 preview cache. Its 150-ms delay and allocation estimates are not a release
-latency/memory benchmark. Native GPU capture, scrolling performance, and broader
-document/platform qualification remain outstanding. Form fallback and the
+latency/memory benchmark. Automated native GPU capture, measured scrolling
+performance, and broader document/platform qualification remain follow-up work
+after the user's native-app acceptance. Form fallback and the
 fractional renderer's platform limits described above still apply.
 
 ## Run
@@ -240,10 +264,10 @@ only the requested page, with no synthetic rotation cases added.
 For each case the job opens a fresh document session, mounts the production
 viewer with light appearance and inactive narration/search, and sets the
 viewport transform. It waits for the actual `renderingStatus` and a painted
-frame: normally the preview bitmap at or below 200 DPI and the completed
-partial render above 200 DPI; with `--display-scale`, the completed viewport
-render at every zoom. It does not change image filtering. A clamped viewport
-is rejected instead of silently comparing at a different zoom.
+frame: with the macOS defaults, the completed viewport render at every zoom;
+with `--no-display-scale`, the preview bitmap at or below 200 DPI and the
+completed partial render above 200 DPI. It does not change image filtering.
+A clamped viewport is rejected instead of silently comparing at a different zoom.
 
 The reference uses `FPDF_RenderPageBitmapWithMatrix` through the same document
 worker and PDFium binary. Its final-sized opaque-white RGBA image incorporates

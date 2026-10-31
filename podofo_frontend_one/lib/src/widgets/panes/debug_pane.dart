@@ -167,9 +167,7 @@ class _PdfRenderingStatus extends ConsumerWidget {
                         '${(page.targetScale * 72).toStringAsFixed(0)} DPI target',
                       ).small().muted(),
                       if (page.usesFractionalTransform)
-                        const Text('Fractional transform prototype')
-                            .small()
-                            .muted(),
+                        const Text('Fractional page transform').small().muted(),
                     ],
                   ),
                 ),

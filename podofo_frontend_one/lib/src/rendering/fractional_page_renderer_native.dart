@@ -10,14 +10,17 @@ import 'package:pdfium_dart/pdfium_dart.dart';
 import '../editing/editable_pdf_document.dart';
 import '../editing/pdfium_document_task.dart';
 
-/// Prototype for PoDoFo sessions on macOS. The editable document pins its native
-/// backing generation until the worker returns; copied pixels outlive the lease.
+bool get fractionalPageRenderingSupported => Platform.isMacOS;
+
+/// Main viewport renderer for PoDoFo sessions on macOS. The editable document
+/// pins its native backing generation until the worker returns; copied pixels
+/// outlive the lease.
 /// Other documents/platforms and interactive forms keep the stock renderer.
 Future<ui.Image?> renderFractionalPage(
   PdfPage page,
   PdfViewportRenderRequest request,
 ) async {
-  if (!Platform.isMacOS ||
+  if (!fractionalPageRenderingSupported ||
       page.document is! EditablePdfDocument ||
       request.cancellationToken.isCanceled) {
     return null;
