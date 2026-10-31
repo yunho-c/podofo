@@ -498,10 +498,33 @@ The macOS Debug app builds and passes deep, strict verification of its local
 signature (`build/target-preview-m5-panel-build.log`). The pinned-engine verifier
 passes all 53 files. Native-window acceptance remains pending.
 
+## Replenished held-out freeze
+
+Four replacement papers now have source annotations completed before their first
+resolver/model output: `1810.01497v2`, `2206.07867v3`, `2410.06940v4` and
+`2504.17670v2`. Their 35 sampled links comprise 32 eligible targets and three
+unsupported footnotes. Review used complete source/target page renderings and
+independent MuPDF text geometry. The annotations include complete cross-column
+section openings, every panel and shared figure caption, and interleaved display
+equations where the opening section paragraph continues through them. Source PDF
+hashes, page bounds, nonempty required/excluded ink and disjoint annotations pass
+independent checks.
+
+Together with the unchanged `1809.02736v1` and `2606.29940v2` carryovers, this gives
+50 held-out links: 12 eligible citations, 12 figures/tables, 11 equations and 11
+sections, plus four unsupported controls. The two carryover documents were seen in
+the first evaluation and did not drive rule changes; the 35 replacement links are
+new. The current sample totals 137 links across sixteen papers, in addition to the
+eight earlier real-paper development links across two seeds.
+
+`m5_freeze.json` records resolver version 10 at `412a2c4` and hashes all six
+annotations plus the 28 pipeline, model, sampling and evaluation inputs. This
+freeze is committed before the second held-out run. The first freeze, sample and
+failed results remain preserved in `m5_history/`.
+
 ## Remaining acceptance work
 
-Finish remaining promoted cases and replacement source annotations, then freeze
-and evaluate every held-out link with paired images,
+Evaluate every link in the replenished frozen held-out set with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback

@@ -80,5 +80,5 @@
       "replaces_promoted_document": "2511.23342v3"
     }
   ],
-  "replenishment_policy": "First three previously unused arXiv-named PDFs in filename order, at most 60 pages, with at least two unique named destinations in each target group. No resolver/model output inspected."
+  "replenishment_policy": "Previously unused arXiv documents in filename order, at most 60 pages, with at least two unique named destinations in each target group; exclude all versions of sampled paper IDs. Selection batches are preserved in m5_history/replenishment_v2_selection.json and replenishment_v3_selection.json. No resolver/model output was inspected for replacement selection."
 }

@@ -1,0 +1,772 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2206.07867v3.pdf",
+    "split": "held_out",
+    "replaces_promoted_document": "2212.01330v1",
+    "id": "2206.07867v3",
+    "sha256": "980c89b4b6461948f9b02d87de0f77043815ea71e0eaa8035b907422ebc2a807",
+    "source_url": "https://arxiv.org/abs/2206.07867v3",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2206.07867v3-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 53,
+        "source_bounds": [
+          229.044,
+          351.684,
+          235.956,
+          360.156
+        ],
+        "source_text": "[1]",
+        "source_context": "940s, Claude Shannon [1] gave information a pr",
+        "destination": {
+          "name": "cite.Shannon1948",
+          "page": 41,
+          "raw_pdf_point": [
+            90.067,
+            347.451
+          ],
+          "point": [
+            90.067,
+            444.549
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 41,
+            "bounds": [
+              94,
+              460,
+              523,
+              485
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 41,
+            "bounds": [
+              94,
+              492,
+              523,
+              516
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "A mathematical theory of communication"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line reference with journal, volume and date."
+      },
+      {
+        "id": "2206.07867v3-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 54,
+        "source_bounds": [
+          310.524,
+          423.444,
+          317.436,
+          431.916
+        ],
+        "source_text": "[2,",
+        "source_context": "oundations of information theory, with an empha\ny ideas; the textbooks [2, 3] and Shannon’s origi",
+        "destination": {
+          "name": "cite.MacKay2005",
+          "page": 41,
+          "raw_pdf_point": [
+            90.067,
+            313.243
+          ],
+          "point": [
+            90.067,
+            478.757
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 41,
+            "bounds": [
+              94,
+              492,
+              523,
+              516
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 41,
+            "bounds": [
+              94,
+              460,
+              523,
+              485
+            ]
+          },
+          {
+            "page": 41,
+            "bounds": [
+              94,
+              524,
+              523,
+              548
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Information Theory, Inference, and Learning Algorithms"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line book reference including publisher, edition and year."
+      },
+      {
+        "id": "2206.07867v3-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 217,
+        "source_bounds": [
+          343.164,
+          565.404,
+          350.916,
+          573.876
+        ],
+        "source_text": "1a",
+        "source_context": "recurring illustration: drawing a marble at rand\nnd gray marbles (Fig. 1a).",
+        "destination": {
+          "name": "figure.1",
+          "page": 3,
+          "raw_pdf_point": [
+            133.911,
+            302.279
+          ],
+          "point": [
+            133.911,
+            489.721
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              89,
+              231,
+              523,
+              468
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              89,
+              480,
+              523,
+              564
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              302,
+              723,
+              310,
+              736
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 1:"
+        ],
+        "reviewed": true,
+        "notes": "Panel-qualified 1a links to the shared figure. Require all three panels, all distributions/legends and full shared caption; the page number is separate."
+      },
+      {
+        "id": "2206.07867v3-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 2,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 218,
+        "source_bounds": [
+          247.524,
+          601.284,
+          262.356,
+          609.756
+        ],
+        "source_text": "2.8)",
+        "source_context": "f independent and identically distributed (IID) d\n the non-IID case (Sec. 2.8) and continuous variab",
+        "destination": {
+          "name": "subsection.2.8",
+          "page": 14,
+          "raw_pdf_point": [
+            90.067,
+            567.754
+          ],
+          "point": [
+            90.067,
+            224.246
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 14,
+            "bounds": [
+              89,
+              236,
+              334,
+              250
+            ]
+          },
+          {
+            "page": 14,
+            "bounds": [
+              89,
+              256,
+              524,
+              303
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 14,
+            "bounds": [
+              89,
+              304,
+              524,
+              362
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "2.8",
+          "Entropy rate of stochastic processes"
+        ],
+        "reviewed": true,
+        "notes": "Heading and first four-line paragraph only; the following IID example starts a new indented paragraph."
+      },
+      {
+        "id": "2206.07867v3-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 2,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 219,
+        "source_bounds": [
+          114.444,
+          613.284,
+          129.156,
+          621.636
+        ],
+        "source_text": "2.9)",
+        "source_context": "generalize to the non-IID case (S\n(Sec. 2.9).",
+        "destination": {
+          "name": "subsection.2.9",
+          "page": 17,
+          "raw_pdf_point": [
+            90.067,
+            711.933
+          ],
+          "point": [
+            90.067,
+            80.068
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 17,
+            "bounds": [
+              89,
+              90,
+              386,
+              104
+            ]
+          },
+          {
+            "page": 17,
+            "bounds": [
+              89,
+              110,
+              524,
+              146
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 17,
+            "bounds": [
+              89,
+              146.5,
+              524,
+              182
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "2.9",
+          "Probability densities and differential entropy"
+        ],
+        "reviewed": true,
+        "notes": "Heading and full three-line opening paragraph ending with a question. The following density definition is a new paragraph."
+      },
+      {
+        "id": "2206.07867v3-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 4,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 229,
+        "source_bounds": [
+          189.084,
+          664.284,
+          196.836,
+          672.636
+        ],
+        "source_text": "2,",
+        "source_context": "outcome. For example, consider a random vari\nprobabilities pX (Fig. 2, top):",
+        "destination": {
+          "name": "figure.2",
+          "page": 5,
+          "raw_pdf_point": [
+            133.791,
+            371.056
+          ],
+          "point": [
+            133.791,
+            420.944
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              89,
+              160,
+              525,
+              399
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              89,
+              411,
+              524,
+              483
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              89,
+              493,
+              523,
+              528
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              233,
+              112,
+              379,
+              143
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2:"
+        ],
+        "reviewed": true,
+        "notes": "Both top and bottom encoding diagrams, probabilities, rows and complete caption. The X and p_X definitions above continue the preceding body paragraph and are separate display mathematics."
+      },
+      {
+        "id": "2206.07867v3-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 11,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 260,
+        "source_bounds": [
+          279.444,
+          599.124,
+          286.476,
+          607.476
+        ],
+        "source_text": "(2)",
+        "source_context": "e average uncertainty of color, not conditional on\npes. We sum equation (2) over all states in Y (e.",
+        "destination": {
+          "name": "equation.2",
+          "page": 11,
+          "raw_pdf_point": [
+            510.92,
+            389.236
+          ],
+          "point": [
+            510.92,
+            402.764
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 11,
+            "bounds": [
+              207,
+              399,
+              405,
+              443
+            ]
+          },
+          {
+            "page": 11,
+            "bounds": [
+              509,
+              406,
+              524,
+              419
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 11,
+            "bounds": [
+              89,
+              370,
+              272,
+              382
+            ]
+          },
+          {
+            "page": 11,
+            "bounds": [
+              104,
+              447,
+              302,
+              459
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Include the complete conditional-entropy sum, its two-line colored subscript set, fraction and number; exclude the following generic-form introduction."
+      },
+      {
+        "id": "2206.07867v3-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 16,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 285,
+        "source_bounds": [
+          199.764,
+          209.124,
+          206.676,
+          217.476
+        ],
+        "source_text": "(3)",
+        "source_context": "Under our example, (3) will gradually decreas",
+        "destination": {
+          "name": "equation.3",
+          "page": 16,
+          "raw_pdf_point": [
+            510.92,
+            680.725
+          ],
+          "point": [
+            510.92,
+            111.275
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 16,
+            "bounds": [
+              264,
+              109,
+              350,
+              134
+            ]
+          },
+          {
+            "page": 16,
+            "bounds": [
+              509,
+              115,
+              524,
+              128
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 16,
+            "bounds": [
+              89,
+              140,
+              524,
+              165
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(3)"
+        ],
+        "reviewed": true,
+        "notes": "Complete entropy-rate fraction and parenthesized variable sequence with the equation number."
+      },
+      {
+        "id": "2206.07867v3-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 20,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 310,
+        "source_bounds": [
+          234.324,
+          395.877,
+          239.88,
+          406.836
+        ],
+        "source_text": "cti\n.1",
+        "source_context": "by a deterministic function, we have a noisele\nse of a noisy channel.1",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 20,
+          "raw_pdf_point": [
+            105.365,
+            120.279
+          ],
+          "point": [
+            105.365,
+            671.721
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Source and destination reviewed; unsupported footnote control. Destination geometry does not change its eligibility."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "412a2c4"
+  }
+}

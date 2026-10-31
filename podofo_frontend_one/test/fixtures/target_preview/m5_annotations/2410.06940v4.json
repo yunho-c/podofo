@@ -1,0 +1,767 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2410.06940v4.pdf",
+    "split": "held_out",
+    "replaces_promoted_document": "2312.02753v1",
+    "id": "2410.06940v4",
+    "sha256": "cc5be5a56cc9bbc9cdf3f1e4299af894f3e1548e36838863b405e98cd4382806",
+    "source_url": "https://arxiv.org/abs/2410.06940v4",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2410.06940v4-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 16,
+        "source_bounds": [
+          368.92,
+          661.88,
+          404.751,
+          672.849
+        ],
+        "source_text": "(Ho et al.,",
+        "source_context": "such as diffusion models (Ho et al., 2020; Song et al., 2021)\nVanden-Eijnden, 2023; Lipman et al., 2022; Liu et al., 2023),",
+        "destination": {
+          "name": "cite.ho2021denoising",
+          "page": 13,
+          "raw_pdf_point": [
+            83.093,
+            488.523
+          ],
+          "point": [
+            83.093,
+            303.477
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 13,
+            "bounds": [
+              107,
+              307,
+              505,
+              329
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 13,
+            "bounds": [
+              107,
+              337,
+              505,
+              370
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Denoising diffusion probabilistic models"
+        ],
+        "reviewed": true,
+        "notes": "Full author/year reference including venue and 2020 date; the similarly named following Ho reference is separate."
+      },
+      {
+        "id": "2410.06940v4-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 18,
+        "source_bounds": [
+          432.73,
+          661.88,
+          476.869,
+          672.849
+        ],
+        "source_text": "Song et al.,",
+        "source_context": "n models (Ho et al., 2020; Song et al., 2021)\n2023; Lipman et al., 2022; Liu et al., 2023),",
+        "destination": {
+          "name": "cite.song2021scorebased",
+          "page": 16,
+          "raw_pdf_point": [
+            83.093,
+            628.64
+          ],
+          "point": [
+            83.093,
+            163.36
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 16,
+            "bounds": [
+              107,
+              167,
+              505,
+              200
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 16,
+            "bounds": [
+              107,
+              208,
+              505,
+              241
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Score-based generative modeling through stochastic differential equations"
+        ],
+        "reviewed": true,
+        "notes": "Complete three-line reference including all authors and conference/year."
+      },
+      {
+        "id": "2410.06940v4-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 30,
+        "source_xref": 196,
+        "source_bounds": [
+          135.582,
+          526.199,
+          146.979,
+          537.143
+        ],
+        "source_text": "2a)",
+        "source_context": "do indeed learn meaningful discrim\nFigure 2a). However, these represe\nNext, we find that the alignment b",
+        "destination": {
+          "name": "figure.caption.2",
+          "page": 2,
+          "raw_pdf_point": [
+            108.0,
+            715.618
+          ],
+          "point": [
+            108.0,
+            76.382
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              117,
+              83,
+              493,
+              216
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              225,
+              505,
+              291
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              306,
+              505,
+              405
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2:"
+        ],
+        "reviewed": true,
+        "notes": "The 2a source points to the shared Figure 2. Include all three plots, axes, legends, panel labels and six-line shared caption."
+      },
+      {
+        "id": "2410.06940v4-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 2,
+        "source_link_index_pymupdf": 32,
+        "source_xref": 198,
+        "source_bounds": [
+          326.27,
+          546.54,
+          332.247,
+          559.061
+        ],
+        "source_text": "enta\n,1",
+        "source_context": "ment between the representations learned by the dif\n) is still considered weak,1 which we study by meas\nl., 2024). Finally, we observe this alignment between",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 1,
+          "raw_pdf_point": [
+            0.0,
+            0.0
+          ],
+          "point": [
+            0.0,
+            792.0
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Source and destination reviewed; unsupported footnote control. Destination geometry does not change its eligibility."
+      },
+      {
+        "id": "2410.06940v4-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 3,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 211,
+        "source_bounds": [
+          208.618,
+          343.102,
+          220.016,
+          354.169
+        ],
+        "source_text": "on\n 3a)",
+        "source_context": "transformer representation h of a noisy input ˜x. This \nrepresentation h (Figure 3a) and better aligns it with\n(Figure 3b). Notably, this enhanced alignment signif",
+        "destination": {
+          "name": "figure.caption.3",
+          "page": 3,
+          "raw_pdf_point": [
+            108.0,
+            715.618
+          ],
+          "point": [
+            108.0,
+            76.382
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              119,
+              73,
+              489,
+              205
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              211,
+              505,
+              288
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              300,
+              505,
+              409
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 3:"
+        ],
+        "reviewed": true,
+        "notes": "The 3a source points to the shared Figure 3. Include all three plots, legends, panel labels and complete seven-line caption."
+      },
+      {
+        "id": "2410.06940v4-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 4,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 231,
+        "source_bounds": [
+          221.725,
+          94.993,
+          228.699,
+          105.936
+        ],
+        "source_text": "(2)\nN",
+        "source_context": "ere the distribution of this ODE at t is equal to the m\nving this PF ODE in Eq. (2) through existing ODE sa\ndom Gaussian noise ϵ ∼N(0, I) (Lipman et al., 202",
+        "destination": {
+          "name": "equation.2.2",
+          "page": 3,
+          "raw_pdf_point": [
+            277.43,
+            73.097
+          ],
+          "point": [
+            277.43,
+            718.903
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              276,
+              721,
+              336,
+              735
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              491,
+              722,
+              505,
+              734
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              695,
+              505,
+              717
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              302,
+              752,
+              310,
+              763
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Complete one-line probability-flow ODE, derivative dot and equation number; exclude preceding explanatory prose and page number."
+      },
+      {
+        "id": "2410.06940v4-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 4,
+        "source_link_index_pymupdf": 8,
+        "source_xref": 239,
+        "source_bounds": [
+          356.177,
+          329.715,
+          363.151,
+          340.658
+        ],
+        "source_text": "(5)",
+        "source_context": "y generated through Eq. (5) with SDE solvers.",
+        "destination": {
+          "name": "equation.2.5",
+          "page": 4,
+          "raw_pdf_point": [
+            211.993,
+            565.419
+          ],
+          "point": [
+            211.993,
+            226.581
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              211,
+              222,
+              401,
+              248
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              491,
+              230,
+              505,
+              241
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              197,
+              505,
+              220
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              251,
+              365,
+              263
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(5)"
+        ],
+        "reviewed": true,
+        "notes": "Complete SDE including fraction, square root and Brownian increment bar, plus its number."
+      },
+      {
+        "id": "2410.06940v4-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 17,
+        "source_xref": 248,
+        "source_bounds": [
+          281.469,
+          523.815,
+          288.443,
+          534.758
+        ],
+        "source_text": "2.",
+        "source_context": "his distribution by training a diffusion model vθ(zt\nn, as described in Section 2. Here, we revisit denoisin\npervised representation learning (Bengio et al., 2013)",
+        "destination": {
+          "name": "section.2",
+          "page": 3,
+          "raw_pdf_point": [
+            108.0,
+            200.883
+          ],
+          "point": [
+            108.0,
+            591.117
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              600,
+              209,
+              613
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              625,
+              505,
+              647
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              652,
+              505,
+              674
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "2",
+          "PRELIMINARIES"
+        ],
+        "reviewed": true,
+        "notes": "Heading and full two-line opening paragraph; the stochastic-process definition starts the following paragraph."
+      },
+      {
+        "id": "2410.06940v4-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 5,
+        "source_link_index_pymupdf": 13,
+        "source_xref": 275,
+        "source_bounds": [
+          378.085,
+          474.001,
+          394.195,
+          484.945
+        ],
+        "source_text": "C.1.",
+        "source_context": "een different representations. We summarize the result \nof CKNNA) in Appendix C.1.",
+        "destination": {
+          "name": "subsection.C.1",
+          "page": 20,
+          "raw_pdf_point": [
+            108.0,
+            315.973
+          ],
+          "point": [
+            108.0,
+            476.027
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 20,
+            "bounds": [
+              107,
+              485,
+              229,
+              497
+            ]
+          },
+          {
+            "page": 20,
+            "bounds": [
+              107,
+              506,
+              505,
+              539
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 20,
+            "bounds": [
+              107,
+              545,
+              500,
+              556
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "C.1",
+          "EVALUATION DETAILS"
+        ],
+        "reviewed": true,
+        "notes": "Appendix C.1 heading and complete CKNNA opening paragraph, including the final notation-source sentence."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "412a2c4"
+  }
+}
