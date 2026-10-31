@@ -330,17 +330,19 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
     }
   }
 
-  Future<void> highlight(
+  Future<HighlightTarget?> highlight(
     Document document,
     List<HighlightRegion> regions,
     int color,
   ) async {
+    HighlightTarget? target;
     try {
-      await document.session.highlight(regions, color);
+      target = await document.session.highlight(regions, color);
     } finally {
       refresh();
     }
     await _autoSave(document);
+    return target;
   }
 
   Future<void> undoHighlight(Document document) => undo(document);
@@ -389,18 +391,26 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
     await _autoSave(document);
   }
 
-  Future<void> recolorHighlights(
+  Future<HighlightTarget?> recolorHighlights(
     Document document,
     Set<String> ids,
     int color,
-    int expectedRevision,
-  ) async {
+    int expectedRevision, {
+    bool Function()? isActive,
+  }) async {
+    HighlightTarget? target;
     try {
-      await document.session.recolorHighlights(ids, color, expectedRevision);
+      target = await document.session.recolorHighlights(
+        ids,
+        color,
+        expectedRevision,
+        isActive: isActive,
+      );
     } finally {
       refresh();
     }
-    await _autoSave(document);
+    if (target != null) await _autoSave(document);
+    return target;
   }
 
   Future<void> removeAnnotations(

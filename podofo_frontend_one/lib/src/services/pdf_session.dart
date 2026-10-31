@@ -18,6 +18,18 @@ import 'pdf_highlights.dart';
 import 'document_file_access.dart';
 import 'pdf_navigation_history.dart';
 
+/// Exact highlights and revision produced by a successful edit in one session.
+class HighlightTarget {
+  HighlightTarget._(this.session, Iterable<String> ids, this.revision)
+    : ids = Set.unmodifiable(ids);
+
+  final PdfSession session;
+  final Set<String> ids;
+  final int revision;
+
+  bool get isCurrent => !session.lease.isClosed && session.revision == revision;
+}
+
 /// One live PDF, annotation-only history, and serialized editing/save/close.
 class PdfSession {
   PdfSession._(
@@ -145,7 +157,7 @@ class PdfSession {
     }
   }
 
-  Future<void> highlight(List<HighlightRegion> regions, int argb) =>
+  Future<HighlightTarget?> highlight(List<HighlightRegion> regions, int argb) =>
       _addTextMarkup(regions, argb, AnnotationKind.highlight);
 
   Future<void> underline(List<HighlightRegion> regions) => _addTextMarkup(
@@ -154,7 +166,7 @@ class PdfSession {
     AnnotationKind.underline,
   );
 
-  Future<void> _addTextMarkup(
+  Future<HighlightTarget?> _addTextMarkup(
     List<HighlightRegion> regions,
     int argb,
     AnnotationKind kind,
@@ -165,9 +177,13 @@ class PdfSession {
         HighlightRegion(r.pageNumber, List.unmodifiable(r.rects), text: r.text),
     ]);
     return _lock.synchronized(() async {
-      if (frozen.isEmpty) return;
+      if (frozen.isEmpty) return null;
       await _ensureHistory();
-      await _commit(_adapter.create(lease.document, frozen, argb, kind: kind));
+      final edit = _adapter.create(lease.document, frozen, argb, kind: kind);
+      await _commit(edit);
+      return kind == AnnotationKind.highlight
+          ? HighlightTarget._(this, edit.changes.map((c) => c.id), revision)
+          : null;
     });
   }
 
@@ -263,17 +279,21 @@ class PdfSession {
         await _commit(_adapter.highlightUnderline(_model!, id, argb));
       });
 
-  Future<void> recolorHighlights(
+  Future<HighlightTarget?> recolorHighlights(
     Set<String> ids,
     int argb,
-    int expectedRevision,
-  ) {
+    int expectedRevision, {
+    bool Function()? isActive,
+  }) {
     final frozen = Set<String>.unmodifiable(ids);
     return _lock.synchronized(() async {
+      // Keyboard follow-ups can expire while waiting for another edit or save.
+      if (isActive != null && !isActive()) return null;
       _checkRevision(expectedRevision);
       await _ensureHistory();
       final edit = _adapter.recolor(_model!, frozen, argb);
       if (edit != null) await _commit(edit);
+      return HighlightTarget._(this, frozen, revision);
     });
   }
 

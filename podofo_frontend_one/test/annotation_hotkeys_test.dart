@@ -1,5 +1,7 @@
+import 'dart:async';
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,6 +28,7 @@ import 'support/fake_narrator.dart';
 
 const _firstColor = '#6633aa77';
 const _activeColor = '#66aa33bb';
+const _thirdColor = '#665577cc';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +60,7 @@ void main() {
     store.box<UserState>().put(
       UserState()
         ..autoSaveEnabled = false
-        ..highlightColorPalette = [_firstColor, _activeColor]
+        ..highlightColorPalette = [_firstColor, _activeColor, _thirdColor]
         ..highlightActiveColorIndex = 1
         ..highlightColor = _activeColor,
     );
@@ -109,18 +112,37 @@ void main() {
     final text = (await tester.runAsync(
       () => document.pdfDocument.pages.first.loadStructuredText(),
     ))!;
-    await tester.runAsync(
-      () => viewer.textSelectionDelegate.setTextSelectionPointRange(
-        PdfTextSelectionRange.fromPoints(
-          PdfTextSelectionPoint(text, 0),
-          PdfTextSelectionPoint(text, text.fullText.length - 1),
-        ),
+    await viewer.textSelectionDelegate.setTextSelectionPointRange(
+      PdfTextSelectionRange.fromPoints(
+        PdfTextSelectionPoint(text, 0),
+        PdfTextSelectionPoint(text, text.fullText.length - 1),
       ),
     );
     viewer.requestFocus();
     await tester.pump();
     expect(viewer.focusNode?.hasPrimaryFocus, true);
     expect(viewer.textSelectionDelegate.hasSelectedText, true);
+  }
+
+  Future<void> idleSession(WidgetTester tester, PdfSession session) async {
+    var idle = false;
+    final waiting = session.waitForIdle().then((_) => idle = true);
+    await waitForNative(tester, () => idle);
+    await waiting;
+  }
+
+  Future<void> saved(
+    WidgetTester tester,
+    PdfSession session,
+    int revision,
+  ) async {
+    await waitForNative(
+      tester,
+      () => session.revision == revision && !session.dirty,
+    );
+    // The saved marker precedes releasing file access and the session lock.
+    // Pump those callbacks before runAsync reads queue behind that lock.
+    await idleSession(tester, session);
   }
 
   for (final platform in [
@@ -233,6 +255,267 @@ void main() {
           } finally {
             await tester.runAsync(() => reopened.close(discard: true));
           }
+        });
+      },
+      variant: TargetPlatformVariant.only(platform),
+    );
+
+    testWidgets(
+      'number keys recolor the h target with separate autosaved undo steps on $platform',
+      (tester) async {
+        await withReader(tester, (container, document) async {
+          final session = document.session;
+          container
+              .read(userStateNotifierProvider.notifier)
+              .setAutoSaveEnabled(true);
+          await select(tester, container);
+          // No native wait between keys: creation may still be in progress.
+          await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+          await tester.sendKeyEvent(LogicalKeyboardKey.digit9); // absent slot
+          await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+          await tester.sendKeyEvent(LogicalKeyboardKey.numpad2);
+          await tester.sendKeyEvent(LogicalKeyboardKey.digit2); // same color
+          await saved(tester, session, 3);
+          final annotation = (await tester.runAsync(session.annotations))!
+              .single;
+          expect(annotation.argb, 0x66aa33bb);
+          expect(session.undoLabel, 'Change highlight color');
+          expect(
+            container.read(userStateNotifierProvider).highlightColor,
+            _activeColor,
+          );
+          expect(
+            container.read(userStateNotifierProvider).highlightActiveColorIndex,
+            1,
+          );
+
+          var revision = session.revision;
+          for (final color in [0x665577cc, 0x6633aa77, null]) {
+            await chord(tester, LogicalKeyboardKey.keyZ);
+            revision++;
+            await saved(tester, session, revision);
+            final records = (await tester.runAsync(session.annotations))!;
+            if (color == null) {
+              expect(records, isEmpty);
+            } else {
+              expect(records.single.id, annotation.id);
+              expect(records.single.argb, color);
+            }
+          }
+          for (final color in [0x6633aa77, 0x665577cc, 0x66aa33bb]) {
+            await chord(tester, LogicalKeyboardKey.keyZ, shift: true);
+            revision++;
+            await saved(tester, session, revision);
+            expect(
+              (await tester.runAsync(session.annotations))!.single.argb,
+              color,
+            );
+          }
+          await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+          await tester.pump();
+          expect(session.revision, revision); // undo/redo ended the sequence
+
+          final reopened = (await tester.runAsync(
+            () => PdfSession.open(document.filePath),
+          ))!;
+          try {
+            expect(
+              (await tester.runAsync(reopened.annotations))!.single.argb,
+              0x66aa33bb,
+            );
+          } finally {
+            await tester.runAsync(() => reopened.close(discard: true));
+          }
+          await select(tester, container);
+          await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+          revision++;
+          await saved(tester, session, revision);
+          expect(
+            (await tester.runAsync(session.annotations))!
+                .where((a) => a.id != annotation.id)
+                .single
+                .argb,
+            0x6633aa77,
+          );
+          await tester.pump(
+            const Duration(minutes: 1),
+          ); // no color-choice timer
+          await tester.sendKeyDownEvent(LogicalKeyboardKey.digit3);
+          revision++;
+          await saved(tester, session, revision);
+          await tester.sendKeyRepeatEvent(LogicalKeyboardKey.digit3);
+          await tester.sendKeyUpEvent(LogicalKeyboardKey.digit3);
+          await tester.pump();
+          expect(session.revision, revision);
+          final records = (await tester.runAsync(session.annotations))!;
+          expect(
+            records.singleWhere((a) => a.id == annotation.id).argb,
+            0x66aa33bb,
+          );
+          expect(
+            records.singleWhere((a) => a.id != annotation.id).argb,
+            0x665577cc,
+          );
+        });
+      },
+      variant: TargetPlatformVariant.only(platform),
+    );
+
+    testWidgets(
+      'number follow-ups end on reader interaction and focus changes on $platform',
+      (tester) async {
+        await withReader(tester, (container, document) async {
+          final session = document.session;
+          final viewer = container.read(pdfViewerControllerProvider);
+          final secondFile = File(
+            '${File(document.filePath).parent.path}/second.pdf',
+          )..writeAsBytesSync(spacedTextPdf());
+          await tester.runAsync(
+            () => container
+                .read(loadedDocumentsProvider.notifier)
+                .addDocument(secondFile.path, activate: false),
+          );
+
+          final endings = <String, Future<void> Function()>{
+            'Escape': () async {
+              await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+            },
+            'Enter': () async {
+              await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+            },
+            'navigation': () async {
+              await tester.sendKeyEvent(LogicalKeyboardKey.arrowDown);
+            },
+            'pointer': () => tester.tapAt(
+              tester.getTopLeft(find.byType(PdfViewer)) + const Offset(10, 10),
+            ),
+            'scroll': () => tester.sendEventToBinding(
+              PointerScrollEvent(
+                position: tester.getCenter(find.byType(PdfViewer)),
+                scrollDelta: const Offset(0, 20),
+              ),
+            ),
+            'new selection': () async {
+              await select(tester, container);
+              // Programmatic selection has pdfrx's 300 ms notification delay.
+              // Mouse selection is already covered by pointer cancellation.
+              await tester.pump(const Duration(milliseconds: 300));
+            },
+            'search focus': () async {
+              await chord(tester, LogicalKeyboardKey.keyF);
+              await tester.pumpAndSettle();
+              final field = find.byType(EditableText).last;
+              await tester.tap(field);
+              await tester.pump();
+              expect(
+                await tester.sendKeyDownEvent(LogicalKeyboardKey.digit2),
+                false,
+              );
+              await tester.sendKeyUpEvent(LogicalKeyboardKey.digit2);
+              await tester.enterText(field, '2');
+              expect(tester.widget<EditableText>(field).controller.text, '2');
+            },
+            'palette change': () async {
+              final preferences = container.read(
+                userStateNotifierProvider.notifier,
+              );
+              preferences.setHighlightColorPalette([
+                _thirdColor,
+                _activeColor,
+                _firstColor,
+              ]);
+              await tester.pump();
+              preferences.setHighlightColorPalette([
+                _firstColor,
+                _activeColor,
+                _thirdColor,
+              ]);
+            },
+            'app focus': () async {
+              tester.binding.handleAppLifecycleStateChanged(
+                AppLifecycleState.inactive,
+              );
+              await tester.pump();
+              tester.binding.handleAppLifecycleStateChanged(
+                AppLifecycleState.resumed,
+              );
+            },
+            'tab switch and return': () async {
+              await chord(tester, LogicalKeyboardKey.digit2);
+              await waitForNative(
+                tester,
+                () => container.read(pdfTextSearcherProvider) != null,
+              );
+              expect(
+                container.read(currentDocumentProvider)!.session,
+                isNot(same(session)),
+              );
+              container.read(pdfViewerControllerProvider).requestFocus();
+              await tester.pump();
+              await chord(tester, LogicalKeyboardKey.digit1);
+              await waitForNative(
+                tester,
+                () => container.read(pdfTextSearcherProvider) != null,
+              );
+              expect(
+                container.read(currentDocumentProvider)!.session,
+                same(session),
+              );
+            },
+          };
+          for (final ending in endings.entries) {
+            await select(tester, container);
+            final revision = session.revision + 1;
+            await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+            await waitForNative(tester, () => session.revision == revision);
+            await idleSession(tester, session);
+            await ending.value();
+            container.read(pdfViewerControllerProvider).requestFocus();
+            await tester.pump();
+            await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+            await waitForNative(tester, () => true);
+            await idleSession(tester, session);
+            expect(session.revision, revision, reason: ending.key);
+          }
+          expect(
+            (await tester.runAsync(session.annotations))!.map((a) => a.argb),
+            everyElement(0x6633aa77),
+          );
+          // Use the current controller after tab replacement.
+          expect(container.read(pdfViewerControllerProvider).isReady, true);
+          expect(viewer.isReady, false);
+        });
+      },
+      variant: TargetPlatformVariant.only(platform),
+    );
+
+    testWidgets(
+      'Escape drops a color queued while h is creating on $platform',
+      (tester) async {
+        await withReader(tester, (container, document) async {
+          final session = document.session;
+          await select(tester, container);
+          final entered = Completer<void>(), release = Completer<void>();
+          final blocker = session.readLocked((_) async {
+            entered.complete();
+            await release.future;
+          });
+          await entered.future;
+          try {
+            await tester.sendKeyEvent(LogicalKeyboardKey.keyH);
+            await tester.sendKeyEvent(LogicalKeyboardKey.digit2);
+            await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+          } finally {
+            release.complete();
+          }
+          await blocker;
+          await waitForNative(tester, () => session.revision == 1);
+          await waitForNative(tester, () => true);
+          expect(
+            (await tester.runAsync(session.annotations))!.single.argb,
+            0x6633aa77,
+          );
+          expect(session.undoLabel, 'Add highlight');
         });
       },
       variant: TargetPlatformVariant.only(platform),
