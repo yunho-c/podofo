@@ -23,9 +23,11 @@ import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/narration_provider.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
 import 'package:podofo_one/src/providers/theme_provider.dart';
+import 'package:podofo_one/src/services/context_menu_trace.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 import 'package:podofo_one/src/widgets/areas/main_area.dart';
 import 'package:podofo_one/src/widgets/components/pdf_link_hover_preview.dart';
+import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
 import 'package:podofo_one/src/workers/link_preview_worker.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart' as shadcn;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -327,6 +329,44 @@ void main() {
       }
       expect(reader.session.navigationHistory.previous, isNull);
       expect(tester.takeException(), isNull);
+    },
+    variant: platform,
+  );
+
+  testWidgets(
+    'right-click dismisses the hover preview and keeps menu tracing and navigation intact',
+    (tester) async {
+      final reader = await _Reader.open(tester);
+      final trace = reader.container.read(contextMenuTraceProvider)
+        ..enabled = true;
+      final matrix = reader.viewer.value.clone();
+      final point = await reader.linkPoint(0);
+      await reader.mouse.moveTo(point);
+      await tester.pump(const Duration(milliseconds: 350));
+      await _wait(tester, () => _preview.evaluate().isNotEmpty);
+
+      final secondary = await tester.createGesture(
+        kind: PointerDeviceKind.mouse,
+        buttons: kSecondaryMouseButton,
+      );
+      await secondary.down(point);
+      await tester.pump();
+      expect(find.byType(PdfLinkHoverPreview), findsNothing);
+      await secondary.up();
+      await _wait(
+        tester,
+        () => find.byType(PdfSelectionMenu).evaluate().isNotEmpty,
+      );
+      await tester.pump();
+      final events = trace.export();
+      expect(events, contains('"event":"reader.pointer-down"'));
+      expect(events, contains('"event":"gesture.secondary-recognized"'));
+      expect(events, contains('"event":"menu.frame"'));
+      expect(reader.viewer.value, matrix);
+      expect(reader.session.navigationHistory.previous, isNull);
+      expect(reader.session.revision, 0);
+      expect(tester.takeException(), isNull);
+      await secondary.removePointer();
     },
     variant: platform,
   );

@@ -1553,14 +1553,27 @@ class InteractiveViewerState extends State<InteractiveViewer> with TickerProvide
       key: _parentKey,
       onPointerSignal: _receivedPointerSignal,
       onPointerDown: _onPointerDown, // ScrollPhysics
-      child: GestureDetector(
+      child: RawGestureDetector(
         behavior: HitTestBehavior.opaque,
         // Necessary when panning off screen.
-        onScaleEnd: _onScaleEnd,
-        onScaleStart: _onScaleStart,
-        onScaleUpdate: _onScaleUpdate,
-        trackpadScrollCausesScale: widget.trackpadScrollCausesScale,
-        trackpadScrollToScaleFactor: Offset(0, -1 / widget.scaleFactor),
+        gestures: {
+          ScaleGestureRecognizer: GestureRecognizerFactoryWithHandlers<ScaleGestureRecognizer>(
+            () => ScaleGestureRecognizer(
+              debugOwner: this,
+              // An active trackpad gesture can otherwise claim a stationary
+              // secondary click on release, preventing the PDF context menu.
+              allowedButtonsFilter: (buttons) => buttons & kSecondaryMouseButton == 0,
+            ),
+            (instance) => instance
+              ..onEnd = _onScaleEnd
+              ..onStart = _onScaleStart
+              ..onUpdate = _onScaleUpdate
+              ..dragStartBehavior = DragStartBehavior.start
+              ..gestureSettings = MediaQuery.maybeGestureSettingsOf(context)
+              ..trackpadScrollCausesScale = widget.trackpadScrollCausesScale
+              ..trackpadScrollToScaleFactor = Offset(0, -1 / widget.scaleFactor),
+          ),
+        },
         child: child,
       ),
     );

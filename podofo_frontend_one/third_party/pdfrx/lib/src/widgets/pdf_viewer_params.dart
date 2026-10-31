@@ -114,6 +114,7 @@ class PdfViewerParams {
     this.pagePaintCallbacks,
     this.pageBackgroundPaintCallbacks,
     this.onGeneralTap,
+    this.onContextMenuDiagnostic,
     this.buildContextMenu,
     this.customizeContextMenuItems,
     this.onKey,
@@ -647,6 +648,10 @@ class PdfViewerParams {
   /// for the double-tap timeout before being dispatched.
   final PdfViewerGeneralTapHandler? onGeneralTap;
 
+  /// Observes context-menu dispatch without consuming gestures. Intended for
+  /// diagnostics; payloads contain state/coordinates, never document text.
+  final void Function(String event, Map<String, Object?> details)? onContextMenuDiagnostic;
+
   /// Function to build context menu.
   ///
   /// - If the function returns null, no context menu is shown.
@@ -866,6 +871,7 @@ class PdfViewerParams {
         other.pagePaintCallbacks == pagePaintCallbacks &&
         other.pageBackgroundPaintCallbacks == pageBackgroundPaintCallbacks &&
         other.onGeneralTap == onGeneralTap &&
+        other.onContextMenuDiagnostic == onContextMenuDiagnostic &&
         other.buildContextMenu == buildContextMenu &&
         other.customizeContextMenuItems == customizeContextMenuItems &&
         other.onKey == onKey &&
@@ -939,6 +945,7 @@ class PdfViewerParams {
         pagePaintCallbacks.hashCode ^
         pageBackgroundPaintCallbacks.hashCode ^
         onGeneralTap.hashCode ^
+        onContextMenuDiagnostic.hashCode ^
         buildContextMenu.hashCode ^
         customizeContextMenuItems.hashCode ^
         onKey.hashCode ^

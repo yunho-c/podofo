@@ -106,6 +106,35 @@ Disabled controls identify features that are not available yet.
 
 See [modernization.md](modernization.md) for design decisions and limitations.
 
+## Diagnosing missed context menus
+
+Open the Debug pane (bug icon) and enable **Trace right-clicks**. Reproduce a
+successful right-click and a missed one, then use **Copy trace** in the same
+pane. **Clear trace** starts a fresh capture; turn the switch off when finished.
+The switch is off by default and is not saved between launches.
+
+The trace retains the latest 400 events in memory as JSON lines, with elapsed
+milliseconds and a shared click ID. It includes pointer buttons and maximum
+movement, page coordinates, gesture dispatch, menu target resolution, the first
+menu frame, and dismissal reasons. It excludes document paths, selected text,
+annotation contents, and authors. Nothing is uploaded or written to disk by the
+recorder; Copy trace writes the capture to the clipboard.
+
+Read a click's stages in order:
+
+| Last observed stage | What to investigate |
+| --- | --- |
+| `pointer.down`, without `reader.pointer-down` | Flutter received the secondary press outside the reader's input path, possibly over another UI element. |
+| `reader.pointer-down`, without `gesture.secondary-recognized` | The tap was not recognized. Check movement, button changes, `pointer.cancel`, and `gesture.secondary-cancelled`. Very early gesture rejection may not emit the latter. |
+| `gesture.overlay-consumed` or `gesture.callback-consumed` | Another viewer handler consumed the click. |
+| `viewer.menu-suppressed` | The selection/copying gate prevented the menu; the event includes its reason. |
+| `menu.waiting-for-annotations` | The initial annotation scan has not completed; late results after dismissal are logged separately. |
+| `menu.build` / `menu.frame`, then dismissal or `viewer.anchor-cleared` | The menu was built or laid out, then closed. Inspect the recorded reason. |
+
+No `pointer.down` means no secondary pointer press was observed by the enabled
+recorder. This trace cannot see input that never reaches Flutter. A `menu.frame`
+records layout completion, not proof that the operating system displayed it.
+
 ## Document analysis
 
 See [experimental layout analysis](document-analysis.md) for Podoco native

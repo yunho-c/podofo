@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
@@ -12,6 +13,7 @@ import 'package:podofo_one/src/editing/pdf_annotation_adapter.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
+import 'package:podofo_one/src/services/context_menu_trace.dart';
 import 'package:podofo_one/src/widgets/components/highlight_palette.dart';
 import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
 
@@ -76,6 +78,10 @@ void main() {
       final visible = ValueNotifier(true);
       final releaseLock = Completer<void>();
       Future<void>? locked;
+      final trace = ContextMenuTrace()..enabled = true;
+      final click = trace.begin(
+        const PointerDownEvent(pointer: 42, buttons: kSecondaryMouseButton),
+      );
       try {
         expect(adapter.scans, 1, reason: 'Opening starts the scan');
         expect(session.annotationsReady, false);
@@ -121,6 +127,7 @@ void main() {
                                             PdfViewerPart.background,
                                       ),
                                       annotationRequest: target,
+                                      traceClick: click,
                                       onHighlight: (_) {},
                                       onUnderline: () {},
                                       twoPageView: false,
@@ -151,6 +158,7 @@ void main() {
           expect(find.text('Select all'), findsOneWidget);
         } else {
           expect(find.byType(MenuPopup), findsNothing);
+          expect(trace.export(), contains('menu.waiting-for-annotations'));
           await tester.pump(); // Install keyboard focus for dismissal.
           if (scenario == 'escape') {
             await tester.sendKeyEvent(LogicalKeyboardKey.escape);
@@ -178,6 +186,8 @@ void main() {
           if (scenario == 'escape' || scenario == 'outside') {
             expect(visible.value, false);
             expect(find.byType(MenuPopup), findsNothing);
+            expect(trace.export(), contains('menu.dismissed'));
+            expect(trace.export(), contains('menu.late-result-ignored'));
           } else if (scenario == 'failure') {
             expect(
               find.text('Annotation unavailable. Reopen menu.'),
@@ -196,6 +206,7 @@ void main() {
         expect(tester.takeException(), isNull);
       } finally {
         await tester.pumpWidget(const SizedBox.shrink());
+        trace.dispose();
         request.dispose();
         visible.dispose();
         await tester.runAsync(() async {

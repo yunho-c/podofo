@@ -79,6 +79,15 @@ checks edits below 200 DPI with both options enabled.
 
 ## Staging fixes
 
+`PdfViewerParams.onContextMenuDiagnostic` is an optional diagnostic observer for
+secondary gesture recognition/cancellation/consumption, menu requests/builds,
+selection-related suppression, and menu-anchor clearing. Observer errors are
+isolated from interaction handling. It reports state and coordinates, never
+document text, and leaves the existing gesture decisions unchanged. PoDoFo
+connects it to the opt-in, bounded Debug-pane right-click trace.
+`test/pdf_viewer_tap_test.dart` covers recognition, consumption and cancellation;
+the app's context-menu tests cover tracing through rendering and delayed scans.
+
 Ported from `pdfrx_og` staging at `fe80962214a3df7615c5f1a1917f6f26326fa661`:
 
 - `9199451`: merge fragmented selection highlights (the geometry backport above).
@@ -98,6 +107,16 @@ PoDoFo's hover preview uses the same predicate to skip annotation-only entries.
 `test/pdf_viewer_tap_test.dart` ports staging's mouse/touch, debounce, overlay,
 double-tap, drag, and real-PDF link/annotation regressions and checks annotation
 pixels, cursors, semantics, parameter updates, and custom rendering access.
+
+The forked `lib/src/widgets/interactive_viewer.dart` excludes secondary-button
+presses from its scale recognizer. An already-active trackpad pan/zoom could
+otherwise claim a stationary right-click on release and prevent the context
+menu from opening. A `RawGestureDetector` exposes the button filter while
+retaining the existing scale callbacks, gesture settings, and trackpad options.
+`test/pdf_viewer_tap_test.dart` checks short and longer right-clicks during both
+trackpad pan and zoom, continued trackpad movement, and clicks after the gesture
+ends. `test/pdf_pan_zoom_test.dart` covers primary mouse/touch panning and touch
+pinching.
 
 The link painter also invalidates queued annotation loads on document/page
 changes and disposal. It checks its generation before touching the page and
