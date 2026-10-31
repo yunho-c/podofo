@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'dart:ui' as ui;
 
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart' as flutter;
 import 'package:flutter/scheduler.dart' show SchedulerPhase;
@@ -21,10 +22,12 @@ import '../../providers/analysis_provider.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/theme_provider.dart';
 import '../../providers/user_state_provider.dart';
+import '../../providers/ui_provider.dart';
 import '../../providers/narration_provider.dart';
 import '../../narration/narration_controller.dart';
 import '../../narration/narration_painter.dart';
 import '../../services/document_actions.dart';
+import '../../services/highlight_color_sequence.dart';
 import '../../services/context_menu_trace.dart';
 import '../../services/pdf_navigation_history.dart';
 import '../../services/pdf_session.dart';
@@ -44,8 +47,50 @@ class CustomPdfViewer extends ConsumerStatefulWidget {
 }
 
 class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   static final _disabledFilter = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
+  static const _colorKeys = [
+    LogicalKeyboardKey.digit1,
+    LogicalKeyboardKey.digit2,
+    LogicalKeyboardKey.digit3,
+    LogicalKeyboardKey.digit4,
+    LogicalKeyboardKey.digit5,
+    LogicalKeyboardKey.digit6,
+    LogicalKeyboardKey.digit7,
+    LogicalKeyboardKey.digit8,
+    LogicalKeyboardKey.digit9,
+    LogicalKeyboardKey.numpad1,
+    LogicalKeyboardKey.numpad2,
+    LogicalKeyboardKey.numpad3,
+    LogicalKeyboardKey.numpad4,
+    LogicalKeyboardKey.numpad5,
+    LogicalKeyboardKey.numpad6,
+    LogicalKeyboardKey.numpad7,
+    LogicalKeyboardKey.numpad8,
+    LogicalKeyboardKey.numpad9,
+  ];
+  late final HighlightColorSequence _highlightColors;
+
+  void _annotationFocusChanged() {
+    if (!_hoverViewer.isReady ||
+        _hoverViewer.focusNode?.hasPrimaryFocus != true) {
+      _highlightColors.cancel();
+    }
+  }
+
+  void _annotationPointer(PointerEvent event) {
+    // Include toolbar/sidebar clicks that deliberately retain reader focus.
+    if (event is PointerDownEvent ||
+        event is PointerSignalEvent ||
+        event is PointerPanZoomStartEvent) {
+      _highlightColors.cancel();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) _highlightColors.cancel();
+  }
 
   OverlayEntry? _overlay;
   Timer? _hoverTimer;
@@ -110,6 +155,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     Matrix4 destination, {
     VoidCallback? complete,
   }) {
+    _highlightColors.cancel();
     _clearHover();
     if (identical(session, _narration.source?.documentId)) {
       _narration.setFollowText(false);
@@ -221,12 +267,43 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   @override
   void initState() {
     super.initState();
+    _highlightColors = HighlightColorSequence(
+      recolor: (target, color, isActive) async {
+        final document = ref.read(currentDocumentProvider);
+        if (document == null || document.session != target.session) return null;
+        return ref
+            .read(loadedDocumentsProvider.notifier)
+            .recolorHighlights(
+              document,
+              target.ids,
+              color,
+              target.revision,
+              isActive: isActive,
+            );
+      },
+      onError: (error) {
+        if (mounted) DocumentActions.error(ref, error);
+      },
+    );
+    FocusManager.instance.addListener(_annotationFocusChanged);
+    GestureBinding.instance.pointerRouter.addGlobalRoute(_annotationPointer);
+    WidgetsBinding.instance.addObserver(this);
+    ref.listenManual(commandPaletteProvider, (_, open) {
+      if (open) _highlightColors.cancel();
+    });
+    ref.listenManual(
+      userStateNotifierProvider.select((s) => s.highlightColorPalette),
+      (previous, next) {
+        if (!listEquals(previous, next)) _highlightColors.cancel();
+      },
+    );
     _previews = LinkPreviewWorker(
       render: ref.read(linkPreviewRendererProvider),
     );
     _hoverViewer = ref.read(pdfViewerControllerProvider);
     _hoverViewer.addListener(_clearHover);
     ref.listenManual(pdfViewerControllerProvider, (previous, next) {
+      _highlightColors.cancel();
       _hoverViewer.removeListener(_clearHover);
       _hoverViewer = next;
       _hoverViewer.addListener(_clearHover);
@@ -417,6 +494,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
 
   @override
   void dispose() {
+    _highlightColors.cancel();
+    FocusManager.instance.removeListener(_annotationFocusChanged);
+    GestureBinding.instance.pointerRouter.removeGlobalRoute(_annotationPointer);
+    WidgetsBinding.instance.removeObserver(this);
     _contextMenuTraceClick?.record('reader.disposed');
     _analysis?.removeListener(_analysisChanged);
     _equations?.removeListener(_analysisChanged);
@@ -495,6 +576,53 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             _clearHover();
             _cancelLinkNavigation();
           }
+          final keyboard = HardwareKeyboard.instance;
+          final readerKey =
+              !keyboard.isControlPressed &&
+              !keyboard.isMetaPressed &&
+              !keyboard.isAltPressed &&
+              !keyboard.isShiftPressed &&
+              controller.focusNode?.hasPrimaryFocus == true;
+          final colorKey = _colorKeys.indexOf(key);
+          if (readerKey && colorKey >= 0 && _highlightColors.active) {
+            final palette = ref
+                .read(userStateNotifierProvider)
+                .highlightColorPalette;
+            final index = colorKey % 9;
+            if (isRealKeyPress && index < palette.length) {
+              _highlightColors.choose(
+                int.parse(palette[index].substring(1), radix: 16),
+              );
+            }
+            return true;
+          }
+          // Other commands finish follow-up recoloring, but still reach their
+          // normal handlers (including Cmd/Ctrl+number tab switching).
+          if (isRealKeyPress) _highlightColors.cancel();
+          if (readerKey &&
+              (key == LogicalKeyboardKey.keyH ||
+                  key == LogicalKeyboardKey.keyU)) {
+            // Keep bare letters local to the reader, and consume repeats
+            // without applying another annotation to a subsequent selection.
+            if (isRealKeyPress &&
+                document.pdfDocument.permissions?.allowsModifyAnnotations !=
+                    false) {
+              if (key == LogicalKeyboardKey.keyH) {
+                final palette = ref
+                    .read(userStateNotifierProvider)
+                    .highlightColorPalette;
+                _highlightColors.start(
+                  () => DocumentActions.highlight(
+                    ref,
+                    color: palette.firstOrNull ?? '#66ffeb3b',
+                  ),
+                );
+              } else {
+                unawaited(DocumentActions.underline(ref));
+              }
+            }
+            return true;
+          }
           if (isRealKeyPress &&
               identical(document.session, _narration.source?.documentId) &&
               const [
@@ -558,6 +686,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         ],
         textSelectionParams: PdfTextSelectionParams(
           onTextSelectionChange: (selection) {
+            // Creation clears its own selection; only a new selection ends it.
+            if (selection.hasSelectedText) _highlightColors.cancel();
             _selectionChanged = selection.hasSelectedText;
             _applyHighlightMode();
           },

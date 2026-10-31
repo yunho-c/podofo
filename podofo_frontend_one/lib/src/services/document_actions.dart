@@ -145,23 +145,23 @@ class DocumentActions {
     }
   }
 
-  static Future<void> highlight(WidgetRef ref, {String? color}) =>
+  static Future<HighlightTarget?> highlight(WidgetRef ref, {String? color}) =>
       _markSelection(ref, AnnotationKind.highlight, color: color);
 
   static Future<void> underline(WidgetRef ref) =>
       _markSelection(ref, AnnotationKind.underline);
 
-  static Future<void> _markSelection(
+  static Future<HighlightTarget?> _markSelection(
     WidgetRef ref,
     AnnotationKind kind, {
     String? color,
   }) async {
     final document = ref.read(currentDocumentProvider);
     final controller = ref.read(pdfViewerControllerProvider);
-    if (document == null || !controller.isReady) return;
+    if (document == null || !controller.isReady) return null;
     final selection = controller.textSelectionDelegate;
-    if (!selection.hasSelectedText) return;
-    if (_markingSelection[selection] == true) return;
+    if (!selection.hasSelectedText) return null;
+    if (_markingSelection[selection] == true) return null;
     _markingSelection[selection] = true;
     final selectedColor =
         color ??
@@ -172,19 +172,19 @@ class DocumentActions {
       if (!ref.context.mounted ||
           ref.read(currentDocumentProvider)?.session != document.session ||
           document.session.lease.isClosed) {
-        return;
+        return null;
       }
       final regions = HighlightRegion.fromTextRanges(
         ranges,
         includeText: selection.isCopyAllowed,
       );
-      if (regions.isEmpty) return;
+      if (regions.isEmpty) return null;
       await selection.clearTextSelection();
       final notifier = ref.read(loadedDocumentsProvider.notifier);
       if (kind == AnnotationKind.underline) {
         await notifier.underline(document, regions);
       } else {
-        await notifier.highlight(
+        return await notifier.highlight(
           document,
           regions,
           int.parse(selectedColor.replaceFirst('#', ''), radix: 16),
@@ -195,5 +195,6 @@ class DocumentActions {
     } finally {
       _markingSelection[selection] = false;
     }
+    return null;
   }
 }

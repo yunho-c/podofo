@@ -85,6 +85,13 @@ the analyzer constraint merely to silence an SDK language-version warning.
 - The highlighter toggles highlighting mode. Right-click or long-press it for
   colors; a selection-menu swatch highlights text directly.
 - Ctrl/Command+Shift+H highlights selected text.
+- With the PDF reader focused, select text and press H to highlight it with the
+  first color in your palette, or U to underline it in red. These shortcuts act
+  immediately and do not enable a persistent annotation mode. Holding a key does
+  not repeat the action; text fields and dialogs retain normal typing.
+- After H, 1–9 recolors that highlight using the palette order. Each color change
+  has its own Undo step. Number selection ends on Escape/Enter or when you move
+  on to another interaction; autosave and a pause between keys do not end it.
 - Ctrl/Command+S saves; Ctrl/Command+Shift+S saves to another path.
 - Ctrl/Command+W closes the tab; Ctrl/Command+Q requests a safe quit.
 - Ctrl+Tab / Ctrl+Shift+Tab switches tabs; Ctrl/Command+1–9 selects a tab and
