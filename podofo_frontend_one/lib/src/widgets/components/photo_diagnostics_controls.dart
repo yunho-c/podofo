@@ -12,9 +12,12 @@ class PhotoDiagnosticsControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = ref.watch(showPhotoDiagnosticsProvider);
-    final includeTranslucent = ref.watch(includeTranslucentPhotoPixelsProvider);
+    final mode = ref.watch(photoPreservationModeProvider);
     final session = ref.watch(currentDocumentProvider)?.session;
     final quality = ref.watch(photoQualityProvider);
+    final effectiveQuality = quality.copyWith(
+      captureAlpha: mode == PhotoPreservationMode.recomposeWhite,
+    );
     void setQuality(PhotoQuality value) =>
         ref.read(photoQualityProvider.notifier).state = value;
     return Column(
@@ -36,27 +39,27 @@ class PhotoDiagnosticsControls extends ConsumerWidget {
             ),
           ],
         ),
-        Row(
-          children: [
-            const Expanded(child: Text('Include translucent pixels')),
-            Semantics(
-              label: 'Include translucent pixels',
-              child: Switch(
-                key: const ValueKey('photo-translucent-toggle'),
-                value: includeTranslucent,
-                onChanged: (value) =>
-                    ref
-                            .read(
-                              includeTranslucentPhotoPixelsProvider.notifier,
-                            )
-                            .state =
-                        value,
-              ),
+        const Text('Mask-edge behavior').small(),
+        for (final option in PhotoPreservationMode.values)
+          Semantics(
+            selected: mode == option,
+            child: Button(
+              key: ValueKey('photo-mode-${option.name}'),
+              style: mode == option
+                  ? const ButtonStyle.primary(size: ButtonSize.small)
+                  : const ButtonStyle.outline(size: ButtonSize.small),
+              onPressed: () =>
+                  ref.read(photoPreservationModeProvider.notifier).state =
+                      option,
+              child: Text(switch (option) {
+                PhotoPreservationMode.opaque => 'Opaque only',
+                PhotoPreservationMode.nonzero => 'Preserve nonzero alpha',
+                PhotoPreservationMode.recomposeWhite => 'Recompose on white',
+              }),
             ),
-          ],
-        ),
+          ),
         const Text(
-          'Temporary preview: preserve nonzero alpha in the same eligible images. Requires dark mode and Preserve photos.',
+          'White page areas only. Earlier paint or active overlays use opaque-only. Requires dark mode and Preserve photos.',
         ).small(),
         _ResolutionChoices(
           label: 'Alpha-render scale',
@@ -83,7 +86,7 @@ class PhotoDiagnosticsControls extends ConsumerWidget {
               setQuality(quality.copyWith(textureDimension: value)),
         ),
         Text(
-          'Temporary settings. Changing alpha or mask resolution reanalyzes visible pages. Coverage cache: up to ${quality.cachePages} pages within 64 MiB.',
+          'Temporary settings. Changing alpha or mask resolution reanalyzes visible pages. Coverage cache: up to ${effectiveQuality.cachePages} pages within 64 MiB.',
         ).small(),
         GhostButton(
           key: const ValueKey('photo-quality-reset'),
@@ -193,6 +196,11 @@ class _EntryDetails extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(entry.reason).small(),
+          if (entry.recomposing)
+            const Text('Recomposing image alpha over darkened white.').small(),
+          if (entry.recompositionFallback != null)
+            Text('Opaque-only fallback: ${entry.recompositionFallback}')
+                .small(),
           if (entry.candidate.renderCoverage case final render?) ...[
             Text(
               'Alpha render: ${render.alphaWidth} × ${render.alphaHeight} (${render.alphaScale}×)',
@@ -202,10 +210,14 @@ class _EntryDetails extends StatelessWidget {
                   ? 'Coverage: opaque rectangle'
                   : 'Coverage: ${coverage.width} × ${coverage.height}',
             ).small(),
+            if (render.alpha != null)
+              Text(
+                'Fractional alpha: ${render.alpha!.width} × ${render.alpha!.height}',
+              ).small(),
             if (render.limitation != null)
               Text('Resolution limited: ${render.limitation}').small(),
           ],
-          if (coverage != null)
+          if (coverage != null && !entry.recomposing)
             Text(
               entry.includeTranslucent
                   ? 'Nonzero-alpha footprint: ${percent(coverage.fraction)}; transparent holes stay in dark mode.'

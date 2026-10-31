@@ -10,8 +10,8 @@ final photoQualityProvider = StateProvider<PhotoQuality>(
   (ref) => const PhotoQuality(),
 );
 final showPhotoDiagnosticsProvider = StateProvider<bool>((ref) => false);
-final includeTranslucentPhotoPixelsProvider = StateProvider<bool>(
-  (ref) => false,
+final photoPreservationModeProvider = StateProvider<PhotoPreservationMode>(
+  (ref) => PhotoPreservationMode.opaque,
 );
 final photoDiagnosticsProvider = Provider.autoDispose
     .family<PhotoDiagnosticsController, PdfSession>((ref, session) {

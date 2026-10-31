@@ -32,6 +32,17 @@ resumable work and priority without repeated decodes; shader and viewer tests
 cover every region, zoom and a 117-panel spread with uninverted photos and
 normally inverted captions. Generate with `tool/generate_photo_dense_fixture.py`.
 
+`recomposition.pdf` and `recomposition_manifest.json` contain 14 pages for the
+white-page recomposition preview. Page 1 is an automatically preserved curved
+soft-masked photo. Page 9 is a flat red manual target (Option/Alt-click it).
+White/gray fills, earlier artwork, annotations, and later text exercise the
+conservative fallback checks. Explicit white paths remain unsupported because
+the public fill-color API cannot prove that they are solid rather than patterned.
+Pages 10–13 cover a reflected crop and the three nonzero page rotations.
+The native/Impeller tests compare correction against the compositing equation
+and a separate PDFium render onto black; widget tests check mode switches,
+manual choices, annotation fallback, and live overlay invalidation.
+
 `astronaut.png` is a 256 × 256 RGB Lanczos reduction of the 512 × 512 NASA
 photograph of Eileen Collins distributed by scikit-image v0.25.2:
 
@@ -53,6 +64,7 @@ Regenerate from the app directory with Python 3 and Pillow (tested with 12.3.0):
 python3 tool/generate_photo_fixture.py
 python3 tool/generate_photo_forms_fixture.py
 python3 tool/generate_photo_dense_fixture.py
+python3 tool/generate_photo_recomposition_fixture.py
 ```
 
 The committed PDF and samples are the test inputs. Regeneration can vary with

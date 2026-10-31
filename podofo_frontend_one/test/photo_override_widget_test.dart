@@ -182,7 +182,9 @@ void main() {
                       controller: controller,
                       enabled: enabled,
                       selective: selective,
-                      includeTranslucent: includeTranslucent,
+                      mode: includeTranslucent
+                          ? PhotoPreservationMode.nonzero
+                          : PhotoPreservationMode.opaque,
                       quality: quality,
                       twoPages: false,
                       strength: 1,
@@ -318,6 +320,26 @@ void main() {
         matchesRegion(automatic, dark, plot.rect);
         if (fixture == 'forms') {
           final targets = entries().map((e) => e.target).toList();
+          Future<Uint8List> capturePreserved({String? name}) async {
+            // Native analysis + a 4096 texture can outlast a fixed settle delay.
+            // Wait for a known opaque photo pixel, then assert the whole region.
+            for (var attempt = 0; attempt < 8; attempt++) {
+              final pixels = await capture(name: name);
+              final x = ((photo.rect.left + photo.rect.width * .1) * width)
+                  .floor();
+              final y = ((photo.rect.top + photo.rect.height * .1) * height)
+                  .floor();
+              final index = (y * width + x) * 4;
+              if (List.generate(
+                3,
+                (c) => (pixels[index + c] - natural[index + c]).abs(),
+              ).every((d) => d <= 3)) {
+                return pixels;
+              }
+            }
+            fail('Preservation texture did not become ready');
+          }
+
           update(() => includeTranslucent = true);
           final preview = await capture(name: 'photo-translucent-automatic');
           matchesRegion(
@@ -338,7 +360,7 @@ void main() {
               textureDimension: 4096,
             ),
           );
-          final high = await capture(name: 'photo-resolution-high');
+          final high = await capturePreserved(name: 'photo-resolution-high');
           matchesRegion(
             high,
             natural,
@@ -359,7 +381,7 @@ void main() {
             await tester.pump();
           }
           matchesRegion(
-            await capture(),
+            await capturePreserved(),
             natural,
             photo.rect,
             holes: dark,

@@ -10,6 +10,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:podofo_one/main.dart';
+import 'package:podofo_one/src/dark_mode/photo_filter.dart';
+import 'package:podofo_one/src/dark_mode/photo_quality.dart';
+import 'package:podofo_one/src/providers/photo_diagnostics_provider.dart';
 import 'package:podofo_one/objectbox.g.dart';
 import 'package:podofo_one/src/data/document_entity.dart';
 import 'package:podofo_one/src/data/objectbox.dart';
@@ -191,6 +194,27 @@ void main() {
       expect(controller.visibleRect.top, closeTo(0, 1));
       controller.value = initialTransform;
       await tester.pump();
+      container.read(photoPreservationModeProvider.notifier).state =
+          PhotoPreservationMode.recomposeWhite;
+      await tester.pump();
+      bool photoOverlayActive() => tester
+          .widget<PhotoPreservingFilter>(find.byType(PhotoPreservingFilter))
+          .hasForegroundOverlay!();
+      expect(photoOverlayActive(), isFalse);
+      final selectionPress = await tester.startGesture(
+        tester.getCenter(find.byType(PdfViewer)),
+        kind: PointerDeviceKind.mouse,
+      );
+      await tester.pump();
+      expect(
+        photoOverlayActive(),
+        isTrue,
+        reason: 'Pause before the debounced selection notification',
+      );
+      await selectionPress.up();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(photoOverlayActive(), isFalse);
+
       // Mode toggles and the direct shortcut are harmless with no selection.
       await tester.tap(find.byKey(const ValueKey('highlight-mode')));
       await tester.pump(const Duration(milliseconds: 400));
@@ -214,6 +238,11 @@ void main() {
         () => !searcher.isSearching && searcher.matches.length == 3,
       );
       expect(searcher.matches.map((m) => m.pageNumber), [1, 2, 3]);
+      expect(
+        photoOverlayActive(),
+        isTrue,
+        reason: 'Search paints inside the viewer filter',
+      );
 
       // The toolbar retains the compact, right-click palette and inline picker.
       await tester.tap(

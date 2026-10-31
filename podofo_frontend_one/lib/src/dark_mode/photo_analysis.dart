@@ -8,6 +8,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:pdfium_dart/pdfium_dart.dart';
 
 import 'photo_classifier.dart';
+import 'photo_alpha.dart';
 import 'photo_coverage.dart';
 import 'photo_quality.dart';
 
@@ -32,8 +33,10 @@ class PhotoRenderCoverage {
     required this.alphaHeight,
     this.alphaScale = 1,
     this.limitation,
+    this.alpha,
   });
   final PhotoCoverage opaque, nonzero;
+  final PhotoAlphaCoverage? alpha;
   final int alphaWidth, alphaHeight, alphaScale;
   final String? limitation;
   PhotoRenderCoverage limited(String reason) => PhotoRenderCoverage(
@@ -43,6 +46,7 @@ class PhotoRenderCoverage {
     alphaHeight: alphaHeight,
     alphaScale: alphaScale,
     limitation: reason,
+    alpha: alpha,
   );
   PhotoCoverage? select(bool translucent) {
     final selected = translucent && nonzero.fingerprint != opaque.fingerprint
@@ -62,6 +66,7 @@ class PhotoCandidate {
     this.coverage,
     this.translucentCoverage,
     this.renderCoverage,
+    this.recompositionBlocker = 'background-not-inspected',
     this.objectPath = const [],
   });
   final int objectIndex;
@@ -83,6 +88,7 @@ class PhotoCandidate {
   final PhotoCoverage? translucentCoverage;
 
   final PhotoRenderCoverage? renderCoverage;
+  final String? recompositionBlocker;
 
   PhotoCoverage? renderingCoverage({bool includeTranslucent = false}) {
     if (renderCoverage != null) {
@@ -332,7 +338,8 @@ PhotoPageAnalysis inspectPhotoPage(
                   inspected,
                 );
                 // A larger coverage grid at 1x can reuse this exact native raster.
-                if (quality.customCoverage && quality.alphaScale == 1) {
+                if (quality.captureAlpha ||
+                    (quality.customCoverage && quality.alphaScale == 1)) {
                   renderCoverage =
                       _renderCoverage(
                         api,
@@ -425,6 +432,7 @@ PhotoPageAnalysis inspectPhotoPage(
           coverage: coverage,
           translucentCoverage: translucentCoverage,
           renderCoverage: renderCoverage,
+          recompositionBlocker: before.recompositionBlocker,
         );
         completed++;
       }
@@ -467,6 +475,9 @@ PhotoPageAnalysis inspectPhotoPage(
         reason,
         objectPath: image.path,
         region: cropRelative(image.visible),
+        recompositionBlocker: quality.captureAlpha
+            ? tree.recompositionBlocker(page, image)
+            : 'background-not-inspected',
       );
       if (tree.fallback != null) {
         return PhotoPageAnalysis(
@@ -894,6 +905,65 @@ class _PageObjects {
     }
   }
 
+  List<PhotoRegion>? _annotationRects;
+  bool _unknownAnnotations = false;
+
+  String? recompositionBlocker(FPDF_PAGE page, _Object image) {
+    if (_annotationRects == null) {
+      _annotationRects = [];
+      final count = api.FPDFPage_GetAnnotCount(page);
+      if (count < 0 || count > 2000) {
+        _unknownAnnotations = true;
+      } else {
+        final rect = arena<FS_RECTF>();
+        for (var i = 0; i < count; i++) {
+          final annotation = api.FPDFPage_GetAnnot(page, i);
+          if (annotation == nullptr) {
+            _unknownAnnotations = true;
+            continue;
+          }
+          try {
+            if (api.FPDFAnnot_GetRect(annotation, rect) == 0 ||
+                rect.ref.right < rect.ref.left ||
+                rect.ref.top < rect.ref.bottom ||
+                ![
+                  rect.ref.left,
+                  rect.ref.bottom,
+                  rect.ref.right,
+                  rect.ref.top,
+                ].every((v) => v.isFinite)) {
+              _unknownAnnotations = true;
+            } else {
+              _annotationRects!.add(
+                PhotoRegion(
+                  rect.ref.left - 1,
+                  rect.ref.bottom - 1,
+                  rect.ref.right + 1,
+                  rect.ref.top + 1,
+                ),
+              );
+            }
+          } finally {
+            api.FPDFPage_CloseAnnot(annotation);
+          }
+        }
+      }
+    }
+    if (_unknownAnnotations) return 'annotation-bounds-unavailable';
+    if (_annotationRects!.any(image.visible.overlaps)) {
+      return 'annotation-overlap';
+    }
+    // pdfrx renders bare page areas onto opaque white. Any earlier paint is
+    // uncertain, even a path whose GetFillColor reports white: PDFium can return
+    // white for a pattern too, and its public API cannot prove a solid fill.
+    if (leaves
+        .take(image.order)
+        .any((o) => o.visible.overlaps(image.visible))) {
+      return 'background-not-proven-white';
+    }
+    return null;
+  }
+
   final _filledPaths = <int, _FilledPath?>{};
 
   PhotoRegion? clearRegion(_Object object, PhotoRegion rect) {
@@ -1181,6 +1251,9 @@ PhotoRenderCoverage? _renderCoverage(
     scale,
     maps,
     limitation: limitation,
+    alpha: quality.captureAlpha && !maps.opaque.isFull
+        ? _imageAlpha(api, bitmap, image, quality, imageCount)
+        : null,
   );
 }
 
@@ -1192,6 +1265,7 @@ PhotoRenderCoverage _describeCoverage(
   int scale,
   ({PhotoCoverage opaque, PhotoCoverage nonzero}) maps, {
   String? limitation,
+  PhotoAlphaCoverage? alpha,
 }) {
   final width = api.FPDFBitmap_GetWidth(bitmap);
   final height = api.FPDFBitmap_GetHeight(bitmap);
@@ -1214,10 +1288,21 @@ PhotoRenderCoverage _describeCoverage(
               (nx * unbudgeted).floor().clamp(1, quality.coverageDimension) ||
           maps.opaque.height <
               (ny * unbudgeted).floor().clamp(1, quality.coverageDimension));
-  final limitations = [?limitation, if (budgetLimited) 'coverage-page-budget'];
+  final alphaLimited =
+      alpha != null &&
+      (alpha.width <
+              (nx * unbudgeted).floor().clamp(1, quality.coverageDimension) ||
+          alpha.height <
+              (ny * unbudgeted).floor().clamp(1, quality.coverageDimension));
+  final limitations = [
+    ?limitation,
+    if (budgetLimited) 'coverage-page-budget',
+    if (alphaLimited) 'alpha-page-budget',
+  ];
   return PhotoRenderCoverage(
     opaque: maps.opaque,
     nonzero: maps.nonzero,
+    alpha: alpha,
     alphaWidth: width,
     alphaHeight: height,
     alphaScale: scale,
@@ -1343,4 +1428,73 @@ class _ScaledAnalysisPage {
     scale: scale,
     pixels: scale == 1 ? 0 : (w * scale).ceil() * (h * scale).ceil(),
   );
+}
+
+PhotoAlphaCoverage _imageAlpha(
+  PDFium api,
+  FPDF_BITMAP bitmap,
+  _Object image,
+  PhotoQuality quality,
+  int imageCount,
+) {
+  final width = api.FPDFBitmap_GetWidth(bitmap),
+      height = api.FPDFBitmap_GetHeight(bitmap);
+  final stride = api.FPDFBitmap_GetStride(bitmap);
+  final bytes = api.FPDFBitmap_GetBuffer(bitmap)
+      .cast<Uint8>()
+      .asTypedList(stride * height);
+  final bounds = image.localTransform.rect(const PhotoRegion(0, 0, 1, 1));
+  final inverse = image.parentTransform.inverse;
+  final local = inverse.rect(image.visible);
+  final sx = width / (bounds.right - bounds.left),
+      sy = height / (bounds.top - bounds.bottom);
+  var nx = (local.right - local.left) * sx,
+      ny = (local.top - local.bottom) * sy;
+  if (image.parentTransform.a.abs() < image.parentTransform.c.abs()) {
+    final swap = nx;
+    nx = ny;
+    ny = swap;
+  }
+  final budget = quality.alphaBytesPerPage ~/ imageCount.clamp(1, 2000);
+  final scale = math.min(
+    1.0,
+    math.min(
+      quality.coverageDimension / math.max(nx, ny),
+      math.sqrt(budget / (nx * ny)),
+    ),
+  );
+  final cols = (nx * scale).floor().clamp(1, quality.coverageDimension);
+  final rows = (ny * scale).floor().clamp(1, quality.coverageDimension);
+  final alpha = Uint8List(cols * rows);
+  final visible = image.visible;
+  final dx = (visible.right - visible.left) / cols,
+      dy = (visible.top - visible.bottom) / rows;
+  for (var y = 0; y < rows; y++) {
+    for (var x = 0; x < cols; x++) {
+      final r = inverse.rect(
+        PhotoRegion(
+          visible.left + x * dx,
+          visible.top - (y + 1) * dy,
+          visible.left + (x + 1) * dx,
+          visible.top - y * dy,
+        ),
+      );
+      final l = ((r.left - bounds.left) * sx).clamp(0.0, width.toDouble());
+      final t = ((bounds.top - r.top) * sy).clamp(0.0, height.toDouble());
+      final right = ((r.right - bounds.left) * sx).clamp(l, width.toDouble());
+      final bottom = ((bounds.top - r.bottom) * sy).clamp(t, height.toDouble());
+      var sum = 0.0, area = 0.0;
+      for (var py = t.floor(); py < bottom.ceil(); py++) {
+        final wy = math.min(bottom, py + 1.0) - math.max(t, py.toDouble());
+        for (var px = l.floor(); px < right.ceil(); px++) {
+          final weight =
+              wy * (math.min(right, px + 1.0) - math.max(l, px.toDouble()));
+          sum += bytes[py * stride + px * 4 + 3] * weight;
+          area += weight;
+        }
+      }
+      alpha[y * cols + x] = area > 0 ? (sum / area).round().clamp(0, 255) : 0;
+    }
+  }
+  return PhotoAlphaCoverage(cols, rows, alpha);
 }

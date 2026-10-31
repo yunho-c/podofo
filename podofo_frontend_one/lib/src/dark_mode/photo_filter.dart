@@ -15,7 +15,8 @@ import 'photo_overrides.dart';
 import 'photo_override_overlay.dart';
 
 /// One viewer and one filter pass. Never paste image bitmaps over annotations,
-/// highlights, selection, or links; preserve the already composited pixels.
+/// highlights, selection, or links. White-backdrop correction is admitted only
+/// without overlapping native annotations or active viewer overlays.
 class PhotoPreservingFilter extends StatefulWidget {
   const PhotoPreservingFilter({
     super.key,
@@ -30,7 +31,10 @@ class PhotoPreservingFilter extends StatefulWidget {
     required this.program,
     required this.child,
     this.showDiagnostics = false,
-    this.includeTranslucent = false,
+    this.mode = PhotoPreservationMode.opaque,
+    this.overlayChanges,
+    this.hasForegroundOverlay,
+    this.rightOverlayInset = 0,
     this.quality = const PhotoQuality(),
     this.diagnostics,
   });
@@ -43,7 +47,11 @@ class PhotoPreservingFilter extends StatefulWidget {
   final FragmentProgram? program;
   final Widget child;
   final bool showDiagnostics;
-  final bool includeTranslucent;
+  final PhotoPreservationMode mode;
+  bool get includeTranslucent => mode == PhotoPreservationMode.nonzero;
+  final Listenable? overlayChanges;
+  final bool Function()? hasForegroundOverlay;
+  final double rightOverlayInset;
   final PhotoQuality quality;
   final PhotoDiagnosticsController? diagnostics;
 
@@ -57,6 +65,10 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
   FragmentShader? _shader;
   late PhotoMaskCache _masks;
   List<Rect>? _maskLayout;
+  Set<String> _corrections = {};
+  PhotoQuality get _quality => widget.quality.copyWith(
+    captureAlpha: widget.mode == PhotoPreservationMode.recomposeWhite,
+  );
 
   @override
   void initState() {
@@ -68,7 +80,7 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
 
   void _createCache() {
     final session = widget.session;
-    final quality = widget.quality;
+    final quality = _quality;
     _cache = PhotoAnalysisCache((page, previous, priority) {
       final revision = widget.revision;
       return session.readLocked((pdf) {
@@ -93,7 +105,12 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
       oldWidget.diagnostics?.publish(null);
     }
     if (!identical(oldWidget.session, widget.session) ||
-        !oldWidget.quality.sameCoverage(widget.quality)) {
+        !oldWidget.quality
+            .copyWith(
+              captureAlpha:
+                  oldWidget.mode == PhotoPreservationMode.recomposeWhite,
+            )
+            .sameCoverage(_quality)) {
       _cache.dispose();
       _masks.invalidate();
       _maskLayout = null;
@@ -129,6 +146,7 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
       widget.controller,
       _cache,
       _masks,
+      if (widget.overlayChanges != null) widget.overlayChanges!,
       if (!widget.session.lease.isClosed) widget.session.photoOverrides,
     ]),
     child: widget.child,
@@ -142,6 +160,8 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           !widget.session.lease.isClosed &&
           viewer.isReady;
       final regions = <PhotoMaskRegion>[];
+      final corrections = <String>{};
+      final foregroundOverlay = widget.hasForegroundOverlay?.call() ?? false;
       final priorities = <int, List<String>>{};
       final diagnosticPages = <PhotoDiagnosticPage>[];
       final overrideEntries = <PhotoOverrideEntry>[];
@@ -177,12 +197,30 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
             layout[number - 1],
             visible,
           );
+          String? recompositionFallback(PhotoCandidate candidate) {
+            if (foregroundOverlay) return 'viewer-overlay-active';
+            final projected = project(candidate.region);
+            if (widget.rightOverlayInset > 0 &&
+                projected.right >
+                    1 - widget.rightOverlayInset / viewer.viewSize.width) {
+              return 'scrollbar-overlap';
+            }
+            return candidate.recompositionBlocker ??
+                (candidate.renderCoverage?.alpha == null
+                    ? 'no-fractional-alpha'
+                    : null);
+          }
+
+          bool recompose(PhotoCandidate candidate) =>
+              widget.mode == PhotoPreservationMode.recomposeWhite &&
+              recompositionFallback(candidate) == null;
           PhotoMaskRegion maskRegion(PhotoCandidate candidate) =>
               photoMaskRegion(
                 candidate,
                 page,
                 layout[number - 1],
                 includeTranslucent: widget.includeTranslucent,
+                recomposeWhite: recompose(candidate),
               );
           final pending = [
             for (final c in analysis?.candidates ?? const <PhotoCandidate>[])
@@ -203,7 +241,12 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
               final automatic = candidate.reason == 'likely-photo';
               if (manual ?? automatic) {
                 final region = maskRegion(candidate);
-                if (!region.rect.isEmpty) regions.add(region);
+                if (!region.rect.isEmpty) {
+                  regions.add(region);
+                  if (region.alpha != null) {
+                    corrections.add('$number/${candidate.objectId}');
+                  }
+                }
               }
               final rect = project(candidate.region);
               if (target != null && !rect.isEmpty) {
@@ -228,6 +271,15 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
                     pageNumber: number,
                     candidate: candidate,
                     includeTranslucent: widget.includeTranslucent,
+                    recomposing:
+                        active &&
+                        recompose(candidate) &&
+                        (overrides.decision(targets[candidate]) ??
+                            candidate.reason == 'likely-photo'),
+                    recompositionFallback:
+                        widget.mode == PhotoPreservationMode.recomposeWhite
+                        ? recompositionFallback(candidate)
+                        : null,
                     override: overrides.decision(targets[candidate]),
                     rect: project(candidate.region),
                     preserved:
@@ -260,6 +312,12 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           }
         }
         _cache.setVisiblePages(pages, priorities: priorities);
+        // A new foreground overlay must never see a previously published
+        // correction texture while the fallback texture is being rebuilt.
+        if (_corrections.difference(corrections).isNotEmpty) {
+          _masks.invalidate();
+        }
+        _corrections = corrections;
         if (active && pages.isNotEmpty) {
           final bounds = pages
               .take(_cache.capacity)

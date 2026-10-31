@@ -10,6 +10,7 @@ PhotoMaskRegion photoMaskRegion(
   PdfPage page,
   Rect layout, {
   bool includeTranslucent = false,
+  bool recomposeWhite = false,
 }) {
   var coverage = candidate.renderingCoverage(
     includeTranslucent: includeTranslucent,
@@ -18,7 +19,8 @@ PhotoMaskRegion photoMaskRegion(
   return PhotoMaskRegion(
     photoDocumentRect(candidate.region, page, layout),
     coverage: coverage,
-    quarterTurns: coverage == null ? 0 : page.rotation.index,
+    alpha: recomposeWhite ? candidate.renderCoverage?.alpha : null,
+    quarterTurns: coverage == null && !recomposeWhite ? 0 : page.rotation.index,
   );
 }
 

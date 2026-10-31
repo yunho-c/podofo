@@ -7,13 +7,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
 import 'photo_coverage.dart';
+import 'photo_alpha.dart';
 
 /// A candidate projected into document layout. Coverage is stored before page
 /// rotation, so only the page's quarter-turn needs applying here.
 class PhotoMaskRegion {
-  const PhotoMaskRegion(this.rect, {this.coverage, this.quarterTurns = 0});
+  const PhotoMaskRegion(
+    this.rect, {
+    this.coverage,
+    this.alpha,
+    this.quarterTurns = 0,
+  });
   final ui.Rect rect;
   final PhotoCoverage? coverage;
+  final PhotoAlphaCoverage? alpha;
   final int quarterTurns;
 
   bool covers(double left, double top, double right, double bottom) {
@@ -27,18 +34,32 @@ class PhotoMaskRegion {
     };
   }
 
+  double alphaAt(double x, double y) => switch (quarterTurns) {
+    1 => alpha!.sample(y, 1 - x),
+    2 => alpha!.sample(1 - x, 1 - y),
+    3 => alpha!.sample(1 - y, x),
+    _ => alpha!.sample(x, y),
+  };
+
   @override
   bool operator ==(Object other) =>
       other is PhotoMaskRegion &&
       rect == other.rect &&
       quarterTurns == other.quarterTurns &&
-      coverage?.fingerprint == other.coverage?.fingerprint;
+      coverage?.fingerprint == other.coverage?.fingerprint &&
+      alpha?.fingerprint == other.alpha?.fingerprint;
   @override
-  int get hashCode => Object.hash(rect, quarterTurns, coverage?.fingerprint);
+  int get hashCode => Object.hash(
+    rect,
+    quarterTurns,
+    coverage?.fingerprint,
+    alpha?.fingerprint,
+  );
 }
 
-/// A bounded texture of accepted coverage in document coordinates. It contains
-/// coverage only, never PDF pixels, so annotations/selection remain composited.
+/// A bounded texture of accepted coverage and optional fractional alpha in
+/// document coordinates. Never stores source RGB. Recomposition requires the
+/// caller to exclude native annotations and active viewer overlays.
 class PhotoMask {
   PhotoMask(this.image, this.bounds, this.regions);
   final ui.Image image;
@@ -57,7 +78,7 @@ class PhotoMask {
     final width = (bounds.width * scale).ceil().clamp(1, maxDimension);
     final height = (bounds.height * scale).ceil().clamp(1, maxDimension);
     final sx = width / bounds.width, sy = height / bounds.height;
-    if (regions.any((r) => r.coverage != null)) {
+    if (regions.any((r) => r.coverage != null || r.alpha != null)) {
       final raster = await _rasterizeOffThread(bounds, width, height, regions);
       final buffer = await ui.ImmutableBuffer.fromUint8List(raster.$1);
       ui.ImageDescriptor? descriptor;
@@ -148,7 +169,7 @@ Future<(Uint8List, Set<PhotoMaskRegion>)> _rasterizeOffThread(
     final bottom = ((clip.bottom - bounds.top) * sy).floor().clamp(top, height);
     var contributed = false;
     for (var y = top; y < bottom; y++) {
-      if (region.coverage == null) {
+      if (region.coverage == null && region.alpha == null) {
         pixels.fillRange(y * width + left, y * width + right, 0xffffffff);
         contributed |= right > left;
         continue;
@@ -158,7 +179,19 @@ Future<(Uint8List, Set<PhotoMaskRegion>)> _rasterizeOffThread(
       for (var x = left; x < right; x++) {
         final l = (bounds.left + x / sx - rect.left) / rect.width;
         final r = (bounds.left + (x + 1) / sx - rect.left) / rect.width;
-        if (region.covers(l, t, r, b)) {
+        if (region.alpha != null) {
+          // A=255 is the supported region; R carries fractional image alpha.
+          // G=0 distinguishes correction from legacy white preservation texels.
+          final alpha = (region.alphaAt((l + r) / 2, (t + b) / 2) * 255)
+              .round()
+              .clamp(0, 255);
+          final offset = (y * width + x) * 4;
+          rgba[offset] = alpha;
+          rgba[offset + 1] = 0;
+          rgba[offset + 2] = 0;
+          rgba[offset + 3] = 255;
+          contributed = true;
+        } else if (region.covers(l, t, r, b)) {
           pixels[y * width + x] = 0xffffffff;
           contributed = true;
         }

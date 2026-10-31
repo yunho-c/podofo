@@ -34,12 +34,14 @@ class PdfSelectionMenu extends ConsumerWidget {
     super.key,
     required this.params,
     required this.onHighlight,
+    this.onSelectionAction,
     required this.twoPageView,
     required this.onTwoPageViewChanged,
   });
 
   final PdfViewerContextMenuBuilderParams params;
   final ValueChanged<String> onHighlight;
+  final VoidCallback? onSelectionAction;
   final bool twoPageView;
   final ValueChanged<bool> onTwoPageViewChanged;
 
@@ -94,7 +96,16 @@ class PdfSelectionMenu extends ConsumerWidget {
               ),
             if (selectAll)
               MenuButton(
-                onPressed: (_) => run(selection.selectAllText),
+                onPressed: (_) {
+                  onSelectionAction?.call();
+                  run(() async {
+                    try {
+                      await selection.selectAllText();
+                    } finally {
+                      onSelectionAction?.call();
+                    }
+                  });
+                },
                 trailing: MenuShortcut(
                   activator: shortcut(LogicalKeyboardKey.keyA),
                 ),

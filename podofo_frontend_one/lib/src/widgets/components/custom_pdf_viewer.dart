@@ -11,6 +11,7 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../dark_mode/photo_filter.dart';
+import '../../dark_mode/photo_quality.dart';
 import '../../providers/document_provider.dart';
 import '../../providers/photo_diagnostics_provider.dart';
 import '../../providers/theme_provider.dart';
@@ -40,6 +41,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   int _generation = 0;
   final _selectionPointers = <int>{};
   bool _selectionChanged = false;
+  final _photoSelection = ValueNotifier<bool>(false);
+  Timer? _photoSelectionTimer;
+  final _photoNarration = ValueNotifier<bool>(false);
   late final NarrationController _narration;
   Object? _paintedRange;
   int _followRequest = 0;
@@ -219,6 +223,34 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     _narration.scrubPreview.addListener(_onScrubPreviewChanged);
   }
 
+  // pdfrx debounces selection notifications by 300 ms. Pause correction at
+  // input time so a new selection/handle cannot paint over a stale texture.
+  void _guardPhotoSelection({bool held = false}) {
+    if (!mounted ||
+        ref.read(photoPreservationModeProvider) !=
+            PhotoPreservationMode.recomposeWhite) {
+      return;
+    }
+    _photoSelectionTimer?.cancel();
+    _photoSelection.value = true;
+    if (!held) {
+      _photoSelectionTimer = Timer(const Duration(milliseconds: 350), () {
+        if (!mounted) return;
+        _photoSelection.value =
+            false; // The live delegate now owns the decision.
+      });
+    }
+  }
+
+  void _updatePhotoNarration() {
+    _photoNarration.value =
+        (_narration.previewingDocument &&
+            _narration.previewHighlight != null) ||
+        (!_narration.terminal &&
+            _narration.snapshot?.start != null &&
+            _narration.source?.passage != null);
+  }
+
   void _onScrubPreviewChanged() {
     if (!mounted) return;
     // A stale drag can be cleared while the timeline is rebuilding.
@@ -229,12 +261,14 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       );
       return;
     }
+    _updatePhotoNarration();
     final viewer = ref.read(pdfViewerControllerProvider);
     if (viewer.isReady) viewer.invalidate();
   }
 
   void _onNarrationChanged() {
     if (!mounted) return;
+    _updatePhotoNarration();
     final document = ref.read(currentDocumentProvider);
     final viewer = ref.read(pdfViewerControllerProvider);
     if (document == null || !viewer.isReady) return;
@@ -344,6 +378,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
 
   @override
   void dispose() {
+    _photoSelectionTimer?.cancel();
+    _photoSelection.dispose();
+    _photoNarration.dispose();
     _linkAnimation.dispose();
     _narration.removeListener(_onNarrationChanged);
     _narration.scrubPreview.removeListener(_onScrubPreviewChanged);
@@ -383,7 +420,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         onInteractionUpdate: (details) =>
             _checkUserScroll(zooming: (details.scale - 1).abs() > .001),
         onKey: (params, key, isRealKeyPress) {
-          if (isRealKeyPress) _cancelLinkNavigation();
+          if (isRealKeyPress) {
+            _cancelLinkNavigation();
+            _guardPhotoSelection();
+          }
           if (isRealKeyPress &&
               identical(document.session, _narration.source?.documentId) &&
               const [
@@ -409,6 +449,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         onViewerReady: (pdf, readyController) {
           Future.microtask(() {
             if (mounted) {
+              _photoSelectionTimer?.cancel();
+              _photoSelection.value = false;
               ref.read(viewerReadyProvider.notifier).state = readyController;
               if (document.twoPageView) {
                 _fitPageView(
@@ -438,6 +480,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         textSelectionParams: PdfTextSelectionParams(
           onTextSelectionChange: (selection) {
             _selectionChanged = selection.hasSelectedText;
+            if (_selectionPointers.isEmpty &&
+                !(_photoSelectionTimer?.isActive ?? false)) {
+              _photoSelection.value = selection.hasSelectedText;
+            }
             _applyHighlightMode();
           },
         ),
@@ -449,6 +495,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             anchor: params.anchorA,
             child: PdfSelectionMenu(
               params: params,
+              onSelectionAction: _guardPhotoSelection,
               onHighlight: (color) =>
                   DocumentActions.highlight(ref, color: color),
               twoPageView: document.twoPageView,
@@ -521,7 +568,20 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       // Keep the viewer mounted so theme/inversion changes preserve its viewport.
       child: PhotoPreservingFilter(
         showDiagnostics: ref.watch(showPhotoDiagnosticsProvider),
-        includeTranslucent: ref.watch(includeTranslucentPhotoPixelsProvider),
+        mode: ref.watch(photoPreservationModeProvider),
+        overlayChanges: Listenable.merge([
+          _photoSelection,
+          _photoNarration,
+          ?searcher,
+        ]),
+        hasForegroundOverlay: () =>
+            _photoSelection.value ||
+            (controller.isReady &&
+                controller.textSelectionDelegate.hasSelectedText) ||
+            (searcher?.matches.isNotEmpty ?? false) ||
+            (identical(document.session, _narration.source?.documentId) &&
+                _photoNarration.value),
+        rightOverlayInset: 14,
         quality: ref.watch(photoQualityProvider),
         diagnostics: ref.watch(photoDiagnosticsProvider(document.session)),
         session: document.session,
@@ -551,14 +611,17 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
           onPointerDown: (event) {
             if (event.buttons == kPrimaryButton) {
               _selectionPointers.add(event.pointer);
+              _guardPhotoSelection(held: true);
             }
           },
           onPointerUp: (event) {
             _selectionPointers.remove(event.pointer);
+            _guardPhotoSelection();
             Future.microtask(_applyHighlightMode);
           },
           onPointerCancel: (event) {
             _selectionPointers.remove(event.pointer);
+            _guardPhotoSelection();
             _selectionChanged = false;
           },
           // pdfrx handles clicks within its transformed document. Also offer

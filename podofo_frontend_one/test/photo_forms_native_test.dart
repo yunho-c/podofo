@@ -107,7 +107,11 @@ void main() {
       )).candidates.single;
       expect(alphaOnly.renderCoverage!.alphaWidth, 320);
       expect(alphaOnly.renderCoverage!.opaque.width, 256);
-      const quality = PhotoQuality(alphaScale: 4, coverageDimension: 1024);
+      const quality = PhotoQuality(
+        alphaScale: 4,
+        coverageDimension: 1024,
+        captureAlpha: true,
+      );
       final dense = await analyzePhotos(document, 38, quality: quality);
       var bytes = 0;
       for (final c in dense.candidates) {
@@ -117,11 +121,18 @@ void main() {
         expect(render.opaque.width, 819);
         expect(render.limitation, contains('alpha-pixel-budget'));
         expect(render.limitation, contains('coverage-page-budget'));
+        expect(render.limitation, contains('alpha-page-budget'));
+        expect(render.alpha!.width, 289);
+        expect(
+          render.alpha!.values.length,
+          lessThanOrEqualTo(quality.alphaBytesPerPage ~/ 100),
+        );
         bytes +=
             (c.coverage?.bits.length ?? 0) +
             (c.translucentCoverage?.bits.length ?? 0) +
             render.opaque.bits.length +
-            render.nonzero.bits.length;
+            render.nonzero.bits.length +
+            render.alpha!.values.length;
       }
       expect(bytes, lessThanOrEqualTo(quality.pageCoverageBytes));
       expect(
@@ -130,6 +141,7 @@ void main() {
       );
       expect(dense.regions, hasLength(100));
     },
+    timeout: const Timeout(Duration(minutes: 2)),
   );
 
   test('nested transforms, clips, paint order, masks and bounded traversal', () async {

@@ -1,0 +1,72 @@
+[
+  {
+    "page": 1,
+    "name": "plain-white-page",
+    "blocker": null
+  },
+  {
+    "page": 2,
+    "name": "opaque-white-fill",
+    "blocker": "background-not-proven-white"
+  },
+  {
+    "page": 3,
+    "name": "gray-background",
+    "blocker": "background-not-proven-white"
+  },
+  {
+    "page": 4,
+    "name": "earlier-graphic",
+    "blocker": "background-not-proven-white"
+  },
+  {
+    "page": 5,
+    "name": "white-fill-covers-earlier-graphic",
+    "blocker": "background-not-proven-white"
+  },
+  {
+    "page": 6,
+    "name": "partial-white-does-not-clear-graphic",
+    "blocker": "background-not-proven-white"
+  },
+  {
+    "page": 7,
+    "name": "annotation-overlap",
+    "blocker": "annotation-overlap"
+  },
+  {
+    "page": 8,
+    "name": "annotation-away",
+    "blocker": null
+  },
+  {
+    "page": 9,
+    "name": "red-silhouette-manual-target",
+    "blocker": null
+  },
+  {
+    "page": 10,
+    "name": "nested-reflected-crop",
+    "blocker": null
+  },
+  {
+    "page": 11,
+    "name": "page-rotation-90",
+    "blocker": null
+  },
+  {
+    "page": 12,
+    "name": "page-rotation-180",
+    "blocker": null
+  },
+  {
+    "page": 13,
+    "name": "page-rotation-270",
+    "blocker": null
+  },
+  {
+    "page": 14,
+    "name": "later-label",
+    "blocker": null
+  }
+]

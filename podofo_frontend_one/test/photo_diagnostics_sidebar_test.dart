@@ -85,7 +85,10 @@ void main() {
       await expand('Dark Mode');
       await tester.pumpAndSettle();
       expect(container.read(showPhotoDiagnosticsProvider), isFalse);
-      expect(container.read(includeTranslucentPhotoPixelsProvider), isFalse);
+      expect(
+        container.read(photoPreservationModeProvider),
+        PhotoPreservationMode.opaque,
+      );
       expect(container.read(photoQualityProvider).alphaScale, 1);
       expect(container.read(photoQualityProvider).coverageDimension, 256);
       expect(container.read(photoQualityProvider).textureDimension, 2048);
@@ -109,7 +112,10 @@ void main() {
         lessThanOrEqualTo(PhotoQuality.cacheCoverageBytes),
       );
       expect(container.read(showPhotoDiagnosticsProvider), isFalse);
-      expect(container.read(includeTranslucentPhotoPixelsProvider), isFalse);
+      expect(
+        container.read(photoPreservationModeProvider),
+        PhotoPreservationMode.opaque,
+      );
       final reset = find.byKey(const ValueKey('photo-quality-reset'));
       await tester.ensureVisible(reset);
       await tester.tap(reset);
@@ -135,20 +141,53 @@ void main() {
         image.dispose();
       });
       final translucentToggle = find.byKey(
-        const ValueKey('photo-translucent-toggle'),
+        const ValueKey('photo-mode-nonzero'),
       );
       await tester.ensureVisible(translucentToggle);
       await tester.tap(translucentToggle);
       await tester.pumpAndSettle();
-      expect(container.read(includeTranslucentPhotoPixelsProvider), isTrue);
+      expect(
+        container.read(photoPreservationModeProvider),
+        PhotoPreservationMode.nonzero,
+      );
       expect(
         container.read(showPhotoDiagnosticsProvider),
         isFalse,
         reason: 'The preview works without enabling diagnostic outlines',
       );
-      await tester.tap(translucentToggle);
+      final recompose = find.byKey(const ValueKey('photo-mode-recomposeWhite'));
+      await tester.ensureVisible(recompose);
+      await tester.tap(recompose);
       await tester.pumpAndSettle();
-      expect(container.read(includeTranslucentPhotoPixelsProvider), isFalse);
+      expect(
+        container.read(photoPreservationModeProvider),
+        PhotoPreservationMode.recomposeWhite,
+      );
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('photo-mode-opaque')),
+      );
+      await tester.pumpAndSettle();
+      await tester.runAsync(() async {
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(const ValueKey('sidebar-capture')),
+        );
+        final image = await boundary.toImage();
+        File('build/photo-dark-mode/recomposition-controls.png')
+            .writeAsBytesSync(
+              (await image.toByteData(format: ui.ImageByteFormat.png))!.buffer
+                  .asUint8List(),
+            );
+        image.dispose();
+      });
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('photo-mode-opaque')),
+      );
+      await tester.tap(find.byKey(const ValueKey('photo-mode-opaque')));
+      await tester.pumpAndSettle();
+      expect(
+        container.read(photoPreservationModeProvider),
+        PhotoPreservationMode.opaque,
+      );
       await tester.ensureVisible(
         find.byKey(const ValueKey('photo-diagnostics-toggle')),
       );
@@ -306,8 +345,8 @@ void main() {
       expect(find.text('limited-palette'), findsNothing);
       diagnostics.publish(null); // Safe even if auto-disposal has already run.
       await tester.pumpWidget(const SizedBox());
-      container.read(includeTranslucentPhotoPixelsProvider.notifier).state =
-          true;
+      container.read(photoPreservationModeProvider.notifier).state =
+          PhotoPreservationMode.recomposeWhite;
       container.read(photoQualityProvider.notifier).state = const PhotoQuality(
         alphaScale: 4,
         coverageDimension: 1024,
@@ -316,8 +355,8 @@ void main() {
       container.dispose();
       final fresh = ProviderContainer();
       expect(
-        fresh.read(includeTranslucentPhotoPixelsProvider),
-        isFalse,
+        fresh.read(photoPreservationModeProvider),
+        PhotoPreservationMode.opaque,
         reason: 'Developer preview is not persisted',
       );
       expect(fresh.read(photoQualityProvider).alphaScale, 1);

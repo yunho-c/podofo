@@ -76,6 +76,73 @@ write leaves the previous choice intact.
 
 ## Developer diagnostics
 
+**Mask-edge behavior** offers three temporary modes (not saved with the document):
+
+- **Opaque only** (default): preserve only fully opaque coverage.
+- **Preserve nonzero alpha**: retain the existing binary nonzero-alpha preview.
+- **Recompose on white**: preserve the foreground contribution while replacing the
+  white page's contribution at masked edges with darkened white.
+
+The recomposition preview uses `displayed + (1 - alpha) * (darkWhite - white)`,
+from the [normal source-over equation](https://www.w3.org/TR/compositing-1/#simplealphacompositing).
+For the existing shader, `darkWhite = (1 - strength) / 2`. Opaque interiors stay
+unchanged, fractional edges lose the white backdrop, and transparent holes become
+dark. It does not divide by alpha, retain source RGB, or render another full page.
+
+Eligibility is deliberately narrow: the entire retained image rectangle must have
+no earlier overlapping paint. Native annotations overlapping that rectangle block
+recomposition; unreadable annotation bounds block it for the page. Earlier white
+paths also remain unsupported: PDFium's public fill-color API can report white for
+patterns, so color plus rectangular geometry cannot prove a uniform solid backdrop
+([fill-color getter](https://github.com/chromium/pdfium/blob/main/fpdfsdk/fpdf_editpage.cpp),
+[pattern color handling](https://github.com/chromium/pdfium/blob/main/core/fpdfapi/page/cpdf_colorstate.cpp)).
+Colored backgrounds, overlapping artwork, existing Form/transparency exclusions,
+and later paint checks remain unchanged. The mode applies to automatically
+accepted and manually preserved panels; it does not make new panels overridable.
+
+Selection, search matches, or active narration highlights temporarily fall back to
+opaque-only throughout the viewer. Input guards cover selection's debounced callback;
+the reader menu already paints outside the filter. Panels intersecting the right
+scroll-thumb strip also fall back. Removing a correction invalidates its previous
+texture immediately, so it cannot remain active while a fallback mask is built.
+Diagnostics show `background-not-proven-white`, `annotation-overlap`,
+`annotation-bounds-unavailable`, `viewer-overlay-active`, or `scrollbar-overlap`.
+Fully opaque panels need no correction (`no-fractional-alpha`).
+
+Fractional alpha is retained only in recomposition mode, as area-averaged 8-bit
+values in page orientation. Bilinear sampling maps cell centers into the existing
+texture: R carries image alpha, G distinguishes legacy bypass from correction,
+and A marks the proven rectangle. The same resolution controls apply. The alpha
+page budget is 4 MiB at 256 cells, capped at 8 MiB at larger settings; dense pages
+share it (`alpha-page-budget`). Within the existing 64 MiB coverage allowance,
+recomposition caches at most 12 pages by default, 10 with alpha scaling alone,
+4 at 512 cells, and 2 at 1024 cells. Other modes keep their previous capacities.
+Switching into or out of recomposition reanalyzes visible pages; canonical decisions
+and saved override identities remain unchanged.
+
+This is a qualitative preview, not a guarantee of pixel-exact reconstruction at
+arbitrary zoom. The local alpha render, page raster, and GPU sampling can differ;
+source-mask interpolation, grid limits, clipping boundaries, color conversion,
+and zoom can leave residual edge errors. Higher settings do not eliminate all
+of those differences. Explicit solid/colored backdrop support remains future work.
+
+Open `test/fixtures/photo_dark_mode/recomposition.pdf`, page 1, to compare the
+three modes on a curved soft-masked photo. Page 9 is a flat red manual target:
+hold Option/Alt and click it to preserve it, then compare the modes. Pages 3–7
+exercise conservative fallbacks; pages 10–13 exercise reflection, crop and rotation.
+
+Recomposition validation on 2026-10-31: 47 targeted native, Impeller, widget,
+reader, override and cache tests passed. Static analysis, format/diff checks,
+and the macOS Debug build passed. Fully relaunch to load the updated shader asset. The fixture's red edge matches the equation within 1/255 at native scale;
+at 2× the maximum difference was 12/255 with a mean below 0.6/255 across the tested
+panel. Photo/crop/rotation outputs differed from a separate PDFium black-backdrop
+render by at most 4/255. These are fixture results, not real-paper accuracy claims.
+The 100-panel maximum-quality stress case stayed within the alpha/coverage budgets
+and retained every panel; its native test took about 50 seconds on this Debug
+runner, so those settings can be expensive. Poppler fixture renders, the three
+mode captures, the native black-backdrop reference, and sidebar controls were
+visually inspected. Generated evidence is under `build/photo-dark-mode/`.
+
 **Resolution comparison** offers three independent, temporary controls:
 
 | Control | Options (default first) |
@@ -84,7 +151,7 @@ write leaves the previous choice intact.
 | Per-image mask | 256, 512, 1024 cells on the longer side |
 | Preservation texture | 2048, 4096 texels on the longer side of the visible page band |
 
-They work independently of diagnostic outlines and **Include translucent pixels**.
+They work independently of diagnostic outlines and the selected mask-edge mode.
 **Reset resolutions** restores 1× / 256 / 2048. No setting is persisted or stored
 with the document. Expand diagnostics to see each actual alpha raster and coverage
 grid, the current GPU texture size, and any limiting budget/fallback. A small local
@@ -111,8 +178,8 @@ and 3 at 1024 cells. Extreme zoom-out reports pages outside that working set.
 A 4096² RGBA texture is at most 64 MiB, versus 16 MiB at 2048²; in-flight and retiring
 textures can temporarily add to that allocation.
 
-These are resolution experiments. Both alpha criteria and conservative min-pooling
-remain binary; no background recomposition or smooth-alpha preservation is applied.
+Opaque-only and nonzero-alpha modes retain binary, conservative min-pooling.
+Recomposition uses the fractional-alpha path described above.
 
 Resolution-control validation on 2026-10-31: 42 focused native, widget, cache,
 override and Impeller tests passed, along with static analysis, format/diff
@@ -124,8 +191,8 @@ and high-resolution fixture captures were visually inspected. This does not
 establish the best quality setting for real scientific figures.
 
 
-Under **Developer → Dark Mode**, **Include translucent pixels** temporarily
-previews binary preservation of nonzero image alpha. It defaults off, is not
+Under **Developer → Dark Mode**, **Preserve nonzero alpha** temporarily
+previews binary preservation of nonzero image alpha. It is not the default, is not
 persisted, and works independently of the diagnostic-outline toggle. Dark mode,
 PDF inversion and photo preservation must still be enabled. The same automatically
 accepted or manually preserved panels participate; this option does not admit
@@ -133,8 +200,8 @@ fully translucent images or bypass Form transparency/overlap checks.
 
 The preview uses a second compact mask captured during the existing decode.
 Classification, strict mask resolution and saved panel identities remain unchanged.
-Switching only rebuilds the preservation texture, without re-decoding images or
-changing shaders. Transparent holes remain excluded. Coverage is still binary
+Switching between the two binary modes only rebuilds the preservation texture,
+without re-decoding images or changing shaders. Transparent holes remain excluded. Coverage is still binary
 and conservatively downsampled, so this tests broader preservation rather than
 smooth blending; some jagged edges or bright halos may remain. Fixture page 27
 shows a translucent band around a transparent hole; page 37 also exercises a
@@ -270,7 +337,7 @@ and [implementation](https://github.com/chromium/pdfium/blob/main/fpdfsdk/fpdf_e
 This alpha check is at PDFium's local object-render resolution, which can differ
 from both source resolution and eventual viewer zoom. Soft, explicit and color-key
 masks are supported where they have fully opaque areas. Fractional-alpha pixels
-are excluded; the final page pixel already mixes foreground and background, so
+are excluded by default; the final page pixel already mixes foreground and background, so
 using its alpha as preservation strength would not reconstruct correct dark
 compositing. Ancestor Form transparency, blend modes, complex clips and later
 paint exclusions are unchanged. Subpixel details below PDFium's local render
@@ -292,8 +359,9 @@ pixel ratio assumptions are used. Geometry tests compare against PDFium's
 `PhotoPreservingFilter` always keeps one `PdfViewer`, its listener/gesture tree,
 and one `ImageFiltered` mounted. Its own shader belongs to the viewer; it does not
 mutate the shared default/thumbnail shader. A separate `invert_photos.frag` copies
-the original HSL calculation and samples a second texture containing only the
-union of accepted opaque footprints. A full-coverage texel bypasses inversion. No second
+the original HSL calculation and samples a second texture containing coverage
+and, in the recomposition preview, fractional alpha. A legacy full-coverage texel
+bypasses inversion; a correction texel replaces the white backdrop contribution. No second
 PDF render or photograph overlay is introduced.
 
 After changing shader assets, rebuild and fully relaunch the app. Hot reload of
@@ -304,7 +372,8 @@ coordinates. Panning and zooming within that band change shader uniforms, not th
 texture. Changes in accepted coverage or the page band rebuild it; page-layout,
 session and revision changes invalidate it. At most one build is active and one
 latest request is queued; stale results are disposed. The previous valid mask can
-remain active while new coverage is built. Empty coverage needs no texture.
+remain active while new coverage is built, except when a correction becomes
+ineligible: it is discarded before the next frame. Empty coverage needs no texture.
 
 By default, each texture is bounded to 2048 by 2048 RGBA pixels (at most 16 MiB); the developer control allows 4096 (64 MiB). Whole texels
 are rounded inward and the shader requires full alpha, so rasterization can
@@ -314,7 +383,7 @@ are released after the frame using them, with stale in-flight results released
 immediately. Mask count is bounded by the current, in-flight and retiring images;
 there is no per-page texture cache.
 
-Partial coverage uses conservative min-pooling at both stages: every local
+Binary partial coverage uses conservative min-pooling at both stages: every local
 render pixel touched by an analysis cell must be opaque, and every analysis cell
 touched by a final texture texel must be opaque. Small holes therefore survive
 downsampling; averaging or nearest-neighbor sampling cannot fill them in.
@@ -532,7 +601,8 @@ flutter test --no-pub --concurrency=1 \
 flutter test --no-pub --enable-impeller \
   test/photo_filter_widget_test.dart test/photo_diagnostics_sidebar_test.dart \
   test/photo_mask_test.dart test/photo_coverage_test.dart test/photo_overrides_test.dart \
-  test/photo_override_widget_test.dart
+  test/photo_override_widget_test.dart test/photo_recomposition_test.dart \
+  test/photo_recomposition_widget_test.dart
 flutter test --no-pub --enable-impeller tool/qualify_photo_shader_test.dart
 flutter test --no-pub tool/benchmark_photo_analysis_test.dart
 ```
@@ -549,7 +619,8 @@ The deterministic inputs and their attribution are in
 `test/fixtures/photo_dark_mode/`. Regenerate with
 `python3 tool/generate_photo_fixture.py` and
 `python3 tool/generate_photo_forms_fixture.py`, plus
-`python3 tool/generate_photo_dense_fixture.py` using Pillow 12.3.0. Test/probe outputs are
+`python3 tool/generate_photo_dense_fixture.py` and
+`python3 tool/generate_photo_recomposition_fixture.py` using Pillow 12.3.0. Test/probe outputs are
 under `build/photo-dark-mode/` and must not be treated as Release evidence.
 
 `tool/photo_release_probe.dart` reuses the same pixel checks in a real Release

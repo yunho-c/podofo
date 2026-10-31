@@ -98,8 +98,19 @@ void main() {
     if (all(greaterThanEqual(maskUV, vec2(0.0))) &&
         all(lessThan(maskUV, vec2(1.0))) &&
         texture(preservationMask, maskUV).a > 0.999) {
-        fragColor = original_color;
-        return;
+        vec4 mask = texture(preservationMask, maskUV);
+        if (mask.g > 0.999) {
+            fragColor = original_color;
+            return;
+        }
+        if (mask.g < 0.001) {
+            // White backdrop only: D(white) = (1 - strength) / 2.
+            // Replace its contribution without dividing by fractional alpha.
+            vec3 corrected = original_color.rgb -
+                vec3((1.0 - mask.r) * (1.0 + invertStrength) / 2.0);
+            fragColor = vec4(clamp(corrected, 0.0, 1.0), original_color.a);
+            return;
+        }
     }
 
     // Convert color to HSL
