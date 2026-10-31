@@ -93,6 +93,7 @@ CocoaPods. From the app directory, after making the model bundle named in
 
 ```sh
 python3 tool/prepare_mlsr.py
+python3 tool/prepare_podoco.py
 # Optional offline SDK source: --sdk-source /path/to/MLSR
 ../.fvm/flutter_sdk/bin/flutter pub get --enforce-lockfile
 bash tool/build_macos_local.sh release

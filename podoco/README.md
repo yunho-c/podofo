@@ -1,0 +1,108 @@
+# Podoco
+
+A Rust-first library for efficient document analysis with ergonomic language
+bindings. Podoco lives alongside the PoDoFo application in this Git repository,
+with its own Cargo workspace and development checks.
+
+**Status: document/formula analysis, optional math conversion, renderer leases, and experimental app Copy/Listen implemented.** Rust provides checked
+page images, portable results, offline model bundles, and reusable Core ML
+`LayoutSession` execution for PP-DocLayoutV3. `Analyzer` adds eager document jobs,
+lazy rendering, bounded sinks, and cancellation. See [document jobs](docs/jobs.md),
+[layout inference](docs/layout.md), and [Rust contracts](docs/contracts.md). The mixed-precision model profile remains
+experimental; its known export differences are recorded in the qualification.
+
+The [C ABI](docs/ffi.md) and [Dart SDK](bindings/dart/README.md) expose document
+jobs, copied images, controlled native leases, typed results, and draining
+cancellation. PoDoFo has an [experimental document/equation integration](../docs/document-analysis.md).
+The reusable [Flutter integration](bindings/flutter/README.md) loads pinned
+models directly from application resources. The [offline packager](crates/podoco-models/README.md)
+creates the asset package; PoDoFo's default Analyze/Copy/Listen flow needs no model
+folder selection. See [bundled release evidence](docs/internal/bundled-assets-validation.md).
+PP-FormulaNet_plus-L has a [qualified blocking Rust crop recognizer](docs/formula.md)
+and queued [explicit-crop jobs across Rust/C/Dart](docs/formula.md#queued-explicit-crops)
+that share the analyzer's document lane without running detection.
+Its [progressive document pipeline](docs/internal/m6-document-validation.md) is also
+qualified against the deployed reference; detector recall and recognition quality
+limits remain explicit. [Optional math conversion](docs/math.md) exposes isolated
+MathML/plain-speech workers through Rust/C/Dart. The app now uses
+[qualified native renderer leases](docs/internal/m8-renderer-validation.md), with
+a copied fallback. The app merges progressive formula results, preserves recognized
+LaTeX for Copy, and sends optional MathCAT plain speech into its existing MLSR
+player. [M9 evidence](docs/internal/m9-integration-validation.md) distinguishes
+automated integration checks from outstanding model promotion and human acceptance.
+Core ML via cidre is the first backend, with QNN planned for Qualcomm Windows.
+[Observer exclusion and coexistence](docs/coreml.md) remain the packaging policy.
+The packages are private while the complete analysis contract is established.
+
+## Quick start
+
+From this directory, with stable Rust, Python 3.11+, and a native C toolchain:
+
+```sh
+python3 tools/dev.py build
+cargo run --locked -p podoco --example version
+cargo run --locked -p podoco --example contracts
+```
+
+For Dart, use the existing Dart SDK (the M6 native run uses Dart 3.13.4):
+
+```sh
+cd bindings/dart
+dart pub get --enforce-lockfile
+dart run example/version.dart
+```
+
+The version examples report `Podoco 0.1.0`; `contracts` demonstrates copied-image
+construction and bounded result serialization without inference. Dart checks C
+ABI compatibility before reading the native version. No model weights are needed
+or downloaded. [Offline model preparation](tools/pp_doclayout_v3/README.md) is explicit.
+
+## Layout
+
+```text
+Cargo.toml             Podoco's Cargo workspace, independent of the app
+crates/podoco/          Public Rust API, model pipelines, and runtime
+crates/podoco-ffi/      Shared C ABI adapter; dynamic and static libraries
+crates/podoco-models/   Verified offline Flutter asset packaging
+include/podoco.h        Generated C header
+bindings/dart/         Dart API, generated FFI, and native build hook
+bindings/flutter/      App resource discovery and lazy model loader
+model-manifests/        Pinned experimental layout and formula YAML contracts
+examples/              Index of executable examples
+tests/integration/     Actual C caller checks
+third_party/cidre/     Pinned MIT-licensed Apple bindings with observer exclusion
+tools/codegen/         Pinned C header generator
+tools/dev.py           Build, generation, and validation commands
+tools/pp_doclayout_v3/  Original fixture generation and offline reference tooling
+tools/pp_formulanet/    Offline formula preparation and deployment qualification
+docs/                  Consumer setup and API contracts
+docs/internal/         Maintainer architecture and validation scope
+```
+
+Rust callers depend directly on `podoco`. Other languages use `podoco-ffi`.
+PoDoFo consumes the public Dart package through its analysis adapter and uses
+`bindings/flutter/` for bundled resources. Additional language bindings can use
+the same C ABI.
+
+## Development
+
+Run from this directory:
+
+```sh
+python3 tools/dev.py check
+python3 tools/dev.py check-generated
+```
+
+The first command checks Rust formatting, Clippy, tests, API documentation,
+header freshness, a compiled C caller, Dart analysis/tests, and a relocated Dart
+package using a prebuilt library, including incompatible-ABI rejection. The
+second also regenerates Dart bindings in
+a temporary output location and compares them to the checked-in version; it
+requires libclang. See [development](docs/development.md) for individual commands
+and [validation scope](docs/internal/validation.md) for platform boundaries.
+
+## License
+
+Apache-2.0, matching the repository. See [LICENSE](LICENSE). The vendored cidre
+dependency retains its [MIT license](third_party/cidre/LICENSE.txt). Model weights
+retain their own licenses and provenance, recorded separately in YAML manifests.

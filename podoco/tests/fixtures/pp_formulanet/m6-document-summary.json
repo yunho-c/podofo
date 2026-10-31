@@ -1,0 +1,355 @@
+{
+  "date": "2026-10-26",
+  "native": {
+    "binary_sha256": "4cf54071b5f6f2ca92695cbf4a413471b0ec68438093495cab29660484f8fbe4",
+    "sources": {
+      "Cargo.lock": "511e6392f2af05f01bc7fd0b0c54f03fbd9baaaef2ae8b4113610b73fec9e47f",
+      "crates/podoco/src/bundle.rs": "2f171fc4f5a7b1ac88757f8599bc5bd2cc4e8be40855f9ff569ef0204905ab9a",
+      "crates/podoco/src/domain.rs": "46a3af97b31cfd4118668be974b7f907a1c75d5da49194a1e53645d3d2b2925c",
+      "crates/podoco/src/error.rs": "d9c8fbabed717a451adb1abf5d0fe5779d2311aa70817c86b4ee157d8efcc5c8",
+      "crates/podoco/src/formula/bundle.rs": "c3063c1b2a3a64bb66d5bd28c7f1151c5012c6de0d2b212dc069862b3c225f85",
+      "crates/podoco/src/formula/mod.rs": "3a554b11046e53bc322078ec24265bccf4cb336b9a8af3ad78d177104f705bb6",
+      "crates/podoco/src/formula/preprocess.rs": "fb79bcb33cc998aa4b71032fe9580513ac1b00ec73e3da776e875f0731b02608",
+      "crates/podoco/src/formula/session.rs": "f340260738fe73494846ee78fd9e580a8b2626e2ee0b3e85f9177e70003114cb",
+      "crates/podoco/src/formula/tests.rs": "ec2e3cf7998b79a2deac68f6b195a3d6a08af737567c2c7c0bc3b7a56f2e43ba",
+      "crates/podoco/src/formula/text.rs": "ad99c9b4d89f90c6c2dc87b7493bc62d9fe36308cb0ae23fba374ef9bab1b36a",
+      "crates/podoco/src/geometry.rs": "d9b42572a31f4a7371f4e7389307290d228a3c90a5e43fe05bb7d9a09577b723",
+      "crates/podoco/src/image/native.rs": "ae6a672ea5aa2dc6e90b9e5869ad947270ce42d4fe4a300330ba305a3916cce0",
+      "crates/podoco/src/image.rs": "7fb9e6e6e05feee4d456907922e308087734e54dcba89099ed7d3918d25dbef8",
+      "crates/podoco/src/jobs/engine.rs": "a6b367a1ceceb9449bd2db729f876e3f92787b5c48112a3779f942e79cf4454c",
+      "crates/podoco/src/jobs/formula.rs": "ef114580928bef80108fc1cf54ba80faba4cd3bdd29012d82fbe4e8104a28bbf",
+      "crates/podoco/src/jobs/mod.rs": "e04dd7f174e6c1a15c414345bedc9d81527e58fef01aa67a1627a1d853d32c95",
+      "crates/podoco/src/jobs/tests.rs": "a4507fce6982156e98d73ffd4018dbcbb6ccfb86a2f0338bcb09f27f47d5d180",
+      "crates/podoco/src/lib.rs": "ae1c6928e531e13ec5d91dfed26f70d9e7b808897fc3160919c27d35f5e13067",
+      "crates/podoco/src/options.rs": "a88688bd253ea1445affd74fd2fcc5bdeabe8ee628fa4a3886c3cbda9ff3c1f4",
+      "crates/podoco/src/pipelines/layout/mod.rs": "4445c361be7d3f9078f4046a98e80a029b944eb83aedcf21bcdc195495abf516",
+      "crates/podoco/src/pipelines/layout/preprocess.rs": "ff1f585a8701f66b7340095d1a9f6350fc76f85b5ebcb3659f81252edf40089e",
+      "crates/podoco/src/pipelines/layout/tests.rs": "b79253af86a1740d8c93e2ede5408b8e5aebb7a7dd46f90fe7e2270b5d564de2",
+      "crates/podoco/src/pipelines/mod.rs": "2720eb626a99126da1ee15de5609ea326a241249ed46dda875db924009ee5ca0",
+      "crates/podoco/src/results.rs": "e0ce65a8ad5c38bba64a4b84939a0a53463d9565bad98520091b8c26ea229733",
+      "crates/podoco/src/runtime/coreml/formula.rs": "7c8b6e65715a89c7db70ee173165d1833357ab95a8ea91ad5f7ef9db66249721",
+      "crates/podoco/src/runtime/coreml/mod.rs": "56d275ee8b96028d5720a15fe13ad83cad78c3400223dfd59a3c3dd8567de138",
+      "crates/podoco/src/runtime/coreml/tensor.rs": "2f59873463392bba13544ed41bede8c65c566313ceeae078855dc177851a9e99",
+      "crates/podoco/src/runtime/mod.rs": "f30c5bd7663878c8f4fc786f0cf737543bf5176455737ffd392fb0a6886575fd",
+      "crates/podoco/src/session.rs": "eebdaef2c46d61041e3c10fc483748a08c85ddc836c892c2591fb65090f22883",
+      "crates/podoco/examples/document_layout.rs": "820271bd957b4185ffab01044eff3ed92ae0590e8c72535dff77b3fffe6dd070",
+      "tools/pp_formulanet/documents.py": "a36c1b403b0d8011f7790f920b70169ee403cbf2a6a22938e6216f251d5750ee"
+    },
+    "layout_manifest": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef",
+    "formula_manifest": "f122877f62b7e03e4a80c9e85fdca274f1d49e97ae84c37119119b793c3e1140",
+    "cases_sha256": "8c0d2be80b12690cf89d1615f8e060dc8664f47ef9ec74c136a2a2fd503ca2d6",
+    "output_sha256": "d68829c819dd3e951da081051110eab3d880a2cf877f85925f8eec85b4df8e21",
+    "exit_code": 0,
+    "updates": {
+      "page_layout_ready": 50,
+      "formula_finished": 531,
+      "page_finished": 50,
+      "document_finished": 1
+    },
+    "first_formula_seconds": 14.260765290993731,
+    "document_seconds": 262.66715479099366,
+    "failures": [],
+    "boundary": "One serial native CPU+ANE document job on an active host; timings are diagnostics only."
+  },
+  "reference": {
+    "counts": {
+      "recognized": 531,
+      "inline": 436,
+      "displayed": 95
+    },
+    "mismatches": [],
+    "reference_sha256": "9d1891b5edc2584e42b32f330ab68e333cc28d587283afdf108dec5983b069a2",
+    "runner_sha256": "a06b77a8791ecb50fd4671227bee5d63d342d331ae945ea5b34c7fcb23ff3bb4"
+  },
+  "dart": {
+    "tests_passed": 6,
+    "updates_compared": 632,
+    "status": "completed",
+    "dart_version": "Dart SDK version: 3.13.4 (stable) (Tue Sep 15 01:01:15 2026 -0700) on \"macos_arm64\"",
+    "native_sha256": "29adaf5b5130e474e44c970bcadb2da7ba628a7300b15bedcae199a1e3c5c10e",
+    "sources": {
+      "crates/podoco-ffi/src/api.rs": "b91edf270714e7343a7072546cd4f11038bc685bcca7089699b60f396473b955",
+      "crates/podoco-ffi/src/handles.rs": "4ffded57d4f2c4dff2a5251b7c24e45a5229abd5071e4d937d5a9976bf1d2a16",
+      "crates/podoco-ffi/src/jobs.rs": "3c72ab489a94855ddc7e0484d26a8e1fa54502974ff3dbe2ed538c028657c3af",
+      "crates/podoco-ffi/src/lib.rs": "0813fb2ee46e59c4ea1a79390cf15d98e1c0df378ea2bb719ead05cb68c1eb78",
+      "crates/podoco-ffi/src/tests.rs": "7a9dea773fedb0d2ba3fe30052df78644f229fe8265a7f557591ee9968421660",
+      "crates/podoco-ffi/src/transport.rs": "b549865c9e73d22bf3fa9504f8d953aca0a1d754d59ed731bae2a3768642e33e",
+      "crates/podoco-ffi/src/types.rs": "89ac5c15178cdacab68093f95d29c6cf17296aee5e80f53ba93d3db96cb63249",
+      "crates/podoco-ffi/src/wire.rs": "8bc7c7a2382bfbd359607937ccf965ec70e71eadd0aefd481ac2cb4e36768696",
+      "bindings/dart/lib/podoco.dart": "021ef2665d0f40ac4a18687ce6987dc4a34b92a68c8c5bc61781073f6b8a70cb",
+      "bindings/dart/lib/src/analysis.dart": "770b680ed128a07a2f32ddab698abbc9d8f350f357506e45b80ef871565982b3",
+      "bindings/dart/lib/src/analysis_jobs.dart": "78c3a8a4facf7dd464ee8e31a5915732647036b829e99c7f7e6efa8632791e25",
+      "bindings/dart/lib/src/analysis_native.dart": "3fcd0d756e1157f0c8d525989a323f50e4f9f56d13d8a20618875b9f80ef976c",
+      "bindings/dart/lib/src/analysis_types.dart": "1f1168a8db96ac97d9e9c6b12c2f70c2d1aa12a62903c2d77a22544dbec76b60",
+      "bindings/dart/lib/src/bindings.g.dart": "cf653b70abd3c84468a3bf0c569248a9d64046a3d6745a6ff1c439a375d8d2cf",
+      "bindings/dart/test/formula_jobs_test.dart": "b8fd181e5c3c4c4a9bb98ddb5a564cf9a7849b6a078d7dd2392db2f8a1eee3cb",
+      "tools/check_formula_jobs.py": "61392d4b48bb3d0e6431f8d1c6e6983bbd6d71775a0b2050a048ea5b03f5333e"
+    },
+    "rust_updates_sha256": "d68829c819dd3e951da081051110eab3d880a2cf877f85925f8eec85b4df8e21",
+    "dart_updates_sha256": "04ba1c8f9d72f489e76e66abf3d6b91e12b27ca71c6bde1fae1d055418b65a2a",
+    "failures": []
+  },
+  "quality": {
+    "counts": {
+      "ground_truth": 811,
+      "detections": 531,
+      "pages": 50,
+      "embedded": 715,
+      "inline": 436,
+      "recognized": 531,
+      "isolated": 96,
+      "displayed": 95
+    },
+    "matched_iou050": 486,
+    "detection_recall_iou050": 0.5992601726263872,
+    "detection_precision_iou050": 0.9152542372881356,
+    "matched_recognition_exact": 238,
+    "matched_recognition_mean_similarity": 0.8745523700612572,
+    "matched_gt_crop_exact": 232,
+    "matched_gt_crop_mean_similarity": 0.8704954274616253,
+    "whole_pipeline_exact_over_all_gt": 0.2934648581997534,
+    "overlapping_formula_pairs": [
+      {
+        "page": "ibem-00",
+        "regions": [
+          365,
+          315
+        ],
+        "iou": 0.47705292208640815,
+        "inline": true
+      },
+      {
+        "page": "ibem-20",
+        "regions": [
+          465,
+          690
+        ],
+        "iou": 0.0034243496826129724,
+        "inline": true
+      },
+      {
+        "page": "ibem-20",
+        "regions": [
+          615,
+          665
+        ],
+        "iou": 0.00347287403792003,
+        "inline": true
+      },
+      {
+        "page": "ibem-21",
+        "regions": [
+          655,
+          705
+        ],
+        "iou": 0.15754564414809363,
+        "inline": false
+      },
+      {
+        "page": "ibem-21",
+        "regions": [
+          705,
+          4005
+        ],
+        "iou": 0.46262667998025914,
+        "inline": false
+      },
+      {
+        "page": "ibem-21",
+        "regions": [
+          705,
+          440
+        ],
+        "iou": 0.0014834364630938025,
+        "inline": true
+      },
+      {
+        "page": "ibem-23",
+        "regions": [
+          265,
+          315
+        ],
+        "iou": 0.002884790636661093,
+        "inline": true
+      },
+      {
+        "page": "ibem-23",
+        "regions": [
+          1390,
+          1590
+        ],
+        "iou": 0.10372335477248304,
+        "inline": true
+      },
+      {
+        "page": "ibem-23",
+        "regions": [
+          1390,
+          1440
+        ],
+        "iou": 0.005422676054047902,
+        "inline": true
+      },
+      {
+        "page": "ibem-24",
+        "regions": [
+          865,
+          940
+        ],
+        "iou": 0.2610716375108904,
+        "inline": true
+      },
+      {
+        "page": "ibem-24",
+        "regions": [
+          940,
+          965
+        ],
+        "iou": 0.5013705222577484,
+        "inline": true
+      },
+      {
+        "page": "ibem-25",
+        "regions": [
+          740,
+          665
+        ],
+        "iou": 0.6706684983228547,
+        "inline": true
+      },
+      {
+        "page": "ibem-26",
+        "regions": [
+          840,
+          940
+        ],
+        "iou": 0.47375193741371363,
+        "inline": true
+      },
+      {
+        "page": "ibem-27",
+        "regions": [
+          890,
+          915
+        ],
+        "iou": 0.5978757939531756,
+        "inline": true
+      },
+      {
+        "page": "ibem-27",
+        "regions": [
+          915,
+          840
+        ],
+        "iou": 0.18478053784071105,
+        "inline": true
+      },
+      {
+        "page": "ibem-47",
+        "regions": [
+          690,
+          415
+        ],
+        "iou": 0.44862687341200425,
+        "inline": true
+      }
+    ],
+    "number_overlap": [
+      {
+        "page": "ibem-20",
+        "formula": 5,
+        "number": 211,
+        "number_fraction": 0.5845070422535211
+      }
+    ],
+    "duplicate_regions_iou095": [
+      {
+        "page": "ibem-28",
+        "category": "heading",
+        "regions": [
+          317,
+          342
+        ],
+        "iou": 0.9978947368421053
+      },
+      {
+        "page": "ibem-49",
+        "category": "text",
+        "regions": [
+          375,
+          385
+        ],
+        "iou": 1.0
+      }
+    ],
+    "sources": {
+      "corpus_sha256": "00856f617cc050bba6459a9cc86b84eb297ff04d9f1d76730340d09e372deccc",
+      "baseline_sha256": "e68f0ee5a359b38c4638c612e5c09be6781f2223613beac54a7b7f60908f4508",
+      "metrics_sha256": "90cb3163c875dded0136617433630b6480777c48a7421c52e0d63d4d8dc56c87",
+      "native_sha256": "d68829c819dd3e951da081051110eab3d880a2cf877f85925f8eec85b4df8e21",
+      "script_sha256": "cb064fbad047d0abee900cdeb439fc13e68b6313d01008ad62ed4d781af84871"
+    },
+    "interpretation": "50-document convenience sample. IoU >= 0.5 greedy one-to-one matching. LaTeX token edit similarity is not mathematical equivalence. GT baseline has two-pixel context; deployed detector crops have zero added context. No extra NMS, equation-number merging or duplicate suppression.",
+    "missed_ground_truth_count": 325,
+    "unmatched_detection_count": 45
+  },
+  "job_outcome": {
+    "status": "completed",
+    "summary": {
+      "status": "completed",
+      "counts": {
+        "pages_total": 50,
+        "pages_finished": 50,
+        "pages_failed": 0,
+        "formulas_detected": 531,
+        "formulas_recognized": 531,
+        "formulas_failed": 0,
+        "formulas_truncated": 0,
+        "formulas_pending": 0,
+        "formulas_not_requested": 0
+      },
+      "diagnostics": []
+    },
+    "delivered": {
+      "updates_acknowledged": 632,
+      "last_sequence": 631,
+      "pages_finished": 50,
+      "formulas_finished": 531,
+      "document_finished": true
+    },
+    "error": null,
+    "progress": {
+      "phase": "finished",
+      "cancellation_requested": false,
+      "processed": {
+        "pages_total": 50,
+        "pages_finished": 50,
+        "pages_failed": 0,
+        "formulas_detected": 531,
+        "formulas_recognized": 531,
+        "formulas_failed": 0,
+        "formulas_truncated": 0,
+        "formulas_pending": 0,
+        "formulas_not_requested": 0
+      },
+      "delivered": {
+        "updates_acknowledged": 632,
+        "last_sequence": 631,
+        "pages_finished": 50,
+        "formulas_finished": 531,
+        "document_finished": true
+      },
+      "input_bytes": 0,
+      "pending_result_bytes": 0,
+      "pending_updates": 0,
+      "peak_input_bytes": 16777216,
+      "peak_result_bytes": 2113536,
+      "peak_pending_updates": 2
+    }
+  },
+  "notes": [
+    "Experimental profile; API completion is not recognition correctness or full detector recall.",
+    "Original 50-page IBEM convenience sample; CPU+ANE, cap 2048, no added crop margin or duplicate suppression.",
+    "Controlled native allocator qualifies Dart lease ownership; real pdfrx renderer lease remains M8."
+  ]
+}

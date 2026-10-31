@@ -1,0 +1,46 @@
+{
+  "package": "mathcat",
+  "version": "0.7.7",
+  "repository": "https://github.com/daisy/MathCAT",
+  "crate_sha256": "581e1d6d09391322b7827d5948349489ae5b58310f31b9cd2616ed3fefe6833a",
+  "vcs": {
+    "git": {
+      "sha1": "462754123c156b7fa9be81991a154f45f566b1f3",
+      "dirty": true
+    },
+    "path_in_vcs": ""
+  },
+  "license": "MIT",
+  "selection": "Published Rust source, manifests, build script, README and license. Rules are a separate verified asset; upstream tests/site images are omitted. include-zip is not enabled. Modified text files normalize CRLF to LF.",
+  "feature": "podoco-host disables process-global panic hook installation and host user preference discovery, and enables upstream no-unsafe. Only watch embedded Rules during include-zip builds.",
+  "patch": "mathcat-podoco-host.patch",
+  "patch_sha256": "18df027aad61905acdca0c934fd43388e523aadd159ba6cf7d5ffdde29955449",
+  "files": {
+    ".cargo_vcs_info.json": "8c043f891fc64d4f87a423cbe041de6b796068bbc7190a2c76ba6e4b23d3d3f9",
+    "Cargo.toml": "576ea4daa4e714b8cbef3673d830d42632a433f429f4cc853331c3a762e75c20",
+    "Cargo.toml.orig": "8668d640b621cba8c53b590f47bbfc505d5e6648451884c9dca7009b04fc285b",
+    "LICENSE": "80916ab19396bdb1d60b5a9b308005d9166b7893976ea710e4a0c5791b92fe32",
+    "README.md": "8d9b3481830201565b7f41031a2a0c41a0be984a6226c986130e6ea68ea3da75",
+    "build.rs": "77ba268c7131e6cc56551fb4757a85b35e7da779b01fe56edfe7e37c671f0ece",
+    "src/bin/mathml2text.rs": "ed1c822ef60ee11dc556a4e4afb20fa4c133733d1a656d4843b427dc5e7db90f",
+    "src/bin/package_rules.rs": "9584e0f4e8a63507b65c85fcf133a99b5eb3e87a5663891d05fb2d71aea56d5d",
+    "src/braille.rs": "fae375ad24788e309d199da37865e27b2cc5aba7c68075eedf9eb061ac051167",
+    "src/canonicalize.rs": "fad71743364cd4ca0d1c78132999fe9d29e53b621b19187fb5202477904712b2",
+    "src/chemistry.rs": "05691c9ba0a5055847974e34f12e8f12a8d8ae72c02327a9f746f00aac20785e",
+    "src/definitions.rs": "1c893a0f2d519c77638ecb5c7eedd184c3a5006eb5fd208933a3ae65c0e3055d",
+    "src/entities.in": "e17c6f8ad2279839d84ff905d18517b8cdfa327562c11021a9872640d86f1567",
+    "src/infer_intent.rs": "79057f2213bdbdc678a32147863ceec5a027d73da509540379783f9b70778f30",
+    "src/interface.rs": "be5d5b4a60d282e977eb39ee52ebc324ebf2e5ea688c77af2c9be92e2122fc2c",
+    "src/lib.rs": "c140834c9b331b135ef6ed4c4328611a613b34717de1bace5ac0f2cd8d666f8d",
+    "src/navigate.rs": "1c106cb8af1c7bf53174c3c17860c12773fcbe6cd4853f1b63c2cfede5fd2a80",
+    "src/operator-info.in": "b6860803afe1fee4f54516e0def4a6afc2be94a0c5bf707e52b54b573883d2e8",
+    "src/prefs.rs": "01072eaa8cfda7959eff32911919b530aaf5f9db678be9a7bcbf695f3164398c",
+    "src/pretty_print.rs": "b86fe94d8d2bda7c102af97ffad1505ab7015b1f8f5cfe0518a3247d9f951262",
+    "src/rules_archive.rs": "af19fb2bfcad619ad584f9afa22ba174ee294f24b03db1cdbdd5da2d6c21dc94",
+    "src/rustfmt.toml": "22fa16977f4ac19c33c785fbccd06050fb875218c3ece62b509c0a9c77279ab8",
+    "src/shim_filesystem.rs": "054db5688101b10f31c67c6c4dd5a2292d5e5a48f645315a7165e870b729bf62",
+    "src/speech.rs": "76ed5038396896b5ba9a105cbbacb6ef18f56df94b21734a8d94d987319fb83d",
+    "src/tts.rs": "e152670a8ed4b046072a9148f27ce3fb4684fa9b771f4ef5df10fb0879072a11",
+    "src/xpath_functions.rs": "935a1db94590006491dfc15c7f63832e9c94d62cd8ff97eb1ee4bf4da3c45101"
+  }
+}

@@ -1,0 +1,173 @@
+schema_version: 1
+id: pp-formulanet-plus-l-coreml-v1
+profile: pp-formulanet-plus-l-transformers-5.8.1-greedy2048-v1
+qualification: experimental
+repository: PaddlePaddle/PP-FormulaNet_plus-L_safetensors
+revision: 6cc004a8e91ea3f3819b05317f40b290cbe99c2b
+license: apache-2.0
+handoff_sha256: 7656d9c6efd2ba3b16c7b75ad5f6069388f5220a0e348c7add04f064aa1890eb
+artifacts:
+  encoder.mlpackage/Manifest.json:
+    bytes: 617
+    sha256: 0c774fe647fff7cdfc15dc0802515874decd6d7cf0f2a1e16999512561d69f9e
+  encoder.mlpackage/Data/com.apple.CoreML/model.mlmodel:
+    bytes: 227628
+    sha256: 8066f2abf401bb853db250c94715d06fca08033999e0e7e8595083061752df7e
+  encoder.mlpackage/Data/com.apple.CoreML/weights/weight.bin:
+    bytes: 202528768
+    sha256: d2088dc5c39d9edec07af56fd57955ce2fc96d1853202417b9ef8fe8ddcb94af
+  decoder-c256.mlpackage/Manifest.json:
+    bytes: 617
+    sha256: 4af73ee5713be371b79674391f74fc2e5ba8ec8e1f3aacf5aaf13e614b59a92f
+  decoder-c256.mlpackage/Data/com.apple.CoreML/model.mlmodel:
+    bytes: 165114
+    sha256: d94c2b73ec564bf95f148c8413b0edbbb9c6cc1bbcfb27665527c660bbcc8c88
+  decoder-c256.mlpackage/Data/com.apple.CoreML/weights/weight.bin:
+    bytes: 110175328
+    sha256: 26bb5345a5f12ee699e05134b29d6373ee75a07fdd22e5791750d6da6bb0665b
+  decoder-c2048.mlpackage/Manifest.json:
+    bytes: 617
+    sha256: 955f73bac96373e30c39db025c16cf0c950922960fbbefdbff3c2009dae37689
+  decoder-c2048.mlpackage/Data/com.apple.CoreML/model.mlmodel:
+    bytes: 165114
+    sha256: a51a59e6a246487c276651a5d3a08bd86ccc4a840cc79661007dd595cf2e21f6
+  decoder-c2048.mlpackage/Data/com.apple.CoreML/weights/weight.bin:
+    bytes: 110175328
+    sha256: 26bb5345a5f12ee699e05134b29d6373ee75a07fdd22e5791750d6da6bb0665b
+  token_embeddings.npy:
+    bytes: 102400128
+    sha256: 621d81bf7d697cd12a1d85a3516a9fefb9b43b981404d0e6589ef01e5cb7e295
+  position_embeddings.npy:
+    bytes: 5247104
+    sha256: 137ea937b1065c80498afda41b549975a85bee027316dc362cc174cb6dc56188
+checkpoint:
+  model.safetensors:
+    bytes: 727633048
+    sha256: 582848cf9b7066bb1cf3166ad75a476da492c3661ffa61bb7439f9fd098bde13
+  tokenizer_config.json:
+    bytes: 4484
+    sha256: 0bf3cca5ff1a240004932dbab09373b0e8a651f5f85f2ff6f2f9dec3f0e41947
+  config.json:
+    bytes: 1364
+    sha256: 3d5c513a525ebef73ba4e319e65de793d95aacc1062e5ce2dd851c7f109c060c
+  tokenizer.json:
+    bytes: 2140014
+    sha256: 2811d82701ec97c192fa256aa2b4516929373870ae660326cc5b1dc879b95ff2
+  processor_config.json:
+    bytes: 584
+    sha256: f1454999fcb5930c2d93e9dcd03f1adf046245e98e96a7f601dabc6ee01c3b78
+  generation_config.json:
+    bytes: 186
+    sha256: e0dc49736b0b06f19cb2074201a072cee23707b7abff4a55a24da19b14abd707
+  README.md:
+    bytes: 31
+    sha256: 4bcf87ecfbbb8e07a01b21415a970c8b53a5283bf6872b657040d3f45c9241f7
+  inference.yml:
+    bytes: 2244564
+    sha256: afc92a2737268da0499c37b0b6741da268c369fd7424667fcfeb8fa6c7b22d30
+sources:
+  conversion/formulanet/trace.py:
+    bytes: 1470
+    sha256: 0a0a02af30e08c2ec1e03269ce77ab160e9acb0317f0687965fc17fc3ff4f36c
+  conversion/formulanet/benchmark.py:
+    bytes: 10641
+    sha256: a06b77a8791ecb50fd4671227bee5d63d342d331ae945ea5b34c7fcb23ff3bb4
+  conversion/formulanet/summarize_trace.py:
+    bytes: 2134
+    sha256: cf33bd5953f5ca9a419231966ea89b5f2a2fd1d8deb49db37cd4a6139b1548ad
+  conversion/formulanet/convert.py:
+    bytes: 6485
+    sha256: 65fe0c82d1afa769a822991d3063f9b71052c320c908777dd07e4152f2ed9da1
+  conversion/formulanet/summarize.py:
+    bytes: 3975
+    sha256: a51626c7c2adda05efdec9ed0f91928cb44e4e7037c92e62c6f57f6ceddaf66f
+  conversion/formulanet/model.py:
+    bytes: 5565
+    sha256: ab9a56dc08b9cf3841b3c78fde06acf68611a9a055860adb4d24710534a3ae9c
+  conversion/formulanet/validate.py:
+    bytes: 5089
+    sha256: 7981df41ef5f047e7ec9bf52a28bcf08c61bc3ba95bd51da345bf6dbb0f85653
+  conversion/formulanet/run_comparison.py:
+    bytes: 1600
+    sha256: fdb256d55a4753e46e148f62b12331ac467b970b03c7e01d58634312d2fe2098
+  conversion/formulanet/summarize_devices.py:
+    bytes: 2399
+    sha256: c565e7872d74aa23ed134fb9b5d2339f2706f50bc8919ea170bd7e6b1e17ab58
+  conversion/formulanet/quality.py:
+    bytes: 2458
+    sha256: 64af6cf9dc8a71180be260904a3d8b57e1bbada8a3ca74cbe7274ea8b162c015
+  evaluation/recognition/metrics.py:
+    bytes: 3268
+    sha256: 90cb3163c875dded0136617433630b6480777c48a7421c52e0d63d4d8dc56c87
+  conversion/measure_doclayoutv3.py:
+    bytes: 7554
+    sha256: 47a62fe977be7956e1eda562d90ba0b76e3779f66bf141ec67d9ad2db36734a1
+  conversion/probe_doclayoutv3.py:
+    bytes: 12157
+    sha256: b0a5697c15973e612f378dbc9e8909f8658a918c74a587f2b5f2b2314b368a79
+packages:
+  torch: 2.12.0
+  torchvision: 0.27.0
+  transformers: 5.8.1
+  numpy: 2.3.5
+  Pillow: 10.4.0
+  ftfy: 6.1.1
+processor_sources:
+  image_processing_pp_formulanet.py: e4836489632bd8873b55fcc3080f826f07f4fdeeeaa5954ad82e5cc4e46a31a7
+  processing_pp_formulanet.py: 48ec921cacfb31e9d40c97fd8659acfd646714c66de6e85acf1d06a22a0ada61
+contract:
+  pixel_values:
+    dtype: float32
+    shape:
+    - 1
+    - 3
+    - 768
+    - 768
+  hidden:
+    dtype: float32
+    shape:
+    - 1
+    - 144
+    - 512
+  cross_kv:
+    dtype: float16
+    shape:
+    - 16
+    - 16
+    - 144
+    - 32
+  embedding:
+    dtype: float16
+    shape:
+    - 1
+    - 1
+    - 512
+  logits:
+    dtype: float32
+    shape:
+    - 1
+    - 50000
+  cache_capacities:
+  - 256
+  - 2048
+  layers: 8
+  heads: 16
+  head_dim: 32
+  start_token: 2
+  eos_token: 2
+  max_new_tokens: 2048
+  position_offset: 2
+  decoding: greedy-first-argmax-bytelevel-special0-22-skipped
+  preprocessing: crop-margin200-bilinear-aa-short768-bicubic-aa-thumbnail768-center-black-pad-fused-normalize
+  mean:
+  - 0.7931
+  - 0.7931
+  - 0.7931
+  std:
+  - 0.1738
+  - 0.1738
+  - 0.1738
+  postprocessing: bytelevel-utf8-lossy-plsfix-0.1.8-ftfy6.1.1-ansi-processor-normalize
+  max_text_bytes: 262144
+  host_embedding_reads: two little-endian float32 file rows per token; float32 sum
+    rounded to float16

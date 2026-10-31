@@ -1,0 +1,66 @@
+{
+  "status": "passed",
+  "host": "27.0.1",
+  "architecture": "arm64",
+  "rust": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "cargo_lock_sha256": "4f61260951f382c9706d876e94b0d964b1811f76232acd62855573aeb5552a5c",
+  "cidre_pin_sha256": "b19aedb7f87817bb546842c876d192297c4a3205a30bf6b24899dcd5d595f1b7",
+  "builds": {
+    "observer-enabled": {
+      "bytes": 467064,
+      "sha256": "debf1c4a932f0b34a82db790f60c7f95fa1b00421bccc23df8579d74169dd8c6",
+      "observer": true
+    },
+    "observer-disabled": {
+      "bytes": 449048,
+      "sha256": "f101e4933f9056f40415cd8e3f7b940b3301ca7426a05dc0032fe274d40141ce",
+      "observer": false
+    },
+    "observer-disabled-debug": {
+      "bytes": 568744,
+      "sha256": "0e41114ba96380cb987a1eefb34f43eb81fed78f2e35ae20be973fa48b6844da",
+      "observer": false
+    },
+    "observer-disabled-objc": {
+      "bytes": 449048,
+      "sha256": "7e3694adad6c87b732df2efc049b71292a9b8d4cc7081cbec0ff59ecc1c40af5",
+      "observer": false
+    }
+  },
+  "pairs": {
+    "observer-disabled-forward": {
+      "probe_calls": 8,
+      "predictions": 24
+    },
+    "observer-disabled-reverse": {
+      "probe_calls": 8,
+      "predictions": 24
+    },
+    "observer-disabled-debug-forward": {
+      "probe_calls": 8,
+      "predictions": 24
+    },
+    "observer-disabled-debug-reverse": {
+      "probe_calls": 8,
+      "predictions": 24
+    },
+    "observer-disabled-objc-forward": {
+      "probe_calls": 8,
+      "predictions": 24
+    },
+    "observer-disabled-objc-reverse": {
+      "probe_calls": 8,
+      "predictions": 24
+    },
+    "existing-mlsr-forward": {
+      "probe_calls": 4,
+      "predictions": 12
+    },
+    "existing-mlsr-reverse": {
+      "probe_calls": 4,
+      "predictions": 12
+    }
+  },
+  "mlsr_library_sha256": "a56bd49744d64be2fbae1d5c458ad214f771ef92b8905897ea1ce38d6fba1d81",
+  "scope": "CPU-only affine fixture; existing MLSR identity only when supplied"
+}

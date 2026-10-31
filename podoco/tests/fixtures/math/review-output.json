@@ -1,0 +1,500 @@
+[
+  {
+    "input": {
+      "id": "fixture-addition",
+      "input": {
+        "format": "latex",
+        "text": "x+2",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "id": "fixture-addition",
+      "value": {
+        "diagnostics": [],
+        "display_kind": "inline",
+        "mathml": "<math display=\"inline\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>x</mi><mo>+</mo><mn>2</mn></math>",
+        "options": {
+          "block_separators": ",   ",
+          "decimal_separators": ".",
+          "language": "en",
+          "speech_style": "ClearSpeak",
+          "verbosity": "Medium"
+        },
+        "provenance": {
+          "converter": "pulldown-latex-0.8.0-strict-v1",
+          "mathcat": "mathcat-0.7.7-podoco-host-v1",
+          "profile": "pulldown-latex-0.8.0-mathcat-0.7.7-strict-v1",
+          "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+          "sdk_version": "0.1.0"
+        },
+        "text": "x plus 2"
+      }
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-fraction",
+      "input": {
+        "format": "latex",
+        "text": "\\frac{a}{b}",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "id": "fixture-fraction",
+      "value": {
+        "diagnostics": [],
+        "display_kind": "inline",
+        "mathml": "<math display=\"inline\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mfrac><mrow><mi>a</mi></mrow><mrow><mi>b</mi></mrow></mfrac></math>",
+        "options": {
+          "block_separators": ",   ",
+          "decimal_separators": ".",
+          "language": "en",
+          "speech_style": "ClearSpeak",
+          "verbosity": "Medium"
+        },
+        "provenance": {
+          "converter": "pulldown-latex-0.8.0-strict-v1",
+          "mathcat": "mathcat-0.7.7-podoco-host-v1",
+          "profile": "pulldown-latex-0.8.0-mathcat-0.7.7-strict-v1",
+          "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+          "sdk_version": "0.1.0"
+        },
+        "text": "a over b"
+      }
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-root",
+      "input": {
+        "format": "latex",
+        "text": "\\sqrt{x^2+y^2}",
+        "display_kind": "displayed"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "id": "fixture-root",
+      "value": {
+        "diagnostics": [],
+        "display_kind": "displayed",
+        "mathml": "<math display=\"block\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><msqrt><mrow><msup><mi>x</mi><mn>2</mn></msup><mo>+</mo><msup><mi>y</mi><mn>2</mn></msup></mrow></msqrt></math>",
+        "options": {
+          "block_separators": ",   ",
+          "decimal_separators": ".",
+          "language": "en",
+          "speech_style": "ClearSpeak",
+          "verbosity": "Medium"
+        },
+        "provenance": {
+          "converter": "pulldown-latex-0.8.0-strict-v1",
+          "mathcat": "mathcat-0.7.7-podoco-host-v1",
+          "profile": "pulldown-latex-0.8.0-mathcat-0.7.7-strict-v1",
+          "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+          "sdk_version": "0.1.0"
+        },
+        "text": "the square root of x squared plus y squared"
+      }
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-sum",
+      "input": {
+        "format": "latex",
+        "text": "\\sum_{i=1}^{n}i",
+        "display_kind": "displayed"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "id": "fixture-sum",
+      "value": {
+        "diagnostics": [],
+        "display_kind": "displayed",
+        "mathml": "<math display=\"block\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><munderover><mo movablelimits=\"false\">∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mrow><mi>n</mi></mrow></munderover><mi>i</mi></math>",
+        "options": {
+          "block_separators": ",   ",
+          "decimal_separators": ".",
+          "language": "en",
+          "speech_style": "ClearSpeak",
+          "verbosity": "Medium"
+        },
+        "provenance": {
+          "converter": "pulldown-latex-0.8.0-strict-v1",
+          "mathcat": "mathcat-0.7.7-podoco-host-v1",
+          "profile": "pulldown-latex-0.8.0-mathcat-0.7.7-strict-v1",
+          "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+          "sdk_version": "0.1.0"
+        },
+        "text": "the sum from i is equal to 1, to n of i"
+      }
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-fenced",
+      "input": {
+        "format": "latex",
+        "text": "$$\\frac{a}{b}$$",
+        "display_kind": "displayed"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "id": "fixture-fenced",
+      "value": {
+        "diagnostics": [
+          {
+            "code": "math-fence-removed-v1",
+            "message": "Removed one enclosing math fence for expression parsing; original LaTeX is unchanged."
+          }
+        ],
+        "display_kind": "displayed",
+        "mathml": "<math display=\"block\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mfrac><mrow><mi>a</mi></mrow><mrow><mi>b</mi></mrow></mfrac></math>",
+        "options": {
+          "block_separators": ",   ",
+          "decimal_separators": ".",
+          "language": "en",
+          "speech_style": "ClearSpeak",
+          "verbosity": "Medium"
+        },
+        "provenance": {
+          "converter": "pulldown-latex-0.8.0-strict-v1",
+          "mathcat": "mathcat-0.7.7-podoco-host-v1",
+          "profile": "pulldown-latex-0.8.0-mathcat-0.7.7-strict-v1",
+          "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+          "sdk_version": "0.1.0"
+        },
+        "text": "a over b"
+      }
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-unknown",
+      "input": {
+        "format": "latex",
+        "text": "\\unknown{x}",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: unknown primitive command found\n╭─► context:\n│\n│ \\unknown{x}\n│ ^^^^^^^^^^^\n╰────────────"
+      },
+      "id": "fixture-unknown"
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-macro",
+      "input": {
+        "format": "latex",
+        "text": "\\def\\a{1}\\a",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "error": {
+        "code": "conversion",
+        "message": "user-defined macros and expansion directives are unsupported"
+      },
+      "id": "fixture-macro"
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-malformed",
+      "input": {
+        "format": "latex",
+        "text": "\\frac{x",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "error": {
+        "code": "conversion",
+        "message": "unbalanced LaTeX braces"
+      },
+      "id": "fixture-malformed"
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-mixed-fence",
+      "input": {
+        "format": "latex",
+        "text": "$x$ trailing",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: unexpected math `$` (math shift) character - this character cannot be used inside math mode\n╭─► context:\n│\n│ $x$ trailing\n│ ^^^^^^^^^^^^\n╰─────────────"
+      },
+      "id": "fixture-mixed-fence"
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-unknown-display",
+      "input": {
+        "format": "latex",
+        "text": "x",
+        "display_kind": "unknown"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "id": "fixture-unknown-display",
+      "value": {
+        "diagnostics": [
+          {
+            "code": "unknown-display-inline-v1",
+            "message": "Unknown display context uses inline conversion semantics; recognition context is unchanged."
+          }
+        ],
+        "display_kind": "inline",
+        "mathml": "<math display=\"inline\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>x</mi></math>",
+        "options": {
+          "block_separators": ",   ",
+          "decimal_separators": ".",
+          "language": "en",
+          "speech_style": "ClearSpeak",
+          "verbosity": "Medium"
+        },
+        "provenance": {
+          "converter": "pulldown-latex-0.8.0-strict-v1",
+          "mathcat": "mathcat-0.7.7-podoco-host-v1",
+          "profile": "pulldown-latex-0.8.0-mathcat-0.7.7-strict-v1",
+          "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+          "sdk_version": "0.1.0"
+        },
+        "text": "x"
+      }
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-spanish",
+      "input": {
+        "format": "latex",
+        "text": "\\frac{x+1}{2}",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "es",
+        "speech_style": "SimpleSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "id": "fixture-spanish",
+      "value": {
+        "diagnostics": [],
+        "display_kind": "inline",
+        "mathml": "<math display=\"inline\" xmlns=\"http://www.w3.org/1998/Math/MathML\"><mfrac><mrow><mi>x</mi><mo>+</mo><mn>1</mn></mrow><mrow><mn>2</mn></mrow></mfrac></math>",
+        "options": {
+          "block_separators": ",   ",
+          "decimal_separators": ".",
+          "language": "es",
+          "speech_style": "SimpleSpeak",
+          "verbosity": "Medium"
+        },
+        "provenance": {
+          "converter": "pulldown-latex-0.8.0-strict-v1",
+          "mathcat": "mathcat-0.7.7-podoco-host-v1",
+          "profile": "pulldown-latex-0.8.0-mathcat-0.7.7-strict-v1",
+          "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+          "sdk_version": "0.1.0"
+        },
+        "text": "fracción, x más 1, partido por 2, fin de fracción"
+      }
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-unsupported-locale",
+      "input": {
+        "format": "latex",
+        "text": "x",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "ko",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "error": {
+        "code": "unsupported_capability",
+        "message": "math language/style is not in the verified supported set"
+      },
+      "id": "fixture-unsupported-locale"
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-mathml",
+      "input": {
+        "format": "mathml",
+        "text": "<math><mi>x</mi><mo>+</mo><mn>2</mn></math>",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "id": "fixture-mathml",
+      "value": {
+        "diagnostics": [],
+        "display_kind": "inline",
+        "mathml": "<math><mi>x</mi><mo>+</mo><mn>2</mn></math>",
+        "options": {
+          "block_separators": ",   ",
+          "decimal_separators": ".",
+          "language": "en",
+          "speech_style": "ClearSpeak",
+          "verbosity": "Medium"
+        },
+        "provenance": {
+          "converter": "presentation-mathml-checked-v1",
+          "mathcat": "mathcat-0.7.7-podoco-host-v1",
+          "profile": "pulldown-latex-0.8.0-mathcat-0.7.7-strict-v1",
+          "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+          "sdk_version": "0.1.0"
+        },
+        "text": "x plus 2"
+      }
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-external",
+      "input": {
+        "format": "mathml",
+        "text": "<!DOCTYPE math SYSTEM \"https://example.invalid/dtd\"><math><mi>x</mi></math>",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "error": {
+        "code": "conversion",
+        "message": "MathML document types are unsupported"
+      },
+      "id": "fixture-external"
+    }
+  },
+  {
+    "input": {
+      "id": "fixture-javascript",
+      "input": {
+        "format": "mathml",
+        "text": "<math><mi onclick=\"x\">x</mi></math>",
+        "display_kind": "inline"
+      },
+      "options": {
+        "language": "en",
+        "speech_style": "ClearSpeak",
+        "verbosity": "Medium",
+        "decimal_separators": ".",
+        "block_separators": ",   "
+      }
+    },
+    "output": {
+      "error": {
+        "code": "conversion",
+        "message": "external or interactive MathML attributes are unsupported"
+      },
+      "id": "fixture-javascript"
+    }
+  }
+]

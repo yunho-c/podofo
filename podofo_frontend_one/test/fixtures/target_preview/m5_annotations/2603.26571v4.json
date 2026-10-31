@@ -1,0 +1,629 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2603.26571v4.pdf",
+    "split": "development",
+    "replaces_promoted_document": "2509.22935v2",
+    "id": "2603.26571v4",
+    "sha256": "9bf87f56486742b6fd8d9c96bb83a9d0e70a7e87c0aeac049fee3d57dc9c7fd2",
+    "source_url": "https://arxiv.org/abs/2603.26571v4",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2603.26571v4-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 153,
+        "source_bounds": [
+          436.971,
+          528.146,
+          473.562,
+          539.05
+        ],
+        "source_text": "Lu et al.",
+        "source_context": "long-standing challenge Lu et al. [2019],\n]. As bitrate decreases, both conventional",
+        "destination": {
+          "name": "cite.lu2019dvc",
+          "page": 11,
+          "raw_pdf_point": [
+            83.093,
+            244.396
+          ],
+          "point": [
+            83.093,
+            547.604
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 11,
+            "bounds": [
+              107,
+              550,
+              506,
+              581
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 11,
+            "bounds": [
+              107,
+              588,
+              507,
+              619
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "DVC: An end-to-end deep video compression framework"
+        ],
+        "reviewed": true,
+        "notes": "Complete Lu 2019 reference, including venue and pages; exclude following Ma reference."
+      },
+      {
+        "id": "2603.26571v4-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 155,
+        "source_bounds": [
+          107.004,
+          539.055,
+          165.201,
+          549.401
+        ],
+        "source_text": "Mentzer et al.",
+        "source_context": "Video compression at extremely low b\nMentzer et al. [2022], Li et al. [2024], K\nhybrid codecs and learned neural codecs\nXi",
+        "destination": {
+          "name": "cite.mentzer2022neural",
+          "page": 11,
+          "raw_pdf_point": [
+            83.093,
+            101.888
+          ],
+          "point": [
+            83.093,
+            690.112
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 11,
+            "bounds": [
+              107,
+              693,
+              506,
+              724
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 11,
+            "bounds": [
+              107,
+              654,
+              507,
+              686
+            ]
+          },
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              74,
+              506,
+              104
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Neural video compression using gans for detail synthesis and propagation"
+        ],
+        "reviewed": true,
+        "notes": "Complete Mentzer 2022 entry at the page bottom. The next page starts a separate Mercat entry. Exclude the preceding Mentzer 2020 entry and the next entry."
+      },
+      {
+        "id": "2603.26571v4-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 3,
+        "source_link_index_pymupdf": 25,
+        "source_xref": 362,
+        "source_bounds": [
+          176.914,
+          690.431,
+          183.988,
+          701.335
+        ],
+        "source_text": ".2,",
+        "source_context": "As shown in Fig.2, GVCC compresses each\na pretrained rectified-flow video model is",
+        "destination": {
+          "name": "figure.2",
+          "page": 3,
+          "raw_pdf_point": [
+            148.01,
+            472.286
+          ],
+          "point": [
+            148.01,
+            319.714
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              71,
+              505,
+              314
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              322,
+              507,
+              378
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              398,
+              506,
+              440
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Overview of the GVCC framework"
+        ],
+        "reviewed": true,
+        "notes": "Entire framework diagram: shared top pipeline, all three conditioning panels, legend and full caption. Exclude following prose."
+      },
+      {
+        "id": "2603.26571v4-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 363,
+        "source_bounds": [
+          463.638,
+          96.03,
+          478.333,
+          106.934
+        ],
+        "source_text": "3.1)",
+        "source_context": "del is conditioned. We first review\n RF specialization (Sec. 3.1), then\nity (Sec. 3.3), and codebook-driven",
+        "destination": {
+          "name": "subsection.3.1",
+          "page": 4,
+          "raw_pdf_point": [
+            108.0,
+            656.297
+          ],
+          "point": [
+            108.0,
+            135.703
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              142,
+              430,
+              154
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              162,
+              507,
+              219
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              239,
+              222,
+              506,
+              236
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Background: stochastic interpolants, flow matching, and rectified flow"
+        ],
+        "reviewed": true,
+        "notes": "Heading and complete opening paragraph ending in a colon before Equation (1); exclude the following displayed equation."
+      },
+      {
+        "id": "2603.26571v4-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 364,
+        "source_bounds": [
+          269.718,
+          106.939,
+          284.376,
+          117.843
+        ],
+        "source_text": "3.2)",
+        "source_context": "interpolant / flow-matching background and the RF s\nto-SDE conversion (Sec. 3.2), score-from-velocity (Se\nSec. 3.4), before detailing the three conditioning strateg",
+        "destination": {
+          "name": "subsection.3.2",
+          "page": 4,
+          "raw_pdf_point": [
+            108.0,
+            363.382
+          ],
+          "point": [
+            108.0,
+            428.618
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              435,
+              237,
+              447
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              455,
+              507,
+              490
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              207,
+              493,
+              506,
+              540
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "ODE-to-SDE conversion"
+        ],
+        "reviewed": true,
+        "notes": "Heading and complete opening paragraph ending with the diffusion-coefficient condition and colon; exclude Equation (5) and its underbrace label."
+      },
+      {
+        "id": "2603.26571v4-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 4,
+        "source_link_index_pymupdf": 24,
+        "source_xref": 396,
+        "source_bounds": [
+          297.143,
+          354.542,
+          304.117,
+          365.072
+        ],
+        "source_text": "(3)",
+        "source_context": "regressing conditional vector fields along these path\nantaneous velocity of Eq. (3). Sampling is usually per\n backward from x to x:",
+        "destination": {
+          "name": "equation.3",
+          "page": 4,
+          "raw_pdf_point": [
+            218.859,
+            479.636
+          ],
+          "point": [
+            218.859,
+            312.364
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              217,
+              314,
+              506,
+              329
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              298,
+              482,
+              310
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              332,
+              506,
+              379
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(3)"
+        ],
+        "reviewed": true,
+        "notes": "Complete interpolation equation with Gaussian initialization, punctuation and equation number. Exclude introductory and following prose."
+      },
+      {
+        "id": "2603.26571v4-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 4,
+        "source_link_index_pymupdf": 25,
+        "source_xref": 397,
+        "source_bounds": [
+          303.703,
+          455.074,
+          310.677,
+          465.605
+        ],
+        "source_text": "(4)\n {",
+        "source_context": "le noise injection in Eq. (4), we use the score-SDE c\nbility-flow ODE generating {p}, there exists a famil",
+        "destination": {
+          "name": "equation.4",
+          "page": 4,
+          "raw_pdf_point": [
+            271.446,
+            412.505
+          ],
+          "point": [
+            271.446,
+            379.495
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              270,
+              382,
+              506,
+              396
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              332,
+              506,
+              379
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              399,
+              506,
+              423
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(4)"
+        ],
+        "reviewed": true,
+        "notes": "Complete probability-flow ODE and equation number; exclude introducing paragraph and deterministic-process explanation."
+      },
+      {
+        "id": "2603.26571v4-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 4,
+        "source_link_index_pymupdf": 34,
+        "source_xref": 420,
+        "source_bounds": [
+          487.311,
+          638.108,
+          494.384,
+          650.064
+        ],
+        "source_text": "alit\n 6(",
+        "source_context": "y weaken strict orthogonality;\nith the saturation in Fig. 6(a)\nng design condition is",
+        "destination": {
+          "name": "figure.6",
+          "page": 18,
+          "raw_pdf_point": [
+            149.706,
+            516.269
+          ],
+          "point": [
+            149.706,
+            275.731
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 18,
+            "bounds": [
+              137,
+              71,
+              476,
+              270
+            ]
+          },
+          {
+            "page": 18,
+            "bounds": [
+              107,
+              278,
+              507,
+              345
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 18,
+            "bounds": [
+              107,
+              370,
+              507,
+              405
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Hyperparameter sweeps on UVG Beauty"
+        ],
+        "reviewed": true,
+        "notes": "Source names Figure 6(a), whose whole parent figure includes all five plots with axes/labels, shared legend and full caption. Exclude following Summary."
+      }
+    ],
+    "promoted_from": "held_out_v5",
+    "promotion_reason": "Author links followed by bracketed years and a figure link selecting the abbreviation period fall back; promote the whole paper before source-identity changes."
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "8c1afbe4c55aed6e9d6b4aca29736507bc575ccd",
+    "promoted_from": "held_out_v5",
+    "promotion_reason": "Author links followed by bracketed years and a figure link selecting the abbreviation period fall back; promote the whole paper before source-identity changes."
+  }
+}

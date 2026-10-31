@@ -1,0 +1,353 @@
+use std::hash::Hash;
+
+macro_rules! accessors {
+    (x) => {
+        #[inline]
+        pub fn x(&self) -> T {
+            self.0[0]
+        }
+
+        #[inline]
+        pub unsafe fn x_unchecked(&self) -> &T {
+            unsafe { self.0.get_unchecked(0) }
+        }
+
+        #[inline]
+        pub fn set_x(&mut self, val: T) {
+            self.0[0] = val;
+        }
+
+        #[inline]
+        pub fn r(&self) -> T {
+            self.0[0]
+        }
+
+        #[inline]
+        pub unsafe fn r_unchecked(&self) -> &T {
+            unsafe { self.0.get_unchecked(0) }
+        }
+
+        #[inline]
+        pub fn set_r(&mut self, val: T) {
+            self.0[0] = val;
+        }
+    };
+    (y) => {
+        #[inline]
+        pub fn y(&self) -> T {
+            self.0[1]
+        }
+
+        #[inline]
+        pub unsafe fn y_unchecked(&self) -> &T {
+            unsafe { self.0.get_unchecked(1) }
+        }
+
+        #[inline]
+        pub fn set_y(&mut self, val: T) {
+            self.0[1] = val;
+        }
+
+        #[inline]
+        pub fn g(&self) -> T {
+            self.0[1]
+        }
+
+        #[inline]
+        pub unsafe fn g_unchecked(&self) -> &T {
+            unsafe { self.0.get_unchecked(1) }
+        }
+
+        #[inline]
+        pub fn set_g(&mut self, val: T) {
+            self.0[1] = val;
+        }
+    };
+    (z) => {
+        #[inline]
+        pub fn z(&self) -> T {
+            self.0[2]
+        }
+
+        #[inline]
+        pub unsafe fn z_unchecked(&self) -> &T {
+            unsafe { self.0.get_unchecked(2) }
+        }
+
+        #[inline]
+        pub fn set_z(&mut self, val: T) {
+            self.0[2] = val;
+        }
+
+        #[inline]
+        pub fn b(&self) -> T {
+            self.0[2]
+        }
+
+        #[inline]
+        pub unsafe fn b_unchecked(&self) -> &T {
+            unsafe { self.0.get_unchecked(2) }
+        }
+
+        #[inline]
+        pub fn set_b(&mut self, val: T) {
+            self.0[2] = val;
+        }
+    };
+    (w) => {
+        #[inline]
+        pub fn w(&self) -> T {
+            self.0[3]
+        }
+
+        #[inline]
+        pub unsafe fn w_unchecked(&self) -> &T {
+            unsafe { self.0.get_unchecked(3) }
+        }
+
+        #[inline]
+        pub fn set_w(&mut self, val: T) {
+            self.0[3] = val;
+        }
+
+        #[inline]
+        pub fn a(&self) -> T {
+            self.0[3]
+        }
+
+        #[inline]
+        pub unsafe fn a_unchecked(&self) -> &T {
+            unsafe { self.0.get_unchecked(3) }
+        }
+
+        #[inline]
+        pub fn set_a(&mut self, val: T) {
+            self.0[3] = val;
+        }
+    };
+    (x, y) => {
+        accessors!(x);
+        accessors!(y);
+
+        #[inline]
+        pub fn xy(&self) -> Simd<T, 2, 2> {
+            Simd::with_xy(self.x(), self.y())
+        }
+    };
+    (x, y, z) => {
+        accessors!(x, y);
+        accessors!(z);
+
+        #[inline]
+        pub fn xyz(&self) -> Simd<T, 3, 3> {
+            Simd([self.x(), self.y(), self.z()])
+        }
+    };
+    (x, y, z, w) => {
+        accessors!(x, y, z);
+        accessors!(w);
+    };
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[repr(C)]
+pub struct Simd<T, const LANES: usize, const N: usize>(pub [T; LANES]);
+
+impl<T: Default + Copy, const LANES: usize, const N: usize> Default for Simd<T, LANES, N> {
+    fn default() -> Self {
+        Self([T::default(); LANES])
+    }
+}
+
+impl<T, const LANES: usize, const N: usize> std::ops::Index<usize> for Simd<T, LANES, N> {
+    type Output = T;
+
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.0[index]
+    }
+}
+
+impl<T, const LANES: usize, const N: usize> std::ops::IndexMut<usize> for Simd<T, LANES, N> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.0[index]
+    }
+}
+
+impl<T: Copy> Simd<T, 1, 1> {
+    #[inline]
+    pub fn with_x(x: T) -> Self {
+        Self([x])
+    }
+
+    accessors!(x);
+}
+
+impl<T: Copy> Simd<T, 2, 2> {
+    #[inline]
+    pub const fn with_xy(x: T, y: T) -> Self {
+        Self([x, y])
+    }
+
+    #[inline]
+    pub fn with_rg(r: T, g: T) -> Self {
+        Self([r, g])
+    }
+
+    accessors!(x, y);
+
+    pub fn load(vals: &[T; 2]) -> Self {
+        Self(*vals)
+    }
+}
+
+impl<T: Default + Copy> Simd<T, 4, 3> {
+    #[inline]
+    pub fn with_xyz(x: T, y: T, z: T) -> Self {
+        Self([x, y, z, Default::default()])
+    }
+
+    #[inline]
+    pub fn with_rgb(r: T, g: T, b: T) -> Self {
+        Self([r, g, b, Default::default()])
+    }
+
+    accessors!(x, y, z);
+}
+
+impl Simd<f32, 4, 3> {
+    #[inline]
+    pub const fn with_xyz_f32(x: f32, y: f32, z: f32) -> Self {
+        Self([x, y, z, 0.0])
+    }
+
+    #[inline]
+    pub const fn with_rgb_f32(r: f32, g: f32, b: f32) -> Self {
+        Self([r, g, b, 0.0])
+    }
+
+    #[inline]
+    pub fn dot(&self, other: &Self) -> f32 {
+        self.0[0] * other.0[0] + self.0[1] * other.0[1] + self.0[2] * other.0[2]
+    }
+
+    #[inline]
+    pub fn fmla(&self, n: &Self, m: &Self) -> Self {
+        Self([
+            self.0[0] + n.0[0] * m.0[0],
+            self.0[1] + n.0[1] * m.0[1],
+            self.0[2] + n.0[2] * m.0[2],
+            0.0,
+        ])
+    }
+}
+
+impl<T: Copy> Simd<T, 4, 4> {
+    #[inline]
+    pub const fn with_xyzw(x: T, y: T, z: T, w: T) -> Self {
+        Self([x, y, z, w])
+    }
+
+    #[inline]
+    pub const fn with_rgba(r: T, g: T, b: T, a: T) -> Self {
+        Self([r, g, b, a])
+    }
+
+    accessors!(x, y, z, w);
+
+    pub fn load(vals: &[T; 4]) -> Self {
+        Self(*vals)
+    }
+}
+
+impl Simd<f32, 4, 4> {
+    #[inline]
+    pub const fn with_xyzw_f32(x: f32, y: f32, z: f32, w: f32) -> Self {
+        Self([x, y, z, w])
+    }
+
+    #[inline]
+    pub const fn with_rgba_f32(r: f32, g: f32, b: f32, a: f32) -> Self {
+        Self([r, g, b, a])
+    }
+
+    #[inline]
+    pub fn with_xyz(xyz: &super::f32x3, w: f32) -> Self {
+        Self([xyz.x(), xyz.y(), xyz.z(), w])
+    }
+
+    #[inline]
+    pub fn dot(&self, other: &Self) -> f32 {
+        self.0[0] * other.0[0]
+            + self.0[1] * other.0[1]
+            + self.0[2] * other.0[2]
+            + self.0[3] * other.0[3]
+    }
+
+    #[inline]
+    pub fn fmla(&self, n: &Self, m: &Self) -> Self {
+        Self([
+            self.0[0] + n.0[0] * m.0[0],
+            self.0[1] + n.0[1] * m.0[1],
+            self.0[2] + n.0[2] * m.0[2],
+            self.0[3] + n.0[3] * m.0[3],
+        ])
+    }
+
+    #[inline]
+    pub fn mul_f32(&self, val: f32) -> Self {
+        Self([
+            self.0[0] * val,
+            self.0[1] * val,
+            self.0[2] * val,
+            self.0[3] * val,
+        ])
+    }
+
+    #[inline]
+    pub fn div_f32(&self, val: f32) -> Self {
+        Self([
+            self.0[0] / val,
+            self.0[1] / val,
+            self.0[2] / val,
+            self.0[3] / val,
+        ])
+    }
+}
+
+#[cfg(feature = "half")]
+impl Simd<half::f16, 4, 4> {
+    #[inline]
+    pub const fn with_xyzw_f16(x: half::f16, y: half::f16, z: half::f16, w: half::f16) -> Self {
+        Self([x, y, z, w])
+    }
+
+    #[inline]
+    pub const fn with_rgba_f16(r: half::f16, g: half::f16, b: half::f16, a: half::f16) -> Self {
+        Self([r, g, b, a])
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use crate::simd::{f32x2, f32x4x4};
+
+    #[test]
+    fn basics() {
+        let mut f = f32x2::with_xy(0., 0.);
+        f.set_x(10.0);
+        assert_eq!(f.r(), 10.0);
+
+        let mut f = f32x4x4::identity();
+        assert_eq!(f[0].x(), 1.0);
+
+        f[0].set_y(10.0);
+        assert_eq!(f[0].y(), 10.0);
+
+        let mut f = f32x4x4::identity();
+        f.set_tx(2.0);
+        f.set_ty(3.0);
+        f.set_tz(4.0);
+
+        assert_eq!(f, f32x4x4::translate(2.0, 3.0, 4.0));
+    }
+}

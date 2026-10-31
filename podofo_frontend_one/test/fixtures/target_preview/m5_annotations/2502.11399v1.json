@@ -1,0 +1,724 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2502.11399v1.pdf",
+    "split": "development",
+    "id": "2502.11399v1",
+    "sha256": "810bf908de2ff1fcb3c20761aa61947892a63d36f451cb40f4cf97e367c1c59d",
+    "source_url": "https://arxiv.org/abs/2502.11399v1",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2502.11399v1-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 2,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 264,
+        "source_bounds": [
+          106.608,
+          243.599,
+          112.48,
+          255.468
+        ],
+        "source_text": "Ch\ne1,",
+        "source_context": "GB18030-2000 Chinese font comprising 27,533\nto FounderType1, a Chinese font company. Ad\nnecessitates adherence to typography-spec",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 2,
+          "raw_pdf_point": [
+            56.718,
+            92.623
+          ],
+          "point": [
+            56.718,
+            699.377
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Footnote control outside the four target groups."
+      },
+      {
+        "id": "2502.11399v1-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 2,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 266,
+        "source_bounds": [
+          153.852,
+          311.563,
+          164.184,
+          319.191
+        ],
+        "source_text": "[13,",
+        "source_context": "previous methods have leveraged generative models to g\naccurate and diverse fonts [13, 19, 20, 29–32, 34–37, 40, 41",
+        "destination": {
+          "name": "cite.JiangDCFont2017",
+          "page": 14,
+          "raw_pdf_point": [
+            53.798,
+            523.009
+          ],
+          "point": [
+            53.798,
+            268.991
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 14,
+            "bounds": [
+              53,
+              271,
+              296,
+              295
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 14,
+            "bounds": [
+              53,
+              247,
+              296,
+              271
+            ]
+          },
+          {
+            "page": 14,
+            "bounds": [
+              53,
+              295.5,
+              296,
+              327
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "[13]",
+          "DCFont"
+        ],
+        "reviewed": true,
+        "notes": "Complete three-line entry including venue and page range."
+      },
+      {
+        "id": "2502.11399v1-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 2,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 267,
+        "source_bounds": [
+          166.402,
+          311.563,
+          176.733,
+          319.191
+        ],
+        "source_text": "19,",
+        "source_context": "vious methods have leveraged generative models to gene\nurate and diverse fonts [13, 19, 20, 29–32, 34–37, 40, 41]. T",
+        "destination": {
+          "name": "cite.liu2024qtfont",
+          "page": 14,
+          "raw_pdf_point": [
+            53.798,
+            363.606
+          ],
+          "point": [
+            53.798,
+            428.394
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 14,
+            "bounds": [
+              53,
+              430.5,
+              296,
+              454.5
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 14,
+            "bounds": [
+              53,
+              406,
+              296,
+              430.5
+            ]
+          },
+          {
+            "page": 14,
+            "bounds": [
+              53,
+              455,
+              296,
+              486
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "[19]",
+          "QT-Font"
+        ],
+        "reviewed": true,
+        "notes": "Complete three-line entry; each source list annotation refers to a single number."
+      },
+      {
+        "id": "2502.11399v1-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 11,
+        "source_xref": 276,
+        "source_bounds": [
+          210.654,
+          464.36,
+          242.16,
+          474.628
+        ],
+        "source_text": "Figure 1,",
+        "source_context": "specific character examples, making it especially\nr non-experts. As shown in Figure 1, users can cre-\nts containing numerous characters by iteratively\nTo th\nenables",
+        "destination": {
+          "name": "figure.caption.1",
+          "page": 1,
+          "raw_pdf_point": [
+            53.798,
+            499.738
+          ],
+          "point": [
+            53.798,
+            292.262
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 1,
+            "bounds": [
+              58,
+              299,
+              554,
+              489
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              53,
+              504,
+              560,
+              556
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 1,
+            "bounds": [
+              53,
+              563,
+              296,
+              706
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              317,
+              564,
+              560,
+              650
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 1:"
+        ],
+        "reviewed": true,
+        "notes": "All four labeled design stages, arrows, input/output assets and full five-line caption."
+      },
+      {
+        "id": "2502.11399v1-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 367,
+        "source_bounds": [
+          103.91,
+          543.66,
+          145.355,
+          553.79
+        ],
+        "source_text": "Section 4.1)",
+        "source_context": "model generates the bitmap representation of characte\nvariables (see Section 4.1).",
+        "destination": {
+          "name": "subsection.4.1",
+          "page": 5,
+          "raw_pdf_point": [
+            53.798,
+            372.158
+          ],
+          "point": [
+            53.798,
+            419.842
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              53,
+              425,
+              270,
+              434
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              53,
+              439,
+              296,
+              602
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              53,
+              408,
+              296,
+              420
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              88,
+              608,
+              296,
+              620
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              53,
+              624,
+              296,
+              685
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "4.1",
+          "Preliminary of Font Generative Model"
+        ],
+        "reviewed": true,
+        "notes": "Heading and full opening text block through the colon preceding equation 1; exclude equation and next paragraph."
+      },
+      {
+        "id": "2502.11399v1-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 4,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 398,
+        "source_bounds": [
+          262.76,
+          612.52,
+          294.082,
+          622.789
+        ],
+        "source_text": "Figure 2,",
+        "source_context": "le and user-friendly, particularly for\nd fonts before. As shown in Figure 2,\nesign area, the multimodal input area,\ncharacter into SVG fo\nalgorithm [24].\nThe three control",
+        "destination": {
+          "name": "figure.caption.7",
+          "page": 4,
+          "raw_pdf_point": [
+            53.798,
+            713.793
+          ],
+          "point": [
+            53.798,
+            78.207
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              69,
+              96,
+              543,
+              350
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              53,
+              366,
+              560,
+              440
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              53,
+              459,
+              296,
+              553
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              460,
+              560,
+              621
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2:"
+        ],
+        "reviewed": true,
+        "notes": "All four UI areas including surrounding labels and full seven-line caption."
+      },
+      {
+        "id": "2502.11399v1-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 399,
+        "source_bounds": [
+          375.66,
+          514.271,
+          416.083,
+          524.705
+        ],
+        "source_text": "e Section 4.4)",
+        "source_context": "font-\nrative\ndetermined by either Bayesian optimization or multim\nence inputs (see Section 4.4). The image viewer shows th\nfocused character (“A” in Figure 2) in the selected styl",
+        "destination": {
+          "name": "subsection.4.4",
+          "page": 6,
+          "raw_pdf_point": [
+            317.955,
+            460.767
+          ],
+          "point": [
+            317.955,
+            331.233
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 6,
+            "bounds": [
+              317,
+              333,
+              560,
+              356
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              317,
+              360,
+              561,
+              382
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 6,
+            "bounds": [
+              317,
+              207,
+              560,
+              303
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              396,
+              389,
+              560,
+              411
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              317,
+              419,
+              560,
+              507
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "4.4",
+          "Multimodal Bayesian Optimization"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line heading and two-line introductory text block; equation and where block follow separately."
+      },
+      {
+        "id": "2502.11399v1-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 4,
+        "source_xref": 429,
+        "source_bounds": [
+          316.959,
+          678.108,
+          357.84,
+          688.542
+        ],
+        "source_text": "Equation 2",
+        "source_context": "hitecture and training\nify the content image\nthe fewest trials because evaluating(·\nEquation 2 using traditional Bayesian o\nbe suitable for many design tasks. This i",
+        "destination": {
+          "name": "equation.4.2",
+          "page": 5,
+          "raw_pdf_point": [
+            549.495,
+            185.464
+          ],
+          "point": [
+            549.495,
+            606.536
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              402,
+              610,
+              475,
+              632
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              548,
+              613,
+              560,
+              624
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              317,
+              587,
+              560,
+              608
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              317,
+              635,
+              560,
+              709
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Include optimization domain below arg max and the separate number."
+      },
+      {
+        "id": "2502.11399v1-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 6,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 489,
+        "source_bounds": [
+          504.513,
+          463.001,
+          544.455,
+          473.269
+        ],
+        "source_text": "e Equation 8 a",
+        "source_context": "ction that measures how good the currently\nerceived by the user. To solve Equation 8 and\n users can perform three different actions:",
+        "destination": {
+          "name": "equation.4.8",
+          "page": 6,
+          "raw_pdf_point": [
+            549.495,
+            406.563
+          ],
+          "point": [
+            549.495,
+            385.437
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 6,
+            "bounds": [
+              396,
+              389,
+              480,
+              411
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              548,
+              392,
+              560,
+              403
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 6,
+            "bounds": [
+              317,
+              360,
+              561,
+              382
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              317,
+              419,
+              560,
+              507
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(8)"
+        ],
+        "reviewed": true,
+        "notes": "Complete objective, subscript domain, and equation number."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "dbc0649"
+  }
+}

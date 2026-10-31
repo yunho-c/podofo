@@ -53,6 +53,12 @@ dependencies:
   crypto: ^3.0.7
   ffi: ^2.1.5
   pdfium_dart: 0.3.1
+  podoco:
+    path: ../podoco/bindings/dart
+  podoco_flutter:
+    path: ../podoco/bindings/flutter
+  podoco_app_models:
+    path: .podoco/model_assets
   mlsr:
     path: .mlsr/sdk/bindings/dart
   mlsr_flutter:
@@ -168,5 +174,7 @@ flutter_launcher_icons:
 # Feature flags are selected when preparing, so Apple flags never reach Windows.
 hooks:
   user_defines:
+    podoco:
+      native-library: .podoco/native/podoco_ffi
     mlsr:
       native-library: .mlsr/native/mlsr_ffi

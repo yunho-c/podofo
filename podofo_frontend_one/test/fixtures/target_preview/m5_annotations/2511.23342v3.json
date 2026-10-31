@@ -1,0 +1,729 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2511.23342v3.pdf",
+    "split": "development",
+    "id": "2511.23342v3",
+    "sha256": "c47224211665bc4d79f52c5797597038b17c604de2e1cac24e16935bbb59d251",
+    "source_url": "https://arxiv.org/abs/2511.23342v3",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2511.23342v3-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 25,
+        "source_bounds": [
+          192.707,
+          540.869,
+          204.66,
+          552.821
+        ],
+        "source_text": "[29,",
+        "source_context": "Flow models [29,31] and diffusion model\nin generative modeling, enabling a wide",
+        "destination": {
+          "name": "cite.lipman2022flow",
+          "page": 16,
+          "raw_pdf_point": [
+            134.765,
+            250.467
+          ],
+          "point": [
+            134.765,
+            541.533
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 16,
+            "bounds": [
+              134,
+              543,
+              482,
+              565
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 16,
+            "bounds": [
+              134,
+              520,
+              482,
+              542
+            ]
+          },
+          {
+            "page": 16,
+            "bounds": [
+              134,
+              566,
+              482,
+              587
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Flow matching for generative modeling"
+        ],
+        "reviewed": true,
+        "notes": "Individually linked member 29 inside [29,31]; complete two-line entry."
+      },
+      {
+        "id": "2511.23342v3-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 26,
+        "source_bounds": [
+          205.898,
+          540.869,
+          217.851,
+          552.821
+        ],
+        "source_text": ",31]",
+        "source_context": "Flow models [29,31] and diffusion models [4\nin generative modeling, enabling a wide ran",
+        "destination": {
+          "name": "cite.liu2022flow",
+          "page": 16,
+          "raw_pdf_point": [
+            134.765,
+            205.398
+          ],
+          "point": [
+            134.765,
+            586.602
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 16,
+            "bounds": [
+              134,
+              588,
+              482,
+              610
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 16,
+            "bounds": [
+              134,
+              566,
+              482,
+              587
+            ]
+          },
+          {
+            "page": 16,
+            "bounds": [
+              134,
+              611,
+              482,
+              632
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Flow straight and fast"
+        ],
+        "reviewed": true,
+        "notes": "Individually linked member 31 inside [29,31]; exclude reference 30 between the two requested targets."
+      },
+      {
+        "id": "2511.23342v3-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 10,
+        "source_xref": 147,
+        "source_bounds": [
+          410.031,
+          523.317,
+          417.004,
+          534.108
+        ],
+        "source_text": "1",
+        "source_context": "ed couplings, yielding markedly straighter\n learning problem. Fig. 1 highlights this\n original (unrectified) trajectories pro-",
+        "destination": {
+          "name": "figure.caption.2",
+          "page": 2,
+          "raw_pdf_point": [
+            134.765,
+            681.644
+          ],
+          "point": [
+            134.765,
+            110.356
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              134,
+              116,
+              482,
+              235
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              134,
+              243,
+              482,
+              330
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              134,
+              355,
+              482,
+              474
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 1:"
+        ],
+        "reviewed": true,
+        "notes": "All three plots, inset photos, axis/panel labels and the full eight-line caption form the figure."
+      },
+      {
+        "id": "2511.23342v3-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 19,
+        "source_xref": 190,
+        "source_bounds": [
+          159.756,
+          491.883,
+          174.475,
+          503.836
+        ],
+        "source_text": "3.1)",
+        "source_context": "In this section, we first review \n(Sec. 3.1). We then identify th\ndent coupling induces highly cu",
+        "destination": {
+          "name": "subsection.3.1",
+          "page": 4,
+          "raw_pdf_point": [
+            134.765,
+            222.139
+          ],
+          "point": [
+            134.765,
+            569.861
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              134,
+              572,
+              454,
+              583
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              134,
+              593,
+              482,
+              653
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              134,
+              480,
+              482,
+              549
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              267,
+              655,
+              348,
+              666
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.1",
+          "One-Step Flow-Based"
+        ],
+        "reviewed": true,
+        "notes": "Opening text block ends in a colon; the following displayed interpolation is separate."
+      },
+      {
+        "id": "2511.23342v3-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 20,
+        "source_xref": 191,
+        "source_bounds": [
+          158.305,
+          515.793,
+          173.024,
+          527.746
+        ],
+        "source_text": "3.2)",
+        "source_context": "dent coupling induces highly cu\n(Sec. 3.2). Finally, we introduce\nrectified, substantially straighter",
+        "destination": {
+          "name": "subsection.3.2",
+          "page": 6,
+          "raw_pdf_point": [
+            134.765,
+            580.212
+          ],
+          "point": [
+            134.765,
+            211.788
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 6,
+            "bounds": [
+              134,
+              214,
+              332,
+              225
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              134,
+              237,
+              482,
+              296
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 6,
+            "bounds": [
+              134,
+              157,
+              482,
+              190
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              134,
+              297,
+              482,
+              426
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.2",
+          "Taming the Curvature Bottleneck"
+        ],
+        "reviewed": true,
+        "notes": "Heading and complete first paragraph, including the inline coupling expression and Fig. 2a reference."
+      },
+      {
+        "id": "2511.23342v3-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 6,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 201,
+        "source_bounds": [
+          282.646,
+          180.61,
+          289.618,
+          192.563
+        ],
+        "source_text": "2)",
+        "source_context": "a single evaluation uθ(z, 0, 1), avoiding the num\nFlow Matching (cf. Eq. 2).",
+        "destination": {
+          "name": "equation.2",
+          "page": 5,
+          "raw_pdf_point": [
+            277.101,
+            287.245
+          ],
+          "point": [
+            277.101,
+            504.755
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              235,
+              523,
+              381,
+              554
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              467,
+              534,
+              482,
+              546
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              134,
+              497,
+              482,
+              519
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              134,
+              558,
+              482,
+              580
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Complete ODE sampling equation including integration limits and the detached number. PDF text uses LaTeX replacement text; source rendering establishes the visible bounds."
+      },
+      {
+        "id": "2511.23342v3-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 6,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 202,
+        "source_bounds": [
+          395.528,
+          283.967,
+          402.501,
+          295.919
+        ],
+        "source_text": "2a",
+        "source_context": "tribution \n^{0}_ {\\ b x \\bz }(\\bx ,\\bz )=p_{\\bx }(\\bx )\\,p_{\\bz }(\\bz ), which is\nrative trajectories (Fig. 2a).\nn-velocity field on such curved trajectories",
+        "destination": {
+          "name": "figure.caption.3",
+          "page": 5,
+          "raw_pdf_point": [
+            134.765,
+            681.644
+          ],
+          "point": [
+            134.765,
+            110.356
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              134,
+              118,
+              482,
+              209
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              134,
+              217,
+              482,
+              284
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              134,
+              306,
+              482,
+              328
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Fig. 2:"
+        ],
+        "reviewed": true,
+        "notes": "Source Fig. 2a refers to panel a; its PDF destination is the whole Figure 2. Annotate the complete two-panel comparison and shared caption, preserving the named panel in context."
+      },
+      {
+        "id": "2511.23342v3-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 7,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 212,
+        "source_bounds": [
+          255.313,
+          341.206,
+          261.912,
+          353.398
+        ],
+        "source_text": "nin\n 8)",
+        "source_context": "Stage C: CFG fine-tuning\nFine-tune uθ on vcfg\nω\n(Eq. 8) using the loop in Stage \nReturn u",
+        "destination": {
+          "name": "equation.8",
+          "page": 7,
+          "raw_pdf_point": [
+            214.371,
+            191.212
+          ],
+          "point": [
+            214.371,
+            600.788
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 7,
+            "bounds": [
+              209,
+              622,
+              406,
+              638
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              467,
+              624,
+              482,
+              636
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 7,
+            "bounds": [
+              134,
+              580,
+              482,
+              614
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              134,
+              644,
+              482,
+              666
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(8)"
+        ],
+        "reviewed": true,
+        "notes": "Full classifier-free guidance expression with superscript and all conditioning terms; equation number 8 is separate from the expression."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "0f10834",
+    "promoted_from": "held_out_v1",
+    "promotion_reason": "Panel-qualified Figure 2a source points to whole Figure 2; the preserved first held-out fallback drives explicit panel-to-parent identity development."
+  }
+}

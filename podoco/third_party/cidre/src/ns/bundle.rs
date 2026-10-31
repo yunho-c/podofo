@@ -1,0 +1,80 @@
+use crate::{arc, define_cls, define_obj_type, ns, objc};
+
+define_obj_type!(
+    #[doc(alias = "NSBundle")]
+    pub Bundle(ns::Id)
+);
+
+impl Bundle {
+    #[objc::init(initWithPath:)]
+    pub fn init_with_path(self, path: &ns::String) -> Option<arc::R<Bundle>>;
+
+    define_cls!(NS_BUNDLE);
+
+    #[objc::msg_send(mainBundle)]
+    pub fn main() -> arc::R<Self>;
+
+    pub fn with_path(path: &ns::String) -> Option<arc::R<Self>> {
+        Self::alloc().init_with_path(path)
+    }
+
+    #[objc::msg_send(allBundles)]
+    pub fn all_bundles() -> arc::R<ns::Array<Self>>;
+
+    #[objc::msg_send(allFrameworks)]
+    pub fn all_frameworks() -> arc::R<ns::Array<Self>>;
+
+    #[objc::msg_send(isLoaded)]
+    pub fn is_loaded(&self) -> bool;
+
+    #[objc::msg_send(load)]
+    pub fn load(&self) -> bool;
+
+    #[objc::msg_send(unload)]
+    pub fn unload(&self) -> bool;
+
+    /// `NSLocalizedString`: looks `key` up in `table` (`Localizable` when `None`) and returns
+    /// `value` (or the key itself when `value` is `None`/empty) if it is missing.
+    #[objc::msg_send(localizedStringForKey:value:table:)]
+    pub fn loc_string(
+        &self,
+        key: &ns::String,
+        value: Option<&ns::String>,
+        table: Option<&ns::String>,
+    ) -> arc::R<ns::String>;
+
+    #[objc::msg_send(bundleURL)]
+    pub fn bundle_url(&self) -> arc::R<ns::Url>;
+
+    #[objc::msg_send(bundlePath)]
+    pub fn bundle_path(&self) -> arc::R<ns::String>;
+
+    #[objc::msg_send(bundleIdentifier)]
+    pub fn bundle_id(&self) -> Option<arc::R<ns::String>>;
+}
+
+unsafe extern "C" {
+    static NS_BUNDLE: &'static objc::Class<Bundle>;
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::ns;
+
+    #[test]
+    fn basics() {
+        let bundle = ns::Bundle::main();
+
+        let loc_string = bundle.loc_string(ns::str!(c"no-key"), None, None);
+        assert_eq!(ns::str!(c"no-key"), &loc_string);
+
+        assert!(bundle.bundle_id().is_none());
+        assert!(!bundle.bundle_path().is_empty());
+
+        let bundles = ns::Bundle::all_frameworks();
+        assert!(!bundles.is_empty());
+
+        let bundles = ns::Bundle::all_bundles();
+        assert!(!bundles.is_empty());
+    }
+}

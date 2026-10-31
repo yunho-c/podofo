@@ -6,11 +6,14 @@ PODS:
   - objectbox_flutter_libs (0.0.1):
     - FlutterMacOS
     - ObjectBox (= 5.3.0)
+  - podoco_flutter (0.1.0):
+    - FlutterMacOS
 
 DEPENDENCIES:
   - FlutterMacOS (from `Flutter/ephemeral`)
   - mlsr_flutter (from `Flutter/ephemeral/.symlinks/plugins/mlsr_flutter/macos`)
   - objectbox_flutter_libs (from `Flutter/ephemeral/.symlinks/plugins/objectbox_flutter_libs/macos`)
+  - podoco_flutter (from `Flutter/ephemeral/.symlinks/plugins/podoco_flutter/macos`)
 
 SPEC REPOS:
   trunk:
@@ -23,12 +26,15 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/mlsr_flutter/macos
   objectbox_flutter_libs:
     :path: Flutter/ephemeral/.symlinks/plugins/objectbox_flutter_libs/macos
+  podoco_flutter:
+    :path: Flutter/ephemeral/.symlinks/plugins/podoco_flutter/macos
 
 SPEC CHECKSUMS:
   FlutterMacOS: c232990155153907050900a2e175c7773903ba4e
   mlsr_flutter: 44767d5d7a6e7dc0ef0031a8f483a0c0e78afa58
   ObjectBox: 2aae8ad350012cb53c6e7848064307cf68617f73
   objectbox_flutter_libs: c6ec3df598aa194da1cdf929fc9640bbc8f58be1
+  podoco_flutter: 79435cda5ddcf4c0dfce8452d72647fcd473fbaf
 
 PODFILE CHECKSUM: 26ee6f5033708847cf1376fbc9a71d19413c5b16
 

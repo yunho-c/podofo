@@ -1,0 +1,135 @@
+{
+  "fixture": {
+    "source_pixels_sha256": "d917ab9333b651e3e7d5582b6a36f4622bbd60fce6b10219e15ca3f6c0345029",
+    "pdf_sha256": "e3bda3bdd501a74c26aad5fbf99595c419f5688843d716df8dd420115be8cab2",
+    "width": 1447,
+    "height": 2048
+  },
+  "tests": 8,
+  "handoff": {
+    "parity": true,
+    "recognized": 16,
+    "handoffs": [
+      {
+        "leased": false,
+        "pages": 1,
+        "renderer_leases": 0,
+        "released": 0,
+        "copies_per_handoff": 2,
+        "bytes_per_copy_path": 11853824,
+        "peak_live_renderer_bytes": 0,
+        "handoff_microseconds": 1650,
+        "peak_job_input_bytes": 16777216
+      },
+      {
+        "leased": true,
+        "pages": 1,
+        "renderer_leases": 1,
+        "released": 1,
+        "copies_per_handoff": 0,
+        "bytes_per_copy_path": 0,
+        "peak_live_renderer_bytes": 11853824,
+        "handoff_microseconds": 418,
+        "peak_job_input_bytes": 16777216
+      }
+    ]
+  },
+  "benchmark": {
+    "width": 1447,
+    "height": 2048,
+    "bytes": 11853824,
+    "warmup_pairs": 4,
+    "alternating_pairs": 20,
+    "microseconds": {
+      "copy": [
+        501,
+        847,
+        539,
+        915,
+        498,
+        983,
+        512,
+        887,
+        530,
+        893,
+        419,
+        919,
+        501,
+        830,
+        521,
+        878,
+        525,
+        792,
+        523,
+        602
+      ],
+      "lease": [
+        195,
+        122,
+        181,
+        132,
+        159,
+        345,
+        154,
+        113,
+        171,
+        119,
+        176,
+        125,
+        162,
+        139,
+        156,
+        116,
+        154,
+        120,
+        186,
+        153
+      ]
+    },
+    "boundary": "analysisImageInput only; rendering and release excluded",
+    "copy_summary_us": {
+      "minimum": 419,
+      "median": 570.5,
+      "maximum": 983
+    },
+    "lease_summary_us": {
+      "minimum": 113,
+      "median": 154.0,
+      "maximum": 345
+    }
+  },
+  "manifests": {
+    "/Users/yunhocho/GitHub/podofo-podoco/podoco/model-assets/pp-doclayout-v3-m2": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef",
+    "/Users/yunhocho/GitHub/podofo-podoco/podoco/model-assets/pp-formulanet-plus-l-m6": "f122877f62b7e03e4a80c9e85fdca274f1d49e97ae84c37119119b793c3e1140"
+  },
+  "native_sha256": "6af152e5e7c1786bfd4c04adaa074e011c1fc153a7fb985f0a3d67892190357c",
+  "failures": [],
+  "flutter": {
+    "frameworkVersion": "3.47.5",
+    "channel": "stable",
+    "repositoryUrl": "https://github.com/flutter/flutter.git",
+    "frameworkRevision": "6a19cca56475dbfba1478ee68d7bd0c2ef891da1",
+    "frameworkCommitDate": "2026-09-17 14:13:22 -0400",
+    "engineRevision": "af7e796e161ae0bb1ff0758c71a7105418bd9ded",
+    "engineCommitDate": "2026-09-16 18:35:09.000Z",
+    "engineContentHash": "ab598368592da0064197e2bc15c7f5b0a2c6bb1f",
+    "engineBuildDate": "2026-09-16 15:35:21.428",
+    "dartSdkVersion": "3.13.4",
+    "devToolsVersion": "2.60.0",
+    "flutterVersion": "3.47.5",
+    "flutterRoot": "/Users/yunhocho/fvm/versions/3.47.5"
+  },
+  "app_validation": {
+    "tests_passed": 279,
+    "tests_skipped": 6,
+    "skip_scope": "Four opt-in MLSR tests and two explicit M8 corpus/benchmark tests; all eight M8 cases passed separately.",
+    "analyze": "passed",
+    "release_arm64": "passed",
+    "deep_strict_local_signing": "passed",
+    "logs": {
+      "podofo_frontend_one/build/m8-release-build.log": "ca921fcdc2a012f124b5460c7e87881961748e427356127f409768d0135fcbf7",
+      "podofo_frontend_one/build/m8-full-tests.log": "74fc54d96ff933d6bb4060e271a6738a3a05e3c13c951dca31fcd4f9dc850e66",
+      "podofo_frontend_one/build/m8-analyze-final.log": "3acd57f4854a63e8fcac650b8e2dd671ec5676a7c71456e7353e94e15b94590b"
+    }
+  }
+}

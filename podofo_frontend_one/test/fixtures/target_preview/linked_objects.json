@@ -1,0 +1,277 @@
+{
+  "schema_version": 1,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "pdf": "linked_objects.pdf",
+  "sha256": "23f5ac42892f238a98b87edf58029ef75a47f2a4068a3f4605abdee151af1262",
+  "page_sizes": [
+    [
+      612,
+      792
+    ],
+    [
+      612,
+      792
+    ],
+    [
+      612,
+      792
+    ]
+  ],
+  "cases": [
+    {
+      "id": "reference-23",
+      "kind": "citation",
+      "source_page": 1,
+      "source_text": "Citation [23]",
+      "source_bounds": [
+        48,
+        180,
+        142.704,
+        210
+      ],
+      "destination": {
+        "page": 2,
+        "command": "xyz",
+        "point": [
+          48,
+          78
+        ]
+      },
+      "required_parts": [
+        [
+          48,
+          78,
+          292,
+          129
+        ]
+      ],
+      "excluded_neighbors": [
+        [
+          48,
+          146,
+          292,
+          197
+        ]
+      ],
+      "expected_target_text": [
+        "[23] Ada Example",
+        "A complete bibliography entry."
+      ]
+    },
+    {
+      "id": "reference-24",
+      "kind": "citation",
+      "source_page": 1,
+      "source_text": "Citation [24]",
+      "source_bounds": [
+        48,
+        245,
+        142.704,
+        275
+      ],
+      "destination": {
+        "page": 2,
+        "command": "xyz",
+        "point": [
+          48,
+          146
+        ]
+      },
+      "required_parts": [
+        [
+          48,
+          146,
+          292,
+          197
+        ]
+      ],
+      "excluded_neighbors": [
+        [
+          48,
+          78,
+          292,
+          129
+        ]
+      ],
+      "expected_target_text": [
+        "[24] Grace Example",
+        "The neighboring bibliography entry."
+      ]
+    },
+    {
+      "id": "figure-4",
+      "kind": "figure",
+      "source_page": 1,
+      "source_text": "Figure 4",
+      "source_bounds": [
+        48,
+        310,
+        119.352,
+        340
+      ],
+      "destination": {
+        "page": 2,
+        "command": "xyz",
+        "point": [
+          326,
+          230
+        ]
+      },
+      "required_parts": [
+        [
+          326,
+          78,
+          564,
+          218
+        ],
+        [
+          326,
+          230,
+          564,
+          269
+        ]
+      ],
+      "excluded_neighbors": [
+        [
+          326,
+          290,
+          564,
+          315
+        ]
+      ],
+      "expected_target_text": [
+        "Figure 4.",
+        "Panel A",
+        "Panel B"
+      ]
+    },
+    {
+      "id": "table-2",
+      "kind": "table",
+      "source_page": 1,
+      "source_text": "Table 2",
+      "source_bounds": [
+        48,
+        375,
+        114.69,
+        405
+      ],
+      "destination": {
+        "page": 3,
+        "command": "xyz",
+        "point": [
+          48,
+          70
+        ]
+      },
+      "required_parts": [
+        [
+          48,
+          70,
+          548,
+          98
+        ],
+        [
+          48,
+          110,
+          548,
+          250
+        ]
+      ],
+      "excluded_neighbors": [
+        [
+          48,
+          290,
+          548,
+          330
+        ]
+      ],
+      "expected_target_text": [
+        "Table 2.",
+        "Method",
+        "Baseline"
+      ]
+    },
+    {
+      "id": "equation-7",
+      "kind": "equation",
+      "source_page": 1,
+      "source_text": "Equation (7)",
+      "source_bounds": [
+        48,
+        440,
+        144.25799999999998,
+        470
+      ],
+      "destination": {
+        "page": 2,
+        "command": "xyz",
+        "point": [
+          326,
+          384
+        ]
+      },
+      "required_parts": [
+        [
+          326,
+          384,
+          568,
+          422
+        ]
+      ],
+      "excluded_neighbors": [
+        [
+          326,
+          458,
+          568,
+          496
+        ]
+      ],
+      "expected_target_text": [
+        "E = m c",
+        "(7)"
+      ]
+    },
+    {
+      "id": "section-2-1",
+      "kind": "section",
+      "source_page": 1,
+      "source_text": "Section 2.1",
+      "source_bounds": [
+        48,
+        505,
+        138.042,
+        535
+      ],
+      "destination": {
+        "page": 2,
+        "command": "xyz",
+        "point": [
+          48,
+          328
+        ]
+      },
+      "required_parts": [
+        [
+          48,
+          328,
+          292,
+          407
+        ]
+      ],
+      "excluded_neighbors": [
+        [
+          48,
+          444,
+          292,
+          485
+        ]
+      ],
+      "expected_target_text": [
+        "2.1 Target aware previews",
+        "The opening paragraph"
+      ]
+    }
+  ]
+}

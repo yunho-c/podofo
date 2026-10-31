@@ -1,0 +1,686 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2006.09965v3.pdf",
+    "split": "development",
+    "id": "2006.09965v3",
+    "sha256": "060f25c8a3f57b47e8ea2cc18aeff7168c5358bf73acfdaab48c0f616d46e0bd",
+    "source_url": "https://arxiv.org/abs/2006.09965v3",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2006.09965v3-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 116,
+        "source_bounds": [
+          373.033,
+          426.905,
+          384.989,
+          435.752
+        ],
+        "source_text": "[50,",
+        "source_context": "ge is stored, with—hopefully—minimal visual chang\nn proposed over the years [50, 43, 54], including using s",
+        "destination": {
+          "name": "cite.jpeg1992wallace",
+          "page": 12,
+          "raw_pdf_point": [
+            108.0,
+            363.389
+          ],
+          "point": [
+            108.0,
+            428.611
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              431,
+              506,
+              452
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              407,
+              506,
+              428
+            ]
+          },
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              455,
+              506,
+              487
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "[50]",
+          "Gregory K Wallace"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line entry; adjacent list links each refer to one number."
+      },
+      {
+        "id": "2006.09965v3-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 117,
+        "source_bounds": [
+          387.828,
+          426.905,
+          399.783,
+          435.752
+        ],
+        "source_text": "43,",
+        "source_context": "s stored, with—hopefully—minimal visual changes to\noposed over the years [50, 43, 54], including using state",
+        "destination": {
+          "name": "cite.jpeg2000taubman",
+          "page": 12,
+          "raw_pdf_point": [
+            108.0,
+            571.257
+          ],
+          "point": [
+            108.0,
+            220.743
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              224,
+              506,
+              245
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              190,
+              506,
+              220
+            ]
+          },
+          {
+            "page": 12,
+            "bounds": [
+              107,
+              248,
+              506,
+              269
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "[43]",
+          "David S. Taubman"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line entry, separate from references 42 and 44."
+      },
+      {
+        "id": "2006.09965v3-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 159,
+        "source_bounds": [
+          290.512,
+          484.501,
+          297.486,
+          495.405
+        ],
+        "source_text": "3.",
+        "source_context": "proach is visually preferred to previous approaches ev\n× higher bitrates, see Fig. 3.",
+        "destination": {
+          "name": "figure.caption.11",
+          "page": 6,
+          "raw_pdf_point": [
+            108.0,
+            725.455
+          ],
+          "point": [
+            108.0,
+            66.545
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 6,
+            "bounds": [
+              108,
+              72,
+              504,
+              162
+            ]
+          },
+          {
+            "page": 6,
+            "bounds": [
+              107,
+              164,
+              505,
+              238
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 6,
+            "bounds": [
+              107,
+              254,
+              505,
+              298
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 3:"
+        ],
+        "reviewed": true,
+        "notes": "Entire chart, legend, method/rate labels and seven-line caption."
+      },
+      {
+        "id": "2006.09965v3-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 3,
+        "source_link_index_pymupdf": 35,
+        "source_xref": 243,
+        "source_bounds": [
+          127.419,
+          636.414,
+          134.492,
+          648.369
+        ],
+        "source_text": "aug\n 1,\ncep",
+        "source_context": "We augment the neural image c\nEqs. 1, 2 and learn networks E,\n“perceptual distortion” d = LP",
+        "destination": {
+          "name": "equation.3.1",
+          "page": 3,
+          "raw_pdf_point": [
+            492.384,
+            337.676
+          ],
+          "point": [
+            492.384,
+            454.324
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              166,
+              445,
+              445,
+              478
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              491,
+              460,
+              505,
+              472
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              418,
+              505,
+              440
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              483,
+              505,
+              579
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Both GAN loss lines belong to the shared equation number 1; exclude adjacent prose."
+      },
+      {
+        "id": "2006.09965v3-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 3,
+        "source_link_index_pymupdf": 36,
+        "source_xref": 244,
+        "source_bounds": [
+          137.672,
+          636.414,
+          144.746,
+          648.369
+        ],
+        "source_text": "gm\n 2 \nptua",
+        "source_context": "We augment the neural image com\nEqs. 1, 2 and learn networks E, G\n“perceptual distortion” d = LPIPS",
+        "destination": {
+          "name": "equation.3.2",
+          "page": 3,
+          "raw_pdf_point": [
+            347.493,
+            224.674
+          ],
+          "point": [
+            347.493,
+            567.326
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              234,
+              583,
+              378,
+              604
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              491,
+              587,
+              505,
+              598
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              558,
+              505,
+              579
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              611,
+              505,
+              623
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Complete rate-distortion expression and its separate number."
+      },
+      {
+        "id": "2006.09965v3-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 4,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 285,
+        "source_bounds": [
+          246.03,
+          309.086,
+          253.104,
+          320.043
+        ],
+        "source_text": "2,",
+        "source_context": "our architecture in Fig. 2, including the encoder E\nty model P. For P, we use the hyper-prior mode",
+        "destination": {
+          "name": "figure.caption.6",
+          "page": 4,
+          "raw_pdf_point": [
+            108.0,
+            725.455
+          ],
+          "point": [
+            108.0,
+            66.545
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              114,
+              72,
+              505,
+              146
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              148,
+              505,
+              179
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              186,
+              505,
+              274
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2:"
+        ],
+        "reviewed": true,
+        "notes": "All architecture stages and complete caption."
+      },
+      {
+        "id": "2006.09965v3-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 14,
+        "source_xref": 296,
+        "source_bounds": [
+          185.301,
+          434.618,
+          199.747,
+          445.302
+        ],
+        "source_text": "3.2)",
+        "source_context": "a conditional GAN formulation, where D has ac\nus is y, see Section 3.2).",
+        "destination": {
+          "name": "subsection.3.2",
+          "page": 3,
+          "raw_pdf_point": [
+            108.0,
+            186.559
+          ],
+          "point": [
+            108.0,
+            605.441
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              611,
+              263,
+              623
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              106,
+              626,
+              507,
+              692
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              234,
+              583,
+              505,
+              604
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              170,
+              694,
+              505,
+              722
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.2",
+          "Formulation and Optimization"
+        ],
+        "reviewed": true,
+        "notes": "Opening paragraph ends with a colon introducing the equations, which are outside the paragraph."
+      },
+      {
+        "id": "2006.09965v3-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 16,
+        "source_xref": 298,
+        "source_bounds": [
+          273.231,
+          472.825,
+          287.926,
+          483.729
+        ],
+        "source_text": "5.3)",
+        "source_context": "ening artifacts when employing the model on image\ng crop size (see Section 5.3). We assume this is due\nand note that [38] also saw issues with InstanceNorm",
+        "destination": {
+          "name": "subsection.5.3",
+          "page": 7,
+          "raw_pdf_point": [
+            108.0,
+            226.405
+          ],
+          "point": [
+            108.0,
+            565.595
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 7,
+            "bounds": [
+              107,
+              572,
+              220,
+              583
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              107,
+              592,
+              322,
+              724
+            ]
+          },
+          {
+            "page": 8,
+            "bounds": [
+              107,
+              193,
+              505,
+              233
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 7,
+            "bounds": [
+              329,
+              598,
+              505,
+              723
+            ]
+          },
+          {
+            "page": 8,
+            "bounds": [
+              107,
+              242,
+              505,
+              317
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "5.3",
+          "Quantitative Results"
+        ],
+        "reviewed": true,
+        "notes": "Opening Effect of GAN paragraph wraps beside Figure 5 and continues with four lines on page 8; exclude Figure 5 and next paragraph."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "dbc0649"
+  }
+}

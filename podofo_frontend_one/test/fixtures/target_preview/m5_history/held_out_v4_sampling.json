@@ -1,0 +1,112 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "1a31463",
+  "per_document_per_group": 2,
+  "documents": [
+    {
+      "pdf": "1802.01436v2.pdf",
+      "split": "development"
+    },
+    {
+      "pdf": "2003.01966v7.pdf",
+      "split": "development"
+    },
+    {
+      "pdf": "2006.09965v3.pdf",
+      "split": "development"
+    },
+    {
+      "pdf": "2202.07513v2.pdf",
+      "split": "development"
+    },
+    {
+      "pdf": "2211.02854v3.pdf",
+      "split": "development"
+    },
+    {
+      "pdf": "2502.11399v1.pdf",
+      "split": "development"
+    },
+    {
+      "pdf": "1809.02736v1.pdf",
+      "split": "held_out"
+    },
+    {
+      "pdf": "2111.13850v2.pdf",
+      "split": "development",
+      "promoted_from": "held_out_v1",
+      "promotion_reason": "Missing intervening subsection heading; compound section identity and table fallback need development review."
+    },
+    {
+      "pdf": "2212.01330v1.pdf",
+      "split": "development",
+      "promoted_from": "held_out_v1",
+      "promotion_reason": "Compound section identities II-A and II-B, including a cross-column opening paragraph, drive section resolver development."
+    },
+    {
+      "pdf": "2312.02753v1.pdf",
+      "split": "development",
+      "promoted_from": "held_out_v1",
+      "promotion_reason": "Missing intervening subsection heading drives a blocking complete-target regression."
+    },
+    {
+      "pdf": "2511.23342v3.pdf",
+      "split": "development",
+      "promoted_from": "held_out_v1",
+      "promotion_reason": "Panel-qualified Figure 2a source points to whole Figure 2; the preserved first held-out fallback drives explicit panel-to-parent identity development."
+    },
+    {
+      "pdf": "2606.29940v2.pdf",
+      "split": "held_out"
+    },
+    {
+      "pdf": "1810.01497v2.pdf",
+      "split": "development",
+      "replaces_promoted_document": "2111.13850v2",
+      "promoted_from": "held_out_v2",
+      "promotion_reason": "Native link loading aborts on a reversed horizontal annotation rectangle before this paper reaches target resolution; promote the whole document before changing the loader."
+    },
+    {
+      "pdf": "2206.07867v3.pdf",
+      "split": "development",
+      "replaces_promoted_document": "2212.01330v1",
+      "promoted_from": "held_out_v3",
+      "promotion_reason": "Both figures fall back: explicit panel 1a uses a) markers, and Figure 2 is rejected for neighboring regions. Figure identity/group ownership drives further development."
+    },
+    {
+      "pdf": "2410.06940v4.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "2312.02753v1"
+    },
+    {
+      "pdf": "2504.17670v2.pdf",
+      "split": "development",
+      "replaces_promoted_document": "2511.23342v3",
+      "promoted_from": "held_out_v3",
+      "promotion_reason": "Figure 2(a) annotation selects 2( with a) immediately after it; source-boundary parsing falls back and drives figure identity development."
+    },
+    {
+      "pdf": "2509.22935v2.pdf",
+      "split": "development",
+      "replaces_promoted_document": "1810.01497v2",
+      "promoted_from": "held_out_v3",
+      "promotion_reason": "Accepted Xu (2024) reference contains the entire next Zhang entry; bibliography boundary and cross-page entry regressions drive further development."
+    },
+    {
+      "pdf": "2512.05016v2.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "2206.07867v3"
+    },
+    {
+      "pdf": "2512.05117v3.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "2504.17670v2"
+    },
+    {
+      "pdf": "2603.26571v4.pdf",
+      "split": "held_out",
+      "replaces_promoted_document": "2509.22935v2"
+    }
+  ],
+  "replenishment_policy": "Previously unused arXiv documents in filename order, at most 60 pages, with at least two unique named destinations in each target group; exclude all versions of sampled paper IDs. Selection batches are preserved in m5_history/replenishment_v*_selection.json. No resolver/model output was inspected for replacement selection."
+}

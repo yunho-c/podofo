@@ -1,0 +1,58 @@
+{
+  "passed": true,
+  "resolver_version": 15,
+  "host": {
+    "os": "Version 27.0.1 (Build 26A434)",
+    "dart": "3.13.4 (stable) (Tue Sep 15 01:01:15 2026 -0700) on \"macos_arm64\"",
+    "cpu": "Apple M4 Pro",
+    "memory_bytes": "51539607552"
+  },
+  "pixel_ratio": 2,
+  "fixture": "linked_objects.pdf / Figure 4",
+  "timing_boundary": "worker.load entry to contextual future / semantic callback; excludes hover debounce and capture/assertions",
+  "cold_boundary": "fresh worker/coordinator/layout directory; PDF already open, same process, OS and Core ML caches retained",
+  "memory_boundary": "decoded image and text hits; layout provenance is still read from disk",
+  "summaries": {
+    "cold_preparation": {
+      "count": 20,
+      "context_p50_us": 1305,
+      "context_p95_us": 3525,
+      "semantic_p50_us": 645510,
+      "semantic_p95_us": 761967
+    },
+    "disk_layout": {
+      "count": 20,
+      "context_p50_us": 1367,
+      "context_p95_us": 2347,
+      "semantic_p50_us": 11139,
+      "semantic_p95_us": 41908
+    },
+    "warm_analysis": {
+      "count": 20,
+      "context_p50_us": 1389,
+      "context_p95_us": 2016,
+      "semantic_p50_us": 72929,
+      "semantic_p95_us": 79319
+    },
+    "decoded_image_and_text": {
+      "count": 30,
+      "context_p50_us": 101,
+      "context_p95_us": 186,
+      "semantic_p50_us": 1965,
+      "semantic_p95_us": 2684
+    }
+  },
+  "native_handles_after_close": 0,
+  "raw_results_path": "build/target-preview-m5/performance-v7/results.json",
+  "raw_results_sha256": "3698b8169c1c61eabd1d88366ce0a70c1d9f912bdb7b594cb44922ce26272009",
+  "cycle_count": 100,
+  "peaks": {
+    "decoded_bytes": 6279564,
+    "decoded_entries": 8,
+    "text_bytes": 86064,
+    "text_pages": 3,
+    "layout_disk_bytes": 12192,
+    "native_handles": 1,
+    "renderer_live_bytes": 0
+  }
+}

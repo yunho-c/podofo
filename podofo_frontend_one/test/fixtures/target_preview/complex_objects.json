@@ -1,0 +1,930 @@
+{
+  "schema_version": 2,
+  "pdf": "complex_objects.pdf",
+  "sha256": "8d5377176ef120a207e1398416574a476d5a2309927e15cd239913982108aaaa",
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "layout_source": "hand_annotations_for_grouping_tests_not_detector_output",
+  "pages": [
+    {
+      "size": [
+        612,
+        792
+      ],
+      "regions": []
+    },
+    {
+      "size": [
+        612,
+        792
+      ],
+      "regions": [
+        {
+          "id": 1,
+          "category": "text",
+          "native_subtype": "reference",
+          "bounds": [
+            35,
+            77,
+            285,
+            203
+          ]
+        },
+        {
+          "id": 2,
+          "category": "text",
+          "native_subtype": "reference",
+          "bounds": [
+            327,
+            77,
+            581,
+            233
+          ]
+        },
+        {
+          "id": 3,
+          "category": "figure",
+          "native_subtype": "image",
+          "bounds": [
+            36,
+            330,
+            280,
+            450
+          ]
+        },
+        {
+          "id": 4,
+          "category": "figure",
+          "native_subtype": "image",
+          "bounds": [
+            332,
+            330,
+            576,
+            450
+          ]
+        },
+        {
+          "id": 5,
+          "category": "text",
+          "native_subtype": "text",
+          "bounds": [
+            292,
+            360,
+            320,
+            430
+          ]
+        },
+        {
+          "id": 6,
+          "category": "caption",
+          "native_subtype": "figure_title",
+          "bounds": [
+            35,
+            473,
+            577,
+            511
+          ]
+        }
+      ]
+    },
+    {
+      "size": [
+        612,
+        792
+      ],
+      "regions": [
+        {
+          "id": 1,
+          "category": "text",
+          "native_subtype": "reference_content",
+          "bounds": [
+            35,
+            79,
+            285,
+            132
+          ]
+        },
+        {
+          "id": 2,
+          "category": "text",
+          "native_subtype": "reference_content",
+          "bounds": [
+            35,
+            662,
+            285,
+            730
+          ]
+        },
+        {
+          "id": 3,
+          "category": "text",
+          "native_subtype": "reference_content",
+          "bounds": [
+            327,
+            51,
+            581,
+            104
+          ]
+        },
+        {
+          "id": 4,
+          "category": "text",
+          "native_subtype": "reference_content",
+          "bounds": [
+            327,
+            125,
+            581,
+            179
+          ]
+        },
+        {
+          "id": 5,
+          "category": "caption",
+          "native_subtype": "figure_title",
+          "bounds": [
+            35,
+            244,
+            285,
+            281
+          ]
+        },
+        {
+          "id": 6,
+          "category": "figure",
+          "native_subtype": "image",
+          "bounds": [
+            36,
+            300,
+            280,
+            440
+          ]
+        },
+        {
+          "id": 7,
+          "category": "text",
+          "native_subtype": "text",
+          "bounds": [
+            35,
+            469,
+            285,
+            491
+          ]
+        },
+        {
+          "id": 8,
+          "category": "formula",
+          "native_subtype": "formula",
+          "bounds": [
+            339,
+            309,
+            518,
+            329
+          ]
+        },
+        {
+          "id": 9,
+          "category": "formulaNumber",
+          "native_subtype": "formula_number",
+          "bounds": [
+            542,
+            309,
+            576,
+            329
+          ]
+        },
+        {
+          "id": 10,
+          "category": "formula",
+          "native_subtype": "formula",
+          "bounds": [
+            339,
+            357,
+            518,
+            377
+          ]
+        },
+        {
+          "id": 11,
+          "category": "formula",
+          "native_subtype": "formula",
+          "bounds": [
+            351,
+            388,
+            518,
+            408
+          ]
+        },
+        {
+          "id": 12,
+          "category": "formulaNumber",
+          "native_subtype": "formula_number",
+          "bounds": [
+            542,
+            388,
+            576,
+            408
+          ]
+        },
+        {
+          "id": 13,
+          "category": "formula",
+          "native_subtype": "formula",
+          "bounds": [
+            339,
+            457,
+            518,
+            477
+          ]
+        },
+        {
+          "id": 14,
+          "category": "formulaNumber",
+          "native_subtype": "formula_number",
+          "bounds": [
+            542,
+            457,
+            576,
+            477
+          ]
+        }
+      ]
+    },
+    {
+      "size": [
+        612,
+        792
+      ],
+      "regions": [
+        {
+          "id": 1,
+          "category": "text",
+          "native_subtype": "reference_content",
+          "bounds": [
+            327,
+            79,
+            581,
+            132
+          ]
+        },
+        {
+          "id": 2,
+          "category": "text",
+          "native_subtype": "reference_content",
+          "bounds": [
+            327,
+            672,
+            581,
+            725
+          ]
+        }
+      ]
+    },
+    {
+      "size": [
+        612,
+        792
+      ],
+      "regions": [
+        {
+          "id": 1,
+          "category": "text",
+          "native_subtype": "reference_content",
+          "bounds": [
+            35,
+            51,
+            285,
+            104
+          ]
+        },
+        {
+          "id": 2,
+          "category": "text",
+          "native_subtype": "reference_content",
+          "bounds": [
+            35,
+            125,
+            285,
+            179
+          ]
+        },
+        {
+          "id": 3,
+          "category": "heading",
+          "native_subtype": "paragraph_title",
+          "bounds": [
+            327,
+            239,
+            581,
+            264
+          ]
+        },
+        {
+          "id": 4,
+          "category": "text",
+          "native_subtype": "text",
+          "bounds": [
+            327,
+            279,
+            581,
+            332
+          ]
+        },
+        {
+          "id": 5,
+          "category": "heading",
+          "native_subtype": "paragraph_title",
+          "bounds": [
+            327,
+            371,
+            581,
+            393
+          ]
+        },
+        {
+          "id": 6,
+          "category": "text",
+          "native_subtype": "text",
+          "bounds": [
+            327,
+            399,
+            581,
+            422
+          ]
+        },
+        {
+          "id": 7,
+          "category": "text",
+          "native_subtype": "reference_content",
+          "bounds": [
+            327,
+            672,
+            581,
+            725
+          ]
+        }
+      ]
+    },
+    {
+      "size": [
+        732,
+        572
+      ],
+      "regions": [
+        {
+          "id": 1,
+          "category": "figure",
+          "native_subtype": "image",
+          "bounds": [
+            542,
+            20,
+            682,
+            260
+          ]
+        },
+        {
+          "id": 2,
+          "category": "caption",
+          "native_subtype": "figure_title",
+          "bounds": [
+            492,
+            20,
+            522,
+            260
+          ]
+        },
+        {
+          "id": 3,
+          "category": "text",
+          "native_subtype": "text",
+          "bounds": [
+            432,
+            20,
+            457,
+            260
+          ]
+        }
+      ]
+    }
+  ],
+  "cases": [
+    {
+      "id": "numbered-hanging",
+      "source_page": 1,
+      "source_text": "Citation [31]",
+      "source_bounds": [
+        36,
+        122,
+        125.36800000000001,
+        147
+      ],
+      "kind": "citation",
+      "destination": {
+        "page": 2,
+        "point": [
+          36,
+          78
+        ]
+      },
+      "required_parts": [
+        {
+          "page": 2,
+          "bounds": [
+            36,
+            78,
+            284,
+            128
+          ]
+        }
+      ],
+      "excluded_neighbors": [
+        {
+          "page": 2,
+          "bounds": [
+            36,
+            151,
+            284,
+            201
+          ]
+        }
+      ]
+    },
+    {
+      "id": "author-hanging",
+      "source_page": 1,
+      "source_text": "Rivera et al. (2024)",
+      "source_bounds": [
+        36,
+        172,
+        166.539,
+        197
+      ],
+      "kind": "citation",
+      "destination": {
+        "page": 2,
+        "point": [
+          328,
+          78
+        ]
+      },
+      "required_parts": [
+        {
+          "page": 2,
+          "bounds": [
+            328,
+            78,
+            580,
+            158
+          ]
+        }
+      ],
+      "excluded_neighbors": [
+        {
+          "page": 2,
+          "bounds": [
+            328,
+            181,
+            580,
+            231
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cross-column",
+      "source_page": 1,
+      "source_text": "Citation [41]",
+      "source_bounds": [
+        36,
+        222,
+        125.36800000000001,
+        247
+      ],
+      "kind": "citation",
+      "destination": {
+        "page": 3,
+        "point": [
+          36,
+          663
+        ]
+      },
+      "required_parts": [
+        {
+          "page": 3,
+          "bounds": [
+            36,
+            663,
+            284,
+            729
+          ]
+        },
+        {
+          "page": 3,
+          "bounds": [
+            328,
+            52,
+            580,
+            103
+          ]
+        }
+      ],
+      "excluded_neighbors": [
+        {
+          "page": 3,
+          "bounds": [
+            36,
+            80,
+            284,
+            131
+          ]
+        },
+        {
+          "page": 3,
+          "bounds": [
+            328,
+            126,
+            580,
+            178
+          ]
+        }
+      ]
+    },
+    {
+      "id": "cross-page",
+      "source_page": 1,
+      "source_text": "Citation [51]",
+      "source_bounds": [
+        36,
+        272,
+        125.36800000000001,
+        297
+      ],
+      "kind": "citation",
+      "destination": {
+        "page": 4,
+        "point": [
+          328,
+          673
+        ]
+      },
+      "required_parts": [
+        {
+          "page": 4,
+          "bounds": [
+            328,
+            673,
+            580,
+            724
+          ]
+        },
+        {
+          "page": 5,
+          "bounds": [
+            36,
+            52,
+            284,
+            103
+          ]
+        }
+      ],
+      "excluded_neighbors": [
+        {
+          "page": 4,
+          "bounds": [
+            328,
+            80,
+            580,
+            131
+          ]
+        },
+        {
+          "page": 5,
+          "bounds": [
+            36,
+            126,
+            284,
+            178
+          ]
+        }
+      ]
+    },
+    {
+      "id": "separated-panels",
+      "source_page": 1,
+      "source_text": "Figure 9",
+      "source_bounds": [
+        36,
+        322,
+        103.684,
+        347
+      ],
+      "kind": "figure",
+      "destination": {
+        "page": 2,
+        "point": [
+          36,
+          474
+        ]
+      },
+      "required_parts": [
+        {
+          "page": 2,
+          "bounds": [
+            36,
+            330,
+            280,
+            450
+          ]
+        },
+        {
+          "page": 2,
+          "bounds": [
+            332,
+            330,
+            576,
+            450
+          ]
+        },
+        {
+          "page": 2,
+          "bounds": [
+            36,
+            474,
+            576,
+            510
+          ]
+        }
+      ],
+      "excluded_neighbors": [
+        {
+          "page": 2,
+          "bounds": [
+            292,
+            360,
+            320,
+            430
+          ]
+        }
+      ]
+    },
+    {
+      "id": "caption-above",
+      "source_page": 1,
+      "source_text": "Figure 10",
+      "source_bounds": [
+        36,
+        372,
+        110.912,
+        397
+      ],
+      "kind": "figure",
+      "destination": {
+        "page": 3,
+        "point": [
+          36,
+          245
+        ]
+      },
+      "required_parts": [
+        {
+          "page": 3,
+          "bounds": [
+            36,
+            245,
+            284,
+            280
+          ]
+        },
+        {
+          "page": 3,
+          "bounds": [
+            36,
+            300,
+            280,
+            440
+          ]
+        }
+      ],
+      "excluded_neighbors": [
+        {
+          "page": 3,
+          "bounds": [
+            36,
+            470,
+            284,
+            490
+          ]
+        }
+      ]
+    },
+    {
+      "id": "multiline-equation",
+      "source_page": 1,
+      "source_text": "Equation (12)",
+      "source_bounds": [
+        36,
+        422,
+        134.039,
+        447
+      ],
+      "kind": "equation",
+      "destination": {
+        "page": 3,
+        "point": [
+          328,
+          357
+        ]
+      },
+      "required_parts": [
+        {
+          "page": 3,
+          "bounds": [
+            340,
+            357,
+            516,
+            378
+          ]
+        },
+        {
+          "page": 3,
+          "bounds": [
+            352,
+            388,
+            516,
+            410
+          ]
+        },
+        {
+          "page": 3,
+          "bounds": [
+            542,
+            388,
+            576,
+            410
+          ]
+        }
+      ],
+      "excluded_neighbors": [
+        {
+          "page": 3,
+          "bounds": [
+            340,
+            310,
+            576,
+            333
+          ]
+        },
+        {
+          "page": 3,
+          "bounds": [
+            340,
+            456,
+            576,
+            479
+          ]
+        }
+      ]
+    },
+    {
+      "id": "section-opening",
+      "source_page": 1,
+      "source_text": "Section 3.1",
+      "source_bounds": [
+        36,
+        472,
+        121.039,
+        497
+      ],
+      "kind": "section",
+      "destination": {
+        "page": 5,
+        "point": [
+          328,
+          240
+        ]
+      },
+      "required_parts": [
+        {
+          "page": 5,
+          "bounds": [
+            328,
+            240,
+            580,
+            263
+          ]
+        },
+        {
+          "page": 5,
+          "bounds": [
+            328,
+            280,
+            580,
+            331
+          ]
+        }
+      ],
+      "excluded_neighbors": [
+        {
+          "page": 5,
+          "bounds": [
+            328,
+            372,
+            580,
+            421
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ambiguous-label",
+      "source_page": 1,
+      "source_text": "Figures 9 and 10",
+      "source_bounds": [
+        36,
+        522,
+        153.55200000000002,
+        547
+      ],
+      "kind": null,
+      "destination": {
+        "page": 2,
+        "point": [
+          36,
+          474
+        ]
+      },
+      "required_parts": [],
+      "excluded_neighbors": []
+    },
+    {
+      "id": "unfinished-entry",
+      "source_page": 1,
+      "source_text": "Citation [61]",
+      "source_bounds": [
+        36,
+        572,
+        125.36800000000001,
+        597
+      ],
+      "kind": null,
+      "destination": {
+        "page": 5,
+        "point": [
+          328,
+          673
+        ]
+      },
+      "required_parts": [],
+      "excluded_neighbors": []
+    },
+    {
+      "id": "rotated-cropped",
+      "source_page": 1,
+      "source_text": "Figure 12",
+      "source_bounds": [
+        36,
+        622,
+        110.912,
+        647
+      ],
+      "kind": "figure",
+      "destination": {
+        "page": 6,
+        "point": [
+          522,
+          20
+        ]
+      },
+      "required_parts": [
+        {
+          "page": 6,
+          "bounds": [
+            542,
+            20,
+            682,
+            260
+          ]
+        },
+        {
+          "page": 6,
+          "bounds": [
+            492,
+            20,
+            522,
+            260
+          ]
+        }
+      ],
+      "excluded_neighbors": [
+        {
+          "page": 6,
+          "bounds": [
+            432,
+            20,
+            457,
+            260
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+/target/
+**/.dart_tool/
+**/build/
+**/__pycache__/
+*.pyc
+.ruff_cache/
+# Keep model weights and captured evaluation outputs outside version control.
+/model-assets/
+/evaluation-output/

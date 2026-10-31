@@ -1,0 +1,368 @@
+{
+  "groups": {
+    "detected": {
+      "count": 531,
+      "successful": 517,
+      "errors": {
+        "conversion": 14
+      }
+    },
+    "crop": {
+      "count": 810,
+      "successful": 797,
+      "errors": {
+        "conversion": 13
+      }
+    },
+    "fixture": {
+      "count": 15,
+      "successful": 8,
+      "errors": {
+        "conversion": 6,
+        "unsupported_capability": 1
+      }
+    }
+  },
+  "compared": 1356,
+  "dart_tests": 5,
+  "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+  "inputs_sha256": "c5894efb38f5676182fb21f218001c6180b78d7836ead5b3dfde34ac314bbd4d",
+  "rust_sha256": "f74fb1ebf23abd98e92517722f7bc3530c694366099978198b0dde0239e5bce7",
+  "dart_sha256": "918cf857750c15f3bf4d94c9e7f757e5be4cdd424b6664e605ead8967ea4bd58",
+  "source_inputs": {
+    "/Users/yunhocho/GitHub/podofo-podoco/podoco/evaluation-output/m6-documents-v1/rust.jsonl": "d68829c819dd3e951da081051110eab3d880a2cf877f85925f8eec85b4df8e21",
+    "/Users/yunhocho/GitHub/podofo-podoco/podoco/evaluation-output/m6-native-full-v2/cpu-ne.jsonl": "91992a8a8feb0d70eb702dec588fddf70ece9f0ccab932c5b9112c5a9dbb98f3"
+  },
+  "binaries": {
+    "target/release/libpodoco_ffi.dylib": "0a216c92aeadc0920c8bd01a2e29336882bb72221e7b4b77a9ed5b3d3720d050",
+    "target/release/examples/math": "ad2fce1523a1c2bc9a6034cfdc4f0fd1dc38d4e31bd07ee3ce52cf87fbaac998"
+  },
+  "failures": [],
+  "dart_version": "Dart SDK version: 3.13.4 (stable) (Tue Sep 15 01:01:15 2026 -0700) on \"macos_arm64\"",
+  "unsupported_cases": [
+    {
+      "id": "detected-0-365",
+      "input": {
+        "format": "latex",
+        "text": "$A_{m-1}$case)",
+        "display_kind": "inline"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: unexpected math `$` (math shift) character - this character cannot be used inside math mode\n╭─► context:\n│\n│ $A_{m-1}$case\n│ ^^^^^^^^^^^^^\n╰──────────────"
+      }
+    },
+    {
+      "id": "detected-3-155",
+      "input": {
+        "format": "latex",
+        "text": "\\left(\\begin{array}{r r}{0}&{\\mathcal{I}}\\\\ {-\\mathcal{I}}&{0}\\\\ \\end{array}\\right)",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: expected an argument\n╭─► context:\n│\n│…{array}{r r}{0}&{\\mathca\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    },
+    {
+      "id": "detected-6-190",
+      "input": {
+        "format": "latex",
+        "text": "\\langle W\\rangle\\sim\\exp\\bigl((\\mathrm{c o n s t a n t})\\sqrt{g^{2}N}\\bigr)",
+        "display_kind": "inline"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "expected a whitespace not 'm' at 1:235"
+      }
+    },
+    {
+      "id": "detected-20-155",
+      "input": {
+        "format": "latex",
+        "text": "\\partial_{N}^{x}G_{1}(x,y)|_{x\\in\\partial\\mathcal{M}}=-\\lim_{x\\rightarrow\\partial\\mathcal{M}}\\int_{\\partial\\mathcal{M}}d z\\partial_{N}^{x}G_{0}(x,z)U(z)G_{1}(z,y)",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "invalid child count for MathML munder"
+      }
+    },
+    {
+      "id": "detected-20-5",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{align*}\\partial_{N}^{x}G_{1}(x,y)|_{x\\in\\partial\\mathcal{M}}&=\\frac{1}{4\\pi}\\lim_{x^{2}\\rightarrow+0}\\int_{\\partial\\mathcal{M}}dz\\frac{4x^{2}}{(x^{2})^{2}+(x^{1}-z^{1})^{2}}\\times\\\\&\\quad\\times\\left(-V^{\\prime}(\\bar{X})\\overrightarrow{\\partial}_{N}^{z}-\\frac{1}{2}V^{\\prime\\prime}(\\bar{X})(\\partial_{N}\\bar{X})+\\frac{1}{2}\\hat{w}^{\\prime\\prime}(\\bar{X})\\right)G(z,y)\\\\&=\\left(-V^{\\prime}(\\bar{X})\\overrightarrow{\\partial}_{N}^{x}-\\frac{1}{2}V^{\\prime\\prime}(\\bar{X})(\\partial_{N}\\bar{X})+\\frac{1}{2}\\hat{w}^{\\prime\\prime}(\\bar{X})\\right)G(x,y)|_{x\\in\\partial\\mathcal{M}}(12)\\end{align*}",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "invalid child count for MathML munder"
+      }
+    },
+    {
+      "id": "detected-21-105",
+      "input": {
+        "format": "latex",
+        "text": "g^{-1}d g\\big|_{\\mathfrak{C}_{R}(g_{0})}=(\\operatorname{A d}_{g^{-1}}R-\\mathbb{1})d h h^{-1}.",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "expected a whitespace not 'm' at 1:184"
+      }
+    },
+    {
+      "id": "detected-23-1315",
+      "input": {
+        "format": "latex",
+        "text": "-\\cos^{2}\\theta_{j}\\sin^{2}\\theta_{j}\\mathbf{1}",
+        "display_kind": "inline"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "invalid child count for MathML msup"
+      }
+    },
+    {
+      "id": "detected-24-80",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{array}{r c l}{e^{A}e^{B}}&{=}&{e^{A+B+\\frac{1}{2}[A,B]+\\frac{1}{12}([A,[A,B]]+[B,[B,A]])+\\ldots}}\\\\ {g_{l}(k,p)}&{=}&{\\displaystyle-k_{i}p_{j}f^{i j}{}_{l}+\\frac{1}{6}k_{i}p_{j}(p_{k}-k_{k})f^{i j}{}_{n}f^{n k}{}_{l}+\\ldots.}\\\\ \\end{array}",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: expected an argument\n╭─► context:\n│\n│…rray}{r c l}{e^{A}e^{B}}\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    },
+    {
+      "id": "detected-24-380",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{array}{r c l}{x y}&{=}&{q y x}\\\\ {f*g}&{=}&{q^{\\frac{1}{2}(-x^{\\prime}\\frac{\\partial}{\\partial x^{\\prime}}y\\frac{\\partial}{\\partial y}+x\\frac{\\partial}{\\partial x}y^{\\prime}\\frac{\\partial}{\\partial y^{\\prime}})}f(x,y)g(x^{\\prime},y^{\\prime})\\Big|_{x^{\\prime}\\to x\\atop y^{\\prime}\\to y}}\\\\ \\end{array}",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: expected an argument\n╭─► context:\n│\n│…rray}{r c l}{x y}&{=}&{q\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    },
+    {
+      "id": "detected-24-230",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{aligned}&(F*G)(z)=\\\\&\\qquad\\quad e^{\\frac{i}{2}\\left(\\theta^{\\mu\\nu}\\frac{\\partial}{\\partial x^{\\prime\\mu}}\\frac{\\partial}{\\partial x^{\\prime\\prime\\nu}}+t^{a}g_{a}(i\\frac{\\partial}{\\partial t^{\\prime}},i\\frac{\\partial}{\\partial t^{\\prime\\prime}})\\right)}\\\\&\\qquad\\quad\\times F(x^{\\prime},t^{\\prime})G(x^{\\prime\\prime},t^{\\prime\\prime})\\Big|_{\\substack{x^{\\prime}\\to x,x^{\\prime\\prime}\\to x\\\\ t^{\\prime}\\to t,t^{\\prime\\prime}\\to t}}.\\\\ \\end{aligned}",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "expected a whitespace not 'm' at 1:1897"
+      }
+    },
+    {
+      "id": "detected-27-490",
+      "input": {
+        "format": "latex",
+        "text": "\\mu<0",
+        "display_kind": "inline"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "invalid name token at 1:82"
+      }
+    },
+    {
+      "id": "detected-35-5",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{aligned}{}&{{}\\quad U(g)\\left|N_{\\nu_{\\alpha_{1}}}^{(\\alpha_{1})},\\ldots,N_{\\nu_{\\alpha_{n}}}^{(\\alpha_{n})}\\right\\rangle}\\\\ {}&{{}=}&{\\sum_{\\nu_{1}^{(1)},\\ldots,\\nu_{n}^{(N_{\\nu_{n}})}\\atop\\nu_{n}^{(1)}\\nu_{n}}D_{\\nu_{1}^{(1)}\\nu_{1}}^{(\\alpha_{1})}\\cdots D_{\\nu_{1}^{(N_{\\nu_{1}})}\\nu_{1}}^{(\\alpha_{1})}\\cdots D_{\\nu_{n}^{(1)}\\nu_{n}}^{(\\alpha_{n})}}\\\\ {}&{{}}&{\\cdots D_{\\nu_{n}^{(N_{\\nu_{n}})}\\nu_{n}}^{(\\alpha_{n})}\\left|N_{\\nu_{\\alpha_{1}}}^{(\\alpha_{1})},\\ldots,N_{\\nu_{\\alpha_{n}}}^{(\\alpha_{n})}\\right\\rangle.}\\\\ \\end{aligned}",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: unknown primitive command found\n╭─► context:\n│\n│…_{n}})}\\atop\\nu_{n}^{(1)\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    },
+    {
+      "id": "detected-35-205",
+      "input": {
+        "format": "latex",
+        "text": "\\boxed{P_{\\{N_{\\nu_{\\alpha_{1}}}^{(\\alpha_{1})},\\ldots,\\:N_{\\nu_{\\alpha_{n}}}^{(\\alpha_{n})}\\}}^{\\Lambda,\\lambda_{\\Lambda}}}",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: unknown primitive command found\n╭─► context:\n│\n│ \\boxed{P_{\\{N_{\\nu\n│ ^^^^^^^^^^^^^^^^^^\n╰───────────────────"
+      }
+    },
+    {
+      "id": "detected-35-380",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{aligned}{}&{{}0=\\frac{d\\thinspace\\mathcal{A}^{\\{\\mathcal{N}\\}}}{d t}d(\\Lambda)\\times}\\\\ {}&{{}\\int\\displaylimits_{G}d\\mu(g)\\bar{\\chi}^{(\\Lambda)}(g)[D_{\\nu_{1}\\nu_{1}}^{(\\alpha_{1})}]^{N_{\\nu_{\\alpha_{1}}}^{(\\alpha_{1})}}\\cdots[D_{\\nu_{n}\\nu_{n}}^{(\\alpha_{n})}]^{N_{\\nu_{\\alpha_{n}}}^{(\\alpha_{n})}}}\\\\ {}&{{}+\\sum_{j=1}^{n}\\sum_{\\nu_{\\alpha_{j}}}\\frac{d\\thinspace N_{\\nu_{\\alpha_{j}}}^{(\\alpha_{j})}}{d t}\\mathcal{A}^{\\{\\mathcal{N}\\}}d(\\Lambda)}\\\\ {}&{{}\\times\\int\\displaylimits_{G}d\\mu(g)\\bar{\\chi}^{(\\Lambda)}(g)[D_{\\nu_{1}\\nu_{1}}^{(\\alpha_{1})}]^{N_{\\nu_{\\alpha_{1}}}^{(\\alpha_{1})}}}\\\\ {}&{{}\\cdots[D_{\\nu_{n}\\nu_{n}}^{(\\alpha_{n})}]^{N_{\\nu_{\\alpha_{n}}}^{(\\alpha_{n})}}\\operatorname{l o g}[D_{\\nu_{j}\\nu_{j}}^{(\\alpha_{j})}].\\quad(1)}\\\\ \\end{aligned}",
+        "display_kind": "displayed"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: unknown primitive command found\n╭─► context:\n│\n│…isplaylimits_{G}d\\mu(g)\\\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    },
+    {
+      "id": "crop-0001178_page04-e020",
+      "input": {
+        "format": "latex",
+        "text": "\\left(\\begin{array}{r r}{0}&{\\mathcal{I}}\\\\ {-\\mathcal{I}}&{0}\\\\ \\end{array}\\right)",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: expected an argument\n╭─► context:\n│\n│…{array}{r r}{0}&{\\mathca\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    },
+    {
+      "id": "crop-0003055_page01-e009",
+      "input": {
+        "format": "latex",
+        "text": "\\langle W\\rangle\\sim\\operatorname{e x p}\\bigl((\\operatorname{c o n s t a n t})\\sqrt{g^{2}N}\\bigr).",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "expected a whitespace not 'm' at 1:237"
+      }
+    },
+    {
+      "id": "crop-0006108_page05-e030",
+      "input": {
+        "format": "latex",
+        "text": "\\partial_{N}^{x}G_{1}(x,y)|_{x\\in\\partial\\mathcal{M}}=-\\lim_{x\\rightarrow\\partial\\mathcal{M}}\\int_{\\partial\\mathcal{M}}d z\\partial_{N}^{x}G_{0}(x,z)U(z)G_{1}(z,y)",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "invalid child count for MathML msub"
+      }
+    },
+    {
+      "id": "crop-0006108_page05-e032",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{align*}\\partial_{N}^{x}G_{1}(x,y)|_{x\\in\\partial\\mathcal{M}}&=\\frac{1}{4\\pi}\\lim_{x^{2}\\to+0}\\int_{\\partial\\mathcal{M}}dz\\frac{4x^{2}}{(x^{2})^{2}+(x^{1}-z^{1})^{2}}\\times\\\\&\\quad\\times\\left(-V'(\\bar{X})\\overrightarrow{\\partial}_{N}^{z}-\\frac{1}{2}V''(\\bar{X})(\\partial_{N}\\bar{X})+\\frac{1}{2}\\hat{w}''(\\bar{X})\\right)G(z,y)\\\\&=\\left(-V'(\\bar{X})\\overrightarrow{\\partial}_{N}^{x}-\\frac{1}{2}V''(\\bar{X})(\\partial_{N}\\bar{X})+\\frac{1}{2}\\hat{w}''(\\bar{X})\\right)G(x,y)|_{x\\in\\partial\\mathcal{M}}\\ \\left(1\\right)\\end{align*}",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "invalid child count for MathML msub"
+      }
+    },
+    {
+      "id": "crop-0006145_page05-e023",
+      "input": {
+        "format": "latex",
+        "text": "g^{-1}d g\\big|_{\\mathfrak{C}_{R}(g_{0})}=(\\operatorname{A d}_{g^{-1}}R-\\mathbb{1})d h h^{-1}.",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "expected a whitespace not 'm' at 1:185"
+      }
+    },
+    {
+      "id": "crop-0006216_page06-e022",
+      "input": {
+        "format": "latex",
+        "text": "-\\cos^{2}\\theta_{j}\\sin^{2}\\theta_{j}\\mathbf{1}",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "invalid child count for MathML msup"
+      }
+    },
+    {
+      "id": "crop-0006246_page04-e017",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{array}{r c l}{e^{A}e^{B}}&{=}&{e^{A+B+\\frac{1}{2}[A,B]+\\frac{1}{12}([A,[A,B]]+[B,[B,A]])+\\ldots}}\\\\ {g_{l}(k,p)}&{=}&{\\displaystyle-k_{i}p_{j}f^{i j}{}_{l}+\\frac{1}{6}k_{i}p_{j}(p_{k}-k_{k})f^{i j}{}_{n}f^{n k}{}_{l}+\\ldots.}\\\\ \\end{array}",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: expected an argument\n╭─► context:\n│\n│…rray}{r c l}{e^{A}e^{B}}\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    },
+    {
+      "id": "crop-0006246_page04-e018",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{array}{r c l}{x y}&{=}&{q y x}\\\\ {f*g}&{=}&{q^{\\frac{1}{2}(-x^{\\prime}\\frac{\\partial}{\\partial x^{\\prime}}y\\frac{\\partial}{\\partial y}+x\\frac{\\partial}{\\partial x}y^{\\prime}\\frac{\\partial}{\\partial y^{\\prime}})}f(x,y)g(x^{\\prime},y^{\\prime})\\Big|_{x^{\\prime}\\to x\\atop y^{\\prime}\\to y}}\\\\ \\end{array}",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: expected an argument\n╭─► context:\n│\n│…rray}{r c l}{x y}&{=}&{q\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    },
+    {
+      "id": "crop-0006246_page04-e021",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{aligned}&(F*G)(z)=\\\\&\\qquad\\quad e^{\\frac{i}{2}\\left(\\theta^{\\mu\\nu}\\frac{\\partial}{\\partial x^{\\prime\\mu}}\\frac{\\partial}{\\partial x^{\\prime\\prime\\nu}}+t^{a}g_{a}(i\\frac{\\partial}{\\partial t^{\\prime}},i\\frac{\\partial}{\\partial t^{\\prime\\prime}})\\right)}\\\\&\\qquad\\quad\\times F(x^{\\prime},t^{\\prime})G(x^{\\prime\\prime},t^{\\prime\\prime})\\Big|_{\\substack{x^{\\prime}\\to x,x^{\\prime\\prime}\\to x\\\\ t^{\\prime}\\to t,t^{\\prime\\prime}\\to t}}.\\\\ \\end{aligned}",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "expected a whitespace not 'm' at 1:1898"
+      }
+    },
+    {
+      "id": "crop-0008181_page04-e017",
+      "input": {
+        "format": "latex",
+        "text": "\\mu<0",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "invalid name token at 1:82"
+      }
+    },
+    {
+      "id": "crop-0010212_page02-e019",
+      "input": {
+        "format": "latex",
+        "text": "d\\mathop{\\mathcal{N}_{\\nu_{\\alpha};(\\zeta)}^{(\\alpha)}/d t}_{\\omega_{\\alpha};\\zeta_{\\alpha}=1000}",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "invalid child count for MathML msub"
+      }
+    },
+    {
+      "id": "crop-0010212_page02-e021",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{aligned}{}&{{}\\quad U(g)\\left|N_{\\nu_{\\alpha_{1}}}^{(\\alpha_{1})},\\ldots,N_{\\nu_{\\alpha_{n}}}^{(\\alpha_{n})}\\right\\rangle}\\\\ {}&{{}=}&{\\sum_{\\nu_{1}^{(1)},\\ldots,\\nu_{n}^{(N_{\\nu_{n}})}\\atop\\nu_{n}^{(1)}\\nu_{n}}D_{\\nu_{1}^{(1)}\\nu_{1}}^{(\\alpha_{1})}\\cdots D_{\\nu_{1}^{(N_{\\nu_{1}})}\\nu_{1}}^{(\\alpha_{1})}\\cdots D_{\\nu_{n}^{(1)}\\nu_{n}}^{(\\alpha_{n})}}\\\\ {}&{{}}&{\\cdots D_{\\nu_{n}^{(N_{\\nu_{n}})}\\nu_{n}}^{(\\alpha_{n})}\\left|N_{\\nu_{\\alpha_{1}}}^{(\\alpha_{1})},\\ldots,N_{\\nu_{\\alpha_{n}}}^{(\\alpha_{n})}\\right\\rangle.}\\\\ \\end{aligned}",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: unknown primitive command found\n╭─► context:\n│\n│…_{n}})}\\atop\\nu_{n}^{(1)\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    },
+    {
+      "id": "crop-0010212_page02-e023",
+      "input": {
+        "format": "latex",
+        "text": "\\begin{aligned}{}&{{}0=\\frac{d\\thinspace\\mathcal{A}^{\\{\\mathcal{N}\\}}}{d t}d(\\Lambda)\\times}\\\\ {}&{{}\\int\\displaylimits_{G}d\\mu(g)\\bar{\\chi}^{(\\Lambda)}(g)[D_{\\nu_{1}\\nu_{1}}^{(\\alpha_{1})}]^{N_{\\nu_{\\alpha_{1}}}^{(\\alpha_{1})}}\\cdots[D_{\\nu_{n}\\nu_{n}}^{(\\alpha_{n})}]^{N_{\\nu_{\\alpha_{n}}}^{(\\alpha_{n})}}}\\\\ {}&{{}+\\sum_{j=1}^{n}\\sum_{\\nu_{\\alpha_{j}}}\\frac{d\\thinspace N_{\\nu_{\\alpha_{j}}}^{(\\alpha_{j})}}{d t}\\mathcal{A}^{\\{\\mathcal{N}\\}}d(\\Lambda)}\\\\ {}&{{}\\times\\int\\displaylimits_{G}d\\mu(g)\\bar{\\chi}^{(\\Lambda)}(g)[D_{\\nu_{1}\\nu_{1}}^{(\\alpha_{1})}]^{N_{\\nu_{\\alpha_{1}}}^{(\\alpha_{1})}}}\\\\ {}&{{}\\cdots[D_{\\nu_{n}\\nu_{n}}^{(\\alpha_{n})}]^{N_{\\nu_{\\alpha_{n}}}^{(\\alpha_{n})}}\\operatorname{l o g}[D_{\\nu_{j}\\nu_{j}}^{(\\alpha_{j})}].\\quad(1)}\\\\ \\end{aligned}",
+        "display_kind": "unknown"
+      },
+      "error": {
+        "code": "conversion",
+        "message": "parsing error: unknown primitive command found\n╭─► context:\n│\n│…isplaylimits_{G}d\\mu(g)\\\n│ ^^^^^^^^^^^^^^^^^^^^^^^^\n╰─────────────────────────"
+      }
+    }
+  ]
+}

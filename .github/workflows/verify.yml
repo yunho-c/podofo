@@ -1,9 +1,9 @@
 name: Verify desktop reader
 on:
   push:
-    paths: ['podofo_frontend_one/**', '.fvmrc', '.github/workflows/verify.yml']
+    paths: ['podofo_frontend_one/**', 'podoco/**', '.fvmrc', '.github/workflows/verify.yml']
   pull_request:
-    paths: ['podofo_frontend_one/**', '.fvmrc', '.github/workflows/verify.yml']
+    paths: ['podofo_frontend_one/**', 'podoco/**', '.fvmrc', '.github/workflows/verify.yml']
 permissions:
   contents: read
 jobs:
@@ -29,6 +29,8 @@ jobs:
         run: |
           python tool/prepare_mlsr.py
           if ($LASTEXITCODE -ne 0) { throw 'MLSR preparation failed' }
+          python tool/prepare_podoco.py
+          if ($LASTEXITCODE -ne 0) { throw 'Podoco preparation failed' }
           flutter pub get --enforce-lockfile
       - name: Verify generation, analysis, build, and regressions
         run: ./tool/verify.ps1

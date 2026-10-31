@@ -1,0 +1,126 @@
+import 'dart:async';
+import 'dart:typed_data';
+
+import '../pdf_document.dart';
+import '../pdfrx_entry_functions.dart';
+
+/// This is an empty implementation of [PdfrxEntryFunctions] that just throws [UnimplementedError].
+///
+/// This is used to indicate that the factory is not initialized.
+class PdfrxEntryFunctionsImpl implements PdfrxEntryFunctions {
+  PdfrxEntryFunctionsImpl();
+
+  Future<PdfDocument> unimplemented() {
+    throw UnimplementedError(
+      'PdfrxEntryFunctions.instance is not initialized. '
+      'Please call pdfrxInitialize()/pdfrxFlutterInitialize() or explicitly set PdfrxEntryFunctions.instance.',
+    );
+  }
+
+  @override
+  Future<void> init() => unimplemented();
+
+  @override
+  Future<T> suspendPdfiumWorkerDuringAction<T>(FutureOr<T> Function() action) async {
+    unimplemented(); // actually never returns
+    return await action();
+  }
+
+  @override
+  Future<R> compute<M, R>(FutureOr<R> Function(M message) callback, M message) async {
+    throw UnimplementedError(
+      'compute() is not implemented because PdfrxEntryFunctions.instance is not initialized. '
+      'Please call pdfrxInitialize()/pdfrxFlutterInitialize() or explicitly set PdfrxEntryFunctions.instance.',
+    );
+  }
+
+  @override
+  Future<void> stopBackgroundWorker() async {
+    throw UnimplementedError(
+      'stopBackgroundWorker() is not implemented because PdfrxEntryFunctions.instance is not initialized. '
+      'Please call pdfrxInitialize()/pdfrxFlutterInitialize() or explicitly set PdfrxEntryFunctions.instance.',
+    );
+  }
+
+  @override
+  Future<PdfDocument> openAsset(
+    String name, {
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    bool useProgressiveLoading = false,
+  }) => unimplemented();
+
+  @override
+  Future<PdfDocument> openCustom({
+    required FutureOr<int> Function(Uint8List buffer, int position, int size) read,
+    required int fileSize,
+    required String sourceName,
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    bool useProgressiveLoading = false,
+    int? maxSizeToCacheOnMemory,
+    void Function()? onDispose,
+  }) => unimplemented();
+
+  @override
+  Future<PdfDocument> openData(
+    Uint8List data, {
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    String? sourceName,
+    bool allowDataOwnershipTransfer = false,
+    bool useProgressiveLoading = false,
+    int? maxSizeToCacheOnMemory,
+    void Function()? onDispose,
+  }) => unimplemented();
+
+  @override
+  Future<PdfDocument> openFile(
+    String filePath, {
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    bool useProgressiveLoading = false,
+  }) => unimplemented();
+
+  @override
+  Future<PdfDocument> openUri(
+    Uri uri, {
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    bool useProgressiveLoading = false,
+    PdfDownloadProgressCallback? progressCallback,
+    bool preferRangeAccess = false,
+    Map<String, String>? headers,
+    bool withCredentials = false,
+    Duration? timeout,
+  }) => unimplemented();
+
+  @override
+  Future<PdfDocument> createNew({required String sourceName}) => unimplemented();
+
+  @override
+  Future<PdfDocument> createFromJpegData(
+    Uint8List jpegData, {
+    required double width,
+    required double height,
+    required String sourceName,
+  }) => unimplemented();
+
+  @override
+  Future<void> configureFontEnvironment({String? fontCachePath, List<String> fontPaths = const []}) => unimplemented();
+
+  @override
+  Future<void> reloadFonts() => unimplemented();
+
+  @override
+  Future<void> addFontData({required String face, required Uint8List data, String? resolvedFace}) => unimplemented();
+
+  @override
+  Future<void> addFontFile({required String face, required String filePath, String? resolvedFace}) => unimplemented();
+
+  @override
+  Future<void> clearAllFontData() => unimplemented();
+
+  @override
+  PdfrxBackendType get backendType => PdfrxBackendType.mock;
+}

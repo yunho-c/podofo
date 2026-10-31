@@ -8,6 +8,8 @@ No sibling repositories are required.
 From the application directory:
 
 ```powershell
+python tool/prepare_mlsr.py
+python tool/prepare_podoco.py
 flutter pub get --enforce-lockfile
 ./tool/verify.ps1
 ```
@@ -132,3 +134,8 @@ Read a click's stages in order:
 No `pointer.down` means no secondary pointer press was observed by the enabled
 recorder. This trace cannot see input that never reaches Flutter. A `menu.frame`
 records layout completion, not proof that the operating system displayed it.
+
+## Document analysis
+
+See [experimental layout analysis](document-analysis.md) for Podoco native
+preparation, the Developer pane, rendering policy, and result persistence.
