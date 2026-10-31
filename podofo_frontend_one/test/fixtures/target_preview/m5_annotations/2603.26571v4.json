@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "2603.26571v4.pdf",
-    "split": "held_out",
+    "split": "development",
     "replaces_promoted_document": "2509.22935v2",
     "id": "2603.26571v4",
     "sha256": "9bf87f56486742b6fd8d9c96bb83a9d0e70a7e87c0aeac049fee3d57dc9c7fd2",
@@ -615,11 +615,15 @@
         "reviewed": true,
         "notes": "Source names Figure 6(a), whose whole parent figure includes all five plots with axes/labels, shared legend and full caption. Exclude following Summary."
       }
-    ]
+    ],
+    "promoted_from": "held_out_v5",
+    "promotion_reason": "Author links followed by bracketed years and a figure link selecting the abbreviation period fall back; promote the whole paper before source-identity changes."
   },
   "review": {
     "date": "2026-10-31",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "8c1afbe4c55aed6e9d6b4aca29736507bc575ccd"
+    "resolver_baseline": "8c1afbe4c55aed6e9d6b4aca29736507bc575ccd",
+    "promoted_from": "held_out_v5",
+    "promotion_reason": "Author links followed by bracketed years and a figure link selecting the abbreviation period fall back; promote the whole paper before source-identity changes."
   }
 }

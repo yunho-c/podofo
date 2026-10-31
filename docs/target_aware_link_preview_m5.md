@@ -1,8 +1,8 @@
 # Target-aware previews: M5 qualification in progress
 
-M5 is not complete. The fourth frozen held-out run meets aggregate coverage and
-completeness thresholds but clips one equation radical. Papers
-driving changes move to development before those changes; all four evaluations
+M5 is not complete. The fifth frozen held-out run fails citation coverage and
+completeness, including a reference missing its final year/backlink line. Papers
+driving changes move to development before those changes; all five evaluations
 are preserved. Native-window acceptance also remains unqualified.
 
 ## Cache preparation latency
@@ -768,9 +768,33 @@ carryovers that did not drive rule changes. The complete sample now has 180 link
 over twenty-one papers, plus eight links in the two earlier development seeds.
 The annotation and freeze are committed before evaluating the set.
 
+## Fifth held-out evaluation: citation boundary and source regressions
+
+The full `held-out-v5` run at `dcc8226` captured all 50 links, with all 36 frozen
+identities matching and native handles returning to zero. Citations resolve
+9/12, with eight complete: both the 80% coverage and 90% completeness gates fail.
+Figures/tables resolve 11/12, equations 10/11 and sections 11/11, all complete;
+all four controls fall back. These are automatic checks, not a completed visual
+audit of every accepted crop.
+
+The accepted reference [73] in `2605.10938v2` retains 3,685 of 3,896 required ink
+pixels and no excluded neighboring ink. Visual review confirms that its final
+line, containing the publication year and backlinks, is absent. The indented
+`2021.` is mistaken for a numbered entry. Its page-bottom reference [72] also
+falls back despite a separate entry on the next page. In `2603.26571v4`, author
+links followed by bracketed years and a figure link selecting the abbreviation's
+period fall back at source identification.
+
+Both whole papers move to development before any rule changes. Eligibility and
+required/excluded annotations are unchanged. Freeze, sampling and results are
+archived as `m5_history/held_out_v5_*.json`; full paired captures remain under
+`build/target-preview-m5/papers-held-out-v5/`. The active freeze is removed;
+two source-reviewed replacements are required before another held-out run.
+
 ## Remaining acceptance work
 
-Evaluate every frozen held-out link with paired images,
+Fix the promoted citation/source regressions, then replenish and freeze before
+evaluating every held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback

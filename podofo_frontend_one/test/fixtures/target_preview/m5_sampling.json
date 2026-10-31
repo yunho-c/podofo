@@ -106,13 +106,17 @@
     },
     {
       "pdf": "2603.26571v4.pdf",
-      "split": "held_out",
-      "replaces_promoted_document": "2509.22935v2"
+      "split": "development",
+      "replaces_promoted_document": "2509.22935v2",
+      "promoted_from": "held_out_v5",
+      "promotion_reason": "Author links followed by bracketed years and a figure link selecting the abbreviation period fall back; promote the whole paper before source-identity changes."
     },
     {
       "pdf": "2605.10938v2.pdf",
-      "split": "held_out",
-      "replaces_promoted_document": "2512.05117v3"
+      "split": "development",
+      "replaces_promoted_document": "2512.05117v3",
+      "promoted_from": "held_out_v5",
+      "promotion_reason": "Accepted reference [73] omits its indented publication year and backlinks; the preceding page-bottom reference also falls back despite a new entry on the next page. Promote the whole paper before bibliography boundary changes."
     }
   ],
   "replenishment_policy": "Previously unused arXiv documents in filename order, at most 60 pages, with at least two unique named destinations in each target group; exclude all versions of sampled paper IDs. Selection batches are preserved in m5_history/replenishment_v*_selection.json. No resolver/model output was inspected for replacement selection."

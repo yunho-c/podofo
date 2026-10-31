@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "2605.10938v2.pdf",
-    "split": "held_out",
+    "split": "development",
     "replaces_promoted_document": "2512.05117v3",
     "id": "2605.10938v2",
     "sha256": "50c6c0ca07340b21e01dcb5123b9e6fb593ed6c6f8801c78249d437e787224c2",
@@ -739,11 +739,15 @@
         "reviewed": true,
         "notes": "Complete cross-entropy objective, expectation subscript, brackets and equation number. Exclude surrounding prose."
       }
-    ]
+    ],
+    "promoted_from": "held_out_v5",
+    "promotion_reason": "Accepted reference [73] omits its indented publication year and backlinks; the preceding page-bottom reference also falls back despite a new entry on the next page. Promote the whole paper before bibliography boundary changes."
   },
   "review": {
     "date": "2026-10-31",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "024def7b6c6998a19b51b5bfb053b1900bbe384a"
+    "resolver_baseline": "024def7b6c6998a19b51b5bfb053b1900bbe384a",
+    "promoted_from": "held_out_v5",
+    "promotion_reason": "Accepted reference [73] omits its indented publication year and backlinks; the preceding page-bottom reference also falls back despite a new entry on the next page. Promote the whole paper before bibliography boundary changes."
   }
 }
