@@ -495,6 +495,35 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             _clearHover();
             _cancelLinkNavigation();
           }
+          final keyboard = HardwareKeyboard.instance;
+          if ((key == LogicalKeyboardKey.keyH ||
+                  key == LogicalKeyboardKey.keyU) &&
+              !keyboard.isControlPressed &&
+              !keyboard.isMetaPressed &&
+              !keyboard.isAltPressed &&
+              !keyboard.isShiftPressed &&
+              controller.focusNode?.hasPrimaryFocus == true) {
+            // Keep bare letters local to the reader, and consume repeats
+            // without applying another annotation to a subsequent selection.
+            if (isRealKeyPress &&
+                document.pdfDocument.permissions?.allowsModifyAnnotations !=
+                    false) {
+              if (key == LogicalKeyboardKey.keyH) {
+                final palette = ref
+                    .read(userStateNotifierProvider)
+                    .highlightColorPalette;
+                unawaited(
+                  DocumentActions.highlight(
+                    ref,
+                    color: palette.firstOrNull ?? '#66ffeb3b',
+                  ),
+                );
+              } else {
+                unawaited(DocumentActions.underline(ref));
+              }
+            }
+            return true;
+          }
           if (isRealKeyPress &&
               identical(document.session, _narration.source?.documentId) &&
               const [

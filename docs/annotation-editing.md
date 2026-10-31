@@ -140,6 +140,13 @@ repeats.
 
 ## Creating and editing text markup
 
+With text selected and the PDF reader focused, press H to immediately highlight
+using the first palette color (the user-facing index 1), or U to underline in
+red. Each uses the existing creation, undo/redo, and auto-save path. These keys
+do nothing without a selection and do not toggle highlighting mode. They ignore
+held-key repeats and do not intercept typing in fields or dialogs.
+Ctrl/Command+Shift+H continues to use the active highlight color.
+
 Select text and choose Underline in the Flutter context menu to create a genuine
 PDF `/Underline` annotation in opaque red. It uses the same continuous selection
 geometry as highlights, including line and column gaps. A multi-page selection
