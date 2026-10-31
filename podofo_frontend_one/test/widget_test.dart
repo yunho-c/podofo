@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +26,24 @@ void main() {
       addTearDown(tester.view.resetPhysicalSize);
       addTearDown(tester.view.resetDevicePixelRatio);
 
+      Map<dynamic, dynamic>? nativeMenus;
+      const menuChannel = OptionalMethodChannel('flutter/menu');
+      tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        menuChannel,
+        (call) async {
+          if (call.method == 'Menu.setMenus') {
+            nativeMenus = call.arguments as Map;
+          }
+          return null;
+        },
+      );
+      addTearDown(() {
+        tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+          menuChannel,
+          null,
+        );
+      });
+
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
@@ -49,11 +68,19 @@ void main() {
           find.byType(PlatformMenuBar),
         );
         final menus = menuBar.menus.cast<PlatformMenu>();
-        expect(menus.map((menu) => menu.label), ['PoDoFo', 'File', 'Edit']);
+        expect(menus.map((menu) => menu.label), [
+          'PoDoFo',
+          'File',
+          'Edit',
+          'View',
+          'Window',
+        ]);
         final fileItems = menus
             .firstWhere((menu) => menu.label == 'File')
             .menus;
-        final editItems = menus.last.menus;
+        final editItems = menus
+            .firstWhere((menu) => menu.label == 'Edit')
+            .menus;
         expect(editItems.map((item) => item.label), ['Undo', 'Redo']);
         expect(editItems.every((item) => item.onSelected == null), isTrue);
         expect(fileItems.map((item) => item.label), [
@@ -67,6 +94,31 @@ void main() {
           fileItems.skip(1).every((item) => item.onSelected == null),
           isTrue,
         );
+
+        // Native window commands must reach the macOS menu plugin, even with
+        // no document open. AppKit supplies their shortcuts and action targets.
+        expect(nativeMenus, isNotNull);
+        final nativeTopLevel = (nativeMenus!['0'] as List).cast<Map>();
+        for (final entry in {
+          'View': [PlatformProvidedMenuItemType.toggleFullScreen],
+          'Window': [
+            PlatformProvidedMenuItemType.minimizeWindow,
+            PlatformProvidedMenuItemType.zoomWindow,
+            PlatformProvidedMenuItemType.arrangeWindowsInFront,
+          ],
+        }.entries) {
+          final nativeMenu = nativeTopLevel.firstWhere(
+            (menu) => menu['label'] == entry.key,
+          );
+          final items = (nativeMenu['children'] as List).cast<Map>().where(
+            (item) => item.containsKey('platformProvidedMenu'),
+          );
+          expect(
+            items.map((item) => item['platformProvidedMenu']),
+            entry.value.map((type) => type.index),
+          );
+          expect(items.every((item) => item['enabled'] == true), isTrue);
+        }
       } else {
         expect(find.text('File'), findsOneWidget);
         expect(find.text('Edit'), findsOneWidget);

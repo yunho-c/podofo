@@ -290,6 +290,34 @@ class _TitleBarState extends ConsumerState<TitleBar> {
             ),
           ],
         ),
+        // PlatformMenuBar replaces MainMenu.xib's menu hierarchy. Reinsert the
+        // native window actions so their AppKit shortcuts remain available.
+        const PlatformMenu(
+          label: 'View',
+          menus: [
+            PlatformProvidedMenuItem(
+              type: PlatformProvidedMenuItemType.toggleFullScreen,
+            ),
+          ],
+        ),
+        const PlatformMenu(
+          label: 'Window',
+          menus: [
+            PlatformMenuItemGroup(
+              members: [
+                PlatformProvidedMenuItem(
+                  type: PlatformProvidedMenuItemType.minimizeWindow,
+                ),
+                PlatformProvidedMenuItem(
+                  type: PlatformProvidedMenuItemType.zoomWindow,
+                ),
+              ],
+            ),
+            PlatformProvidedMenuItem(
+              type: PlatformProvidedMenuItemType.arrangeWindowsInFront,
+            ),
+          ],
+        ),
       ],
       child: content,
     );
