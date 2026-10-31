@@ -1,0 +1,625 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2607.19437v1.pdf",
+    "split": "held_out",
+    "replaces_promoted_document": "2603.26571v4",
+    "id": "2607.19437v1",
+    "sha256": "35fc54e3a97bf8da0673c488fad71617b29f01289f748190a744e02a6c27207d",
+    "source_url": "https://arxiv.org/abs/2607.19437v1",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2607.19437v1-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 4,
+        "source_xref": 178,
+        "source_bounds": [
+          438.521,
+          459.723,
+          448.852,
+          467.351
+        ],
+        "source_text": "[58,",
+        "source_context": "width-critical applications [58, 77] have rendered extreme",
+        "destination": {
+          "name": "cite.tao2024known",
+          "page": 10,
+          "raw_pdf_point": [
+            53.798,
+            259.995
+          ],
+          "point": [
+            53.798,
+            532.005
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              53,
+              535,
+              297,
+              566
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              53,
+              511,
+              297,
+              534
+            ]
+          },
+          {
+            "page": 10,
+            "bounds": [
+              53,
+              567,
+              297,
+              583
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Known Knowns and Unknowns"
+        ],
+        "reviewed": true,
+        "notes": "Complete reference [58], including authors, title, conference and page range. Exclude entries [57] and [59]."
+      },
+      {
+        "id": "2607.19437v1-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 5,
+        "source_xref": 179,
+        "source_bounds": [
+          451.107,
+          459.723,
+          461.438,
+          467.351
+        ],
+        "source_text": "77]",
+        "source_context": "th-critical applications [58, 77] have rendered extremely",
+        "destination": {
+          "name": "cite.zhang2024cosmic",
+          "page": 10,
+          "raw_pdf_point": [
+            317.955,
+            347.666
+          ],
+          "point": [
+            317.955,
+            444.334
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              317,
+              448,
+              561,
+              479
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              317,
+              424,
+              561,
+              447
+            ]
+          },
+          {
+            "page": 10,
+            "bounds": [
+              317,
+              480,
+              561,
+              510
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "COSMIC: Compress Satellite Images Efficiently via Diffusion Compensation"
+        ],
+        "reviewed": true,
+        "notes": "Complete four-line reference [77] including venue; exclude references [76] and [78]."
+      },
+      {
+        "id": "2607.19437v1-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 435,
+        "source_bounds": [
+          77.851,
+          393.342,
+          83.929,
+          403.61
+        ],
+        "source_text": "1,",
+        "source_context": "Figure 1, existing models typically at",
+        "destination": {
+          "name": "figure.caption.5",
+          "page": 2,
+          "raw_pdf_point": [
+            53.798,
+            713.793
+          ],
+          "point": [
+            53.798,
+            78.207
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              54,
+              86,
+              295,
+              199
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              53,
+              211,
+              297,
+              288
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              53,
+              317,
+              297,
+              465
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Intuitive comparison of the proposed method"
+        ],
+        "reviewed": true,
+        "notes": "Whole two-panel Figure 1, including both method diagrams, panel labels and full caption. Exclude the continued introduction below."
+      },
+      {
+        "id": "2607.19437v1-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 3,
+        "source_link_index_pymupdf": 15,
+        "source_xref": 347,
+        "source_bounds": [
+          391.149,
+          512.227,
+          397.373,
+          522.662
+        ],
+        "source_text": "2",
+        "source_context": "u-\nAs shown in Figure 2 (a), for a given video \ud835\udc4b, the",
+        "destination": {
+          "name": "figure.caption.6",
+          "page": 3,
+          "raw_pdf_point": [
+            53.798,
+            713.793
+          ],
+          "point": [
+            53.798,
+            78.207
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              79,
+              84,
+              532,
+              290
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              53,
+              302,
+              561,
+              346
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              53,
+              359,
+              297,
+              487
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              317,
+              359,
+              561,
+              467
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Overview of the proposed framework"
+        ],
+        "reviewed": true,
+        "notes": "Whole parent Figure 2: both overall pipeline and U-LDM architecture panels, shared legend and complete caption. Source mentions panel (a); include the full parent figure. Exclude both body columns below."
+      },
+      {
+        "id": "2607.19437v1-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 16,
+        "source_xref": 348,
+        "source_bounds": [
+          361.872,
+          534.145,
+          374.382,
+          544.579
+        ],
+        "source_text": "3.2)",
+        "source_context": "33] refine\nenizer (Sec. 3.2). Following the proposed G",
+        "destination": {
+          "name": "subsection.3.2",
+          "page": 4,
+          "raw_pdf_point": [
+            53.798,
+            439.948
+          ],
+          "point": [
+            53.798,
+            352.052
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              53,
+              353,
+              189,
+              366
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              52,
+              368,
+              298,
+              539
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              53,
+              542,
+              297,
+              626
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              53,
+              309,
+              297,
+              330
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Latent Space Mapping"
+        ],
+        "reviewed": true,
+        "notes": "Section 3.2 heading and complete first paragraph through temporal progression, including inline fractions, subscripts and superscripts. Exclude the following Visualization paragraph and Figure 3 caption above."
+      },
+      {
+        "id": "2607.19437v1-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 17,
+        "source_xref": 349,
+        "source_bounds": [
+          544.501,
+          554.817,
+          557.011,
+          566.497
+        ],
+        "source_text": "3.3)",
+        "source_context": "into Intra-latents (\ud835\udc3f) and Inter-\ne, the I-DCM Encoder (Sec. 3.3)",
+        "destination": {
+          "name": "subsection.3.3",
+          "page": 4,
+          "raw_pdf_point": [
+            317.955,
+            629.745
+          ],
+          "point": [
+            317.955,
+            162.255
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              164,
+              478,
+              177
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              179,
+              561,
+              243
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              253,
+              561,
+              296
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              317,
+              85,
+              561,
+              150
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "I-latent Deep Compression"
+        ],
+        "reviewed": true,
+        "notes": "Section 3.3 heading and complete opening paragraph through transmitted bitstream. Exclude the preceding column continuation and subsection 3.3.1."
+      },
+      {
+        "id": "2607.19437v1-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 415,
+        "source_bounds": [
+          352.788,
+          97.268,
+          359.025,
+          107.72
+        ],
+        "source_text": "6,",
+        "source_context": "veraging all\nfm \nEquation 6, and H represents a time-in",
+        "destination": {
+          "name": "equation.6",
+          "page": 5,
+          "raw_pdf_point": [
+            130.905,
+            433.834
+          ],
+          "point": [
+            130.905,
+            358.166
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              129,
+              361,
+              296,
+              373
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              63,
+              346,
+              219,
+              357
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              53,
+              377,
+              297,
+              410
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(6)"
+        ],
+        "reviewed": true,
+        "notes": "Complete flow-matching equation with subscripts and number. Exclude the definition title above and explanatory paragraph below."
+      },
+      {
+        "id": "2607.19437v1-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 417,
+        "source_bounds": [
+          396.247,
+          333.445,
+          406.52,
+          343.714
+        ],
+        "source_text": "10",
+        "source_context": "Minimizing Equation 10 forces the U-LDM to integra",
+        "destination": {
+          "name": "equation.10",
+          "page": 5,
+          "raw_pdf_point": [
+            374.68,
+            477.52
+          ],
+          "point": [
+            374.68,
+            314.48
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              373,
+              316,
+              561,
+              330
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              317,
+              293,
+              561,
+              312
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              317,
+              335,
+              561,
+              444
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(10)"
+        ],
+        "reviewed": true,
+        "notes": "Complete velocity-matching loss with expectation subscripts, squared norm, brackets and number; exclude neighboring prose."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "e8ab05bf91fb20e2ef930f18234b36b5789ea42f"
+  }
+}

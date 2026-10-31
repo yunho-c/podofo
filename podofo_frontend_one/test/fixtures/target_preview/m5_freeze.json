@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "created_utc": "2026-10-31T05:16:25.830139+00:00",
+  "resolver_baseline_commit": "e8ab05bf91fb20e2ef930f18234b36b5789ea42f",
+  "resolver_version": 14,
+  "held_out_documents": [
+    "1809.02736v1",
+    "2606.29940v2",
+    "2410.06940v4",
+    "2512.05016v2",
+    "2607.19437v1",
+    "2608.04891v1"
+  ],
+  "eligible_by_group": {
+    "citation": 12,
+    "equation": 11,
+    "figure_table": 12,
+    "section": 11
+  },
+  "carryover_from_previous_runs": [
+    "1809.02736v1",
+    "2606.29940v2",
+    "2410.06940v4",
+    "2512.05016v2"
+  ],
+  "newly_reviewed_replacements": [
+    "2607.19437v1",
+    "2608.04891v1"
+  ],
+  "policy": "Source annotations were completed from full pages before each document's first resolver/model output. Four unchanged carryover documents were observed in previous held-out runs and did not drive rule changes. Any document that drives a rule change must move to development and be replaced before a new held-out freeze.",
+  "identities": {
+    "test/fixtures/target_preview/m5_annotations/1809.02736v1.json": "d208df56cc9082ec77dbac7974e0e7914da913b93d1bdb798490cce841585b41",
+    "test/fixtures/target_preview/m5_annotations/2606.29940v2.json": "7b9fbecb814f2325592d8cd970b211ed971722044c153a4e40f0441cd5727b37",
+    "test/fixtures/target_preview/m5_annotations/2410.06940v4.json": "2333b94fa522cf80b4f628009cdbd09ec20c67dfeb80e79d8f454529bf77f5fb",
+    "test/fixtures/target_preview/m5_annotations/2512.05016v2.json": "dd173ee203f5db135f7c55d14161b35c53a5401dade6b0eee56f35b710415df0",
+    "test/fixtures/target_preview/m5_annotations/2607.19437v1.json": "d35121fa8536583c9753ac8475b186198a0d59bbcbdfe3ef68f6be662c8dd80c",
+    "test/fixtures/target_preview/m5_annotations/2608.04891v1.json": "b204265105a21454c929fd7af7a1bfea68ce69fe0573fa2d1aecc0ecc583a2fc",
+    "lib/src/previews/link_target.dart": "1e9b3e44ad28fe7a38207812159d184f15a9bb0e8c2abcc535c79b45e47d4a82",
+    "lib/src/previews/link_target_resolver.dart": "ac001f1c48fc94e262615b1e986721f9c5ba730c41ead3786d675f540ea6b5a7",
+    "lib/src/previews/reference_targets.dart": "c1c89365a4cd316f6b03cf04910b1c093cb9aaac7ad0805403daa4fc14a7702d",
+    "lib/src/previews/figure_targets.dart": "a325a83d53eb5eb648386bb58635f4bb6463b48df937f9531068bac1d50f42d3",
+    "lib/src/previews/source_identity.dart": "3ddbb8ac207e21d63536a235774851daca66fb0e1800c60187a7e9e5cf746e01",
+    "lib/src/previews/section_targets.dart": "58875b07bc0921a99ae6ba3f52bd58fc4efc224c49bedc9b7722e6956378eeea",
+    "lib/src/previews/pdf_link_context.dart": "b631d15d2b6164973f055be0d222b6a04fb1b0060c0d9720951c6ff43fb8b201",
+    "lib/src/previews/preview_text.dart": "a2375fc25fa3220b42abc3dfa66cc13ae556d51cc3f1e632187f1169df921337",
+    "lib/src/previews/preview_geometry.dart": "d312dccbe7067a93de5d35cec0c514f06d5189982e6b677da9f075d2bc133c04",
+    "lib/src/previews/preview_compositor.dart": "2f7ec2f112b03d59aaeaf8aedfcbd5c9b1f6a97f969cf94b152a5b3485ca6915",
+    "lib/src/workers/link_preview_worker.dart": "ec4c545597237ef432dbedd4c5bbb1ef0bac84c3bbf6b93774cb2dfec9dc881c",
+    "lib/src/analysis/analysis_engine.dart": "53b8eec3f4900961c1dff27b252d1a4ca3a9db292feee0bc27ce91dfe44a0e4c",
+    "lib/src/analysis/analysis_controller.dart": "2e6302e8d160ebc49997b61800beab204a5831cb484a907421d7fa9ae509bc64",
+    "lib/src/analysis/analysis_coordinator.dart": "f596c2bdec9343395f47e2d9b78f8810f21f49c8caaa22912848bcd99fb8903b",
+    "lib/src/analysis/analysis_snapshot.dart": "68525737a4c37e073321f2427644987a7e8abdd429de8252fdfc07775e637333",
+    "lib/src/analysis/preview_layout_repository.dart": "8c328a6033f4e3008f265f6f239afdc01cab26897458aaf7055b72b936666e6e",
+    "lib/src/analysis/preview_layout_store.dart": "38a482a71b7847d8c0d9defe01064e497b8aa9814c36d87826e28eac7f08058f",
+    "lib/src/analysis/pdf_analysis_source.dart": "90b2df3ce4b12654aeb500702994ee19f00ea62829d110b54d9a7d4ed9d8d470",
+    "lib/src/analysis/pdf_image_input.dart": "67f3e917909a7cf40e1b1f8120c94432723cca0eaba1c4828b12e16e3d2d3fa9",
+    "lib/src/services/pdf_session.dart": "990df4f019b558c2a48fc71877dffd4ba061c3d6c51b77c53aafcdb2dcab1e64",
+    "../podoco/bindings/flutter/lib/src/model_loader.dart": "62f54ed92790085b66d20817ba022543e23b0856529816927e91f7f736e3efb8",
+    "../podoco/bindings/flutter/lib/src/model_resources.dart": "defc2968441b5f9ee9d733d096a36831a4377e7dd2f4eee4ceb796866b0a611b",
+    "test/support/target_preview_metrics.dart": "197c3244e5f73a0172b5c6a5ea9346ec53bac6760f0ab146ebb7ccc5954a20dd",
+    "test/paper_preview_qualification_test.dart": "810da189f854a084eebe443c8be115af0fe08ca0d9c69f77f6d88b808da9286f",
+    "test/fixtures/target_preview/m5_sampling.json": "e3ba6c5fb9d3114883e14e94fc8d1429875520bf577746ab5ad7fd8638e9b012",
+    "pubspec.lock": "3b7ef2bc0c26a6e58fa7cc174dc884a6d30645e67ecc63389baf54372c20e868",
+    "third_party/pdfrx_engine-source.json": "82589397fd5c74d4ace06d43bc0c7927cfe6e235aff8f196861f71ac12d995f2",
+    "third_party/pdfrx_engine/lib/src/native/pdfrx_pdfium.dart": "7fc990251e5ad5f474ddfea3d95e4037b6cc8e071557309a7a89813f1b40d346",
+    ".podoco/model_assets/models/pack.json": "afd5bf91a95a2c2c9da6c9b61bf1586e177faae24c81026b83aef422cc3a1b39",
+    ".podoco/model_assets/models/layout/podoco-bundle.yaml": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef"
+  }
+}

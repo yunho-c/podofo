@@ -827,9 +827,27 @@ timing samples and 100 cancellation cycles are retained. Cached semantic p95 is
 Owned cache limits and native-handle cleanup pass. These observations do not
 attribute timing differences between runs to the resolver changes.
 
+## Sixth source-reviewed freeze
+
+The unchanged metadata-only selection policy chooses `2607.19437v1` and
+`2608.04891v1`. All sixteen links were reviewed against complete source/target
+pages and independent MuPDF geometry before any resolver/model output. Review
+includes full parent diagrams, a comparison figure rendered as a table, shared
+legends, inline mathematics in section openings, and bibliography DOIs. Source
+hashes, nonempty required/excluded ink, page bounds and disjoint annotations
+validate. The selection record is `m5_history/replenishment_v7_selection.json`;
+local source pages are under `build/target-preview-m5/annotations-v8-replacements/`.
+
+The sixth freeze fixes resolver version 14 at `e8ab05b` and all 36 inputs. It
+contains 49 links across six held-out documents: 12 citations, 12 figures/tables,
+11 equations, 11 sections and three controls. Sixteen links are new; 33 unchanged
+carryovers did not drive rule changes. The full sample contains 196 links across
+twenty-three papers, plus eight links in the two earlier development seeds.
+Annotations and freeze are committed before evaluation.
+
 ## Remaining acceptance work
 
-Replenish and freeze before evaluating every held-out link with paired images,
+Evaluate every frozen held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback
