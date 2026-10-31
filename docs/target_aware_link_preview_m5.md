@@ -1,9 +1,9 @@
 # Target-aware previews: M5 qualification in progress
 
-M5 is not complete. The fifth frozen held-out run fails citation coverage and
-completeness, including a reference missing its final year/backlink line. Papers
-driving changes move to development before those changes; all five evaluations
-are preserved. Native-window acceptance also remains unqualified.
+M5 is not complete. The sixth frozen held-out run passes automatic metrics, but
+the full visual audit finds a reference containing unrelated following entries.
+Papers driving changes move to development before those changes; all six
+evaluations are preserved. Native-window acceptance also remains unqualified.
 
 ## Cache preparation latency
 
@@ -845,9 +845,33 @@ carryovers did not drive rule changes. The full sample contains 196 links across
 twenty-three papers, plus eight links in the two earlier development seeds.
 Annotations and freeze are committed before evaluation.
 
+## Sixth held-out evaluation: manual audit catches neighboring entries
+
+At `c20fa7a`, the complete `held-out-v6` run captures 49 links with all 36 frozen
+identities intact and zero native handles after disposal. Automatic checks
+report 10/12 citations, 12/12 figures/tables, 11/11 equations and 11/11 sections
+resolved and complete; all three controls fall back. Both citation fallbacks
+are in `2606.29940v2` and remain eligible.
+
+Visual review of all 44 accepted crops finds one blocking defect: reference [2]
+in `1809.02736v1` includes references [3] through [9] from the next page. The
+original exclusion annotation covered only the preceding entry on page 8, so
+automatic metrics did not catch this extra-page content. The other 43 crops
+visually retain their identified targets without unrelated neighbors. The
+manual audit is mandatory; passing sampled ink masks alone does not establish
+the release gate.
+
+The whole paper moves to development before correcting the entry boundary. Its
+original cases are unchanged in this promotion. Strengthening its excluded-page
+coverage is a development regression, with the original annotation retained in
+commit `c20fa7a`. Freeze, sampling, raw-result hash and all 44 visual decisions
+are archived as `m5_history/held_out_v6_*.json`; paired captures remain under
+`build/target-preview-m5/papers-held-out-v6/`. One replacement is required.
+
 ## Remaining acceptance work
 
-Evaluate every frozen held-out link with paired images,
+Fix the promoted neighboring-entry regression, then replenish and freeze before
+evaluating every held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback

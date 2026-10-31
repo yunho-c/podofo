@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "1809.02736v1.pdf",
-    "split": "held_out",
+    "split": "development",
     "id": "1809.02736v1",
     "sha256": "547c44d4c83e2eb506a20fd2ff1743d18269f80c83e61d599eb65efaecb6cad0",
     "source_url": "https://arxiv.org/abs/1809.02736v1",
@@ -235,7 +235,7 @@
           271.545
         ],
         "source_text": "(1)",
-        "source_context": "f Ballé et al. [13], which uses a noise-based\no the loss function in Eq. (1) and introduces\nmost previous research uses a fixed, though",
+        "source_context": "f Ball\u00e9 et al. [13], which uses a noise-based\no the loss function in Eq. (1) and introduces\nmost previous research uses a fixed, though",
         "destination": {
           "name": "equation.1.1",
           "page": 2,
@@ -477,7 +477,7 @@
           500.832
         ],
         "source_text": "3",
-        "source_context": "city, we use 1×1 convolution in the\nalso permissible. Section 3 provides\noring the effects of different context",
+        "source_context": "city, we use 1\u00d71 convolution in the\nalso permissible. Section 3 provides\noring the effects of different context",
         "destination": {
           "name": "section.3",
           "page": 4,
@@ -539,11 +539,15 @@
         "reviewed": true,
         "notes": "Heading and full first paragraph; the numbered footnote below is separate."
       }
-    ]
+    ],
+    "promoted_from": "held_out_v6",
+    "promotion_reason": "Full visual audit finds accepted reference [2] includes subsequent references [3] through [9] on the next page; promote the whole paper before correcting variable-width numbered-entry boundaries and strengthening its neighboring-page regression."
   },
   "review": {
     "date": "2026-10-30",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "0f10834"
+    "resolver_baseline": "0f10834",
+    "promoted_from": "held_out_v6",
+    "promotion_reason": "Full visual audit finds accepted reference [2] includes subsequent references [3] through [9] on the next page; promote the whole paper before correcting variable-width numbered-entry boundaries and strengthening its neighboring-page regression."
   }
 }
