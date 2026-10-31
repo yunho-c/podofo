@@ -23,17 +23,17 @@ can identify cached results, while missing payloads still prevent both inference
 and custom-directory verification. Corrupt/oversized manifests, changed catalog
 pins, unsupported platforms and symlinked components remain rejected.
 
-The latest performance run is `performance-v4` at resolver version 12, on an Apple M4 Pro with
+The latest performance run is `performance-v5` at resolver version 13, on an Apple M4 Pro with
 48 GiB RAM, macOS 27.0.1 (26A434), Flutter 3.47.5 / Dart 3.13.4, using the bundled
 experimental mixed layout profile and the existing linked-object Figure 4 at 2x.
 These are fixture observations, not a corpus-wide or release-mode benchmark.
 
 | Path | Samples | Semantic p50 | Semantic p95 | Context p95 |
 | --- | ---: | ---: | ---: | ---: |
-| Decoded image and text reuse | 30 | 1.4 ms | 1.7 ms | 0.28 ms |
-| Persisted layout, fresh worker/coordinator | 20 | 6.4 ms | 9.7 ms | 1.2 ms |
-| Warm model, forced layout miss | 20 | 70.2 ms | 81.5 ms | 1.4 ms |
-| Cold app preparation | 20 | 615.0 ms | 678.3 ms | 3.6 ms |
+| Decoded image and text reuse | 30 | 1.7 ms | 2.4 ms | 0.29 ms |
+| Persisted layout, fresh worker/coordinator | 20 | 8.3 ms | 11.1 ms | 1.8 ms |
+| Warm model, forced layout miss | 20 | 69.6 ms | 76.3 ms | 2.1 ms |
+| Cold app preparation | 20 | 645.7 ms | 904.0 ms | 3.2 ms |
 
 Timing begins at `LinkPreviewWorker.load` and ends at the contextual future or
 semantic callback; it excludes the 350 ms hover debounce, captures and assertions.
@@ -44,7 +44,7 @@ not a disk-free path. New inference is counted explicitly, so a purported warm
 analysis sample cannot pass by accidentally reusing persisted layout.
 
 The initial failing run remains under `build/target-preview-m5/performance-v1/`;
-`performance-v2`, `performance-v3` and `performance-v4` retain subsequent raw samples. Both
+`performance-v2` through `performance-v5` retain subsequent raw samples. Both
 cached paths pass the p95 150 ms gate. Cold preparation continues to deliver the
 contextual image first; no inference deadline has been inferred from this sample.
 
@@ -665,8 +665,8 @@ The signed macOS Debug build passes deep/strict signature verification. A final
 explicit native run passes all four tests: the original fourteen-target corpus,
 M4 complex targets, the cache/model timing and 100-cycle cancellation stress run,
 and the bundled-payload identity guard. Cached semantic p95 remains below the
-150 ms gate, and owned caches and native handles drain after disposal. Updated
-timings are in the table above; raw samples are under `performance-v4/` (the
+150 ms gate, and owned caches and native handles drain after disposal. That run's
+raw samples are under `performance-v4/` (the
 original doubled run-prefix directory was renamed after completion). Validation
 logs use `build/target-preview-m5-panel-syntax-`.
 
@@ -718,9 +718,42 @@ log is `build/target-preview-m5-held-out-v4.log`. All forty accepted previews ha
 zero automatic wrong-object flags; this is not a completed visual audit of them.
 The active freeze is removed and one replacement paper is required.
 
+## Native text-line boundaries preserve equation margins
+
+Resolver version 13 constrains padding against native text-line bounds for prose
+regions with selectable text. A loose paragraph model rectangle no longer treats
+whitespace after a ragged last line as ink, allowing the equation's three-point
+margin to retain a radical overbar outside PDF glyph bounds. Each text line keeps
+a safety margin; textless regions, graphics and separate formula regions still
+constrain padding using model bounds. The selected target content is never
+reduced, and the existing foreign-region checks remain in place.
+
+The new synthetic regression fails before this change and passes afterwards;
+it also verifies genuine neighboring text and textless-region boundaries. All
+56 focused tests and 403 full-suite tests pass, with 21 opt-in skips in the latter.
+Full analysis, formatting and the 53-file engine-pin verification pass. The native
+development replay `papers-equation-margin-development-v1` covers 130 links across
+fifteen papers: 28/30 citations, 27/30 figures/tables, 29/30 equations and 27/30
+sections resolve completely. All 111 accepted crops pass required/excluded ink
+checks, all ten controls fall back, all 45 input identities match, and native
+handles drain to zero. The original fourteen-target and M4 complex native corpora
+also pass. The corrected radical was visually compared with an independent
+source render: all 1,134 required pixels remain and none of the 5,244 excluded
+pixels are included. Logs use `build/target-preview-m5-equation-margin-`.
+
+The macOS Debug build and deep/strict local signature verification pass. The
+current `performance-v5` run and bundled-payload guard pass, retaining all 90
+timing samples and 100 hover/cancel cycles. Cached semantic p95 is 2.4 ms for
+decoded reuse and 11.1 ms for persisted layout. Warm-analysis p95 is 76.3 ms and
+cold-preparation p95 is 904.0 ms; these are separate observed paths with the
+timing boundaries above. Owned-cache peaks are unchanged and all handles drain
+after disposal. The reusable loader's tests pass separately with `--no-pub`,
+including unsupported-platform and missing/changed-asset rejection. Unrelated
+Podoco changes remain preserved.
+
 ## Remaining acceptance work
 
-Fix the equation-margin regression, replenish and freeze the held-out set, and
+Replenish and freeze the held-out set, and
 evaluate every frozen held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10

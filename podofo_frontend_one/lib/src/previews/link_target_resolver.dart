@@ -388,24 +388,31 @@ Rect _padTarget(
         selected.any((p) => _covers(p, r.bounds, .9))) {
       continue;
     }
-    // Neighbor models can touch a paragraph's preferred margin. Cap that margin
-    // before its next line; a small overlap would evade the coarse area guard.
-    // The selected content itself is never reduced to make a crop fit.
-    final b = r.bounds;
-    if (_horizontalOverlap(content, b) > 0) {
-      if (b.top >= content.bottom) {
-        bottom = math.min(bottom, math.max(content.bottom, b.top - .5));
+    // Prose model boxes can extend through whitespace after a ragged last line.
+    // Their native lines constrain padding more precisely, preserving nearby
+    // vector strokes (such as radical overbars) outside formula glyph boxes.
+    // Textless regions and graphics still use model bounds; contained formula
+    // regions remain independent obstacles. Never reduce selected content.
+    final obstacles =
+        r.model.category == podoco.RegionCategory.text && r.lines.isNotEmpty
+        ? r.lines.map((l) => l.bounds.inflate(.5))
+        : [r.bounds];
+    for (final b in obstacles) {
+      if (_horizontalOverlap(content, b) > 0) {
+        if (b.top >= content.bottom) {
+          bottom = math.min(bottom, math.max(content.bottom, b.top - .5));
+        }
+        if (b.bottom <= content.top) {
+          top = math.max(top, math.min(content.top, b.bottom + .5));
+        }
       }
-      if (b.bottom <= content.top) {
-        top = math.max(top, math.min(content.top, b.bottom + .5));
-      }
-    }
-    if (_verticalOverlap(content, b) > 0) {
-      if (b.left >= content.right) {
-        right = math.min(right, math.max(content.right, b.left - .5));
-      }
-      if (b.right <= content.left) {
-        left = math.max(left, math.min(content.left, b.right + .5));
+      if (_verticalOverlap(content, b) > 0) {
+        if (b.left >= content.right) {
+          right = math.min(right, math.max(content.right, b.left - .5));
+        }
+        if (b.right <= content.left) {
+          left = math.max(left, math.min(content.left, b.right + .5));
+        }
       }
     }
   }

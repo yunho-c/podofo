@@ -14,6 +14,54 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test('loose prose boxes do not remove an equation stroke margin', () {
+    final regions = [
+      _r(
+        'text',
+        [90, 582, 522, 630],
+        'A preceding theorem with several lines.\n'
+            'Its assumptions include several variables.\n'
+            'With the stated probability over all tasks and\n'
+            'samples),',
+      ),
+      _r('formula', [200, 631, 411, 656], 'norm <= bound'),
+      _r('formula_number', [507, 638, 520, 651], '(1)'),
+    ];
+    final target = _resolve(regions, '(1)');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    // Radical overbars are vector strokes, outside the PDF's glyph boxes.
+    const stroke = Rect.fromLTRB(290, 629.5, 340, 630.5);
+    expect(target.parts.single.bounds.intersect(stroke), stroke);
+    expect(
+      target.parts.single.bounds.overlaps(
+        const Rect.fromLTRB(91, 619, 134, 627),
+      ),
+      false,
+    );
+
+    // Native glyphs within the requested margin still constrain it. Textless
+    // regions retain their model bounds because empty extraction proves nothing.
+    for (final text in ['Genuine neighboring ink.', '']) {
+      final crowded = _resolve([
+        _r('text', [280, 620, 400, 631], text),
+        ...regions.skip(1),
+      ], '(1)');
+      expect(
+        crowded.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: crowded.reason,
+      );
+      expect(
+        crowded.parts.single.bounds.overlaps(
+          const Rect.fromLTRB(281, 621, 340, 628),
+        ),
+        false,
+      );
+      if (text.isEmpty) {
+        expect(crowded.parts.single.bounds.top, greaterThanOrEqualTo(631));
+      }
+    }
+  });
   test(
     'partially selected parenthesized panels retain a single panel identity',
     () {
