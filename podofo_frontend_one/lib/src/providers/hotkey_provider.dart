@@ -1,5 +1,4 @@
-import 'dart:io';
-
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +6,7 @@ import 'package:window_manager/window_manager.dart';
 
 import '../data/pane_data.dart';
 import '../services/document_actions.dart';
+import '../services/history_actions.dart';
 import 'document_provider.dart';
 import 'tab_provider.dart';
 import 'ui_provider.dart';
@@ -17,13 +17,19 @@ class AppShortcuts extends ConsumerWidget {
   final Widget child;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    SingleActivator chord(LogicalKeyboardKey key, {bool shift = false}) =>
-        SingleActivator(
-          key,
-          control: !Platform.isMacOS,
-          meta: Platform.isMacOS,
-          shift: shift,
-        );
+    final isMac = defaultTargetPlatform == TargetPlatform.macOS;
+    SingleActivator chord(
+      LogicalKeyboardKey key, {
+      bool shift = false,
+      bool repeat = true,
+    }) => SingleActivator(
+      key,
+      control: !isMac,
+      meta: isMac,
+      shift: shift,
+      includeRepeats: repeat,
+    );
+
     void save({bool as = false}) {
       final document = ref.read(currentDocumentProvider);
       if (document != null) {
@@ -42,6 +48,13 @@ class AppShortcuts extends ConsumerWidget {
 
     return CallbackShortcuts(
       bindings: {
+        chord(LogicalKeyboardKey.keyZ, repeat: false): () =>
+            HistoryActions.resolve(ref).invoke(redo: false),
+        chord(LogicalKeyboardKey.keyZ, shift: true, repeat: false): () =>
+            HistoryActions.resolve(ref).invoke(redo: true),
+        if (!isMac)
+          chord(LogicalKeyboardKey.keyY, repeat: false): () =>
+              HistoryActions.resolve(ref).invoke(redo: true),
         chord(LogicalKeyboardKey.keyO): () =>
             ref.read(filePathProvider.notifier).pickFile(),
         chord(LogicalKeyboardKey.keyS): () => save(),

@@ -343,9 +343,73 @@ class LoadedDocumentsNotifier extends Notifier<Map<String, Document>> {
     await _autoSave(document);
   }
 
-  Future<void> undoHighlight(Document document) async {
+  Future<void> undoHighlight(Document document) => undo(document);
+
+  Future<void> underline(
+    Document document,
+    List<HighlightRegion> regions,
+  ) async {
     try {
-      await document.session.undoHighlight();
+      await document.session.underline(regions);
+    } finally {
+      refresh();
+    }
+    await _autoSave(document);
+  }
+
+  Future<void> undo(Document document) async {
+    try {
+      await document.session.undo();
+    } finally {
+      refresh();
+    }
+    await _autoSave(document);
+  }
+
+  Future<void> redo(Document document) async {
+    try {
+      await document.session.redo();
+    } finally {
+      refresh();
+    }
+    await _autoSave(document);
+  }
+
+  Future<void> highlightUnderline(
+    Document document,
+    String id,
+    int color,
+    int expectedRevision,
+  ) async {
+    try {
+      await document.session.highlightUnderline(id, color, expectedRevision);
+    } finally {
+      refresh();
+    }
+    await _autoSave(document);
+  }
+
+  Future<void> recolorHighlights(
+    Document document,
+    Set<String> ids,
+    int color,
+    int expectedRevision,
+  ) async {
+    try {
+      await document.session.recolorHighlights(ids, color, expectedRevision);
+    } finally {
+      refresh();
+    }
+    await _autoSave(document);
+  }
+
+  Future<void> removeAnnotations(
+    Document document,
+    Set<String> ids,
+    int expectedRevision,
+  ) async {
+    try {
+      await document.session.removeAnnotations(ids, expectedRevision);
     } finally {
       refresh();
     }

@@ -31,6 +31,7 @@ class _SearchResults extends ConsumerStatefulWidget {
 
 class _SearchPaneState extends ConsumerState<_SearchResults> {
   final _query = TextEditingController();
+  final _undo = UndoHistoryController();
   final _scroll = ScrollController();
   Timer? _debounce;
   late final PdfTextSearcher _searcher;
@@ -55,6 +56,7 @@ class _SearchPaneState extends ConsumerState<_SearchResults> {
     _debounce?.cancel();
     _query.removeListener(_search);
     _query.dispose();
+    _undo.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -85,6 +87,7 @@ class _SearchPaneState extends ConsumerState<_SearchResults> {
         children: [
           TextField(
             controller: _query,
+            undoController: _undo,
             autofocus: true,
             placeholder: const Text('Search this document'),
             textInputAction: TextInputAction.search,

@@ -3,9 +3,12 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
-import 'package:shadcn_flutter/shadcn_flutter.dart';
+import 'package:shadcn_flutter/shadcn_flutter.dart' hide colorToHex;
 
 import '../../providers/document_provider.dart';
+import '../../data/document_data.dart';
+import '../../editing/annotation_edit.dart';
+import '../../utils/color_utils.dart';
 import '../../services/document_actions.dart';
 import '../../services/narration_actions.dart';
 import '../../providers/narration_provider.dart';
@@ -28,34 +31,191 @@ List<MenuItem> pdfPageLayoutMenuItems({
   ),
 ];
 
-/// Reader context menu, including selection actions and page layout.
-class PdfSelectionMenu extends ConsumerWidget {
+/// Captured on secondary pointer down, independently of any text selection.
+class AnnotationMenuRequest {
+  AnnotationMenuRequest(this.document, this.pageNumber, this.point)
+    : revision = document.session.revision;
+
+  final Document document;
+  final int pageNumber, revision;
+  final PdfPoint point;
+
+  AnnotationRecord? resolve() {
+    if (document.session.revision != revision) {
+      throw StateError('Annotations changed. Open the menu again.');
+    }
+    return document.session.annotationAt(pageNumber, point.x, point.y);
+  }
+}
+
+/// Reader context menu, including existing text markup and selection actions.
+class PdfSelectionMenu extends ConsumerStatefulWidget {
   const PdfSelectionMenu({
     super.key,
     required this.params,
     required this.onHighlight,
+    required this.onUnderline,
     required this.twoPageView,
     required this.onTwoPageViewChanged,
+    this.annotationRequest,
+    this.onDismiss,
   });
 
   final PdfViewerContextMenuBuilderParams params;
   final ValueChanged<String> onHighlight;
+  final VoidCallback onUnderline;
   final bool twoPageView;
   final ValueChanged<bool> onTwoPageViewChanged;
+  final AnnotationMenuRequest? annotationRequest;
+  final VoidCallback? onDismiss;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PdfSelectionMenu> createState() => _PdfSelectionMenuState();
+}
+
+class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
+  AnnotationRecord? _target;
+  bool _pending = false, _failed = false, _dismissed = false;
+  final _menuFocus = FocusNode(debugLabel: 'PDF context menu');
+
+  @override
+  void initState() {
+    super.initState();
+    _resolveTarget();
+    _focusMenu();
+  }
+
+  void _resolveTarget() {
+    _target = null;
+    _pending = false;
+    _failed = false;
+    _dismissed = false;
+    final request = widget.annotationRequest;
+    if (request == null) return;
+    if (request.document.session.annotationsReady) {
+      try {
+        _target = request.resolve();
+      } catch (_) {
+        _failed = true;
+      }
+      return;
+    }
+    _pending = true;
+    request.document.session.prepareAnnotations().then(
+      (_) => _finishTarget(request),
+      onError: (Object _) => _finishTarget(request, failed: true),
+    );
+  }
+
+  void _finishTarget(AnnotationMenuRequest request, {bool failed = false}) {
+    if (!mounted ||
+        _dismissed ||
+        !identical(widget.annotationRequest, request)) {
+      return;
+    }
+    setState(() {
+      _pending = false;
+      _failed = failed;
+      if (!failed) {
+        try {
+          _target = request.resolve();
+        } catch (_) {
+          _failed = true;
+        }
+      }
+    });
+    _focusMenu();
+  }
+
+  void _focusMenu() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && !_dismissed) _menuFocus.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _menuFocus.dispose();
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant PdfSelectionMenu oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.annotationRequest != widget.annotationRequest) {
+      _resolveTarget();
+    }
+    if (oldWidget.annotationRequest != widget.annotationRequest ||
+        oldWidget.params.anchorA != widget.params.anchorA) {
+      _focusMenu();
+    }
+  }
+
+  void _dismiss() {
+    _dismissed = true;
+    widget.onDismiss?.call();
+    widget.params.dismissContextMenu();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // While the first scan finishes, keep dismissal active but paint no popup.
+    // Once loaded, both hit and no-hit menus render in their final form first.
+    if (_pending) {
+      return TapRegion(
+        onTapOutside: (_) => _dismiss(),
+        child: Focus(
+          focusNode: _menuFocus,
+          onKeyEvent: (_, event) {
+            if (event is KeyDownEvent &&
+                event.logicalKey == LogicalKeyboardKey.escape) {
+              _dismiss();
+              return KeyEventResult.handled;
+            }
+            return KeyEventResult.ignored;
+          },
+          child: const SizedBox.shrink(),
+        ),
+      );
+    }
+    return _menu(context);
+  }
+
+  Widget _menu(BuildContext context) {
+    final params = widget.params;
+    final request = widget.annotationRequest;
     final document = ref.watch(currentDocumentProvider);
+    final existing = request == null ? null : _target;
+    final stale =
+        request != null &&
+        (document?.session != request.document.session ||
+            request.document.session.lease.isClosed ||
+            request.document.session.revision != request.revision);
+    final canEdit =
+        !stale &&
+        !_failed &&
+        existing?.canEdit == true &&
+        document?.pdfDocument.permissions?.allowsModifyAnnotations != false;
     final selection = params.textSelectionDelegate;
     final copy = selection.hasSelectedText && selection.isCopyAllowed;
-    final highlight =
+    final canMarkSelection =
+        !_failed &&
+        !stale &&
         selection.hasSelectedText &&
         document != null &&
         document.pdfDocument.permissions?.allowsModifyAnnotations != false;
+    final highlight = existing == null && canMarkSelection;
+    final underline =
+        canMarkSelection && existing?.kind != AnnotationKind.underline;
     final selectAll =
         params.isTextSelectionEnabled && !selection.isSelectingAllText;
     final showView = params.contextMenuFor == PdfViewerPart.background;
-    if (!copy && !highlight && !selectAll && !showView) {
+    if (!copy &&
+        !highlight &&
+        !underline &&
+        !selectAll &&
+        !showView &&
+        request == null) {
       return const SizedBox.shrink();
     }
 
@@ -66,7 +226,7 @@ class PdfSelectionMenu extends ConsumerWidget {
     );
 
     Future<void> run(Future<void> Function() action) async {
-      params.dismissContextMenu();
+      _dismiss();
       try {
         await action();
       } catch (error) {
@@ -74,11 +234,44 @@ class PdfSelectionMenu extends ConsumerWidget {
       }
     }
 
+    Future<void> edit({String? color}) => run(() async {
+      if (request == null ||
+          existing == null ||
+          ref.read(currentDocumentProvider)?.session !=
+              request.document.session ||
+          request.document.session.lease.isClosed ||
+          request.document.session.revision != request.revision) {
+        throw StateError('Annotations changed. Open the menu again.');
+      }
+      final notifier = ref.read(loadedDocumentsProvider.notifier);
+      if (color == null) {
+        await notifier.removeAnnotations(request.document, {
+          existing.id,
+        }, request.revision);
+      } else if (existing.kind == AnnotationKind.underline) {
+        await notifier.highlightUnderline(
+          request.document,
+          existing.id,
+          colorFromHex(color).toARGB32(),
+          request.revision,
+        );
+      } else {
+        await notifier.recolorHighlights(
+          request.document,
+          {existing.id},
+          colorFromHex(color).toARGB32(),
+          request.revision,
+        );
+      }
+    });
+
     return TapRegion(
-      onTapOutside: (_) => params.dismissContextMenu(),
+      onTapOutside: (_) => _dismiss(),
       child: SizedBox(
         width: 192,
         child: MenuGroup(
+          focusNode: _menuFocus,
+          onDismissed: _dismiss,
           direction: Axis.vertical,
           builder: (context, children) => MenuPopup(children: children),
           children: [
@@ -123,19 +316,59 @@ class PdfSelectionMenu extends ConsumerWidget {
               MenuLabel(
                 child: HighlightPalette(
                   onSelected: (color) {
-                    params.dismissContextMenu();
-                    onHighlight(color);
+                    _dismiss();
+                    widget.onHighlight(color);
                   },
                 ),
               ),
             ],
+            if (request != null && (_failed || stale))
+              const MenuLabel(
+                child: Text('Annotation unavailable. Reopen menu.'),
+              ),
+            if (existing != null && !stale && !_failed) ...[
+              const MenuDivider(),
+              MenuLabel(
+                child: Text(
+                  'Highlight',
+                  style: const TextStyle(fontWeight: FontWeight.normal),
+                ),
+              ),
+              if (canEdit)
+                MenuLabel(
+                  child: HighlightPalette(
+                    selectedColor: existing.canRecolor
+                        ? colorToHex(Color(existing.argb!))
+                        : null,
+                    updateDefault: false,
+                    onSelected: (color) => edit(color: color),
+                  ),
+                ),
+              if (!canEdit)
+                MenuLabel(
+                  child: Text('This ${existing.kind.name} is read-only'),
+                ),
+              if (canEdit)
+                MenuButton(
+                  onPressed: (_) => edit(),
+                  child: Text('Remove ${existing.kind.name}'),
+                ),
+            ],
+            if (underline)
+              MenuButton(
+                onPressed: (_) {
+                  _dismiss();
+                  widget.onUnderline();
+                },
+                child: const Text('Underline'),
+              ),
             if (showView) ...[
               if (copy || highlight || selectAll) const MenuDivider(),
               ...pdfPageLayoutMenuItems(
-                twoPageView: twoPageView,
+                twoPageView: widget.twoPageView,
                 onChanged: (enabled) {
-                  params.dismissContextMenu();
-                  onTwoPageViewChanged(enabled);
+                  _dismiss();
+                  widget.onTwoPageViewChanged(enabled);
                 },
               ),
             ],

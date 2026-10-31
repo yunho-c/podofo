@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
@@ -284,6 +285,34 @@ void main() {
       expect(find.textContaining('● reader'), findsOneWidget);
       expect(tester.takeException(), isNull);
 
+      // Exercise the actual viewer focus chain, not just AppShortcuts alone.
+      final editingSession = container.read(currentDocumentProvider)!.session;
+      controller.requestFocus();
+      await tester.pump();
+      await tester.sendKeyDownEvent(commandModifier);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+      await tester.sendKeyUpEvent(commandModifier);
+      await waitForNative(
+        tester,
+        () =>
+            !editingSession.dirty &&
+            find.textContaining('● reader').evaluate().isEmpty,
+      );
+      expect(editingSession.canRedo, true);
+      expect(find.textContaining('● reader'), findsNothing);
+      await tester.sendKeyDownEvent(commandModifier);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyZ);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyUpEvent(commandModifier);
+      await waitForNative(
+        tester,
+        () =>
+            editingSession.dirty &&
+            find.textContaining('● reader').evaluate().isNotEmpty,
+      );
+      expect(find.textContaining('● reader'), findsOneWidget);
+
       // Highlight mode waits for pointer release, including a paused drag.
       final pdf = container.read(currentDocumentProvider)!.pdfDocument;
       final text = await tester.runAsync(
@@ -528,7 +557,7 @@ void main() {
         tester,
         () => find.byTooltip('Remove highlight').evaluate().isNotEmpty,
       );
-      expect(find.textContaining('Hello highlight'), findsWidgets);
+      expect(find.text('Highlight'), findsWidgets);
       await tester.tap(find.byTooltip('Thumbnails'));
       await waitForNative(
         tester,
@@ -635,13 +664,23 @@ void main() {
         file.resolveSymbolicLinksSync(),
       );
       await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('File'));
-      await waitForNative(
-        tester,
-        () => find.text('Save').evaluate().isNotEmpty,
-      );
-      await tester.pump(const Duration(milliseconds: 300));
-      await tester.tap(find.text('Save').last);
+      if (defaultTargetPlatform == TargetPlatform.macOS) {
+        final menus = tester
+            .widget<PlatformMenuBar>(find.byType(PlatformMenuBar))
+            .menus;
+        final fileMenu = menus.whereType<PlatformMenu>().firstWhere(
+          (menu) => menu.label == 'File',
+        );
+        fileMenu.menus.firstWhere((item) => item.label == 'Save').onSelected!();
+      } else {
+        await tester.tap(find.text('File'));
+        await waitForNative(
+          tester,
+          () => find.text('Save').evaluate().isNotEmpty,
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Save').last);
+      }
       await waitForNative(
         tester,
         () => !container.read(currentDocumentProvider)!.dirty,

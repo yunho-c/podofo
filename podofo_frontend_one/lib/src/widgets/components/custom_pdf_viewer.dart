@@ -41,6 +41,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   int _generation = 0;
   final _selectionPointers = <int>{};
   bool _selectionChanged = false;
+  AnnotationMenuRequest? _annotationMenuRequest;
   late final NarrationController _narration;
   Object? _paintedRange;
   int _followRequest = 0;
@@ -355,6 +356,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   @override
   Widget build(BuildContext context) {
     final document = ref.watch(currentDocumentProvider);
+    if (_annotationMenuRequest?.document.session != document?.session) {
+      _annotationMenuRequest = null;
+    }
     if (document == null) {
       return const Center(
         child: Text('Press the plus icon to pick a PDF file.'),
@@ -439,19 +443,32 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         ),
         // pdfrx only positions non-positional menus when text is selected.
         // Return Flutter's Positioned so it recognizes our layout in both cases.
-        buildContextMenu: (context, params) => flutter.Positioned.fill(
-          key: const ValueKey('pdf-context-menu'),
-          child: PdfContextMenuOverlay(
-            anchor: params.anchorA,
-            child: PdfSelectionMenu(
-              params: params,
-              onHighlight: (color) =>
-                  DocumentActions.highlight(ref, color: color),
-              twoPageView: document.twoPageView,
-              onTwoPageViewChanged: _setTwoPageView,
+        buildContextMenu: (context, params) {
+          final request =
+              _annotationMenuRequest?.document.session == document.session
+              ? _annotationMenuRequest
+              : null;
+          return flutter.Positioned.fill(
+            key: const ValueKey('pdf-context-menu'),
+            child: PdfContextMenuOverlay(
+              anchor: params.anchorA,
+              child: PdfSelectionMenu(
+                params: params,
+                annotationRequest: request,
+                onDismiss: () {
+                  if (identical(_annotationMenuRequest, request)) {
+                    _annotationMenuRequest = null;
+                  }
+                },
+                onHighlight: (color) =>
+                    DocumentActions.highlight(ref, color: color),
+                onUnderline: () => DocumentActions.underline(ref),
+                twoPageView: document.twoPageView,
+                onTwoPageViewChanged: _setTwoPageView,
+              ),
             ),
-          ),
-        ),
+          );
+        },
         linkHandlerParams: PdfLinkHandlerParams(
           onLinkTap: (link) async {
             _clearHover();
@@ -534,6 +551,24 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             _checkUserScroll();
           },
           onPointerDown: (event) {
+            _annotationMenuRequest = null;
+            if (event.buttons == kSecondaryMouseButton && controller.isReady) {
+              _clearHover();
+              final point = controller.globalToDocument(event.position);
+              final hit = point == null
+                  ? null
+                  : controller.getPdfPageHitTestResult(
+                      point,
+                      useDocumentLayoutCoordinates: true,
+                    );
+              if (hit != null) {
+                _annotationMenuRequest = AnnotationMenuRequest(
+                  document,
+                  hit.page.pageNumber,
+                  hit.offset,
+                );
+              }
+            }
             if (event.buttons == kPrimaryButton) {
               _selectionPointers.add(event.pointer);
             }

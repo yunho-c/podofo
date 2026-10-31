@@ -15,7 +15,8 @@ Changes from the published package:
 - `pubspec.yaml`: replace workspace resolution with `publish_to: none` and omit
   the promotional screenshot entry.
 - `lib/src/widgets/selection_rects.dart`: adapt the visual rectangle merge pass
-  from the local `pdfrx_og` selection fix into a package-private extension.
+  from the local `pdfrx_og` selection fix into a shared extension, exported by
+  `pdfrx.dart` for selection painting and newly created highlight annotations.
 - `lib/src/widgets/pdf_viewer.dart`: paint those rectangles instead of each
   extracted fragment independently.
 
@@ -24,12 +25,24 @@ words. Painting those fragments separately leaves holes in selected lines.
 The merge pass joins contiguous text with compatible direction, line alignment,
 and word-sized gaps. It preserves column gutters, line breaks, and partial-word
 endpoints. It does not alter extraction, logical selection, hit testing,
-clipboard contents, saved annotations, colors, or theme inversion.
+clipboard contents, existing annotations, colors, or theme inversion. PoDoFo's
+`HighlightRegion.fromTextRanges` uses the same rectangles for new PDF highlight
+quadrilaterals, so their continuous line geometry persists through save/reopen.
 
 Regression coverage lives in the app's `test/pdf_selection_geometry_test.dart`
 and `test/pdf_selection_paint_test.dart`. The latter checks actual pixels and
 clipboard output at 0, 90, 180, and 270 degrees. When upgrading pdfrx, check for
 an equivalent upstream fix and run these tests before removing this backport.
+`test/highlight_selection_test.dart` and `test/highlight_persistence_test.dart`
+cover the annotation path, including native save/reopen and rendered word gaps.
+
+Page-status changes invalidate both preview and partial image caches even when
+page dimensions and rotation are unchanged. The engine uses these events for
+annotation edits as well as page measurement; geometry alone cannot establish
+bitmap validity. Pending renders for the changed pages are cancelled, including
+previews awaiting image decoding, so stale work cannot overwrite the refresh.
+`test/highlight_refresh_test.dart` checks creation, undo, and removal against the
+stationary viewer's actual pixels in preview and partial-rendering modes.
 
 ## Staging fixes
 
