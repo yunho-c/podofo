@@ -751,10 +751,26 @@ after disposal. The reusable loader's tests pass separately with `--no-pub`,
 including unsupported-platform and missing/changed-asset rejection. Unrelated
 Podoco changes remain preserved.
 
+## Fifth source-reviewed freeze
+
+The same source-only selection policy chose `2605.10938v2` to replace the promoted
+equation paper. Its nine links were visually reviewed before resolver/model
+output, including the page-bottom numbered reference and the complete three-panel
+system-comparison figure. Source hash, nonempty ink, page bounds and disjoint
+required/excluded regions validate. The sampling record is
+`m5_history/replenishment_v6_selection.json`; local source renders and independent
+text geometry are under `build/target-preview-m5/annotations-v7-replacement/`.
+
+The fifth freeze fixes resolver version 13 at `024def7` and all 36 inputs. The
+six-paper held-out set contains 50 links: 12 citations, 12 figures/tables, 11
+equations, 11 sections and four controls. Nine links are new and 41 are unchanged
+carryovers that did not drive rule changes. The complete sample now has 180 links
+over twenty-one papers, plus eight links in the two earlier development seeds.
+The annotation and freeze are committed before evaluating the set.
+
 ## Remaining acceptance work
 
-Replenish and freeze the held-out set, and
-evaluate every frozen held-out link with paired images,
+Evaluate every frozen held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback

@@ -1,0 +1,749 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2605.10938v2.pdf",
+    "split": "held_out",
+    "replaces_promoted_document": "2512.05117v3",
+    "id": "2605.10938v2",
+    "sha256": "50c6c0ca07340b21e01dcb5123b9e6fb593ed6c6f8801c78249d437e787224c2",
+    "source_url": "https://arxiv.org/abs/2605.10938v2",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2605.10938v2-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 15,
+        "source_bounds": [
+          484.271,
+          502.871,
+          491.245,
+          514.891
+        ],
+        "source_text": "7.",
+        "source_context": "M for ELF and 170M for others;\ntailed comparison in Fig. 7.)",
+        "destination": {
+          "name": "figure.caption.28",
+          "page": 8,
+          "raw_pdf_point": [
+            108.0,
+            442.54
+          ],
+          "point": [
+            108.0,
+            349.46
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 8,
+            "bounds": [
+              107,
+              352,
+              505,
+              462
+            ]
+          },
+          {
+            "page": 8,
+            "bounds": [
+              107,
+              469,
+              506,
+              502
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 8,
+            "bounds": [
+              345,
+              299,
+              506,
+              342
+            ]
+          },
+          {
+            "page": 8,
+            "bounds": [
+              107,
+              512,
+              371,
+              525
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "System-level comparison"
+        ],
+        "reviewed": true,
+        "notes": "All three Figure 7 panels: both sampling-step comparisons and training-token bars, axes, legends, data labels, panel labels and full shared caption. Exclude Figure 6 caption and the next section heading."
+      },
+      {
+        "id": "2605.10938v2-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 16,
+        "source_bounds": [
+          181.533,
+          558.288,
+          193.488,
+          567.135
+        ],
+        "source_text": "[72,",
+        "source_context": "Diffusion models [72, 73, 30] and flow-based m",
+        "destination": {
+          "name": "cite.sohl2015deep",
+          "page": 14,
+          "raw_pdf_point": [
+            108.0,
+            93.818
+          ],
+          "point": [
+            108.0,
+            698.182
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 14,
+            "bounds": [
+              107,
+              701,
+              507,
+              724
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 14,
+            "bounds": [
+              107,
+              671,
+              506,
+              693
+            ]
+          },
+          {
+            "page": 15,
+            "bounds": [
+              107,
+              74,
+              507,
+              108
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Deep unsupervised learning using nonequilibrium thermodynamics"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line reference [72] with venue, year and backlinks at the page bottom; the next page begins separate reference [73]."
+      },
+      {
+        "id": "2605.10938v2-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 17,
+        "source_bounds": [
+          196.46,
+          558.288,
+          208.415,
+          567.135
+        ],
+        "source_text": "73,",
+        "source_context": "Diffusion models [72, 73, 30] and flow-based mode",
+        "destination": {
+          "name": "cite.song2020score",
+          "page": 15,
+          "raw_pdf_point": [
+            108.0,
+            720.946
+          ],
+          "point": [
+            108.0,
+            71.054
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 15,
+            "bounds": [
+              107,
+              74,
+              507,
+              108
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 15,
+            "bounds": [
+              107,
+              114,
+              507,
+              170
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Score-based generative modeling through stochastic differential equations"
+        ],
+        "reviewed": true,
+        "notes": "Complete three-line reference [73] including venue, year and backlinks; exclude reference [74]. Source selects one member of a bracketed citation list."
+      },
+      {
+        "id": "2605.10938v2-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 8,
+        "source_xref": 209,
+        "source_bounds": [
+          197.214,
+          337.367,
+          204.188,
+          348.27
+        ],
+        "source_text": "2)",
+        "source_context": "network is trained to perform denoising at all but \nthe final step (see Fig. 2).",
+        "destination": {
+          "name": "figure.caption.3",
+          "page": 2,
+          "raw_pdf_point": [
+            108.0,
+            725.455
+          ],
+          "point": [
+            108.0,
+            66.545
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              120,
+              79,
+              471,
+              149
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              156,
+              507,
+              190
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              201,
+              507,
+              255
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Conceptual illustration of ELF"
+        ],
+        "reviewed": true,
+        "notes": "Entire five-stage embedding-flow diagram, all time labels, trajectories, token triangle and complete caption. Exclude the following continuation of introduction prose."
+      },
+      {
+        "id": "2605.10938v2-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 53,
+        "source_xref": 310,
+        "source_bounds": [
+          405.043,
+          712.249,
+          419.489,
+          723.153
+        ],
+        "source_text": "3.3.",
+        "source_context": "he simpler setting of unconditional generation. The\ntion, as discussed in Sec. 3.3.",
+        "destination": {
+          "name": "subsection.3.3",
+          "page": 5,
+          "raw_pdf_point": [
+            108.0,
+            312.307
+          ],
+          "point": [
+            108.0,
+            479.693
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              486,
+              251,
+              498
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              506,
+              507,
+              573
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              577,
+              507,
+              620
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Conditioning and Guidance"
+        ],
+        "reviewed": true,
+        "notes": "Heading plus full first paragraph, including its footnote marker; the footnote content is a separate target. Exclude following paragraph beginning In the absence of class labels."
+      },
+      {
+        "id": "2605.10938v2-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 314,
+        "source_bounds": [
+          248.285,
+          159.853,
+          262.98,
+          170.757
+        ],
+        "source_text": "4.1)",
+        "source_context": "er [60] for bidirectional contextual embeddings. We al\ned embeddings (see Sec. 4.1). The encoder is only us\ntional modules at inference.",
+        "destination": {
+          "name": "subsection.4.1",
+          "page": 7,
+          "raw_pdf_point": [
+            108.0,
+            720.0
+          ],
+          "point": [
+            108.0,
+            72.0
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 7,
+            "bounds": [
+              107,
+              74,
+              174,
+              86
+            ]
+          },
+          {
+            "page": 7,
+            "bounds": [
+              107,
+              94,
+              506,
+              128
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 7,
+            "bounds": [
+              107,
+              138,
+              331,
+              191
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Ablations"
+        ],
+        "reviewed": true,
+        "notes": "Heading and complete three-line opening paragraph. Exclude the following Classifier-free guidance paragraph and its separate figure."
+      },
+      {
+        "id": "2605.10938v2-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 4,
+        "source_link_index_pymupdf": 10,
+        "source_xref": 323,
+        "source_bounds": [
+          307.712,
+          593.866,
+          314.786,
+          604.77
+        ],
+        "source_text": "(1)",
+        "source_context": "weights with that in Eq. (1) and is conditioned on a\ndition to the time condition t = 1. At inference time,",
+        "destination": {
+          "name": "equation.1",
+          "page": 4,
+          "raw_pdf_point": [
+            170.63,
+            467.405
+          ],
+          "point": [
+            170.63,
+            324.595
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              169,
+              320,
+              506,
+              347
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              302,
+              506,
+              314
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              352,
+              369,
+              366
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Entire two-form MSE loss equality with expectation subscripts, squared norms, fraction and equation number; exclude introducing text and the following velocity relation."
+      },
+      {
+        "id": "2605.10938v2-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 5,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 333,
+        "source_bounds": [
+          222.62,
+          526.627,
+          228.598,
+          539.12
+        ],
+        "source_text": "nc\n.1",
+        "source_context": "dels, classifier-free guidance (CFG) [29] has been es\nering the generated output.1 CFG also enables a trade-\ncause CFG was originally formulated for continuous",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 5,
+          "raw_pdf_point": [
+            122.346,
+            90.929
+          ],
+          "point": [
+            122.346,
+            701.071
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Superscript after steering the generated output points to the CFG-definition footnote; unsupported control outside the four target groups."
+      },
+      {
+        "id": "2605.10938v2-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 6,
+        "source_link_index_pymupdf": 33,
+        "source_xref": 381,
+        "source_bounds": [
+          133.295,
+          686.001,
+          140.269,
+          696.905
+        ],
+        "source_text": "2",
+        "source_context": "selected model mode, the network\nin Eq. 2 (20%). During inference,",
+        "destination": {
+          "name": "equation.2",
+          "page": 4,
+          "raw_pdf_point": [
+            234.709,
+            219.646
+          ],
+          "point": [
+            234.709,
+            572.354
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              233,
+              574,
+              506,
+              589
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              551,
+              506,
+              567
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              594,
+              506,
+              625
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(2)"
+        ],
+        "reviewed": true,
+        "notes": "Complete cross-entropy objective, expectation subscript, brackets and equation number. Exclude surrounding prose."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-31",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "024def7b6c6998a19b51b5bfb053b1900bbe384a"
+  }
+}
