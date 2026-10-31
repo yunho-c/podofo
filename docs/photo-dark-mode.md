@@ -35,8 +35,10 @@ the current choice and what clicking will do. Wheel scrolling remains available.
 The appearance menu includes a short reminder of the modifier gesture.
 
 Only panels that reached pixel classification are adjustable: they have already
-passed the geometry, opacity, overlap and allocation gates. This includes both
-accepted photos and classifier rejections. Masks, complex clipping, overlapping
+passed the geometry, opaque-coverage, overlap and allocation gates. This includes both
+accepted photos and classifier rejections, including images with intrinsic masks.
+A manual preservation choice applies only to the opaque footprint; transparent
+holes and fractional-alpha pixels still use dark mode. Complex clipping, overlapping
 page content and other earlier rejections are still excluded. All eligible
 visible panels can be adjusted; the developer list's 128-entry cap does not limit
 this interaction. The overlay consumes panel clicks, so they cannot select PDF
@@ -50,8 +52,9 @@ the user's intent. Returning to Automatic removes that saved value.
 
 Records are keyed by the PDF's SHA-256 fingerprint. Panel anchors contain the
 page, rotation, page dimensions, cropped geometry rounded to 0.001 PDF points,
-and a hash of the existing 64×64 oriented RGB classifier sample. No additional
-image decode or pixels are retained. Object paths are not durable identifiers.
+and a hash of the existing 64×64 oriented RGB classifier sample. Masked-image
+anchors also hash their coverage dimensions and bits; fully opaque anchors remain
+unchanged. No additional image decode or image colors are retained. Object paths are not durable identifiers.
 Byte-identical renamed/moved files and copies therefore share saved preferences.
 App-controlled annotation saves and Save As copy choices to the new fingerprint;
 each choice still requires a matching eligible panel. Externally changed PDFs
@@ -79,7 +82,9 @@ works in light mode or with preservation disabled. It shares the viewer's
 visible-page analysis/cache; enabling diagnostics adds no second viewer or page render.
 
 - Green outlines indicate image regions included in the current preservation
-  mask. Accepted regions waiting for a texture update are gray (`mask-pending`);
+  mask. For masked images this denotes their opaque footprint, not the whole
+  outlined rectangle; expanded details report the opaque percentage and visible
+  classifier sample count. Accepted regions waiting for a texture update are gray (`mask-pending`);
   a failed texture build shows `mask-unavailable`. There is no 16-photo ceiling.
 - Orange outlines indicate rejected raster images. Labels include the page,
   zero-based PDF object path, and the first failed gate. A path such as `60/2`
@@ -128,7 +133,7 @@ inherits Form transparency and clipping, and inspects the raster leaves. Native
 bounds already include each object's own matrix; only its ancestors are applied
 again. Form containers do not themselves count as overlapping paint.
 
-Once an image passes the opacity check, earlier paint is treated as covered.
+Within an image's verified opaque footprint, earlier paint is treated as covered.
 Later text, images and ambiguous drawing paths still block preservation. For
 bounded, straight-edged filled paths, contour edges plus the PDF fill rule can
 prove that an image lies in an unpainted hole. This handles figure frames exported
@@ -142,7 +147,7 @@ An image must pass **every** gate:
 | Gate | Prototype criterion |
 | --- | --- |
 | Geometry | Axis-aligned image or exact quarter-turn; arbitrary skew/rotation rejected |
-| Visibility | No image/Form transparency state; visible rendered pixels have full alpha; simple rectangular clips supported |
+| Visibility | No image/Form transparency state; only fully opaque rendered coverage is preserved; simple rectangular clips supported |
 | Isolation | No later paint in the retained rectangle; bounded polygon holes can prove clear interiors |
 | Page size | Visible width and height at least 24 PDF units; less than 65% of the visible page area |
 | Pixels | Source at least 64 × 64; source and local rendered bitmap each at most 4 million pixels |
@@ -153,12 +158,19 @@ An image must pass **every** gate:
 | Extreme tones | At most 30% of samples have luminance <12 or >243 |
 | Distributed texture | At least 10 of 16 tiles each have 100 neighbor differences in [6,48] |
 
+For partially masked images, sample only cells whose whole footprint is opaque.
+Color statistics exclude hidden samples, and neighbor statistics require both
+neighbors to be visible. At least 256 samples and 256 neighbor pairs are required.
+Tiles with at least 64 visible pairs participate in the texture test; at least
+10/16 of those tiles (rounded up) must have moderate differences in at least
+100/512 of their pairs. Fully opaque images retain the original thresholds.
+
 Pixel statistics use a fixed 64 × 64 center sample of the visible crop, mapped
 back to source pixels through the inverse composed matrix, without interpolation
 or a learned model. Low-color plots, white-background plots, screenshots and
 smooth gradients in the fixture are rejected. Grayscale photos are also rejected
 by the palette gate; scans/full-page photos, small images, photos with overprinted
-PDF labels, complex clips, transparencies and complex image transforms stay
+PDF labels, complex clips, Form transparency and complex image transforms stay
 inverted. These are deliberate false negatives, not features claimed to work.
 
 Each geometric clip subpath must describe one axis-aligned rectangle after
@@ -171,7 +183,11 @@ The empty, unreferenced PDFium clip wrapper has `CountPaths == -1`.
 `FPDFImageObj_GetBitmap` ignores intrinsic image masks, and
 `FPDFPageObj_HasTransparency` alone does not detect an image's `/SMask`. Admission
 therefore also uses `FPDFImageObj_GetRenderedBitmap`, checking **every** pixel's
-alpha within the retained region before sampling raw source colors. Source and
+alpha within the retained region before sampling raw source colors. Fully opaque
+crops keep the rectangle fast path. Partially opaque crops produce a binary map:
+only cells whose entire rendered footprint has alpha 255 are set. Images with
+no surviving opaque cells report `no-opaque-pixels`; invalid or unavailable
+rendered bitmaps report `opacity-unavailable`. Source and
 rendered sizes are checked before allocation, both count toward the batch pixel
 allowance, and both bitmaps are immediately destroyed. No live object matrices,
 clips or PDF bytes are changed. The relevant contracts are in
@@ -179,11 +195,13 @@ clips or PDF bytes are changed. The relevant contracts are in
 and [implementation](https://github.com/chromium/pdfium/blob/main/fpdfsdk/fpdf_editimg.cpp).
 
 This alpha check is at PDFium's local object-render resolution, which can differ
-from both source resolution and eventual viewer zoom. It rejects the soft,
-explicit and color-key masks in the fixtures; it is not a structural guarantee
-that a PDF resource has no mask, nor full-resolution mask-aware compositing.
-Subpixel mask details and arbitrary translucent composites remain later-stage
-work. Source/target size bounds also cannot bound every internal decoder or mask
+from both source resolution and eventual viewer zoom. Soft, explicit and color-key
+masks are supported where they have fully opaque areas. Fractional-alpha pixels
+are excluded; the final page pixel already mixes foreground and background, so
+using its alpha as preservation strength would not reconstruct correct dark
+compositing. Ancestor Form transparency, blend modes, complex clips and later
+paint exclusions are unchanged. Subpixel details below PDFium's local render
+resolution remain unqualified. Source/target size bounds also cannot bound every internal decoder or mask
 allocation; the deadline remains soft.
 
 ## Coordinates and compositing
@@ -202,7 +220,7 @@ pixel ratio assumptions are used. Geometry tests compare against PDFium's
 and one `ImageFiltered` mounted. Its own shader belongs to the viewer; it does not
 mutate the shared default/thumbnail shader. A separate `invert_photos.frag` copies
 the original HSL calculation and samples a second texture containing only the
-union of accepted rectangles. A full-coverage texel bypasses inversion. No second
+union of accepted opaque footprints. A full-coverage texel bypasses inversion. No second
 PDF render or photograph overlay is introduced.
 
 After changing shader assets, rebuild and fully relaunch the app. Hot reload of
@@ -210,7 +228,7 @@ Dart code alone can leave the native bundle with the previous shader interface.
 
 `PhotoMaskCache` builds coverage for the current band of visible pages in document
 coordinates. Panning and zooming within that band change shader uniforms, not the
-texture. Changes in accepted rectangles or the page band rebuild it; page-layout,
+texture. Changes in accepted coverage or the page band rebuild it; page-layout,
 session and revision changes invalidate it. At most one build is active and one
 latest request is queued; stale results are disposed. The previous valid mask can
 remain active while new coverage is built. Empty coverage needs no texture.
@@ -223,8 +241,16 @@ are released after the frame using them, with stale in-flight results released
 immediately. Mask count is bounded by the current, in-flight and retiring images;
 there is no per-page texture cache.
 
+Partial coverage uses conservative min-pooling at both stages: every local
+render pixel touched by an analysis cell must be opaque, and every analysis cell
+touched by a final texture texel must be opaque. Small holes therefore survive
+downsampling; averaging or nearest-neighbor sampling cannot fill them in.
+The rectangle-only Canvas path is unchanged. When partial coverage is present,
+a short auxiliary isolate rasterizes the bounded RGBA buffer before a single
+texture upload. No new sampler or shader interface is required.
+
 The bypass preserves the **already composited pixels**, including any annotation,
-selection, search or narration overlay within the rectangle. Those overlay
+selection, search or narration overlay within the preserved footprint. Those overlay
 pixels consequently retain their uninverted color there, while pixels outside
 use the existing transform. This is region-level bypass, not separate treatment
 of image and overlay layers. Native embedded text/vector overlays disqualify the
@@ -236,7 +262,7 @@ Only visible pages are admitted, initially after a 150 ms settle delay. Analysis
 has two phases: a complete structural/geometry inventory, followed by resumable
 image-decode batches. The inventory must see later paint before declaring an
 image clear of overlays. Each continuation reopens the native page and resolves
-saved object paths; only detached geometry, decisions and pending metadata cross
+saved object paths; only detached geometry, decisions, coverage and pending metadata cross
 batches. No native page/object/bitmap handle is retained across a released lock.
 
 The viewer holds a session read lock for one batch and releases it, including
@@ -256,6 +282,13 @@ retrying forever. Session/revision invalidation discards stale results. Disablin
 analysis or closing the viewer cancels scheduled delays; an active batch retains
 its lease until completion. An evicted page must be inventoried again.
 
+Coverage is bit-packed, at most 256 cells on either axis and 8 KiB per masked
+image. A 512 KiB/page allowance is divided evenly across inventoried images;
+dense pages use lower-resolution maps rather than exhausting a first-come image
+budget. Thus the 64 cached pages retain at most 32 MiB of coverage bits, plus
+metadata and transient batch/texture-building copies. Fully opaque images retain
+no coverage bitmap. Neither source colors nor native bitmap handles are cached.
+
 There is no page-wide image-count or cumulative decode-pixel cutoff. Individual
 source/rendered bitmaps remain limited to 4 million pixels each. Pathological
 structure guards remain: 2,000 total objects, 16 Form levels, eight rectangular
@@ -263,6 +296,31 @@ clip paths per object and 256 segments per filled-path overlap proof. Diagnostic
 show up to 128 object entries, with omitted counts and whole-page progress; this
 display cap does not limit classification or preservation. At extreme zoom-out,
 only the first 64 visible pages enter the working set.
+
+## Opaque-footprint qualification on 2026-10-30
+
+The 63-test regression run passed, covering native analysis, classification,
+cache lifetimes, the developer sidebar, persistent overrides, reader/navigation
+behavior, and actual Impeller pixels. After final texture resource cleanup,
+the 10-test mask/coverage/override/shader suite also passed, including a new cache
+identity test (64 distinct tests overall). Static analysis and the macOS Debug
+application build passed. The shader asset and sampler interface are unchanged.
+
+The shader probe compared 8,401,539 pixel samples across 31 fixture pages, at two
+scales and three inversion strengths. New coverage includes soft/explicit/color-key
+masks, transparent holes with a fractional-alpha band, nested reflected and rotated
+Forms, local/page rotations, partial crops, and 100 masked panels on one page.
+Every dense panel completes within the 512 KiB/page bit allowance. A separate
+texture test shrinks a single-cell hole to 1/8 of a texel in every rotation and
+verifies that it still clears the destination texel. Tiny opaque islands cannot
+be reported as preserved when no full texture texel survives.
+
+The modifier-click test exercises both automatic and manually preserved masked
+panels on a rotated page: holes and fractional-alpha bands match the ordinary
+dark-mode output, opaque areas match natural colors, and the second click restores
+Automatic. Natural/selective captures and the dense grid were visually inspected.
+This is fixture/test-runner evidence; parent Form transparency and the accepted
+local image-render resolution limitation remain unchanged.
 
 ## Dense-figure qualification on 2026-10-30
 
@@ -399,7 +457,7 @@ flutter test --no-pub --concurrency=1 \
   test/highlight_selection_test.dart
 flutter test --no-pub --enable-impeller \
   test/photo_filter_widget_test.dart test/photo_diagnostics_sidebar_test.dart \
-  test/photo_mask_test.dart test/photo_overrides_test.dart \
+  test/photo_mask_test.dart test/photo_coverage_test.dart test/photo_overrides_test.dart \
   test/photo_override_widget_test.dart
 flutter test --no-pub --enable-impeller tool/qualify_photo_shader_test.dart
 flutter test --no-pub tool/benchmark_photo_analysis_test.dart

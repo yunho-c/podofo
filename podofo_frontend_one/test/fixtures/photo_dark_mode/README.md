@@ -9,13 +9,21 @@ cover all four quarter-turn rotations and nonzero crop/media origins.
 `manifest.json` records page expectations and the PDF SHA-256. Page 8 now
 preserves its rectangular crop and nested photo, while alpha/skew stay rejected.
 
-`forms.pdf` and `forms_manifest.json` add 26 stage-one regression pages:
+`forms.pdf` and `forms_manifest.json` contain 38 regression pages:
 three-level transforms (reflection and quarter-turn), reused Forms, rectangular
 image/ancestor/Form-BBox crops, opaque underlays, later text, compound and text
 clips, soft/explicit/color-key masks, Form alpha/groups, skew, depth/image/render
 budgets (the 25 tiny images now receive individual size rejections), fractional coordinates, and filled frames with even-odd/winding holes.
 The native tests check paths, coordinates and read-only behavior. The shader
 probe checks accepted crops and frames against the original rendered pixels.
+Pages 11-13 now preserve the opaque portions of soft, explicit and color-key
+masks. Pages 27-38 cover an interior hole with a fractional-alpha band, images
+with no opaque pixels, masked nested/reflected/local/page rotations, cropped
+coverage, a rotated manual-override pair, and 100 dense masked panels.
+Page 27 is a simple automatic-preservation example; on page 37, hold Option/Alt
+and click the flat blue panel to preserve its opaque area manually. Its central
+hole and translucent band must remain dark. Page 38 exercises the shared
+coverage-memory allowance without dropping any panel.
 
 `dense.pdf` and `dense_manifest.json` contain nested 25/92-panel grids and a
 rotated 92-panel page. All panels are photographic and large enough for admission;

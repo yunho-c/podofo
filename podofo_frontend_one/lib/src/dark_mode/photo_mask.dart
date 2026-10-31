@@ -1,20 +1,55 @@
+import 'dart:isolate';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/scheduler.dart';
 
-/// A bounded texture of accepted rectangles in document coordinates. It contains
+import 'photo_coverage.dart';
+
+/// A candidate projected into document layout. Coverage is stored before page
+/// rotation, so only the page's quarter-turn needs applying here.
+class PhotoMaskRegion {
+  const PhotoMaskRegion(this.rect, {this.coverage, this.quarterTurns = 0});
+  final ui.Rect rect;
+  final PhotoCoverage? coverage;
+  final int quarterTurns;
+
+  bool covers(double left, double top, double right, double bottom) {
+    final c = coverage;
+    if (c == null) return true;
+    return switch (quarterTurns) {
+      1 => c.covers(top, 1 - right, bottom, 1 - left),
+      2 => c.covers(1 - right, 1 - bottom, 1 - left, 1 - top),
+      3 => c.covers(1 - bottom, left, 1 - top, right),
+      _ => c.covers(left, top, right, bottom),
+    };
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      other is PhotoMaskRegion &&
+      rect == other.rect &&
+      quarterTurns == other.quarterTurns &&
+      coverage?.fingerprint == other.coverage?.fingerprint;
+  @override
+  int get hashCode => Object.hash(rect, quarterTurns, coverage?.fingerprint);
+}
+
+/// A bounded texture of accepted coverage in document coordinates. It contains
 /// coverage only, never PDF pixels, so annotations/selection remain composited.
 class PhotoMask {
-  PhotoMask(this.image, this.bounds, this.rectangles);
+  PhotoMask(this.image, this.bounds, this.regions);
   final ui.Image image;
   final ui.Rect bounds;
-  final Set<ui.Rect> rectangles;
+
+  /// Candidates contributing at least one opaque texel, not their entire AABB.
+  final Set<PhotoMaskRegion> regions;
 
   static Future<PhotoMask> create(
     ui.Rect bounds,
-    List<ui.Rect> rectangles,
+    List<PhotoMaskRegion> regions,
   ) async {
     const maxDimension =
         2048; // At most 16 MiB RGBA; independent of panel count.
@@ -22,13 +57,34 @@ class PhotoMask {
     final width = (bounds.width * scale).ceil().clamp(1, maxDimension);
     final height = (bounds.height * scale).ceil().clamp(1, maxDimension);
     final sx = width / bounds.width, sy = height / bounds.height;
+    if (regions.any((r) => r.coverage != null)) {
+      final raster = await _rasterizeOffThread(bounds, width, height, regions);
+      final buffer = await ui.ImmutableBuffer.fromUint8List(raster.$1);
+      ui.ImageDescriptor? descriptor;
+      ui.Codec? codec;
+      try {
+        descriptor = ui.ImageDescriptor.raw(
+          buffer,
+          width: width,
+          height: height,
+          pixelFormat: ui.PixelFormat.rgba8888,
+        );
+        codec = await descriptor.instantiateCodec();
+        return PhotoMask((await codec.getNextFrame()).image, bounds, raster.$2);
+      } finally {
+        codec?.dispose();
+        descriptor?.dispose();
+        buffer.dispose();
+      }
+    }
     final recorder = ui.PictureRecorder();
     final canvas = ui.Canvas(recorder);
     final paint = ui.Paint()
       ..color = const ui.Color(0xffffffff)
       ..isAntiAlias = false;
-    final retained = <ui.Rect>{};
-    for (final rect in rectangles) {
+    final retained = <PhotoMaskRegion>{};
+    for (final region in regions) {
+      final rect = region.rect;
       final clipped = rect.intersect(bounds);
       if (clipped.isEmpty) continue;
       // Only fill whole texels contained in an accepted region. Linear texture
@@ -41,7 +97,7 @@ class PhotoMask {
       );
       if (pixels.isEmpty) continue;
       canvas.drawRect(pixels, paint);
-      retained.add(rect);
+      retained.add(region);
     }
     final picture = recorder.endRecording();
     try {
@@ -64,20 +120,69 @@ class PhotoMask {
   void dispose() => image.dispose();
 }
 
+// Isolate closure lives outside PhotoMask so it cannot capture a native image.
+Future<(Uint8List, Set<PhotoMaskRegion>)> _rasterizeOffThread(
+  ui.Rect bounds,
+  int width,
+  int height,
+  List<PhotoMaskRegion> regions,
+) => Isolate.run(() => _rasterize(bounds, width, height, regions));
+
+(Uint8List, Set<PhotoMaskRegion>) _rasterize(
+  ui.Rect bounds,
+  int width,
+  int height,
+  List<PhotoMaskRegion> regions,
+) {
+  final rgba = Uint8List(width * height * 4);
+  final pixels = Uint32List.view(rgba.buffer);
+  final retained = <PhotoMaskRegion>{};
+  final sx = width / bounds.width, sy = height / bounds.height;
+  for (final region in regions) {
+    final rect = region.rect;
+    final clip = rect.intersect(bounds);
+    if (clip.isEmpty) continue;
+    final left = ((clip.left - bounds.left) * sx).ceil().clamp(0, width);
+    final right = ((clip.right - bounds.left) * sx).floor().clamp(left, width);
+    final top = ((clip.top - bounds.top) * sy).ceil().clamp(0, height);
+    final bottom = ((clip.bottom - bounds.top) * sy).floor().clamp(top, height);
+    var contributed = false;
+    for (var y = top; y < bottom; y++) {
+      if (region.coverage == null) {
+        pixels.fillRange(y * width + left, y * width + right, 0xffffffff);
+        contributed |= right > left;
+        continue;
+      }
+      final t = (bounds.top + y / sy - rect.top) / rect.height;
+      final b = (bounds.top + (y + 1) / sy - rect.top) / rect.height;
+      for (var x = left; x < right; x++) {
+        final l = (bounds.left + x / sx - rect.left) / rect.width;
+        final r = (bounds.left + (x + 1) / sx - rect.left) / rect.width;
+        if (region.covers(l, t, r, b)) {
+          pixels[y * width + x] = 0xffffffff;
+          contributed = true;
+        }
+      }
+    }
+    if (contributed) retained.add(region);
+  }
+  return (rgba, retained);
+}
+
 typedef PhotoMaskBuilder = Future<PhotoMask> Function(
   ui.Rect bounds,
-  List<ui.Rect> rectangles,
+  List<PhotoMaskRegion> regions,
 );
 
 class _Request {
-  _Request(this.bounds, List<ui.Rect> rectangles)
-    : rectangles = List.unmodifiable(rectangles);
+  _Request(this.bounds, List<PhotoMaskRegion> regions)
+    : regions = List.unmodifiable(regions);
   final ui.Rect bounds;
-  final List<ui.Rect> rectangles;
+  final List<PhotoMaskRegion> regions;
   bool same(_Request? other) =>
       other != null &&
       bounds == other.bounds &&
-      listEquals(rectangles, other.rectangles);
+      listEquals(regions, other.regions);
 }
 
 /// One published mask, one in-flight build, and one coalesced latest request.
@@ -93,12 +198,12 @@ class PhotoMaskCache extends ChangeNotifier {
   int builds = 0;
   bool failed = false;
 
-  void request(ui.Rect bounds, List<ui.Rect> rectangles) {
+  void request(ui.Rect bounds, List<PhotoMaskRegion> regions) {
     if (_disposed || bounds.isEmpty || !bounds.isFinite) return;
-    final request = _Request(bounds, rectangles);
+    final request = _Request(bounds, regions);
     if (request.same(_wanted)) return;
     _wanted = request;
-    if (rectangles.isEmpty) {
+    if (regions.isEmpty) {
       _epoch++;
       _finished = request;
       failed = false;
@@ -120,7 +225,7 @@ class PhotoMaskCache extends ChangeNotifier {
         PhotoMask? result;
         try {
           builds++;
-          result = await _builder(request.bounds, request.rectangles);
+          result = await _builder(request.bounds, request.regions);
         } catch (_) {
           // Keep a valid older mask; report the failed request without a retry loop.
         }

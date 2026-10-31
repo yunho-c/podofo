@@ -1,10 +1,43 @@
 import 'dart:async';
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:podofo_one/src/dark_mode/photo_mask.dart';
+import 'package:podofo_one/src/dark_mode/photo_coverage.dart';
 
 void main() {
+  testWidgets(
+    'coverage identity and page rotation participate in texture reuse',
+    (tester) async {
+      final cache = PhotoMaskCache(
+        builder: (_, _) async => throw StateError('No GPU needed'),
+      );
+      addTearDown(cache.dispose);
+      const bounds = ui.Rect.fromLTWH(0, 0, 100, 100);
+      PhotoMaskRegion region(List<int> values, {int rotation = 0}) =>
+          PhotoMaskRegion(
+            bounds,
+            coverage: PhotoCoverage.fromCells(2, 2, Uint8List.fromList(values)),
+            quarterTurns: rotation,
+          );
+      Future<void> request(PhotoMaskRegion region) async {
+        cache.request(bounds, [region]);
+        await tester.pump(const Duration(milliseconds: 1));
+        await tester.pump(const Duration(milliseconds: 1));
+      }
+
+      await request(region([1, 0, 1, 1]));
+      expect(cache.builds, 1);
+      // Detached copies returned by later native batches must reuse the texture.
+      await request(region([1, 0, 1, 1]));
+      expect(cache.builds, 1);
+      await request(region([1, 1, 0, 1]));
+      expect(cache.builds, 2);
+      await request(region([1, 1, 0, 1], rotation: 1));
+      expect(cache.builds, 3);
+    },
+  );
   testWidgets('mask requests coalesce, reuse and discard stale generations', (
     tester,
   ) async {
@@ -17,9 +50,9 @@ void main() {
       },
     );
     const bounds = ui.Rect.fromLTWH(100, 200, 400, 500);
-    const a = ui.Rect.fromLTWH(120, 240, 50, 50);
-    const b = ui.Rect.fromLTWH(220, 340, 50, 50);
-    Future<PhotoMask> small(ui.Rect r) async {
+    const a = PhotoMaskRegion(ui.Rect.fromLTWH(120, 240, 50, 50));
+    const b = PhotoMaskRegion(ui.Rect.fromLTWH(220, 340, 50, 50));
+    Future<PhotoMask> small(PhotoMaskRegion r) async {
       final recorder = ui.PictureRecorder();
       ui.Canvas(recorder)
           .drawColor(const ui.Color(0xffffffff), ui.BlendMode.src);
@@ -73,7 +106,7 @@ void main() {
         builder: (_, _) async => throw StateError('GPU unavailable'),
       );
       const bounds = ui.Rect.fromLTWH(0, 0, 100, 100);
-      const region = ui.Rect.fromLTWH(10, 10, 50, 50);
+      const region = PhotoMaskRegion(ui.Rect.fromLTWH(10, 10, 50, 50));
       cache.request(bounds, [region]);
       await tester.pump(const Duration(milliseconds: 1));
       await tester.pump(const Duration(milliseconds: 1));

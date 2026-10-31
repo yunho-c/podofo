@@ -126,6 +126,10 @@ class _EntryDetails extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(entry.reason).small(),
+          if (entry.candidate.coverage case final coverage?)
+            Text(
+              'Opaque footprint: ${percent(coverage.fraction)}; holes and translucent pixels stay in dark mode.',
+            ).small(),
           if (entry.override != null)
             Text('Manual override; automatic result: ${entry.candidate.reason}')
                 .small(),
@@ -141,7 +145,12 @@ class _EntryDetails extends StatelessWidget {
                 .small(),
             Text('Extreme tones: ${percent(stats.extremeFraction)} (max 30%)')
                 .small(),
-            Text('Textured tiles: ${stats.texturedTiles}/16 (min 10)').small(),
+            Text(
+              'Textured tiles: ${stats.texturedTiles}/16 (min ${stats.requiredTexturedTiles})',
+            ).small(),
+            if (entry.candidate.coverage != null)
+              Text('Visible samples: ${stats.visibleSamples}/4096 (min 256)')
+                  .small(),
             const Text(
               'Reason shows the first failed gate; multiple gates may fail.',
             ).small(),

@@ -1,5 +1,5 @@
 {
-  "sha256": "48ae5249a1c0989196480c5bee662372fb3918a973deb378dba5d5f728d6cf73",
+  "sha256": "ff0fd819fac8778c1c1c62c243dddd20e50b9667c70ab76c2a94bde8121bff81",
   "pages": [
     {
       "page": 1,
@@ -130,24 +130,24 @@
     {
       "page": 11,
       "name": "soft-image-mask",
-      "expectedPhotos": 0,
-      "reason": "mask-or-transparency",
+      "expectedPhotos": 1,
+      "reason": null,
       "regions": null,
       "paths": null
     },
     {
       "page": 12,
       "name": "hard-image-mask",
-      "expectedPhotos": 0,
-      "reason": "mask-or-transparency",
+      "expectedPhotos": 1,
+      "reason": null,
       "regions": null,
       "paths": null
     },
     {
       "page": 13,
       "name": "key-image-mask",
-      "expectedPhotos": 0,
-      "reason": "mask-or-transparency",
+      "expectedPhotos": 1,
+      "reason": null,
       "regions": null,
       "paths": null
     },
@@ -266,6 +266,102 @@
       "name": "stroke-stays-conservative",
       "expectedPhotos": 0,
       "reason": "overlapping-page-content",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 27,
+      "name": "opaque-photo-with-hole-and-translucent-band",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 28,
+      "name": "no-opaque-pixels-translucent",
+      "expectedPhotos": 0,
+      "reason": "no-opaque-pixels",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 29,
+      "name": "no-opaque-pixels-invisible",
+      "expectedPhotos": 0,
+      "reason": "no-opaque-pixels",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 30,
+      "name": "masked-nested-reflection-quarter-turn",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 31,
+      "name": "crop-retains-only-opaque-half",
+      "expectedPhotos": 0,
+      "reason": "flat-regions",
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 32,
+      "name": "crop-retains-partial-mask",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 33,
+      "name": "masked-image-local-quarter-turn",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 34,
+      "name": "masked-page-rotation-90",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 35,
+      "name": "masked-page-rotation-180",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 36,
+      "name": "masked-page-rotation-270",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 37,
+      "name": "masked-manual-panel-pair",
+      "expectedPhotos": 1,
+      "reason": null,
+      "regions": null,
+      "paths": null
+    },
+    {
+      "page": 38,
+      "name": "dense-masked-panels",
+      "expectedPhotos": 100,
+      "reason": null,
       "regions": null,
       "paths": null
     }

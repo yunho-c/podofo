@@ -128,7 +128,7 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
           shader != null &&
           !widget.session.lease.isClosed &&
           viewer.isReady;
-      final regions = <Rect>[];
+      final regions = <PhotoMaskRegion>[];
       final priorities = <int, List<String>>{};
       final diagnosticPages = <PhotoDiagnosticPage>[];
       final overrideEntries = <PhotoOverrideEntry>[];
@@ -164,11 +164,8 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
             layout[number - 1],
             visible,
           );
-          Rect documentRect(PhotoRegion region) => photoDocumentRect(
-            region,
-            widget.session.lease.document.pages[number - 1],
-            layout[number - 1],
-          );
+          PhotoMaskRegion maskRegion(PhotoCandidate candidate) =>
+              photoMaskRegion(candidate, page, layout[number - 1]);
           final pending = [
             for (final c in analysis?.candidates ?? const <PhotoCandidate>[])
               if (c.reason == 'pending' && !project(c.region).isEmpty) c,
@@ -187,8 +184,8 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
               final manual = overrides.decision(target);
               final automatic = candidate.reason == 'likely-photo';
               if (manual ?? automatic) {
-                final rect = documentRect(candidate.region);
-                if (!rect.isEmpty) regions.add(rect);
+                final region = maskRegion(candidate);
+                if (!region.rect.isEmpty) regions.add(region);
               }
               final rect = project(candidate.region);
               if (target != null && !rect.isEmpty) {
@@ -217,8 +214,8 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
                     preserved:
                         active &&
                         !project(candidate.region).isEmpty &&
-                        (_masks.current?.rectangles.contains(
-                              documentRect(candidate.region),
+                        (_masks.current?.regions.contains(
+                              maskRegion(candidate),
                             ) ??
                             false),
                     inactiveReason: !widget.enabled
@@ -260,7 +257,7 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
       widget.diagnostics?.publish(snapshot);
       // The child hierarchy stays identical across mode/loading/error changes.
       // No detected regions => use the original shader, byte-for-byte unchanged.
-      final effective = active && mask != null && mask.rectangles.isNotEmpty
+      final effective = active && mask != null && mask.regions.isNotEmpty
           ? shader
           : widget.defaultShader;
       return Stack(

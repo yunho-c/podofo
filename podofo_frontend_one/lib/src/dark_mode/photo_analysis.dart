@@ -9,6 +9,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:pdfium_dart/pdfium_dart.dart';
 
 import 'photo_classifier.dart';
+import 'photo_coverage.dart';
 
 /// Crop-relative, unrotated PDF coordinates (positive y upwards), like pdfrx.
 class PhotoRegion {
@@ -29,6 +30,7 @@ class PhotoCandidate {
     required this.region,
     this.classification,
     this.sampleHash,
+    this.coverage,
     this.objectPath = const [],
   });
   final int objectIndex;
@@ -41,7 +43,11 @@ class PhotoCandidate {
   final PhotoRegion region;
   final PhotoClassification? classification;
 
-  /// Hash of the cropped, oriented RGB sample; computed during the existing decode.
+  /// Null for a fully opaque rectangle (or a candidate not yet classified).
+  /// Partial coverage contains no colors or native handles.
+  final PhotoCoverage? coverage;
+
+  /// Hash of the cropped, oriented sample and, for masked images, its coverage.
   final String? sampleHash;
 }
 
@@ -119,8 +125,8 @@ Future<PhotoPageAnalysis> analyzePhotos(
   return result;
 }
 
-/// Only detached metadata crosses batches. Caller supplies results from the same
-/// session, page and revision, and holds its read lock until this call completes.
+/// Only detached metadata/coverage crosses batches. Caller supplies results from
+/// the same session, page and revision, holding its read lock until completion.
 Future<PhotoPageAnalysis> analyzePhotoBatch(
   PdfDocument document,
   int pageNumber, {
@@ -216,6 +222,7 @@ PhotoPageAnalysis inspectPhotoPage(
         String reason;
         PhotoClassification? classification;
         String? sampleHash;
+        PhotoCoverage? coverage;
         if (object == nullptr) {
           reason = 'image-unavailable';
         } else {
@@ -229,26 +236,45 @@ PhotoPageAnalysis inspectPhotoPage(
           if (rendered == nullptr) {
             reason = 'opacity-unavailable';
           } else {
-            bool opaque;
+            PhotoCoverage? inspected;
             try {
-              opaque = _isOpaque(api, rendered, image);
+              inspected = _imageCoverage(
+                api,
+                rendered,
+                image,
+                // Share a 512 KiB/page ceiling across all inventoried
+                // images. Resolution adapts; no late-page image is dropped.
+                maxCells: (512 * 1024 ~/ results.length.clamp(1, 2000)) * 8,
+              );
             } finally {
               api.FPDFBitmap_Destroy(rendered);
             }
-            if (!opaque) {
-              reason = 'mask-or-transparency';
+            if (inspected == null) {
+              reason = 'opacity-unavailable';
+            } else if (inspected.isEmpty) {
+              reason = 'no-opaque-pixels';
             } else {
+              coverage = inspected.isFull ? null : inspected;
               final bitmap = api.FPDFImageObj_GetBitmap(object);
               if (bitmap == nullptr) {
                 reason = 'decode-failed';
               } else {
                 try {
-                  final sample = _sampleBitmap(api, bitmap, image);
+                  final sample = _sampleBitmap(api, bitmap, image, coverage);
                   classification = sample == null
                       ? null
-                      : classifyPhoto(sample);
+                      : classifyPhoto(sample.rgb, opaque: sample.opaque);
                   if (sample != null) {
-                    sampleHash = sha256.convert(sample).toString();
+                    sampleHash = sha256
+                        .convert(
+                          coverage == null
+                              ? sample.rgb
+                              : [
+                                  ...sample.rgb,
+                                  ...coverage.fingerprint.codeUnits,
+                                ],
+                        )
+                        .toString();
                   }
                   reason = classification?.reason ?? 'unsupported-bitmap';
                 } finally {
@@ -265,6 +291,7 @@ PhotoPageAnalysis inspectPhotoPage(
           objectPath: before.objectPath,
           classification: classification,
           sampleHash: sampleHash,
+          coverage: coverage,
         );
         completed++;
       }
@@ -469,7 +496,12 @@ class _PendingImage {
   );
 }
 
-Uint8List? _sampleBitmap(PDFium api, FPDF_BITMAP bitmap, _Object image) {
+({Uint8List rgb, Uint8List? opaque})? _sampleBitmap(
+  PDFium api,
+  FPDF_BITMAP bitmap,
+  _Object image,
+  PhotoCoverage? coverage,
+) {
   final width = api.FPDFBitmap_GetWidth(bitmap);
   final height = api.FPDFBitmap_GetHeight(bitmap);
   final stride = api.FPDFBitmap_GetStride(bitmap);
@@ -492,10 +524,15 @@ Uint8List? _sampleBitmap(PDFium api, FPDF_BITMAP bitmap, _Object image) {
   }
   final bytes = buffer.cast<Uint8>().asTypedList(stride * height);
   final sample = Uint8List(64 * 64 * 3);
+  final opaque = coverage == null ? null : Uint8List(64 * 64);
   final inverse = image.transform.inverse;
   final rect = image.visible;
   for (var y = 0; y < 64; y++) {
     for (var x = 0; x < 64; x++) {
+      if (coverage != null &&
+          !coverage.covers(x / 64, y / 64, (x + 1) / 64, (y + 1) / 64)) {
+        continue;
+      }
       // Sample only the visible crop, in page orientation. Image pixels use
       // top-down rows, whereas the PDF image unit square has y increasing up.
       final point = inverse.point(
@@ -505,14 +542,18 @@ Uint8List? _sampleBitmap(PDFium api, FPDF_BITMAP bitmap, _Object image) {
       final sx = (point.$1 * width).floor().clamp(0, width - 1);
       final sy = ((1 - point.$2) * height).floor().clamp(0, height - 1);
       final source = sy * stride + sx * channels;
-      if (format == FPDFBitmap_BGRA && bytes[source + 3] != 255) return null;
+      if (format == FPDFBitmap_BGRA && bytes[source + 3] != 255) {
+        if (opaque == null) return null;
+        continue;
+      }
+      if (opaque != null) opaque[y * 64 + x] = 1;
       final target = (y * 64 + x) * 3;
       sample[target] = bytes[source + (channels == 1 ? 0 : 2)];
       sample[target + 1] = bytes[source + (channels == 1 ? 0 : 1)];
       sample[target + 2] = bytes[source];
     }
   }
-  return sample;
+  return (rgb: sample, opaque: opaque);
 }
 
 PhotoRegion _intersect(PhotoRegion a, PhotoRegion b) => PhotoRegion(
@@ -887,7 +928,12 @@ class _FilledPath {
   }
 }
 
-bool _isOpaque(PDFium api, FPDF_BITMAP bitmap, _Object image) {
+PhotoCoverage? _imageCoverage(
+  PDFium api,
+  FPDF_BITMAP bitmap,
+  _Object image, {
+  required int maxCells,
+}) {
   final width = api.FPDFBitmap_GetWidth(bitmap);
   final height = api.FPDFBitmap_GetHeight(bitmap);
   final stride = api.FPDFBitmap_GetStride(bitmap);
@@ -899,32 +945,62 @@ bool _isOpaque(PDFium api, FPDF_BITMAP bitmap, _Object image) {
       stride < width * 4 ||
       stride * height > 20000000 ||
       buffer == nullptr) {
-    return false;
+    return null;
   }
   final local = image.parentTransform.inverse.rect(image.visible);
   final bounds = image.localTransform.rect(const PhotoRegion(0, 0, 1, 1));
-  // PDFium renders the transformed image into a bitmap of its local extent.
-  // Inspect every covered pixel, not just the classifier's 64x64 sample.
-  final left =
-      ((local.left - bounds.left) / (bounds.right - bounds.left) * width)
-          .floor()
-          .clamp(0, width - 1);
-  final right =
-      ((local.right - bounds.left) / (bounds.right - bounds.left) * width)
-          .ceil()
-          .clamp(left + 1, width);
-  final top = ((bounds.top - local.top) / (bounds.top - bounds.bottom) * height)
-      .floor()
-      .clamp(0, height - 1);
-  final bottom =
-      ((bounds.top - local.bottom) / (bounds.top - bounds.bottom) * height)
-          .ceil()
-          .clamp(top + 1, height);
   final bytes = buffer.cast<Uint8>().asTypedList(stride * height);
-  for (var y = top; y < bottom; y++) {
-    for (var x = left; x < right; x++) {
-      if (bytes[y * stride + x * 4 + 3] != 255) return false;
+  final sx = width / (bounds.right - bounds.left);
+  final sy = height / (bounds.top - bounds.bottom);
+  bool opaqueRect(PhotoRegion rect) {
+    final x0 = ((rect.left - bounds.left) * sx).floor().clamp(0, width - 1);
+    final x1 = ((rect.right - bounds.left) * sx).ceil().clamp(x0 + 1, width);
+    final y0 = ((bounds.top - rect.top) * sy).floor().clamp(0, height - 1);
+    final y1 = ((bounds.top - rect.bottom) * sy).ceil().clamp(y0 + 1, height);
+    for (var py = y0; py < y1; py++) {
+      for (var px = x0; px < x1; px++) {
+        if (bytes[py * stride + px * 4 + 3] != 255) return false;
+      }
+    }
+    return true;
+  }
+
+  // Keep the original scan/rectangle fast path for fully opaque crops.
+  if (opaqueRect(local)) {
+    return PhotoCoverage.fromCells(1, 1, Uint8List.fromList([1]));
+  }
+  // Coverage rows follow the unrotated PAGE, including ancestor quarter-turns
+  // and reflections. The image's own transform is already in the rendered bitmap.
+  var nx = (local.right - local.left) * sx;
+  var ny = (local.top - local.bottom) * sy;
+  if (image.parentTransform.a.abs() < image.parentTransform.c.abs()) {
+    final swap = nx;
+    nx = ny;
+    ny = swap;
+  }
+  final scale = math.min(
+    1.0,
+    math.min(256 / math.max(nx, ny), math.sqrt(maxCells / (nx * ny))),
+  );
+  final cols = (nx * scale).floor().clamp(1, 256);
+  final rows = (ny * scale).floor().clamp(1, 256);
+  final cells = Uint8List(cols * rows);
+  final inverse = image.parentTransform.inverse;
+  final visible = image.visible;
+  final dx = (visible.right - visible.left) / cols;
+  final dy = (visible.top - visible.bottom) / rows;
+  for (var y = 0; y < rows; y++) {
+    for (var x = 0; x < cols; x++) {
+      final footprint = inverse.rect(
+        PhotoRegion(
+          visible.left + x * dx,
+          visible.top - (y + 1) * dy,
+          visible.left + (x + 1) * dx,
+          visible.top - y * dy,
+        ),
+      );
+      if (opaqueRect(footprint)) cells[y * cols + x] = 1;
     }
   }
-  return true;
+  return PhotoCoverage.fromCells(cols, rows, cells);
 }

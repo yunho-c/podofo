@@ -43,6 +43,7 @@ Future<Map<String, Object>> checkPhotoShader(
             {
               'path': c.objectId,
               'reason': c.reason,
+              'opaque_fraction': c.coverage?.fraction,
               'rect': [
                 c.region.left,
                 c.region.bottom,
@@ -58,13 +59,20 @@ Future<Map<String, Object>> checkPhotoShader(
         throw StateError('Unexpected photos on page $number: ${analyses.last}');
       }
       final regions = [
-        for (final region in analysis.regions)
-          photoViewportRect(
-            region,
-            page,
-            ui.Rect.fromLTWH(0, 0, page.width, page.height),
-            ui.Rect.fromLTWH(0, 0, page.width, page.height),
-          ),
+        for (final candidate in analysis.candidates)
+          if (candidate.reason == 'likely-photo')
+            PhotoMaskRegion(
+              photoViewportRect(
+                candidate.region,
+                page,
+                ui.Rect.fromLTWH(0, 0, page.width, page.height),
+                ui.Rect.fromLTWH(0, 0, page.width, page.height),
+              ),
+              coverage: candidate.coverage,
+              quarterTurns: candidate.coverage == null
+                  ? 0
+                  : page.rotation.index,
+            ),
       ];
       for (final scale in [1.0, 2.0]) {
         final width = (page.width * scale).round();
@@ -78,13 +86,9 @@ Future<Map<String, Object>> checkPhotoShader(
         final sourceBytes = (await source.toByteData())!.buffer.asUint8List();
         final pageBounds = ui.Rect.fromLTWH(0, 0, page.width, page.height);
         final mask = await PhotoMask.create(pageBounds, [
-          for (final r in regions)
-            ui.Rect.fromLTRB(
-              r.left * page.width,
-              r.top * page.height,
-              r.right * page.width,
-              r.bottom * page.height,
-            ),
+          for (final candidate in analysis.candidates)
+            if (candidate.reason == 'likely-photo')
+              photoMaskRegion(candidate, page, pageBounds),
         ]);
         try {
           for (final strength in [0.0, .6, 1.0]) {
@@ -123,11 +127,16 @@ Future<Map<String, Object>> checkPhotoShader(
                   final point = ui.Offset((x + .5) / width, (y + .5) / height);
                   // Avoid subpixel edge sampling differences in GPU backends.
                   final inside = regions.any(
-                    (r) => r.deflate(2 / width).contains(point),
+                    (r) => _covers(r, point, 2 / width, 2 / height),
                   );
-                  final edge = regions.any(
-                    (r) => r.inflate(2 / width).contains(point),
-                  );
+                  // Internal mask boundaries get the same exclusion as outer
+                  // rectangle edges. The interiors of holes are still checked
+                  // against whole-page inversion, including fractional alpha.
+                  final edge =
+                      !inside &&
+                      regions.any(
+                        (r) => _nearCoverage(r, point, 2 / width, 2 / height),
+                      );
                   if (edge && !inside) continue;
                   final expected = inside ? sourceBytes : base;
                   final offset = (y * width + x) * 4;
@@ -180,4 +189,29 @@ Future<Map<String, Object>> checkPhotoShader(
   } finally {
     await pdf.dispose();
   }
+}
+
+bool _covers(PhotoMaskRegion region, ui.Offset p, double dx, double dy) {
+  final rect = region.rect;
+  if (!rect.contains(p - ui.Offset(dx, dy)) ||
+      !rect.contains(p + ui.Offset(dx, dy))) {
+    return false;
+  }
+  return region.covers(
+    (p.dx - dx - rect.left) / rect.width,
+    (p.dy - dy - rect.top) / rect.height,
+    (p.dx + dx - rect.left) / rect.width,
+    (p.dy + dy - rect.top) / rect.height,
+  );
+}
+
+bool _nearCoverage(PhotoMaskRegion region, ui.Offset p, double dx, double dy) {
+  if (!region.rect.inflate(dx > dy ? dx : dy).contains(p)) return false;
+  if (region.coverage == null) return true;
+  for (final y in [-dy, 0.0, dy]) {
+    for (final x in [-dx, 0.0, dx]) {
+      if (_covers(region, p + ui.Offset(x, y), 1e-9, 1e-9)) return true;
+    }
+  }
+  return false;
 }

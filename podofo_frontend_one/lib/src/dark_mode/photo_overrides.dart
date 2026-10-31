@@ -24,7 +24,7 @@ class PhotoOverrides extends ChangeNotifier {
   String? error;
   int get count => _decisions.length;
 
-  /// Only classified images have passed all geometry and opacity checks. Match
+  /// Only classified images have passed geometry checks and have opaque coverage. Match
   /// their sampled pixels and page-space placement, never a mutable object index.
   static String? target(PdfPage page, PhotoCandidate candidate) {
     if (candidate.classification == null || candidate.sampleHash == null) {

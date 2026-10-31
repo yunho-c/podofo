@@ -30,19 +30,31 @@ def build():
     hard_mask = stream(bytes([255]*16+[0]*16)*256, '/Type /XObject /Subtype /Image /Width 256 /Height 256 /ImageMask true /BitsPerComponent 1')
     hard_masked = stream(im.tobytes(), f'{image_entries} /Mask {hard_mask} 0 R')
     color_key = stream(im.tobytes(), f'{image_entries} /Mask [0 30 0 30 0 30]')
+    def soft_image(pixels, alpha):
+        mask_id = stream(bytes(alpha), '/Type /XObject /Subtype /Image /Width 256 /Height 256 /ColorSpace /DeviceGray /BitsPerComponent 8')
+        return stream(pixels, f'{image_entries} /SMask {mask_id} 0 R')
+    # A transparent central hole with a translucent surrounding band. Both must
+    # remain dark even when a user explicitly preserves the image.
+    hole_alpha = [0 if 96 <= x < 160 and 96 <= y < 160 else
+                  128 if 80 <= x < 176 and 80 <= y < 176 else 255
+                  for y in range(256) for x in range(256)]
+    hole = soft_image(im.tobytes(), hole_alpha)
+    translucent = soft_image(im.tobytes(), [128] * (256 * 256))
+    invisible = soft_image(im.tobytes(), [0] * (256 * 256))
+    flat = soft_image(bytes([60, 150, 210]) * (256 * 256), hole_alpha)
     alpha = obj('<< /Type /ExtGState /ca 0.5 /CA 0.5 >>')
 
     def resources(extra=''):
-        return f'<< /Font << /F1 {font} 0 R >> /XObject << /Photo {photo} 0 R /Soft {masked} 0 R /Hard {hard_masked} 0 R /Key {color_key} 0 R {extra} >> /ExtGState << /Alpha {alpha} 0 R >> >>'
+        return f'<< /Font << /F1 {font} 0 R >> /XObject << /Photo {photo} 0 R /Soft {masked} 0 R /Hard {hard_masked} 0 R /Key {color_key} 0 R /Hole {hole} 0 R /Translucent {translucent} 0 R /Invisible {invisible} 0 R /Flat {flat} 0 R {extra} >> /ExtGState << /Alpha {alpha} 0 R >> >>'
 
     def form(content, bbox='0 0 200 200', extra='', matrix='1 0 0 1 0 0', group=''):
         return stream(content.encode(), f'/Type /XObject /Subtype /Form /BBox [{bbox}] /Matrix [{matrix}] /Resources {resources(extra)} {group}')
 
     kids, specs = [], []
 
-    def page(name, content, extra='', expect=1, reason=None, regions=None, paths=None):
+    def page(name, content, extra='', expect=1, reason=None, regions=None, paths=None, rotation=0):
         content_id = stream(content.encode())
-        page_id = obj(f'<< /Type /Page /Parent {pages} 0 R /MediaBox [10 20 450 520] /CropBox [30 40 430 500] /Resources {resources(extra)} /Contents {content_id} 0 R >>')
+        page_id = obj(f'<< /Type /Page /Parent {pages} 0 R /MediaBox [10 20 450 520] /CropBox [30 40 430 500] /Rotate {rotation} /Resources {resources(extra)} /Contents {content_id} 0 R >>')
         kids.append(f'{page_id} 0 R')
         specs.append(dict(page=len(kids), name=name, expectedPhotos=expect, reason=reason, regions=regions, paths=paths))
 
@@ -63,7 +75,7 @@ def build():
     page('text-and-rectangular-clip', 'q BT /F1 130 Tf 7 Tr 60 140 Td (A) Tj ET 60 120 160 160 re W n 160 0 0 160 60 120 cm /Photo Do Q', expect=0, reason='text-clip')
     for name in ['Soft', 'Hard', 'Key']:
         leaf = form(f'q 160 0 0 160 20 20 cm /{name} Do Q')
-        page(f'{name.lower()}-image-mask', 'q 1 0 0 1 50 100 cm /Leaf Do Q', f'/Leaf {leaf} 0 R', expect=0, reason='mask-or-transparency')
+        page(f'{name.lower()}-image-mask', 'q 1 0 0 1 50 100 cm /Leaf Do Q', f'/Leaf {leaf} 0 R')
     page('form-alpha', 'q /Alpha gs 1 0 0 1 50 100 cm /Inner Do Q', f'/Inner {inner} 0 R', expect=0, reason='form-transparency')
     group = form(photo_command, group='/Group << /S /Transparency /I true >>')
     page('form-transparency-group', 'q 1 0 0 1 50 100 cm /Group Do Q', f'/Group {group} 0 R', expect=0, reason='form-transparency')
@@ -85,6 +97,23 @@ def build():
     page('solid-winding-is-not-a-frame', framed+'58 118 164 164 re 60 120 160 160 re f', expect=0, reason='overlapping-page-content')
     page('path-enters-photo', framed+'58 118 164 164 re 80 140 120 120 re f*', expect=0, reason='overlapping-page-content')
     page('stroke-stays-conservative', framed+'2 w 58 118 164 164 re S', expect=0, reason='overlapping-page-content')
+    page('opaque-photo-with-hole-and-translucent-band', 'q 160 0 0 160 60 120 cm /Hole Do Q')
+    page('no-opaque-pixels-translucent', 'q 160 0 0 160 60 120 cm /Translucent Do Q', expect=0, reason='no-opaque-pixels')
+    page('no-opaque-pixels-invisible', 'q 160 0 0 160 60 120 cm /Invisible Do Q', expect=0, reason='no-opaque-pixels')
+    soft_leaf = form('q 160 0 0 160 20 20 cm /Soft Do Q')
+    turn = form('/Leaf Do', extra=f'/Leaf {soft_leaf} 0 R', matrix='0 1 -1 0 200 0')
+    flip = form('/Turn Do', extra=f'/Turn {turn} 0 R', matrix='-1 0 0 1 200 0')
+    page('masked-nested-reflection-quarter-turn', 'q 1 0 0 1 50 100 cm /Flip Do Q', f'/Flip {flip} 0 R')
+    page('crop-retains-only-opaque-half', 'q 160 0 0 160 60 120 cm .55 0 .45 1 re W n /Soft Do Q', expect=0, reason='flat-regions')
+    page('crop-retains-partial-mask', 'q 160 0 0 160 60 120 cm .25 0 .75 1 re W n /Soft Do Q')
+    page('masked-image-local-quarter-turn', 'q 0 160 -160 0 220 120 cm /Soft Do Q')
+    for rotation in [90, 180, 270]:
+        page(f'masked-page-rotation-{rotation}', 'q 160 0 0 160 60 120 cm /Soft Do Q', rotation=rotation)
+    page('masked-manual-panel-pair', 'q 160 0 0 160 60 120 cm /Hole Do Q q 160 0 0 160 240 300 cm /Flat Do Q', rotation=90)
+    dense_mask = form('q 512 0 0 512 0 0 cm /Hole Do Q', bbox='0 0 512 512')
+    page('dense-masked-panels', '\n'.join(
+        f'q .0625 0 0 .0625 {50 + x * 36} {70 + y * 36} cm /DenseMask Do Q'
+        for y in range(10) for x in range(10)), f'/DenseMask {dense_mask} 0 R', expect=100)
     objects[catalog-1] = f'<< /Type /Catalog /Pages {pages} 0 R >>'.encode()
     objects[pages-1] = f'<< /Type /Pages /Kids [{" ".join(kids)}] /Count {len(kids)} >>'.encode()
     data = bytearray(b'%PDF-1.7\n%\xe2\xe3\xcf\xd3\n')
