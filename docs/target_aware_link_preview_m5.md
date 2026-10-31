@@ -868,10 +868,45 @@ commit `c20fa7a`. Freeze, sampling, raw-result hash and all 44 visual decisions
 are archived as `m5_history/held_out_v6_*.json`; paired captures remain under
 `build/target-preview-m5/papers-held-out-v6/`. One replacement is required.
 
+## Variable-width bibliography labels and unexpected-page guard
+
+Resolver version 15 treats an explicit bracketed number as an entry start even
+when right-aligned one- and two-digit labels have different left edges. The
+margin requirement remains for dotted numbers and author names, preserving the
+indented-year regression. A new synthetic cross-page test fails with version 14
+because it appends the following entries; it passes with the corrected rule.
+
+The promoted reference's development annotation now excludes all bibliography
+content on the next page. The paper harness additionally rejects any selected
+page absent from the target's required-page set, independently of neighbor
+masks. This guard also rejects the preserved v6 failure using its original
+required-page annotation. Manual visual review remains required for unrelated
+content on the same page. A separate synthetic test confirms that textless
+source or target pages do not fabricate semantic identity.
+
+The final native replay `papers-bracket-boundary-development-v2` covers all 154
+links in eighteen development papers. It resolves 33/36 citations, 33/36
+figures/tables, 34/35 equations and 32/35 sections. All 132 accepted crops pass
+the strengthened metrics with zero unexpected pages, all twelve controls fall
+back, all 48 input identities match, and native handles return to zero. The
+repaired book reference retains all 7,967 required ink pixels and zero of the
+80,294 excluded pixels on the following page; visual review confirms the crop
+contains only the intended entry. The original fourteen-target and M4 complex
+native corpora also pass.
+
+The focused resolver run passes 62 tests, the fallback/coordinator/reader run
+passes 35, and the full suite passes 409 with 21 opt-in skips. Full analysis,
+formatting and the exact 53-file engine-pin check pass. All eighteen unrelated
+Podoco files remain byte-identical. Logs use `build/target-preview-m5-bracket-boundary-`.
+The macOS Debug build and local deep/strict signature verification pass. The
+latest cache/model benchmark remains the version-14 `performance-v6` run above;
+this change affects bibliography segmentation, not its measured figure path.
+Computer Use was retried and again returned `Computer Use was not approved to
+use PoDoFo`; native-window acceptance remains open.
+
 ## Remaining acceptance work
 
-Fix the promoted neighboring-entry regression, then replenish and freeze before
-evaluating every held-out link with paired images,
+Replenish and freeze before evaluating every held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback

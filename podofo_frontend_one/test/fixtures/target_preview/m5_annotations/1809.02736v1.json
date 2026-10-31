@@ -213,13 +213,22 @@
               506,
               653
             ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              107,
+              74,
+              509,
+              722
+            ]
           }
         ],
         "expected_target_text": [
           "Parallel distributed processing"
         ],
         "reviewed": true,
-        "notes": "Complete five-line book chapter entry including its final URL."
+        "notes": "Complete five-line book chapter entry including its final URL. Development regression after held-out-v6 visual audit: exclude all following-page bibliography entries; original held-out annotation is preserved at c20fa7a."
       },
       {
         "id": "1809.02736v1-equation-1",
@@ -548,6 +557,7 @@
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
     "resolver_baseline": "0f10834",
     "promoted_from": "held_out_v6",
-    "promotion_reason": "Full visual audit finds accepted reference [2] includes subsequent references [3] through [9] on the next page; promote the whole paper before correcting variable-width numbered-entry boundaries and strengthening its neighboring-page regression."
+    "promotion_reason": "Full visual audit finds accepted reference [2] includes subsequent references [3] through [9] on the next page; promote the whole paper before correcting variable-width numbered-entry boundaries and strengthening its neighboring-page regression.",
+    "development_regression": "After whole-document promotion, add following-page exclusion to reference [2]; eligibility and required content are unchanged."
   }
 }

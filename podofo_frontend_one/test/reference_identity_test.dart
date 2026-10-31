@@ -14,6 +14,37 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test(
+    'variable-width bracketed labels remain distinct across a page boundary',
+    () {
+      final next = _references(
+        ['[3] Ben Sato. Second.', '[10] Dana Morris. Third.'],
+        page: 2,
+        top: 20,
+        indents: [6, 0],
+      );
+      final target = _references(
+        ['[2] Alice Rivera. First. 2024.', 'Available: https://example.test.'],
+        indents: [0, 10],
+        top: 300,
+      ).resolve('[2]', following: next);
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.parts, hasLength(1));
+      expect(target.parts.single.page, 1);
+      final second = next.resolve('[3]');
+      expect(
+        second.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: second.reason,
+      );
+      expect(second.parts.single.bounds.contains(const Offset(27, 24)), true);
+      expect(second.parts.single.bounds.contains(const Offset(21, 38)), false);
+    },
+  );
   test('an indented publication year stays inside its numbered reference', () {
     for (final merged in [false, true]) {
       final fixture = _references(

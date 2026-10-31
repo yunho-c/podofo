@@ -4,7 +4,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../services/pdf_session.dart';
 
-const linkResolverVersion = 14;
+const linkResolverVersion = 15;
 const semanticPreviewMaxSize = Size(480, 360);
 
 /// Consumer cancellation detaches subscriptions without stealing shared work.

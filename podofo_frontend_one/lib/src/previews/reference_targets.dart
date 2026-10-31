@@ -114,13 +114,15 @@ List<_ReferenceEntry> _referenceEntries(
     final left = sorted.map((l) => l.bounds.left).reduce(math.min);
     _ReferencePart? part;
     for (final line in sorted) {
-      // A year such as "2021." in a hanging continuation is not a numbered
-      // reference. Every entry start must share the column's left margin.
+      // Bracketed labels are explicit starts even when right-aligned numbers
+      // of different widths shift their left edge. Dotted numbers and authors
+      // require the column margin: an indented "2021." may be a year.
       final starts =
-          line.bounds.left <= left + 4 &&
-          (_referenceNumber(line.line.text) != null ||
-              _authorStart(line.line.text) ||
-              _dittoAuthorStart(line.line.text));
+          RegExp(r'^\s*\[\d+\]').hasMatch(line.line.text) ||
+          (line.bounds.left <= left + 4 &&
+              (_referenceNumber(line.line.text) != null ||
+                  _authorStart(line.line.text) ||
+                  _dittoAuthorStart(line.line.text)));
       final previous = entries.lastOrNull;
       final lastPart = previous?.parts.last;
       final sameColumn = lastPart?.column == column;

@@ -240,9 +240,24 @@ void main() {
               }
               final metrics = <Map<String, Object>>[];
               var complete = semantic, requiredInk = 0, coveredInk = 0;
+              final requiredPages = (c['required_parts'] as List)
+                  .map((p) => p['page'] as int)
+                  .toSet();
+              // A crop from an unannotated page cannot belong to the complete
+              // target, even if no excluded-neighbor mask was drawn there.
+              final unexpectedPages = target.parts
+                  .map((p) => p.page)
+                  .toSet()
+                  .difference(requiredPages);
+              if (semantic && unexpectedPages.isNotEmpty) {
+                complete = false;
+                issues.add(
+                  '${c['id']}: unexpected target pages $unexpectedPages',
+                );
+              }
               final pages = {
                 ...target.parts.map((p) => p.page),
-                ...(c['required_parts'] as List).map((p) => p['page'] as int),
+                ...requiredPages,
                 ...(c['excluded_neighbors'] as List).map(
                   (p) => p['page'] as int,
                 ),
@@ -306,6 +321,7 @@ void main() {
                 'wrong_object': wrong,
                 'required_ink': requiredInk,
                 'covered_ink': coveredInk,
+                'unexpected_pages': unexpectedPages.toList()..sort(),
                 'kind': target.kind?.name,
                 'reason': target.reason,
                 'label': target.label,

@@ -9,6 +9,7 @@ import 'package:podoco/podoco.dart' as podoco;
 import 'package:podofo_one/src/analysis/analysis_store.dart';
 import 'package:podofo_one/src/analysis/pdf_analysis_source.dart';
 import 'package:podofo_one/src/analysis/preview_layout_repository.dart';
+import 'package:podofo_one/src/narration/source_map.dart';
 import 'package:podofo_one/src/previews/link_target.dart';
 import 'package:podofo_one/src/previews/link_target_resolver.dart';
 import 'package:podofo_one/src/previews/pdf_link_context.dart';
@@ -152,6 +153,33 @@ void main() {
       );
     }
   });
+  test(
+    'textless source or target pages do not fabricate semantic identity',
+    () async {
+      final p = await prepare(2);
+      final textless = PreviewTextPage(
+        PdfTextSnapshot(page: p.targetText!.snapshot.page, text: '', boxes: []),
+        [],
+      );
+      final resolver = const LinkTargetResolver();
+      final target = resolver.resolve(
+        p.destination,
+        source: p.source,
+        text: textless,
+        layout: layout(2),
+      );
+      expect(target.tier, LinkTargetTier.unresolved);
+      expect(target.parts, isEmpty);
+      final source = resolver.resolve(
+        p.destination,
+        source: sourceLinkText(textless, [const Rect.fromLTWH(0, 0, 500, 700)]),
+        text: p.targetText,
+        layout: layout(2),
+      );
+      expect(source.tier, LinkTargetTier.unresolved);
+      expect(source.parts, isEmpty);
+    },
+  );
   test(
     'section identity does not confuse a parent with a numbered subsection',
     () async {
