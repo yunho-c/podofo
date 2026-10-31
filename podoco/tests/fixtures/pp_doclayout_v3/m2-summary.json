@@ -1,0 +1,743 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-26",
+  "milestone": "M2",
+  "host": {
+    "os": "macOS-27.0.1-arm64-arm-64bit-Mach-O",
+    "cpu": "Apple M4 Pro",
+    "memory_bytes": 51539607552,
+    "power": "AC power; active developer host"
+  },
+  "baseline_commit": "2aa6117",
+  "qualification": "experimental model; Rust layout integration qualified on this macOS arm64 host",
+  "manifest_sha256": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef",
+  "source_sha256": {
+    "crates/podoco/src/session.rs": "eed6cbb5b3fbc294d0b6a891c069876db923e09b7ff694964e135a95c41f426c",
+    "crates/podoco/src/bundle.rs": "423c5667ee76446b2f37ca3658fec9256d74f1881bd234f8d144e570447af8b5",
+    "crates/podoco/src/results.rs": "c73283ae879525b3f6e33841f9f5a543168e70663b0ba988b327c6ce4ea0ab43",
+    "crates/podoco/examples/page_layout.rs": "a01eabba18b9a1d55b0efe5031961ba74a67e6c6b91bee1b938b655a8e93a81a",
+    "tools/pp_doclayout_v3/m2_reference.py": "9a76b28539efd70c1d12f2dac9c9366cadb039c9cfc1ff5e6bbd6a9ec6983944",
+    "crates/podoco/src/pipelines/layout/mod.rs": "4445c361be7d3f9078f4046a98e80a029b944eb83aedcf21bcdc195495abf516",
+    "crates/podoco/src/pipelines/layout/preprocess.rs": "ff1f585a8701f66b7340095d1a9f6350fc76f85b5ebcb3659f81252edf40089e",
+    "crates/podoco/src/pipelines/layout/tests.rs": "b79253af86a1740d8c93e2ede5408b8e5aebb7a7dd46f90fe7e2270b5d564de2",
+    "crates/podoco/src/pipelines/mod.rs": "2720eb626a99126da1ee15de5609ea326a241249ed46dda875db924009ee5ca0",
+    "crates/podoco/src/runtime/coreml/mod.rs": "5eeb46bd579f05e75c8c6f7f4808df4096acb13df31b91f53c5f07bf3b137df2",
+    "crates/podoco/src/runtime/coreml/tensor.rs": "7ca1426bf9f494c6bea435dc5bab38e8d888b1cf44537af1473982b5411decf3",
+    "crates/podoco/src/runtime/mod.rs": "f30c5bd7663878c8f4fc786f0cf737543bf5176455737ffd392fb0a6886575fd"
+  },
+  "portable": {
+    "cases": [
+      {
+        "id": "columns",
+        "input_exact": true,
+        "detections": 32,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 5.960464477539063e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "equations",
+        "input_exact": true,
+        "detections": 12,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "raster",
+        "input_exact": true,
+        "detections": 1,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "random-1x1",
+        "input_exact": true
+      },
+      {
+        "id": "random-1x19",
+        "input_exact": true
+      },
+      {
+        "id": "random-37x1",
+        "input_exact": true
+      },
+      {
+        "id": "random-799x801",
+        "input_exact": true
+      },
+      {
+        "id": "random-1603x173",
+        "input_exact": true
+      },
+      {
+        "id": "random-37x2033",
+        "input_exact": true
+      },
+      {
+        "id": "random-800x800",
+        "input_exact": true
+      },
+      {
+        "id": "ibem-00",
+        "input_exact": true,
+        "detections": 15,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 5.960464477539063e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-01",
+        "input_exact": true,
+        "detections": 35,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 5.960464477539063e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-02",
+        "input_exact": true,
+        "detections": 11,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-03",
+        "input_exact": true,
+        "detections": 42,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 5.960464477539063e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-04",
+        "input_exact": true,
+        "detections": 23,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-05",
+        "input_exact": true,
+        "detections": 11,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-06",
+        "input_exact": true,
+        "detections": 13,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-07",
+        "input_exact": true,
+        "detections": 14,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-08",
+        "input_exact": true,
+        "detections": 51,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-09",
+        "input_exact": true,
+        "detections": 13,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-10",
+        "input_exact": true,
+        "detections": 11,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-11",
+        "input_exact": true,
+        "detections": 47,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 2.9802322387695312e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-12",
+        "input_exact": true,
+        "detections": 15,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-13",
+        "input_exact": true,
+        "detections": 11,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-14",
+        "input_exact": true,
+        "detections": 50,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 5.960464477539063e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-15",
+        "input_exact": true,
+        "detections": 39,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 2.9802322387695312e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-16",
+        "input_exact": true,
+        "detections": 9,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-17",
+        "input_exact": true,
+        "detections": 8,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-18",
+        "input_exact": true,
+        "detections": 31,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 1.1920928955078125e-07,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-19",
+        "input_exact": true,
+        "detections": 6,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-20",
+        "input_exact": true,
+        "detections": 39,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 1.1920928955078125e-07,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-21",
+        "input_exact": true,
+        "detections": 35,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-22",
+        "input_exact": true,
+        "detections": 7,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-23",
+        "input_exact": true,
+        "detections": 71,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 5.960464477539063e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-24",
+        "input_exact": true,
+        "detections": 39,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 5.960464477539063e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-25",
+        "input_exact": true,
+        "detections": 30,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 2.9802322387695312e-08,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-26",
+        "input_exact": true,
+        "detections": 43,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-27",
+        "input_exact": true,
+        "detections": 37,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 1.1920928955078125e-07,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-28",
+        "input_exact": true,
+        "detections": 16,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-29",
+        "input_exact": true,
+        "detections": 13,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-30",
+        "input_exact": true,
+        "detections": 14,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-31",
+        "input_exact": true,
+        "detections": 11,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-32",
+        "input_exact": true,
+        "detections": 10,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-33",
+        "input_exact": true,
+        "detections": 9,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-34",
+        "input_exact": true,
+        "detections": 7,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-35",
+        "input_exact": true,
+        "detections": 54,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-36",
+        "input_exact": true,
+        "detections": 10,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-37",
+        "input_exact": true,
+        "detections": 12,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-38",
+        "input_exact": true,
+        "detections": 10,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-39",
+        "input_exact": true,
+        "detections": 11,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-40",
+        "input_exact": true,
+        "detections": 8,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 1.1920928955078125e-07,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-41",
+        "input_exact": true,
+        "detections": 20,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 1.1920928955078125e-07,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-42",
+        "input_exact": true,
+        "detections": 11,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-43",
+        "input_exact": true,
+        "detections": 14,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-44",
+        "input_exact": true,
+        "detections": 14,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-45",
+        "input_exact": true,
+        "detections": 13,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-46",
+        "input_exact": true,
+        "detections": 32,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-47",
+        "input_exact": true,
+        "detections": 27,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-48",
+        "input_exact": true,
+        "detections": 17,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      },
+      {
+        "id": "ibem-49",
+        "input_exact": true,
+        "detections": 16,
+        "selected_pairs_and_order_exact": true,
+        "max_score_error": 0.0,
+        "max_normalized_box_error": 0.0
+      }
+    ],
+    "runner_sha256": "9a76b28539efd70c1d12f2dac9c9366cadb039c9cfc1ff5e6bbd6a9ec6983944"
+  },
+  "native": {
+    "cpu-ne": {
+      "pages": 53,
+      "predictions_per_implementation": 106,
+      "small_tensors_bit_exact": true,
+      "decoded_pairs_and_order_exact": true,
+      "mask_finiteness_checked_without_retained_host_copy": true,
+      "report_sha256": "328609a1697c302cef690c616f371f500cf4fbdca907f79e11a6506112b55b79"
+    },
+    "cpu": {
+      "pages": 5,
+      "predictions_per_implementation": 10,
+      "small_tensors_bit_exact": true,
+      "decoded_pairs_and_order_exact": true,
+      "mask_finiteness_checked_without_retained_host_copy": true,
+      "report_sha256": "f08fc9152901c068c30429bfa1236d544169f59b20b5e830c77407bd091ccf0a"
+    },
+    "all": {
+      "pages": 5,
+      "predictions_per_implementation": 10,
+      "small_tensors_bit_exact": true,
+      "decoded_pairs_and_order_exact": true,
+      "mask_finiteness_checked_without_retained_host_copy": true,
+      "report_sha256": "f08fc9152901c068c30429bfa1236d544169f59b20b5e830c77407bd091ccf0a"
+    }
+  },
+  "ties": {
+    "pages": [
+      {
+        "id": "ibem-01",
+        "tie_only_inversions": [
+          [
+            715,
+            490
+          ]
+        ]
+      },
+      {
+        "id": "ibem-08",
+        "tie_only_inversions": [
+          [
+            1222,
+            1217
+          ]
+        ]
+      },
+      {
+        "id": "ibem-14",
+        "tie_only_inversions": [
+          [
+            515,
+            290
+          ]
+        ]
+      },
+      {
+        "id": "ibem-15",
+        "tie_only_inversions": [
+          [
+            572,
+            540
+          ]
+        ]
+      },
+      {
+        "id": "ibem-18",
+        "tie_only_inversions": [
+          [
+            740,
+            247
+          ]
+        ]
+      },
+      {
+        "id": "ibem-47",
+        "tie_only_inversions": [
+          [
+            590,
+            365
+          ]
+        ]
+      },
+      {
+        "id": "ibem-49",
+        "tie_only_inversions": [
+          [
+            385,
+            375
+          ]
+        ]
+      }
+    ],
+    "all_selected_pairs_unchanged": true,
+    "all_untied_order_unchanged": true,
+    "runner_sha256": "9a76b28539efd70c1d12f2dac9c9366cadb039c9cfc1ff5e6bbd6a9ec6983944"
+  },
+  "legacy_export": {
+    "fresh_rust_small_outputs_exact_for_all_50_pages": true,
+    "eager_detections": 1103,
+    "export_detections": 1105,
+    "matched": 1103,
+    "missing": 0,
+    "extras": 2,
+    "matched_order_pairs_equal": 17485,
+    "matched_order_pairs_total": 17510,
+    "pages": [
+      "0005219_page07.jpg",
+      "0009027_page01.jpg"
+    ],
+    "scope": "Existing conversion-to-eager differences retained; not ground-truth accuracy"
+  },
+  "coexistence": {
+    "status": "passed",
+    "host": "27.0.1",
+    "architecture": "arm64",
+    "rust": "rustc 1.95.0 (59807616e 2026-04-14)",
+    "cargo_lock_sha256": "2dcea9ee74d77c39832f21c5314d8a927e64d47468a2442829f08a9a08ae7d06",
+    "cidre_pin_sha256": "b19aedb7f87817bb546842c876d192297c4a3205a30bf6b24899dcd5d595f1b7",
+    "builds": {
+      "observer-enabled": {
+        "bytes": 1461816,
+        "sha256": "064685b3bd9dd908732be73af0d50b965891b67ec51346246ee741a86e0b0700",
+        "observer": true
+      },
+      "observer-disabled": {
+        "bytes": 1460312,
+        "sha256": "a5bd8656669c845ae5c34481bfcb6c91007d596d32f13a24bda93f31aacba92f",
+        "observer": false
+      },
+      "observer-disabled-debug": {
+        "bytes": 4156968,
+        "sha256": "079b0e00964a7a47b7c4f0a47f2793e451b494314ce56010c1e81b5c5c703d2a",
+        "observer": false
+      },
+      "observer-disabled-objc": {
+        "bytes": 1460312,
+        "sha256": "db5fac17b2fa76ccc1cbdf42526a310c4461b2473e221bb167b9c52f4854a74a",
+        "observer": false
+      }
+    },
+    "pairs": {
+      "observer-disabled-forward": {
+        "probe_calls": 8,
+        "predictions": 24,
+        "layout_predictions": 4,
+        "mlsr_runtime_probes": 0
+      },
+      "observer-disabled-reverse": {
+        "probe_calls": 8,
+        "predictions": 24,
+        "layout_predictions": 4,
+        "mlsr_runtime_probes": 0
+      },
+      "observer-disabled-debug-forward": {
+        "probe_calls": 8,
+        "predictions": 24,
+        "layout_predictions": 4,
+        "mlsr_runtime_probes": 0
+      },
+      "observer-disabled-debug-reverse": {
+        "probe_calls": 8,
+        "predictions": 24,
+        "layout_predictions": 4,
+        "mlsr_runtime_probes": 0
+      },
+      "observer-disabled-objc-forward": {
+        "probe_calls": 8,
+        "predictions": 24,
+        "layout_predictions": 4,
+        "mlsr_runtime_probes": 0
+      },
+      "observer-disabled-objc-reverse": {
+        "probe_calls": 8,
+        "predictions": 24,
+        "layout_predictions": 4,
+        "mlsr_runtime_probes": 0
+      },
+      "existing-mlsr-forward": {
+        "probe_calls": 4,
+        "predictions": 12,
+        "layout_predictions": 2,
+        "mlsr_runtime_probes": 0
+      },
+      "existing-mlsr-reverse": {
+        "probe_calls": 4,
+        "predictions": 12,
+        "layout_predictions": 2,
+        "mlsr_runtime_probes": 0
+      },
+      "mlsr-runtime-forward": {
+        "probe_calls": 4,
+        "predictions": 12,
+        "layout_predictions": 2,
+        "mlsr_runtime_probes": 1
+      },
+      "mlsr-runtime-reverse": {
+        "probe_calls": 4,
+        "predictions": 12,
+        "layout_predictions": 2,
+        "mlsr_runtime_probes": 1
+      }
+    },
+    "mlsr_library_sha256": "a56bd49744d64be2fbae1d5c458ad214f771ef92b8905897ea1ce38d6fba1d81",
+    "mlsr_probe_sha256": "c49df263dd70bc8c0e2b039dd207da78feee5ed489252bacfc46fbd0de0b0125",
+    "layout_manifest_sha256": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef",
+    "scope": "CPU affine controls; optional PP-DocLayoutV3 session and MLSR runtime probes; no speech synthesis"
+  },
+  "cli": {
+    "calls": 18,
+    "model_loads": 1,
+    "verification_seconds": 0.2302975,
+    "open_seconds": 3.332198041,
+    "first_call": {
+      "decoding_seconds": 0.000419792,
+      "prediction_seconds": 0.072935541,
+      "preprocessing_seconds": 0.007558458,
+      "total_seconds": 0.080974125
+    },
+    "warm_per_page": {
+      "columns": {
+        "decoding_seconds": 0.000347167,
+        "prediction_seconds": 0.046438125,
+        "preprocessing_seconds": 0.007323583,
+        "total_seconds": 0.054113958
+      },
+      "equations": {
+        "decoding_seconds": 0.000368083,
+        "prediction_seconds": 0.046444042,
+        "preprocessing_seconds": 0.008746708,
+        "total_seconds": 0.055592541
+      },
+      "raster": {
+        "decoding_seconds": 0.000362667,
+        "prediction_seconds": 0.046551,
+        "preprocessing_seconds": 0.002970375,
+        "total_seconds": 0.049915833
+      }
+    },
+    "host_buffer_bytes": 8135600,
+    "peak_accounted_tensor_bytes": 66274596,
+    "process_peak_rss_bytes": 380796928,
+    "process_peak_footprint_bytes": 386401288,
+    "scope": "One release CLI process, three pages repeated six times; warm medians use repetitions 2-6; PNG decoding and verification/open are outside blocking-call times; no ANE placement claim",
+    "executable_sha256": "60d59011828423d62893359f7c069274502a58d8e2f121259d2b74b01215c43b"
+  },
+  "validation": {
+    "portable_rust_tests": 26,
+    "coreml_rust_tests": 28,
+    "ffi_identity_tests": 1,
+    "doctests": 1,
+    "ignored_qualification_tests_run_explicitly": 3,
+    "dev_check": "passed",
+    "generated_c_dart": "unchanged",
+    "msrv_coreml": "Rust 1.88.0 passed",
+    "coreml_clippy": "passed with warnings denied",
+    "remote_ci": "not run"
+  },
+  "artifacts": "evaluation-output/m2-portable-v1, m2-coexistence, m2-cli-*; all large arrays/model payloads ignored"
+}

@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "license": "Apache-2.0",
+  "provenance": "Original synthetic project pages; no third-party document pages",
+  "generator": "tools/pp_doclayout_v3/generate.py",
+  "generator_sha256": "8de0d204bb525d636c15f85c0dd3c41cd347cacf2421750b840226ef4a6a8619",
+  "pillow": "10.4.0",
+  "font": "Pillow bundled default font, rasterized only",
+  "pages": [
+    {
+      "image": "columns.png",
+      "sha256": "96e79687cf0dd73aef06e402f8bb962f0c5f4c780a0172e33691eb16462a6cd6",
+      "width": 640,
+      "height": 800,
+      "mode": "RGB",
+      "pixel_to_page": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "page_space": [
+        640,
+        800
+      ],
+      "description": "Original two-column prose and table geometry"
+    },
+    {
+      "image": "equations.png",
+      "sha256": "b5acdc5fbe5122d428d189a61bd70552d2554b375b387293efe81c251a815c82",
+      "width": 800,
+      "height": 1000,
+      "mode": "RGB",
+      "pixel_to_page": [
+        1,
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "page_space": [
+        800,
+        1000
+      ],
+      "description": "Original inline and displayed equation-like text with separate numbers"
+    },
+    {
+      "image": "raster.png",
+      "sha256": "066b33e72f5aa5aca61cc6d76902b34f6fbc6cc83390c2a2430554f09339ed6c",
+      "width": 257,
+      "height": 193,
+      "mode": "RGBA",
+      "pixel_to_page": [
+        0,
+        1,
+        -1,
+        0,
+        193,
+        0
+      ],
+      "page_space": [
+        193,
+        257
+      ],
+      "description": "Odd raster dimensions, straight alpha, colored corners, rotated page mapping"
+    }
+  ]
+}

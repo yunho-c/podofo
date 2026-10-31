@@ -1,0 +1,374 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
+/// Pdfrx API
+library;
+
+import 'dart:async';
+import 'dart:typed_data';
+
+import 'pdf_document_event.dart';
+import 'pdf_font_resolver.dart';
+import 'pdf_outline_node.dart';
+import 'pdf_page.dart';
+import 'pdf_permissions.dart';
+import 'pdfrx_entry_functions.dart';
+
+/// Handles PDF document loaded on memory.
+abstract class PdfDocument {
+  /// Constructor to force initialization of sourceName.
+  PdfDocument({required this.sourceName});
+
+  /// File path, `asset:[ASSET_PATH]` or `memory:` depending on the content opened.
+  final String sourceName;
+
+  /// Permission flags.
+  PdfPermissions? get permissions;
+
+  /// Determine whether the PDF file is encrypted or not.
+  bool get isEncrypted;
+
+  /// PdfDocument must have [dispose] function.
+  Future<void> dispose();
+
+  /// Stream to notify change events in the document.
+  Stream<PdfDocumentEvent> get events;
+
+  /// Opening the specified file.
+  /// For Web, [filePath] can be relative path from `index.html` or any arbitrary URL but it may be restricted by CORS.
+  ///
+  /// [passwordProvider] is used to provide password for encrypted PDF. See [PdfPasswordProvider] for more info.
+  ///
+  /// [firstAttemptByEmptyPassword] is used to determine whether the first attempt to open the PDF is by empty
+  /// password or not. For more info, see [PdfPasswordProvider].
+  ///
+  /// If [useProgressiveLoading] is true, only the first page is loaded initially and the rest of the pages
+  /// are loaded progressively when [PdfDocument.loadPagesProgressively] is called explicitly.
+  static Future<PdfDocument> openFile(
+    String filePath, {
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    bool useProgressiveLoading = false,
+  }) => PdfrxEntryFunctions.instance.openFile(
+    filePath,
+    passwordProvider: passwordProvider,
+    firstAttemptByEmptyPassword: firstAttemptByEmptyPassword,
+    useProgressiveLoading: useProgressiveLoading,
+  );
+
+  /// Opening the specified asset.
+  ///
+  /// [passwordProvider] is used to provide password for encrypted PDF. See [PdfPasswordProvider] for more info.
+  ///
+  /// [firstAttemptByEmptyPassword] is used to determine whether the first attempt to open the PDF is by empty
+  /// password or not. For more info, see [PdfPasswordProvider].
+  ///
+  /// If [useProgressiveLoading] is true, only the first page is loaded initially and the rest of the pages
+  /// are loaded progressively when [PdfDocument.loadPagesProgressively] is called explicitly.
+  static Future<PdfDocument> openAsset(
+    String name, {
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    bool useProgressiveLoading = false,
+  }) => PdfrxEntryFunctions.instance.openAsset(
+    name,
+    passwordProvider: passwordProvider,
+    firstAttemptByEmptyPassword: firstAttemptByEmptyPassword,
+    useProgressiveLoading: useProgressiveLoading,
+  );
+
+  /// Opening the PDF on memory.
+  ///
+  /// [passwordProvider] is used to provide password for encrypted PDF. See [PdfPasswordProvider] for more info.
+  ///
+  /// [firstAttemptByEmptyPassword] is used to determine whether the first attempt to open the PDF is by empty password
+  /// or not. For more info, see [PdfPasswordProvider].
+  ///
+  /// If [useProgressiveLoading] is true, only the first page is loaded initially and the rest of the pages
+  /// are loaded progressively when [PdfDocument.loadPagesProgressively] is called explicitly.
+  ///
+  /// [sourceName] must be some ID, e.g., file name or URL, to identify the source of the PDF. If [sourceName] is not
+  /// unique for each source, the viewer may not work correctly.
+  ///
+  /// Web only: [allowDataOwnershipTransfer] is used to determine if the data buffer can be transferred to
+  /// the worker thread.
+  ///
+  /// On native PDFium platforms, [maxSizeToCacheOnMemory] is the maximum PDF size to load directly into native
+  /// memory. Larger documents use on-demand reads. The default is 1MB. Other backends ignore this option.
+  static Future<PdfDocument> openData(
+    Uint8List data, {
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    bool useProgressiveLoading = false,
+    String? sourceName,
+    bool allowDataOwnershipTransfer = false,
+    int? maxSizeToCacheOnMemory,
+    void Function()? onDispose,
+  }) => PdfrxEntryFunctions.instance.openData(
+    data,
+    passwordProvider: passwordProvider,
+    firstAttemptByEmptyPassword: firstAttemptByEmptyPassword,
+    useProgressiveLoading: useProgressiveLoading,
+    sourceName: sourceName,
+    allowDataOwnershipTransfer: allowDataOwnershipTransfer,
+    maxSizeToCacheOnMemory: maxSizeToCacheOnMemory,
+    onDispose: onDispose,
+  );
+
+  /// Creating a new empty PDF document.
+  ///
+  /// [sourceName] must be some ID, e.g., file name or URL, to identify the source of the PDF. If [sourceName] is not
+  /// unique for each source, the viewer may not work correctly.
+  static Future<PdfDocument> createNew({required String sourceName}) =>
+      PdfrxEntryFunctions.instance.createNew(sourceName: sourceName);
+
+  /// Creating a PDF document from JPEG data.
+  ///
+  /// [jpegData] is the JPEG encoded image data.
+  /// [width] and [height] are the dimensions of the image in PDF units (1/72 inch).
+  /// [sourceName] must be some ID, e.g., file name or URL, to identify the source of the PDF. If [sourceName] is not
+  /// unique for each source, the viewer may not work correctly.
+  static Future<PdfDocument> createFromJpegData(
+    Uint8List jpegData, {
+    required double width,
+    required double height,
+    required String sourceName,
+  }) => PdfrxEntryFunctions.instance.createFromJpegData(jpegData, width: width, height: height, sourceName: sourceName);
+
+  /// Opening the PDF from custom source.
+  ///
+  /// On Flutter Web, this function is not supported and throws an exception.
+  /// It is also not supported if pdfrx is running without libpdfrx (**typically on Dart only**).
+  ///
+  /// [maxSizeToCacheOnMemory] is the maximum size of the PDF to cache on memory in bytes; the custom loading process
+  /// may be heavy because of FFI overhead and it may be better to cache the PDF on memory if it's not too large.
+  /// The default size is 1MB.
+  ///
+  /// [passwordProvider] is used to provide password for encrypted PDF. See [PdfPasswordProvider] for more info.
+  ///
+  /// [firstAttemptByEmptyPassword] is used to determine whether the first attempt to open the PDF is by empty
+  /// password or not. For more info, see [PdfPasswordProvider].
+  ///
+  /// If [useProgressiveLoading] is true, only the first page is loaded initially and the rest of the pages
+  /// are loaded progressively when [PdfDocument.loadPagesProgressively] is called explicitly.
+  ///
+  /// [sourceName] must be some ID, e.g., file name or URL, to identify the source of the PDF. If [sourceName] is not
+  /// unique for each source, the viewer may not work correctly.
+  static Future<PdfDocument> openCustom({
+    required FutureOr<int> Function(Uint8List buffer, int position, int size) read,
+    required int fileSize,
+    required String sourceName,
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    bool useProgressiveLoading = false,
+    int? maxSizeToCacheOnMemory,
+    void Function()? onDispose,
+  }) => PdfrxEntryFunctions.instance.openCustom(
+    read: read,
+    fileSize: fileSize,
+    sourceName: sourceName,
+    passwordProvider: passwordProvider,
+    firstAttemptByEmptyPassword: firstAttemptByEmptyPassword,
+    useProgressiveLoading: useProgressiveLoading,
+    maxSizeToCacheOnMemory: maxSizeToCacheOnMemory,
+    onDispose: onDispose,
+  );
+
+  /// Opening the PDF from URI.
+  ///
+  /// For Flutter Web, the implementation uses browser APIs and is restricted by CORS.
+  // ignore: comment_references
+  /// For other platforms, it uses [pdfDocumentFromUri] that uses HTTP's range request to download the file.
+  ///
+  /// [passwordProvider] is used to provide password for encrypted PDF. See [PdfPasswordProvider] for more info.
+  ///
+  /// [firstAttemptByEmptyPassword] is used to determine whether the first attempt to open the PDF is by empty
+  /// password or not. For more info, see [PdfPasswordProvider].
+  ///
+  /// If [useProgressiveLoading] is true, only the first page is loaded initially and the rest of the pages
+  /// are loaded progressively when [PdfDocument.loadPagesProgressively] is called explicitly.
+  ///
+  /// [progressCallback] is called when the download progress is updated.
+  ///
+  /// [preferRangeAccess] to prefer range access to download the PDF. The default is false.
+  /// On Web, range access requires a CORS-enabled server that supports range requests.
+  /// It is not supported if pdfrx is running without libpdfrx (**typically on Dart only**).
+  ///
+  /// [headers] is used to specify additional HTTP headers especially for authentication/authorization.
+  ///
+  /// [withCredentials] is used to specify whether to include credentials in the request (Only supported on Web).
+  ///
+  /// [timeout] is used to specify the timeout duration for each HTTP request (Only supported on non-Web platforms).
+  static Future<PdfDocument> openUri(
+    Uri uri, {
+    PdfPasswordProvider? passwordProvider,
+    bool firstAttemptByEmptyPassword = true,
+    bool useProgressiveLoading = false,
+    PdfDownloadProgressCallback? progressCallback,
+    bool preferRangeAccess = false,
+    Map<String, String>? headers,
+    bool withCredentials = false,
+    Duration? timeout,
+  }) => PdfrxEntryFunctions.instance.openUri(
+    uri,
+    passwordProvider: passwordProvider,
+    firstAttemptByEmptyPassword: firstAttemptByEmptyPassword,
+    useProgressiveLoading: useProgressiveLoading,
+    progressCallback: progressCallback,
+    preferRangeAccess: preferRangeAccess,
+    headers: headers,
+    withCredentials: withCredentials,
+    timeout: timeout,
+  );
+
+  /// Load pages progressively.
+  ///
+  /// This function loads pages progressively if the pages are not loaded yet.
+  /// It calls [onPageLoadProgress] for each [loadUnitDuration] duration until all pages are loaded or the loading
+  /// is cancelled.
+  /// When [onPageLoadProgress] is called, it should return true to continue loading process or false to stop loading.
+  /// [data] is an optional data that can be used to pass additional information to the callback.
+  ///
+  /// [startPageNumber] is the 1-based page number to start measuring from. Pages are measured in order of their
+  /// distance from [startPageNumber], alternating after and before it (start, start+1, start-1, start+2, start-2, ...),
+  /// so that the pages around the one being displayed become available first. Pages that are already loaded are
+  /// skipped. When null (the default), pages are measured from the first page onward. Regardless of the order, all
+  /// pages are loaded when the function completes without being cancelled, and [PdfDocumentLoadCompleteEvent] is
+  /// emitted once.
+  ///
+  /// It's always safe to call this function even if the pages are already loaded.
+  Future<void> loadPagesProgressively<T>({
+    PdfPageLoadingCallback<T>? onPageLoadProgress,
+    T? data,
+    Duration loadUnitDuration = const Duration(milliseconds: 250),
+    int? startPageNumber,
+  });
+
+  /// Pages.
+  ///
+  /// The list is unmodifiable; you cannot add, remove, or replace pages directly.
+  /// To modify the pages, use [pages] setter to set a new list of pages.
+  List<PdfPage> get pages;
+
+  /// Set pages.
+  ///
+  /// You can add [PdfPage] instances from any [PdfDocument] instances and the resulting document works correctly
+  /// if the referenced [PdfDocument] instances are alive; it's your responsibility to manage the lifetime of those
+  /// instances. To make the document independent from the source documents, you should call [assemble] after setting
+  /// the pages.
+  set pages(List<PdfPage> value);
+
+  /// Load outline (a.k.a. bookmark).
+  Future<List<PdfOutlineNode>> loadOutline();
+
+  /// Determine whether document handles are identical or not.
+  ///
+  /// It does not mean the document contents (or the document files) are identical.
+  bool isIdenticalDocumentHandle(Object? other);
+
+  /// Assemble the document after modifying pages.
+  ///
+  /// You should call this function after modifying [pages] to make the document consistent and independent from
+  /// the other source documents. If [pages] contains pages from other documents, those documents must be alive
+  /// until this function returns.
+  Future<bool> assemble();
+
+  /// Save the PDF document.
+  ///
+  /// This function internally calls [assemble] before encoding the PDF.
+  Future<Uint8List> encodePdf({bool incremental = false, bool removeSecurity = false});
+
+  /// Execute native document task with the native document handle.
+  ///
+  /// Only supported for native backends (e.g., PDFium).
+  ///
+  /// Please note that this function suspends pdfrx internal PDFium worker during the execution of [task].
+  ///
+  /// If you modify the document inside [task], make sure to keep consistency of the document after the
+  /// modification; e.g., call [reloadPages] if necessary.
+  ///
+  /// `nativeDocumentHandle` is a pointer to the native PDF document handle (e.g., FPDF_DOCUMENT in PDFium) but
+  /// represented as an integer to avoid direct dependency to PDFium bindings.
+  ///
+  /// ```dart
+  /// final result = await pdfDocument.useNativeDocumentHandle((nativeDocumentHandle) {
+  ///   // Convert nativeDocumentHandle to FPDF_DOCUMENT handle.
+  ///   final pdfDocument = pdfium_bindings.FPDF_DOCUMENT.fromAddress(nativeDocumentHandle);
+  ///   // <<Do something with pdfDocument...>>
+  ///   return someResult;
+  /// });
+  /// ```
+  Future<T> useNativeDocumentHandle<T>(FutureOr<T> Function(int nativeDocumentHandle) task);
+
+  /// Reload specified pages.
+  ///
+  /// [pageNumbersToReload] is the list of page numbers (1-based) to reload. If null, all pages are reloaded.
+  Future<void> reloadPages({List<int>? pageNumbersToReload});
+
+  /// Associate a [PdfFontManager] to the document to handle font loading/substitution for missing fonts.
+  ///
+  /// [onLoadComplete] callback is called when the missing font loading process is completed regardless of
+  /// the success or failure of loading each font.
+  ///
+  /// It is your responsibility to check the result in [onLoadComplete] and reload the document if necessary;
+  /// The [PdfDocument] that invokes [onLoadComplete] NEVER refreshes itself. You should open the PDF file again
+  /// by calling `PdfDocument.open*()` function to obtain another [PdfDocument] instance to refresh the document with
+  /// the loaded fonts.
+  ///
+  /// The function returns a [PdfFontManagerAssociation] which can be used to dispose the association
+  /// when it's no longer needed.
+  ///
+  /// The returned [PdfFontManagerAssociation] should be kept alive while the association is needed and disposed
+  /// to remove the association when it's no longer needed.
+  PdfFontManagerAssociation associateFontManager(
+    PdfFontManager fontManager, {
+    PdfFontLoadResultCallback? onLoadComplete,
+    PdfFontLoadProgressCallback? onProgress,
+  }) {
+    if (onLoadComplete == null) {
+      return PdfFontManagerAssociation(fontManager);
+    }
+    return PdfFontManagerAssociation.listen(fontManager, events, (event) async {
+      final result = await fontManager.loadMissingFonts(event.missingFonts, onProgress: onProgress);
+      await onLoadComplete(result);
+    });
+  }
+}
+
+typedef PdfFontLoadResultCallback = FutureOr<void> Function(PdfFontLoadResult result);
+
+/// Callback function to notify progressive page loading progress; see [PdfDocument.loadPagesProgressively].
+///
+/// [loadedPageCount] is the number of pages whose real dimensions are loaded so far, including pages loaded by other
+/// means (e.g. [PdfDocument.reloadPages]). Because pages are not necessarily measured in page order, it is a count,
+/// not the number of the last loaded page.
+/// [totalPageCount] is the total number of pages in the document.
+/// [data] is the optional data passed to [PdfDocument.loadPagesProgressively].
+///
+/// Return true to continue loading or false to stop.
+typedef PdfPageLoadingCallback<T> = FutureOr<bool> Function(int loadedPageCount, int totalPageCount, T? data);
+
+/// Callback function to notify download progress.
+///
+/// [downloadedBytes] is the number of bytes downloaded so far.
+/// [totalBytes] is the total number of bytes to download. It may be null if the total size is unknown.
+typedef PdfDownloadProgressCallback = void Function(int downloadedBytes, [int? totalBytes]);
+
+/// Function to provide password for encrypted PDF.
+///
+/// The function is called when PDF requires password.
+/// It is repeatedly called until the function returns null or a valid password.
+///
+/// [createSimplePasswordProvider] is a helper function to create [PdfPasswordProvider] that returns the password
+/// only once.
+typedef PdfPasswordProvider = FutureOr<String?> Function();
+
+/// Create [PdfPasswordProvider] that returns the password only once.
+///
+/// The returned [PdfPasswordProvider] returns the password only once and returns null afterwards.
+/// If [password] is null, the returned [PdfPasswordProvider] returns null always.
+PdfPasswordProvider createSimplePasswordProvider(String? password) {
+  return () {
+    final ret = password;
+    password = null;
+    return ret;
+  };
+}

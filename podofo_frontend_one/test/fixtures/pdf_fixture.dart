@@ -2,8 +2,9 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 /// Hand-authored PDF: text on normal, cropped, and rotated pages; no downloads.
-Uint8List pdfFixture({int pageCount = 3}) {
+Uint8List pdfFixture({int pageCount = 3, int rotatedPageDegrees = 90}) {
   assert(pageCount >= 1 && pageCount <= 3);
+  assert([0, 90, 180, 270].contains(rotatedPageDegrees));
   const text = 'BT /F1 18 Tf 60 300 Td (Hello highlight) Tj ET\n';
   final kids = ['3 0 R', '5 0 R', '7 0 R'].take(pageCount).join(' ');
   final objects = [
@@ -11,12 +12,16 @@ Uint8List pdfFixture({int pageCount = 3}) {
     '<< /Type /Pages /Kids [$kids] /Count $pageCount >>',
     '<< /Type /Page /Parent 2 0 R /MediaBox [10 20 310 420] /CropBox [30 40 290 400] /Resources << /Font << /F1 9 0 R >> >> /Contents 4 0 R >>',
     '<< /Length ${text.length} >>\nstream\n${text}endstream',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Rotate 90 /Resources << /Font << /F1 9 0 R >> >> /Contents 6 0 R >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Rotate $rotatedPageDegrees /Resources << /Font << /F1 9 0 R >> >> /Contents 6 0 R >>',
     '<< /Length ${text.length} >>\nstream\n${text}endstream',
     '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] /Resources << /Font << /F1 9 0 R >> >> /Contents 8 0 R >>',
     '<< /Length ${text.length} >>\nstream\n${text}endstream',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
   ];
+  return _encodePdfObjects(objects);
+}
+
+Uint8List _encodePdfObjects(List<String> objects) {
   final output = StringBuffer('%PDF-1.7\n');
   final offsets = <int>[];
   for (var i = 0; i < objects.length; i++) {
@@ -32,4 +37,23 @@ Uint8List pdfFixture({int pageCount = 3}) {
     'trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n$xref\n%%EOF\n',
   );
   return Uint8List.fromList(ascii.encode(output.toString()));
+}
+
+/// Original repeated text pages for bounded document-analysis qualification.
+Uint8List repeatedTextPdfFixture(int pageCount) {
+  assert(pageCount >= 1 && pageCount <= 256);
+  const text = 'BT /F1 18 Tf 60 300 Td (Document analysis) Tj ET\n';
+  final kids = [for (var i = 0; i < pageCount; i++) '${4 + i * 2} 0 R']
+      .join(' ');
+  return _encodePdfObjects([
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [$kids] /Count $pageCount >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    for (var i = 0; i < pageCount; i++) ...[
+      '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 400] '
+          '/Rotate ${i % 4 * 90} /Resources << /Font << /F1 3 0 R >> >> '
+          '/Contents ${5 + i * 2} 0 R >>',
+      '<< /Length ${text.length} >>\nstream\n${text}endstream',
+    ],
+  ]);
 }

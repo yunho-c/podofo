@@ -84,6 +84,11 @@ versions, storage schema, narration implementation or native platform files chan
 
 ## Validation on 2026-10-28
 
+For the subsequent locked macOS integration with Podoco on
+`feat/internal-link-hover`, see the [2026-10-30 M0 baseline report](target_aware_link_preview_m0.md).
+That build uses the exact MLSR pin and passes the combined automated checks;
+its native-window acceptance check remains pending.
+
 **23 focused tests passed:** 13 new cases plus 10 existing navigation, document
 lease and link/cache cases. Analysis of the eight changed Dart files reported no
 issues. Formatting and `git diff --check` passed. Native crop captures were

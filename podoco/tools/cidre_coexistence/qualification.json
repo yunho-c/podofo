@@ -1,0 +1,299 @@
+{
+  "host": "27.0.1",
+  "architecture": "arm64",
+  "rust": "rustc 1.95.0 (59807616e 2026-04-14)",
+  "mlsr_head": "14ff251eb7e9011801945233cf91ef8b444cd734",
+  "mlsr_probe_sha256": "5ca4d4d5abcc913d2e45a397ee704aeb2054aa13cdf4b7f7047f0b342a091956",
+  "cidre_source_commit": "6f3b3626c98460301c979b4a76f60e23eb3f99f0",
+  "profile": "release (and explicit debug cases), strip=none, CPU-only inference",
+  "builds": {
+    "stock-probe-a-ml-default-normal-release": {
+      "bytes": 675840,
+      "sha256": "131572b9ed7d548ba83e84265ca1d6aa59e26bbb0d385a011c8e3d7b5ec7baca",
+      "observer_classes": [
+        "CidreObserver"
+      ]
+    },
+    "stock-probe-b-ml-default-normal-release": {
+      "bytes": 675840,
+      "sha256": "a24a8b8778ecfbdae206fe022afb605fa8c3ea46b67a849563695d1a4a3f6ca8",
+      "observer_classes": [
+        "CidreObserver"
+      ]
+    },
+    "optional-probe-a-ml-default-normal-release": {
+      "bytes": 674384,
+      "sha256": "04030047808663e00f337106d373df8df2fd91b7581922fc0d280558b9dbe32e",
+      "observer_classes": []
+    },
+    "optional-probe-b-ml-default-normal-release": {
+      "bytes": 674384,
+      "sha256": "8442e11b9fb44b6540a7d6a23f80ee0a51ba993b415c1093f56fdad3fd056016",
+      "observer_classes": []
+    },
+    "optional-probe-a-kvo-default-normal-release": {
+      "bytes": 694176,
+      "sha256": "f17dc7e5b274a4b039292efee10da91c40fff2026dfea0db1e4b76957a5e3b34",
+      "observer_classes": [
+        "CidreObserver"
+      ]
+    },
+    "optional-probe-b-kvo-default-normal-release": {
+      "bytes": 694176,
+      "sha256": "be2994a1743708770a48f411ff053ea59c7de65a4b91520d5a40aca529c749f3",
+      "observer_classes": [
+        "CidreObserver"
+      ]
+    },
+    "split-probe-a-ml-default-normal-release": {
+      "bytes": 674384,
+      "sha256": "05c32792ee5ec3bac1429b0b5696d5da43623d36414cbef9037379a0a3976f65",
+      "observer_classes": []
+    },
+    "split-probe-b-ml-default-normal-release": {
+      "bytes": 674384,
+      "sha256": "898544e9ef2639a2713d67d00386b04634aeadc44f3fb81e08dc350680b81ef4",
+      "observer_classes": []
+    },
+    "split-probe-a-kvo-default-normal-release": {
+      "bytes": 694176,
+      "sha256": "7293fab613fe89c438ea2ed9b19ae67e25e71a558e1cf5e120a44cdb2f2b26f0",
+      "observer_classes": [
+        "CidreObserver"
+      ]
+    },
+    "split-probe-b-kvo-default-normal-release": {
+      "bytes": 694176,
+      "sha256": "6a9a62fc22a7c4b1f2e759c17603ab7b0c227c0006f98804b68f8fbb8ce7a219",
+      "observer_classes": [
+        "CidreObserver"
+      ]
+    },
+    "namespaced-probe-a-kvo-MlsrProbe-normal-release": {
+      "bytes": 694320,
+      "sha256": "09ffc2eb0732015263a1d85dd0f4b709ce62a1bb669c6a8fa08571d2f1f649bd",
+      "observer_classes": [
+        "MlsrProbe_CidreObserver"
+      ]
+    },
+    "namespaced-probe-b-kvo-PodocoProbe-normal-release": {
+      "bytes": 694336,
+      "sha256": "9b0d422bb6eff8e90297778da12ca75a98b104c907c60523bb1458313dbd0760",
+      "observer_classes": [
+        "PodocoProbe_CidreObserver"
+      ]
+    },
+    "split-probe-a-ml-default-objc-release": {
+      "bytes": 675840,
+      "sha256": "884181c4d0a33d1cc313d9a78461fea12012a3db1f00930d907d40c0d57714df",
+      "observer_classes": [
+        "CidreObserver"
+      ]
+    },
+    "split-probe-b-ml-default-objc-release": {
+      "bytes": 675840,
+      "sha256": "e0874d94b5a36eb76203ea54bbe87fd1b7ddf32d906108f6b88c0f3f6933fa60",
+      "observer_classes": [
+        "CidreObserver"
+      ]
+    },
+    "optional-probe-a-ml-default-objc-release": {
+      "bytes": 674384,
+      "sha256": "04030047808663e00f337106d373df8df2fd91b7581922fc0d280558b9dbe32e",
+      "observer_classes": []
+    },
+    "optional-probe-b-ml-default-objc-release": {
+      "bytes": 674384,
+      "sha256": "8442e11b9fb44b6540a7d6a23f80ee0a51ba993b415c1093f56fdad3fd056016",
+      "observer_classes": []
+    },
+    "optional-probe-a-ml-default-normal-debug": {
+      "bytes": 1618112,
+      "sha256": "9b42a3f2458fb3f2e91d829992d4db05157a4ffd0b56922ca820f42ab37c86d1",
+      "observer_classes": []
+    },
+    "optional-probe-b-ml-default-normal-debug": {
+      "bytes": 1618144,
+      "sha256": "dc5ca94f3a3b653337379b9270da57d4126df6e19732c4d64be1ccae2aefda48",
+      "observer_classes": []
+    },
+    "namespaced-probe-b-kvo-MlsrProbe-normal-release": {
+      "bytes": 694320,
+      "sha256": "9ca1cf0415492139736509659b381b23c682bad59a2b3662980f8b635b9fc402",
+      "observer_classes": [
+        "MlsrProbe_CidreObserver"
+      ]
+    }
+  },
+  "pairs": {
+    "stock-coreml-forward": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": true
+    },
+    "stock-coreml-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": true
+    },
+    "optional-off-coreml-forward": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "optional-off-coreml-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "optional-off-plus-existing-mlsr-forward": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 4, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "optional-off-plus-existing-mlsr-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 4, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "optional-on-kvo-forward": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 2}",
+      "expected_warning": true
+    },
+    "optional-on-kvo-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 2}",
+      "expected_warning": true
+    },
+    "split-coreml-forward": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "split-coreml-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "split-kvo-forward": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 2}",
+      "expected_warning": true
+    },
+    "split-kvo-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 2}",
+      "expected_warning": true
+    },
+    "namespaced-kvo-forward": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 2}",
+      "expected_warning": false
+    },
+    "namespaced-kvo-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 2}",
+      "expected_warning": false
+    },
+    "split-forced-objc-forward": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": true
+    },
+    "split-forced-objc-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": true
+    },
+    "optional-off-forced-objc-forward": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "optional-off-forced-objc-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "optional-off-debug-forward": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "optional-off-debug-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": false,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 0}",
+      "expected_warning": false
+    },
+    "namespaced-same-prefix-control-forward": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 2}",
+      "expected_warning": true
+    },
+    "namespaced-same-prefix-control-reverse": {
+      "exit": 0,
+      "duplicate_class_warning": true,
+      "stdout": "{\"inference_calls\": 8, \"kvo_libraries\": 2}",
+      "expected_warning": true
+    }
+  },
+  "negative_checks": {
+    "optional-api-disabled": {
+      "expected_failure": true,
+      "exit": 101
+    },
+    "invalid-namespace": {
+      "expected_failure": true,
+      "exit": 101
+    }
+  },
+  "mlsr_runtime_tests": {
+    "exit": 0,
+    "summary": [
+      "test result: ok. 11 passed; 0 failed; 0 ignored; 0 measured; 116 filtered out; finished in 0.28s"
+    ]
+  },
+  "inference_probe_calls": 168,
+  "coreml_predictions": 504,
+  "kvo_lifecycle_checks": 16,
+  "patch_sha256": {
+    "cidre-0.29.0-namespaced.patch": "248ebeac9d75422593f29fe9a1ba7e59bf2bfb0939cf96511a6bd337d30b9b0e",
+    "cidre-0.29.0-optional.patch": "389a33528bbf87be7d954baa5ae87ff3c7508e383f6f1246acfdc15c7f620eab",
+    "cidre-0.29.0-split.patch": "d3261a66ed4d7df584a236a3992e29359ac00ddd40fadadc5be8ca1f72f9a4fa"
+  },
+  "tool_sha256": {
+    "kvo_probe.rs": "2ce78339420bd4071d380e33b724da03b16085b5e6f7b57770b99c9617255e0d",
+    "load_pair.py": "944864e1b73338a0230a9921242b8a67a19c958b61ca523bb83833816f37dbca",
+    "run.py": "039ceb0b7260c356370c60ebd35ce9a85be46257c2ba8d0be8c79d40a0b9ad11"
+  },
+  "raw_evidence": "evaluation-output/cidre-observer-reproduction-20261025/",
+  "limits": [
+    "macOS 27.0.1 arm64 only",
+    "CPU-only real affine Core ML fixture",
+    "No production Podoco backend or dependency change",
+    "Existing MLSR binary identity plus patched probe inference checked; no speech synthesis test",
+    "No ANE, iOS, cross-architecture, minimum-OS, native-unload, or performance qualification"
+  ]
+}

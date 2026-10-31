@@ -8,6 +8,8 @@ No sibling repositories are required.
 From the application directory:
 
 ```powershell
+python tool/prepare_mlsr.py
+python tool/prepare_podoco.py
 flutter pub get --enforce-lockfile
 ./tool/verify.ps1
 ```
@@ -103,3 +105,8 @@ Bare letter/number hotkeys no longer intercept typing in text fields.
 Disabled controls identify features that are not available yet.
 
 See [modernization.md](modernization.md) for design decisions and limitations.
+
+## Document analysis
+
+See [experimental layout analysis](document-analysis.md) for Podoco native
+preparation, the Developer pane, rendering policy, and result persistence.

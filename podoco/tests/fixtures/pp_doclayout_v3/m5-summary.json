@@ -1,0 +1,75 @@
+{
+  "gate": "m5-app-layout-v1",
+  "passed": true,
+  "date": "20261026T073446Z",
+  "flutter": {
+    "frameworkVersion": "3.47.5",
+    "channel": "stable",
+    "repositoryUrl": "https://github.com/flutter/flutter.git",
+    "frameworkRevision": "6a19cca56475dbfba1478ee68d7bd0c2ef891da1",
+    "frameworkCommitDate": "2026-09-17 14:13:22 -0400",
+    "engineRevision": "af7e796e161ae0bb1ff0758c71a7105418bd9ded",
+    "engineCommitDate": "2026-09-16 18:35:09.000Z",
+    "engineContentHash": "ab598368592da0064197e2bc15c7f5b0a2c6bb1f",
+    "engineBuildDate": "2026-09-16 15:35:21.428",
+    "dartSdkVersion": "3.13.4",
+    "devToolsVersion": "2.60.0",
+    "flutterVersion": "3.47.5",
+    "flutterRoot": "/Users/yunhocho/fvm/versions/3.47.5"
+  },
+  "manifest_sha256": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef",
+  "source_sha256": {
+    "podofo_frontend_one/lib/src/analysis/analysis_controller.dart": "4d8ba34d6bbd9088a03226e99fd35f5a3ea29ab64db12f826f50490137b5fb0d",
+    "podofo_frontend_one/lib/src/analysis/analysis_painter.dart": "7559d3057cbec5db981b083be8caaedda682439d06ea9edbe005845c016b4a61",
+    "podofo_frontend_one/lib/src/analysis/analysis_store.dart": "d38ee49c448939bb27ad27cb5331b72d0ec01343a54a3d4035ca670853cf25e4",
+    "podofo_frontend_one/lib/src/analysis/layout_engine.dart": "3abf17cac77bd4dac31eaba90b1a16db8707d95bd3819281a62aba5bcc015066",
+    "podofo_frontend_one/lib/src/analysis/pdf_analysis_source.dart": "a99f0c5b7d083eb4c790378853a9db6595c4d3fa034a64df11ac04f308ff28fd",
+    "podofo_frontend_one/lib/src/providers/analysis_provider.dart": "573d218026fe39596ef6eb87baab1986f63b7fec007adc74b274da3912de61c7",
+    "podofo_frontend_one/lib/src/services/pdf_session.dart": "990df4f019b558c2a48fc71877dffd4ba061c3d6c51b77c53aafcdb2dcab1e64",
+    "podofo_frontend_one/lib/src/widgets/components/custom_pdf_viewer.dart": "1732d31ba8333607123399252f448effd896baaf991a90d93238b6074fa119e4",
+    "podofo_frontend_one/lib/src/widgets/components/layout_analysis_controls.dart": "4949b312e2a0358e414dc9dabe68f082039bf8d7f02b63dcda7d03d7b87d41e4",
+    "podofo_frontend_one/test/analysis_controls_test.dart": "3d00ec3f3451693509bda564baa2ef9e5873899a309f46885b73e4b539b756ac",
+    "podofo_frontend_one/test/analysis_native_test.dart": "e6723faf362c2645c3c989a74f819c6bfbb68f0436256561d8099cdbcffe1459",
+    "podofo_frontend_one/test/analysis_store_test.dart": "8ea591ea801f55f076806b67ca4806fc4ffc4105e762b5d6932873910880b8f3",
+    "podofo_frontend_one/test/analysis_widget_test.dart": "8643c1fc6aa078b913ee7e0450556b256ea10521fad8cdb57ff74efad24ca331",
+    "podofo_frontend_one/test/fixtures/analysis_fixture.dart": "ea6b7cb31a4dcd679b3c1cb6d072aa46d594a6a54ec44d55c92a232a597d221e",
+    "podofo_frontend_one/test/fixtures/pdf_fixture.dart": "3e0cec96779216ee15e5908ca70a11f62c6fad0499a2702e4d0a7df679102f70",
+    "podofo_frontend_one/tool/prepare_podoco.py": "65a1eacc18e49b08bb08a86772464f8ddd57e0db6a5d8b7a19b2dcebd106bdf9",
+    "podofo_frontend_one/tool/qualify_podoco_macos.py": "286c5d0d86ec8e842dec93c01aa112de23d1254053bcfb700ee38e0e232f6153"
+  },
+  "screenshots": {
+    "podoco-layout-overlay.png": "6ca8d000fbef2db537c047949c673134a9ef81c067715dbb25747f1b1209fbd6",
+    "podoco-layout-rotated.png": "f43371b0d1166cc157312981916708f1d12a0027e0c01c21b4880470fe85982b",
+    "podoco-layout-controls.png": "5fd96975b29e7aa7ed9e875152dbf3983532096f054f04bf050182dc0954ffa4"
+  },
+  "coexistence": {
+    "gate": "m4-actual-sdk-coexistence-v1",
+    "cases": [
+      {
+        "load_order": [
+          "podoco_ffi",
+          "mlsr_ffi"
+        ],
+        "predictions": 1,
+        "updates": 3,
+        "live_handles": 0,
+        "status": "completed"
+      },
+      {
+        "load_order": [
+          "mlsr_ffi",
+          "podoco_ffi"
+        ],
+        "predictions": 1,
+        "updates": 3,
+        "live_handles": 0,
+        "status": "completed"
+      }
+    ],
+    "sha256": {
+      "podoco": "e1affeb6d0e99cc71701966e59171e2ffb4ac1d2591d4263532af6fa8b080da5",
+      "mlsr": "38789bb2e1bec1af26d999a85f621d5d8c47fbff4231f4a6ac7a30432d5f1660"
+    }
+  },
+  "test_result": "00:15 +273 ~4: All tests passed!"
+}

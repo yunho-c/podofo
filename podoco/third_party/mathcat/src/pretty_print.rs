@@ -1,0 +1,709 @@
+//! Useful functions for debugging and error messages.
+#![allow(clippy::needless_return)]
+
+use sxd_document_no_unsafe::dom::{Element, ChildOfElement, Attribute};
+use sxd_document_no_unsafe::{as_str, as_qname};
+
+
+/// Pretty-print the MathML represented by `element`.
+pub fn mml_to_string(e: Element) -> String {
+    return format_element(e, 0);
+}
+
+/// Pretty-print the MathML represented by `element`.
+/// * `indent` -- the amount of indentation to start with
+pub fn format_element(e: Element, indent: usize) -> String {
+    // let namespace = match e.name().namespace_uri() {
+    //     None => "".to_string(),
+    //     Some(prefix) => prefix.to_string() + ":",
+    // };
+    // let namespace = namespace.as_str();
+    let namespace = "";
+    let mut answer = format!("{:in$}<{ns}{name}{attrs}>", " ", in=2*indent, ns=namespace, name=as_qname!(e.name()).local_part(), attrs=format_attrs(&e.attributes()));
+    let children = e.children();
+    let has_element = children.iter().find(|&&c| matches!(c, ChildOfElement::Element(_x)));
+    if has_element.is_none() {
+        // print text content
+        let content = children.iter().fold(String::new(), |mut acc, c| {
+                if let ChildOfElement::Text(t) = c {
+                acc.push_str(as_str!(t.text()));
+                }
+        acc
+        });
+        return format!("{}{}</{}{}>\n", answer, handle_special_chars(&content), namespace, as_qname!(e.name()).local_part());
+        // for child in children {
+        //     if let ChildOfElement::Text(t) = child {
+        //         return format!("{}{}</{}{}>\n", answer, &make_invisible_chars_visible(t.text()), namespace, e.name().local_part());
+        //     }
+        // };
+    } else {
+       answer += "\n";        // tag with children should start on new line
+        // recurse on each Element child
+        for c in e.children() {
+            if let ChildOfElement::Element(e) = c {
+                answer += &format_element(e, indent+1);
+            }
+        }
+    }
+    return answer + &format!("{:in$}</{ns}{name}>\n", " ", in=2*indent, ns=namespace, name=as_qname!(e.name()).local_part());
+
+    // Use the &#x....; representation for invisible chars when printing
+}
+
+/// Format a vector of attributes as a string with a leading space
+pub fn format_attrs(attrs: &[Attribute]) -> String {
+    let mut result = String::new();
+    for attr in attrs {
+        result += format!(" {}='{}'", as_qname!(attr.name()).local_part(), handle_special_chars(as_str!(attr.value()))).as_str();
+    }
+    result
+}
+
+fn handle_special_chars(text: &str) -> String {
+    // Pre-allocate a buffer. We guess the size is roughly the same as input, maybe slightly larger.
+    let mut s = String::with_capacity(text.len());
+    for ch in text.chars() {
+        match ch {
+            '"' => s.push_str("&quot;"),
+            '&' => s.push_str("&amp;"),
+            '\'' => s.push_str("&apos;"),
+            '<' => s.push_str("&lt;"),
+            '>' => s.push_str("&gt;"),
+            '\u{2061}' => s.push_str("&#x2061;"),
+            '\u{2062}' => s.push_str("&#x2062;"),
+            '\u{2063}' => s.push_str("&#x2063;"),
+            '\u{2064}' => s.push_str("&#x2064;"),
+            _ => s.push(ch),
+        }
+    }
+    s
+}
+
+
+/// Convert YAML to a string using with `indent` amount of space.
+pub fn yaml_to_string(yaml: &Yaml, indent: usize) -> String {
+    let mut result = String::new();
+    {
+        let mut emitter = YamlEmitter::new(&mut result);
+        emitter.compact(true);
+        emitter.emit_node(yaml).unwrap(); // dump the YAML object to a String
+    }
+    if indent == 0 {
+        return result;
+    }
+    let indent_str = format!("{:in$}", " ", in=2*indent);
+    result = result.replace('\n',&("\n".to_string() + &indent_str)); // add indentation to all but first line
+    return indent_str + result.trim_end();  // add indent to first line and remove an extra indent at end
+}
+
+/* --------------------- Tweaked pretty printer for YAML (from YAML code) --------------------- */
+
+// Changed: new function to determine if more compact notation can be used (when child is a one entry simple array/hash). Writes
+// -foo [bar: bletch]
+// -foo {bar: bletch}
+fn is_scalar(v: &Yaml) -> bool {
+    return !matches!(v, Yaml::Hash(_) | Yaml::Array(_));
+}
+
+/// Whether a YAML collection is too complex for compact inline formatting.
+fn is_complex(v: &Yaml) -> bool {
+    /// Whether a hash is empty or contains one scalar key/value pair.
+    fn is_simple_hash(hash: &Hash) -> bool {
+        hash.len() <= 1
+            && hash
+                .iter()
+                .all(|(key, value)| is_scalar(key) && is_scalar(value))
+    }
+
+    match v {
+        Yaml::Hash(hash) => !is_simple_hash(hash),
+        Yaml::Array(values) => match values.as_slice() {
+            [] => false,
+            [Yaml::Hash(hash)] => !is_simple_hash(hash),
+            [value] => !is_scalar(value),
+            _ => true,
+        },
+        _ => false,
+    }
+}
+
+use std::error::Error;
+use std::fmt::{self, Display};
+use yaml_rust::{Yaml, yaml::Hash};
+
+//use crate::yaml::{Hash, Yaml};
+
+#[derive(Copy, Clone, Debug)]
+#[allow(dead_code)] // from original YAML code (isn't used here)
+enum EmitError {
+    FmtError(fmt::Error),
+    BadHashmapKey,
+}
+
+impl Error for EmitError {
+    fn cause(&self) -> Option<&dyn Error> {
+        None
+    }
+}
+
+impl Display for EmitError {
+    fn fmt(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            EmitError::FmtError(ref err) => Display::fmt(err, formatter),
+            EmitError::BadHashmapKey => formatter.write_str("bad hashmap key"),
+        }
+    }
+}
+
+impl From<fmt::Error> for EmitError {
+    fn from(f: fmt::Error) -> Self {
+        EmitError::FmtError(f)
+    }
+}
+
+struct YamlEmitter<'a> {
+    writer: &'a mut dyn fmt::Write,
+    best_indent: usize,
+    compact: bool,
+
+    level: isize,
+}
+
+type EmitResult = Result<(), EmitError>;
+
+// from serialize::json
+fn escape_str(wr: &mut dyn fmt::Write, v: &str) -> Result<(), fmt::Error> {
+    wr.write_str("\"")?;
+
+    let mut start = 0;
+
+    for (i, byte) in v.bytes().enumerate() {
+        let escaped = match byte {
+            b'"' => "\\\"",
+            b'\\' => "\\\\",
+            b'\x00' => "\\u0000",
+            b'\x01' => "\\u0001",
+            b'\x02' => "\\u0002",
+            b'\x03' => "\\u0003",
+            b'\x04' => "\\u0004",
+            b'\x05' => "\\u0005",
+            b'\x06' => "\\u0006",
+            b'\x07' => "\\u0007",
+            b'\x08' => "\\b",
+            b'\t' => "\\t",
+            b'\n' => "\\n",
+            b'\x0b' => "\\u000b",
+            b'\x0c' => "\\f",
+            b'\r' => "\\r",
+            b'\x0e' => "\\u000e",
+            b'\x0f' => "\\u000f",
+            b'\x10' => "\\u0010",
+            b'\x11' => "\\u0011",
+            b'\x12' => "\\u0012",
+            b'\x13' => "\\u0013",
+            b'\x14' => "\\u0014",
+            b'\x15' => "\\u0015",
+            b'\x16' => "\\u0016",
+            b'\x17' => "\\u0017",
+            b'\x18' => "\\u0018",
+            b'\x19' => "\\u0019",
+            b'\x1a' => "\\u001a",
+            b'\x1b' => "\\u001b",
+            b'\x1c' => "\\u001c",
+            b'\x1d' => "\\u001d",
+            b'\x1e' => "\\u001e",
+            b'\x1f' => "\\u001f",
+            b'\x7f' => "\\u007f",
+            _ => continue,
+        };
+
+        if start < i {
+            wr.write_str(&v[start..i])?;
+        }
+
+        wr.write_str(escaped)?;
+
+        start = i + 1;
+    }
+
+    if start != v.len() {
+        wr.write_str(&v[start..])?;
+    }
+
+    wr.write_str("\"")?;
+    Ok(())
+}
+
+impl<'a> YamlEmitter<'a> {
+    pub fn new(writer: &'a mut dyn fmt::Write) -> YamlEmitter<'a> {
+        YamlEmitter {
+            writer,
+            best_indent: 2,
+            compact: true,
+            level: -1,
+        }
+    }
+
+    /// Set 'compact inline notation' on or off, as described for block
+    /// [sequences](http://www.yaml.org/spec/1.2/spec.html#id2797382)
+    /// and
+    /// [mappings](http://www.yaml.org/spec/1.2/spec.html#id2798057).
+    ///
+    /// In this form, blocks cannot have any properties (such as anchors
+    /// or tags), which should be OK, because this emitter doesn't
+    /// (currently) emit those anyways.
+    pub fn compact(&mut self, compact: bool) {
+        self.compact = compact;
+    }
+
+    /// Determine if this emitter is using 'compact inline notation'.
+    #[allow(dead_code)]   // not all fields are used in this program
+    pub fn is_compact(&self) -> bool {
+        self.compact
+    }
+
+
+    fn write_indent(&mut self) -> EmitResult {
+        if self.level <= 0 {
+            return Ok(());
+        }
+        for _ in 0..self.level {
+            for _ in 0..self.best_indent {
+                write!(self.writer, " ")?;
+            }
+        }
+        Ok(())
+    }
+
+    fn emit_node(&mut self, node: &Yaml) -> EmitResult {
+        match *node {
+            Yaml::Array(ref v) => self.emit_array(v),
+            Yaml::Hash(ref h) => self.emit_hash(h),
+            Yaml::String(ref v) => {
+                if need_quotes(v) {
+                    escape_str(self.writer, v)?;
+                } else {
+                    write!(self.writer, "{v}")?;
+                }
+                Ok(())
+            }
+            Yaml::Boolean(v) => {
+                if v {
+                    self.writer.write_str("true")?;
+                } else {
+                    self.writer.write_str("false")?;
+                }
+                Ok(())
+            }
+            Yaml::Integer(v) => {
+                write!(self.writer, "{v}")?;
+                Ok(())
+            }
+            Yaml::Real(ref v) => {
+                write!(self.writer, "{v}")?;
+                Ok(())
+            }
+            Yaml::Null | Yaml::BadValue => {
+                write!(self.writer, "~")?;
+                Ok(())
+            }
+            // XXX(chenyh) Alias
+            _ => Ok(()),
+        }
+    }
+
+    fn emit_array(&mut self, v: &[Yaml]) -> EmitResult {
+        if v.is_empty() {
+            write!(self.writer, "[]")?;
+        } else if v.len() == 1 && !is_complex(&v[0]) {
+            // changed -- for arrays that have only one simple element, make them more compact by using [...] notation
+            write!(self.writer, "[")?;
+            self.emit_val(true, &v[0])?;
+            write!(self.writer, "]")?;
+        } else {
+            self.level += 1;
+            
+            for (cnt, x) in v.iter().enumerate() {
+                if cnt > 0 {
+                    writeln!(self.writer)?;
+                    self.write_indent()?;
+                }
+                write!(self.writer, "- ")?;
+                self.emit_val(true, x)?;
+            }
+            self.level -= 1;
+        }
+        return Ok(());
+    }
+
+    fn emit_hash(&mut self, h: &Hash) -> EmitResult {
+        if h.is_empty() {
+            self.writer.write_str("{}")?;
+        } else {
+          // changed -- for hashmaps that have only one simple element, make them more compact by using {...}} notation
+            self.level += 1;
+            for (cnt, (k, v)) in h.iter().enumerate() {
+                // changed: use new function is_scalar()
+                // let complex_key = match *k {
+                //     Yaml::Hash(_) | Yaml::Array(_) => true,
+                //     _ => false,
+                // };
+                if cnt > 0 {
+                    writeln!(self.writer)?;
+                    self.write_indent()?;
+                }
+                if !is_scalar(k) {
+                    write!(self.writer, "? ")?;
+                    self.emit_val(true, k)?;
+                    writeln!(self.writer)?;
+                    self.write_indent()?;
+                    write!(self.writer, ": ")?;
+                    self.emit_val(true, v)?;
+                } else {
+                    self.emit_node(k)?;
+                    write!(self.writer, ": ")?;
+
+                    // changed to use braces in some cases
+                    let complex_value = is_complex(v);
+                    if !complex_value && v.as_hash().is_some() {
+                        write!(self.writer, "{{")?;
+                    }
+                    // changed to use complex_value from 'false'
+                    self.emit_val(!complex_value, v)?;
+                    if !complex_value && v.as_hash().is_some() {
+                        write!(self.writer, "}}")?;
+                    }
+                }
+            }
+            self.level -= 1;
+        }   
+        Ok(())
+    }
+
+    /// Emit a yaml as a hash or array value: i.e., which should appear
+    /// following a ":" or "-", either after a space, or on a new line.
+    /// If `inline` is true, then the preceding characters are distinct
+    /// and short enough to respect the compact flag.
+    // changed: use to always emit ' ' for inline -- that is now handled elsewhere
+    fn emit_val(&mut self, inline: bool, val: &Yaml) -> EmitResult {
+        match *val {
+            Yaml::Array(ref v) => {
+                if !((inline && self.compact) || v.is_empty()) {
+                    writeln!(self.writer)?;
+                    self.level += 1;
+                    self.write_indent()?;
+                    self.level -= 1;
+                }
+                self.emit_array(v)
+            }
+            Yaml::Hash(ref h) => {
+                if !((inline && self.compact) || h.is_empty()) {
+                    writeln!(self.writer)?;
+                    self.level += 1;
+                    self.write_indent()?;
+                    self.level -= 1;
+                }
+                self.emit_hash(h)
+            }
+            _ => {
+           //     write!(self.writer, " ")?;
+                self.emit_node(val)
+            }
+        }
+    }
+}
+
+/// Check if the string requires quoting.
+/// Strings starting with any of the following characters must be quoted.
+/// :, &, *, ?, |, -, <, >, =, !, %, @
+/// Strings containing any of the following characters must be quoted.
+/// {, }, [, ], ,, #, `
+///
+/// If the string contains any of the following control characters, it must be escaped with double quotes:
+/// \0, \x01, \x02, \x03, \x04, \x05, \x06, \a, \b, \t, \n, \v, \f, \r, \x0e, \x0f, \x10, \x11, \x12, \x13, \x14, \x15, \x16, \x17, \x18, \x19, \x1a, \e, \x1c, \x1d, \x1e, \x1f, \N, \_, \L, \P
+///
+/// Finally, there are other cases when the strings must be quoted, no matter if you're using single or double quotes:
+/// * When the string is true or false (otherwise, it would be treated as a boolean value);
+/// * When the string is null or ~ (otherwise, it would be considered as a null value);
+/// * When the string looks like a number, such as integers (e.g. 2, 14, etc.), floats (e.g. 2.6, 14.9) and exponential numbers (e.g. 12e7, etc.) (otherwise, it would be treated as a numeric value);
+/// * When the string looks like a date (e.g. 2014-12-31) (otherwise it would be automatically converted into a Unix timestamp).
+fn need_quotes(string: &str) -> bool {
+    fn need_quotes_spaces(string: &str) -> bool {
+        string.starts_with(' ') || string.ends_with(' ')
+    }
+
+    string.is_empty()
+        || need_quotes_spaces(string)
+        || string.starts_with(['&', '*', '?', '|', '-', '<', '>', '=', '!', '%', '@'])
+        || string.contains(|character: char| matches!(character,
+            ':'
+            | '{'
+            | '}'
+            | '['
+            | ']'
+            | ','
+            | '#'
+            | '`'
+            | '\"'
+            | '\''
+            | '\\'
+            | '\0'..='\x06'
+            | '\t'
+            | '\n'
+            | '\r'
+            | '\x0e'..='\x1a'
+            | '\x1c'..='\x1f') )
+        || [
+            // http://yaml.org/type/bool.html
+            // Note: 'y', 'Y', 'n', 'N', is not quoted deliberately, as in libyaml. PyYAML also parse
+            // them as string, not booleans, although it is violating the YAML 1.1 specification.
+            // See https://github.com/dtolnay/serde-yaml/pull/83#discussion_r152628088.
+            "yes", "Yes", "YES", "no", "No", "NO", "True", "TRUE", "true", "False", "FALSE",
+            "false", "on", "On", "ON", "off", "Off", "OFF",
+            // http://yaml.org/type/null.html
+            "null", "Null", "NULL", "~",
+        ]
+        .contains(&string)
+        || string.starts_with('.')
+        || string.starts_with("0x")
+        || string.parse::<i64>().is_ok()
+        || string.parse::<f64>().is_ok()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sxd_document_no_unsafe::dom::{ChildOfElement, ChildOfRoot};
+    use sxd_document_no_unsafe::parser;
+
+    /// helper function
+    fn first_element(package: &sxd_document_no_unsafe::Package) -> Element<'_> {
+        let doc = package.as_document();
+        for child in doc.root().children() {
+            if let ChildOfRoot::Element(e) = child {
+                return e;
+            }
+        }
+        panic!("No root element found");
+    }
+
+    #[test]
+    fn is_complex_classifies_hashes() {
+        assert!(!is_complex(&Yaml::Hash(Hash::new())));
+
+        let mut simple_hash = Hash::new();
+        simple_hash.insert(
+            Yaml::String("key".to_string()),
+            Yaml::String("value".to_string()),
+        );
+        assert!(!is_complex(&Yaml::Hash(simple_hash)));
+
+        let mut nested_hash = Hash::new();
+        nested_hash.insert(
+            Yaml::String("key".to_string()),
+            Yaml::Array(Vec::new()),
+        );
+        assert!(is_complex(&Yaml::Hash(nested_hash)));
+
+        let mut multi_entry_hash = Hash::new();
+        multi_entry_hash.insert(Yaml::String("first".to_string()), Yaml::Integer(1));
+        multi_entry_hash.insert(Yaml::String("second".to_string()), Yaml::Integer(2));
+        assert!(is_complex(&Yaml::Hash(multi_entry_hash)));
+    }
+
+    #[test]
+    fn is_complex_classifies_arrays() {
+        assert!(!is_complex(&Yaml::Array(Vec::new())));
+        assert!(!is_complex(&Yaml::Array(vec![Yaml::Integer(1)])));
+
+        let mut simple_hash = Hash::new();
+        simple_hash.insert(
+            Yaml::String("key".to_string()),
+            Yaml::String("value".to_string()),
+        );
+        assert!(!is_complex(&Yaml::Array(vec![Yaml::Hash(simple_hash)])));
+
+        assert!(is_complex(&Yaml::Array(vec![Yaml::Array(Vec::new())])));
+        assert!(is_complex(&Yaml::Array(vec![
+            Yaml::Integer(1),
+            Yaml::Integer(2),
+        ])));
+    }
+
+    #[test]
+    /// Escapes XML entities and invisible characters for safe display.
+    /// Tests the method on a few hardcoded characters.
+    fn handle_special_chars_escapes() {
+        let input = "& < > \" ' \u{2061} \u{2062} \u{2063} \u{2064} x";
+        let expected = "&amp; &lt; &gt; &quot; &apos; &#x2061; &#x2062; &#x2063; &#x2064; x";
+        assert_eq!(handle_special_chars(input), expected);
+    }
+
+    #[test]
+    /// Formats a leaf element as a single line with escaped text.
+    fn format_element_leaf_text() {
+        let package = parser::parse("<math><mi>&amp;</mi></math>").unwrap();
+        let math = first_element(&package);
+        let mi = math
+            .children()
+            .iter()
+            .find_map(|c| match c {
+                ChildOfElement::Element(e) => Some(*e),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(format_element(mi, 0), " <mi>&amp;</mi>\n");
+    }
+
+    #[test]
+    /// Formats a nested element with indentation and newlines.
+    fn format_element_nested() {
+        let package = parser::parse("<math><mi>x</mi><mo>+</mo></math>").unwrap();
+        let math = first_element(&package);
+        let rendered = format_element(math, 0);
+        assert!(rendered.starts_with(" <math>\n"));
+        assert!(rendered.contains("\n  <mi>x</mi>\n"));
+        assert!(rendered.contains("\n  <mo>+</mo>\n"));
+        assert!(rendered.ends_with("</math>\n"));
+    }
+
+    #[test]
+    /// Escapes special characters in attribute values.
+    fn format_attrs_escapes() {
+        let package = parser::parse("<math a=\"&amp;\" b=\"&lt;\"></math>").unwrap();
+        let math = first_element(&package);
+        let rendered = format_attrs(&math.attributes());
+        assert!(rendered.contains(" a='&amp;'"));
+        assert!(rendered.contains(" b='&lt;'"));
+    }
+
+    #[test]
+    /// Preserves non-BMP characters from a literal XML form.
+    fn format_element_non_bmp_character_literal() {
+        let package = parser::parse("<math><mi>𝞪</mi></math>").unwrap();
+        let math = first_element(&package);
+        let mi = math
+            .children()
+            .iter()
+            .find_map(|c| match c {
+                ChildOfElement::Element(e) => Some(*e),
+                _ => None,
+            })
+            .unwrap();
+        let rendered = format_element(mi, 0);
+        assert!(rendered.contains("𝞪"));
+    }
+
+    #[test]
+    /// Preserves non-BMP characters from a numeric XML form.
+    fn format_element_non_bmp_character_numeric() {
+        let package = parser::parse("<math><mi>&#x1d7aa;</mi></math>").unwrap();
+        let math = first_element(&package);
+        let mi = math
+            .children()
+            .iter()
+            .find_map(|c| match c {
+                ChildOfElement::Element(e) => Some(*e),
+                _ => None,
+            })
+            .unwrap();
+        let rendered = format_element(mi, 0);
+        assert!(rendered.contains("𝞪"));
+    }
+
+    #[test]
+    /// Evaluates non-BMP literal text through sxd_xpath.
+    fn xpath_non_bmp_literal() {
+        use sxd_xpath_no_unsafe::{Factory, Value};
+
+        let package = parser::parse("<math><mi>𝞪</mi></math>").unwrap();
+        let xpath = Factory::new().build("string(/math/mi)").unwrap();
+        let context = sxd_xpath_no_unsafe::Context::new();
+
+        let value = xpath.evaluate(&context, first_element(&package)).unwrap();
+        match value {
+            Value::String(s) => assert_eq!(s, "𝞪"),
+            _ => panic!("Expected string value from xpath"),
+        }
+    }
+
+    #[test]
+    /// Evaluates non-BMP numeric text through sxd_xpath.
+    fn xpath_non_bmp_numeric() {
+        use sxd_xpath_no_unsafe::{Factory, Value};
+
+        let package = parser::parse("<math><mi>&#x1d7aa;</mi></math>").unwrap();
+        let xpath = Factory::new().build("string(/math/mi)").unwrap();
+        let context = sxd_xpath_no_unsafe::Context::new();
+
+        let value = xpath.evaluate(&context, first_element(&package)).unwrap();
+        match value {
+            Value::String(s) => assert_eq!(s, "𝞪"),
+            _ => panic!("Expected string value from xpath"),
+        }
+    }
+
+    #[test]
+    /// Evaluates non-BMP literal text with a MathML namespace-qualified XPath.
+    fn xpath_non_bmp_namespace_literal() {
+        use sxd_xpath_no_unsafe::{Factory, Value};
+
+        let xml = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>𝞪</mi></math>";
+        let package = parser::parse(xml).unwrap();
+        let xpath = Factory::new()
+            .build("string(/m:math/m:mi)")
+            .unwrap();
+        let mut context = sxd_xpath_no_unsafe::Context::new();
+        context.set_namespace("m", "http://www.w3.org/1998/Math/MathML");
+
+        let value = xpath.evaluate(&context, first_element(&package)).unwrap();
+        match value {
+            Value::String(s) => assert_eq!(s, "𝞪"),
+            _ => panic!("Expected string value from xpath"),
+        }
+    }
+
+    #[test]
+    /// Evaluates non-BMP numeric text with a MathML namespace-qualified XPath.
+    fn xpath_non_bmp_namespace_numeric() {
+        use sxd_xpath_no_unsafe::{Factory, Value};
+
+        let xml = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>&#120746;</mi></math>";
+        let package = parser::parse(xml).unwrap();
+        let xpath = Factory::new()
+            .build("string(/m:math/m:mi)")
+            .unwrap();
+        let mut context = sxd_xpath_no_unsafe::Context::new();
+        context.set_namespace("m", "http://www.w3.org/1998/Math/MathML");
+
+        let value = xpath.evaluate(&context, first_element(&package)).unwrap();
+        match value {
+            Value::String(s) => assert_eq!(s, "𝞪"),
+            _ => panic!("Expected string value from xpath"),
+        }
+    }
+
+    #[test]
+    /// Extracts a text node via XPath (nodeset result) and verifies the non-BMP character survives.
+    fn xpath_non_bmp_text_nodeset() {
+        use sxd_xpath_no_unsafe::{Factory, Value};
+
+        let xml = "<math xmlns=\"http://www.w3.org/1998/Math/MathML\"><mi>𝞪</mi></math>";
+        let package = parser::parse(xml).unwrap();
+        let xpath = Factory::new().build("/m:math/m:mi/text()").unwrap();
+        let mut context = sxd_xpath_no_unsafe::Context::new();
+        context.set_namespace("m", "http://www.w3.org/1998/Math/MathML");
+
+        let value = xpath.evaluate(&context, first_element(&package)).unwrap();
+        match value {
+            Value::Nodeset(nodes) => {
+                let ordered = nodes.document_order();
+                let node = ordered.first().expect("Expected one text node");
+                let text = node.text().expect("Expected text node");
+                assert_eq!(text.text(), "𝞪");
+                assert_eq!(ordered.len(), 1);
+            }
+            _ => panic!("Expected nodeset value from xpath"),
+        }
+    }
+}

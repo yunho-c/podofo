@@ -190,3 +190,15 @@ ObjectBox's Windows CMake currently uses the deprecated
 `FetchContent_Populate` API. Its CMake development warning does not indicate a
 failed build. Revisit both compatibility pins and this upstream warning when
 updating ObjectBox.
+
+### Red underlines
+
+`python3 podofo_frontend_one/tool/test_macos.py test/underline_editing_test.dart test/highlight_context_menu_test.dart`
+checks fixed red `/Underline` annotations, stable identity, creation/removal undo,
+multi-page selection as one action, mixed highlight/underline recovery, and
+read-only imported appearances. It also exercises selection-menu creation and
+adding a highlight over an existing underline through the context palette, and
+sidebar removal without changing the highlight color preference.
+Saved appearances are rendered by PDFium and, on macOS, the independent
+`test/support/render_underline_pdfkit.swift` oracle at all four rotations with
+cropped pages. PNGs are written to `build/test-artifacts/underline-pdfkit-*.png`.

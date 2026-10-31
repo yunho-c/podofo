@@ -8,7 +8,12 @@ import 'package:pdfrx/pdfrx.dart';
 /// document only after the viewer detaches and outstanding useDocument jobs end.
 class PdfDocumentLease {
   PdfDocumentLease(PdfDocument document)
-    : reference = PdfDocumentRefDirect(document) {
+    : reference = PdfDocumentRefDirect(
+        document,
+        // A checkpoint and its stable viewer proxy can have the same source
+        // name. Each independently owned native lifetime needs its own cache key.
+        key: PdfDocumentRefKey(document.sourceName, [Object()]),
+      ) {
     _listenable = reference.resolveListenable();
     _releaseOwner = _listenable.addListener(() {});
     _listenable.setDocument(document);

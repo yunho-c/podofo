@@ -39,7 +39,9 @@ dependencies:
   shared_preferences: ^2.5.5
   window_manager: ^0.5.2
   file_selector: ^1.1.0
-  pdfrx: 2.6.5
+  # Staging fixes backported to 2.6.5; see third_party/pdfrx/PODOFO.md.
+  pdfrx:
+    path: third_party/pdfrx
   url_launcher: ^6.3.2
   path: ^1.9.0
   image: ^4.10.1
@@ -51,6 +53,12 @@ dependencies:
   crypto: ^3.0.7
   ffi: ^2.1.5
   pdfium_dart: 0.3.1
+  podoco:
+    path: ../podoco/bindings/dart
+  podoco_flutter:
+    path: ../podoco/bindings/flutter
+  podoco_app_models:
+    path: .podoco/model_assets
   mlsr:
     path: .mlsr/sdk/bindings/dart
   mlsr_flutter:
@@ -166,5 +174,7 @@ flutter_launcher_icons:
 # Feature flags are selected when preparing, so Apple flags never reach Windows.
 hooks:
   user_defines:
+    podoco:
+      native-library: .podoco/native/podoco_ffi
     mlsr:
       native-library: .mlsr/native/mlsr_ffi

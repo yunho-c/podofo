@@ -1,0 +1,227 @@
+[
+  {
+    "id": "fixture-addition",
+    "input": {
+      "format": "latex",
+      "text": "x+2",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-fraction",
+    "input": {
+      "format": "latex",
+      "text": "\\frac{a}{b}",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-root",
+    "input": {
+      "format": "latex",
+      "text": "\\sqrt{x^2+y^2}",
+      "display_kind": "displayed"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-sum",
+    "input": {
+      "format": "latex",
+      "text": "\\sum_{i=1}^{n}i",
+      "display_kind": "displayed"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-fenced",
+    "input": {
+      "format": "latex",
+      "text": "$$\\frac{a}{b}$$",
+      "display_kind": "displayed"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-unknown",
+    "input": {
+      "format": "latex",
+      "text": "\\unknown{x}",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-macro",
+    "input": {
+      "format": "latex",
+      "text": "\\def\\a{1}\\a",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-malformed",
+    "input": {
+      "format": "latex",
+      "text": "\\frac{x",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-mixed-fence",
+    "input": {
+      "format": "latex",
+      "text": "$x$ trailing",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-unknown-display",
+    "input": {
+      "format": "latex",
+      "text": "x",
+      "display_kind": "unknown"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-spanish",
+    "input": {
+      "format": "latex",
+      "text": "\\frac{x+1}{2}",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "es",
+      "speech_style": "SimpleSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-unsupported-locale",
+    "input": {
+      "format": "latex",
+      "text": "x",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "ko",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-mathml",
+    "input": {
+      "format": "mathml",
+      "text": "<math><mi>x</mi><mo>+</mo><mn>2</mn></math>",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-external",
+    "input": {
+      "format": "mathml",
+      "text": "<!DOCTYPE math SYSTEM \"https://example.invalid/dtd\"><math><mi>x</mi></math>",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  },
+  {
+    "id": "fixture-javascript",
+    "input": {
+      "format": "mathml",
+      "text": "<math><mi onclick=\"x\">x</mi></math>",
+      "display_kind": "inline"
+    },
+    "options": {
+      "language": "en",
+      "speech_style": "ClearSpeak",
+      "verbosity": "Medium",
+      "decimal_separators": ".",
+      "block_separators": ",   "
+    }
+  }
+]

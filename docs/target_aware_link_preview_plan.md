@@ -5,9 +5,12 @@ the complete referenced object. A citation should show its bibliography entry;
 a figure or table should include its caption; an equation should include its
 number. Ambiguous targets retain the existing contextual preview.
 
-This is a proposed implementation sequence, dated 2026-10-30. The first usable
+This implementation sequence is dated 2026-10-30. The first usable
 release consumes existing analysis. Later milestones analyze uncached target
-pages and improve difficult boundaries. All milestones below remain pending.
+pages and improve difficult boundaries. M0 integration and automated validation
+are implemented; its native-window acceptance check remains pending. See the
+[M0 baseline report](target_aware_link_preview_m0.md). M1 and later milestones
+remain pending.
 
 ## Scope and behavior
 
@@ -36,16 +39,14 @@ used when it provides sufficient target evidence.
 | Podoco integration | `feat/podoco`, `c668cd3` | Layout inference, Dart results, bundled models, progressive analysis and persistence |
 | Cloud file access | `feat/macos-cloud-file`, `95a5578` | Separate change following common ancestor `875e703` |
 
-Podoco is not an ancestor of the cloud-file branch. For implementation, create
-an isolated integration worktree from the committed Podoco baseline and apply
-the hover-preview commit there. Resolve the viewer and documentation overlap
-while retaining both features. Recheck these refs before starting; the proposed
-branch name is `feat/target-aware-link-previews`.
+Podoco is not an ancestor of the cloud-file branch. Following the user's workspace
+choice, integration uses `feat/internal-link-hover` in `podofo-hover-previews`.
+The hover baseline and plan commit `c719e5a` were combined with committed Podoco
+`c668cd3`. The viewer overlap retains hover dismissal and annotation-menu reset.
 
 Keep the Podoco worktree's uncommitted FP32 and analysis-UI work separate. Its
 unfinished qualification is not a prerequisite for this feature. Reuse the
-committed model pins. Publishing, merging, or promoting models is outside this
-planning change.
+committed model pins. Remote publication and model promotion are outside M0.
 
 The current hover documentation records isolated-harness validation and an MLSR
 dependency issue in that environment. Establish a fresh locked macOS application
@@ -168,9 +169,9 @@ change. MathCAT and speech remain outside the preview path.
 
 ## Milestone 0 Establish the integrated baseline
 
-Create the isolated worktree described above. Bring in the two committed feature
+Use the integration branch described above. Bring in the two committed feature
 slices, retain dependency pins, and resolve overlap in `custom_pdf_viewer.dart`.
-Add this plan to that branch when implementation begins.
+Keep the separate Podoco worktree's uncommitted work untouched.
 
 Create a small native PDF fixture with real internal links and adjacent objects,
 plus an evaluation manifest for real papers. Freeze document hashes, link source

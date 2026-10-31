@@ -1,0 +1,20 @@
+[package]
+name = "podoco-models"
+description = "Offline packaging of verified Podoco assets for Flutter applications."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[dependencies]
+podoco = { workspace = true, features = ["math"] }
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+serde_yaml_ng = "=0.10.0"
+sha2 = "=0.10.9"
+tempfile = "=3.27.0"
+
+[lints]
+workspace = true
