@@ -6,8 +6,8 @@ tests, tools, and the promotional screenshot are omitted. The package archive's
 SHA-256 was `52e78d84a706e5d63d2502689fe8e800d823bc780ac4341b2d3683a4d726505a`.
 
 The app uses this relative path so a fresh checkout gets the fix without edits
-to the pub cache or a dependency on a sibling repository. `pdfrx_engine` and
-PDFium remain the locked published dependencies. Web assets are retained so
+to the pub cache or a dependency on a sibling repository. `pdfrx_engine` now uses the reviewed relative [native-lease extension](../pdfrx_engine/PODOFO.md)
+of the same 0.6.1 release; PDFium remains the locked published dependency. Web assets are retained so
 this source copy does not remove a platform supported by the original package.
 
 Changes from the published package:

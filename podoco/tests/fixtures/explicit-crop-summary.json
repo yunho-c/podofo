@@ -1,0 +1,1494 @@
+{
+  "tests_passed": {
+    "crops": 6,
+    "documents": 6,
+    "legacy": 1
+  },
+  "compared": 32,
+  "native_handles_after": 0,
+  "native_sha256": "5c725c391955bcd4fbdc4ec05d2bda9f9662886a89816f60ae0441c0d0c16ddf",
+  "legacy_native_sha256": "a795084659122d5c2ae2b62389c8b0aae1a1e06d38b840b6b90d9278a662e0bb",
+  "reference_sha256": "2e8434caae57016880fa562906fbdfd8eeddc7a52a0cecc98ae3e0fa7128d2b9",
+  "document_reference_sha256": "d68829c819dd3e951da081051110eab3d880a2cf877f85925f8eec85b4df8e21",
+  "outcomes_sha256": "fce6106f44d7e810cf030d5309a7d50a41f71328628903bb6c12ad23fff2833c",
+  "dart_version": "Dart SDK version: 3.13.5 (stable) (Tue Sep 29 01:00:52 2026 -0700) on \"macos_arm64\"",
+  "git_head": "9d10389ba42bf39cbbc553e0eba1cc96ed91812d",
+  "sources": {
+    "Cargo.lock": "de23cd4109b79fbebc84669f9a0e4663ce474c453f5aa5692b1a53df441012e7",
+    "Cargo.toml": "4435c7d4553fd779a9e7f11a1470a776ef8951af89dcdeb464fcfa60b37a126f",
+    "include/podoco.h": "53766e960486bf5f8e8f48ff1d437b139683e6292ca06846b2c8ad1d63824b8d",
+    "crates/podoco/examples/contracts.rs": "6a2dc0f98192ff8187d3871ec71cdb80861cdc33237bb94573e8e571eb2616b1",
+    "crates/podoco/examples/coreml_probe.rs": "214e97ad16937b6c5a7d4852559c72bc1f5e15fdfdd47f8a88fc42b0e35cd25d",
+    "crates/podoco/examples/document_layout.rs": "820271bd957b4185ffab01044eff3ed92ae0590e8c72535dff77b3fffe6dd070",
+    "crates/podoco/examples/formula.rs": "9864408b42073f080aa783a90cb416a751141a6b243b904e879a4bf039d2658a",
+    "crates/podoco/examples/math.rs": "52b32e29b9e526933902bf51c18312b3fcf2e09865c84bc2f83c6fc975ac4f47",
+    "crates/podoco/examples/model_bundle.rs": "b5c7252d95c47fe634669b8044ebb9d9973fd765ad9b355719b32705faec1fbe",
+    "crates/podoco/examples/page_layout.rs": "a1c0785ec2619d930e53717475f8335bc2ae68499b037bef8c864fa3f47c3a4b",
+    "crates/podoco/examples/support/png_input.rs": "098283d803542cfc68bdff55270dce4d580812feb52b091adc8ede08c8e5c371",
+    "crates/podoco/examples/version.rs": "ea69f9b9aaee174e5df912edda53a20f6a40f9302453200f33a7f478bbb93a9c",
+    "crates/podoco/src/bundle.rs": "2f171fc4f5a7b1ac88757f8599bc5bd2cc4e8be40855f9ff569ef0204905ab9a",
+    "crates/podoco/src/domain.rs": "46a3af97b31cfd4118668be974b7f907a1c75d5da49194a1e53645d3d2b2925c",
+    "crates/podoco/src/error.rs": "52c3061d8cc4852522c1634cc891a627d3f2de4052c71429ed177a47921c1317",
+    "crates/podoco/src/formula/bundle.rs": "c3063c1b2a3a64bb66d5bd28c7f1151c5012c6de0d2b212dc069862b3c225f85",
+    "crates/podoco/src/formula/mod.rs": "3a554b11046e53bc322078ec24265bccf4cb336b9a8af3ad78d177104f705bb6",
+    "crates/podoco/src/formula/preprocess.rs": "fb79bcb33cc998aa4b71032fe9580513ac1b00ec73e3da776e875f0731b02608",
+    "crates/podoco/src/formula/session.rs": "f340260738fe73494846ee78fd9e580a8b2626e2ee0b3e85f9177e70003114cb",
+    "crates/podoco/src/formula/tests.rs": "ec2e3cf7998b79a2deac68f6b195a3d6a08af737567c2c7c0bc3b7a56f2e43ba",
+    "crates/podoco/src/formula/text.rs": "ad99c9b4d89f90c6c2dc87b7493bc62d9fe36308cb0ae23fba374ef9bab1b36a",
+    "crates/podoco/src/geometry.rs": "d9b42572a31f4a7371f4e7389307290d228a3c90a5e43fe05bb7d9a09577b723",
+    "crates/podoco/src/image/native.rs": "ae6a672ea5aa2dc6e90b9e5869ad947270ce42d4fe4a300330ba305a3916cce0",
+    "crates/podoco/src/image.rs": "7fb9e6e6e05feee4d456907922e308087734e54dcba89099ed7d3918d25dbef8",
+    "crates/podoco/src/jobs/crop.rs": "6dad60047cc8df5dd50ebb524d501438f90ba0e9cea45ac5a015ec2b0539c6a3",
+    "crates/podoco/src/jobs/engine.rs": "a0597cda0bd0f0e3747053a5a6551ebfd69e8d0f86fed23732dbbabcb93a8519",
+    "crates/podoco/src/jobs/formula.rs": "277cad8af332868478dc3b8801e7e5d3caeecf3fd7ace0650d058cd3b83ba8dc",
+    "crates/podoco/src/jobs/mod.rs": "48a7bfcc463dbd17017101d9533ffb3218a2a0d82fe4e3370217f1643b0b019e",
+    "crates/podoco/src/jobs/tests.rs": "2422becee67a5b0cf68fb4a534a71a9abfc3aeeb92842d33aa80ca0116d95c9f",
+    "crates/podoco/src/lib.rs": "0f14b4d729660187371d7a7b65995cc4ba5d94989aae39ab6f11faff4022366e",
+    "crates/podoco/src/math/convert.rs": "7d6e633ec1dde0a491582c679e658c1719b3ebba625d30f1807b1884155f4cac",
+    "crates/podoco/src/math/mod.rs": "87c8f6de3d76cc75d09ed2e663b55e83569057cd1dc73e4208e42077ec144dcf",
+    "crates/podoco/src/math/rules.rs": "43a56d31b7128b78158f4bfd24c4cf59ac9906ad23826d285ac550c3d6d28f38",
+    "crates/podoco/src/math/tests.rs": "387d8efda03a0e28ff738e84363bd0b118e475e585a60487081d876f0c50047f",
+    "crates/podoco/src/math/types.rs": "012514f50a8b058484062585cd88993ae8cfbd52af5eeec216af9e67f3fbcd99",
+    "crates/podoco/src/math/worker.rs": "b1f6d20ff7de0d1b57d4058449548f44d7bed3e5e55bd6bbdaaba5c9664e4464",
+    "crates/podoco/src/options.rs": "a88688bd253ea1445affd74fd2fcc5bdeabe8ee628fa4a3886c3cbda9ff3c1f4",
+    "crates/podoco/src/pipelines/layout/mod.rs": "4445c361be7d3f9078f4046a98e80a029b944eb83aedcf21bcdc195495abf516",
+    "crates/podoco/src/pipelines/layout/preprocess.rs": "ff1f585a8701f66b7340095d1a9f6350fc76f85b5ebcb3659f81252edf40089e",
+    "crates/podoco/src/pipelines/layout/tests.rs": "b79253af86a1740d8c93e2ede5408b8e5aebb7a7dd46f90fe7e2270b5d564de2",
+    "crates/podoco/src/pipelines/mod.rs": "2720eb626a99126da1ee15de5609ea326a241249ed46dda875db924009ee5ca0",
+    "crates/podoco/src/results.rs": "e0ce65a8ad5c38bba64a4b84939a0a53463d9565bad98520091b8c26ea229733",
+    "crates/podoco/src/runtime/coreml/formula.rs": "7c8b6e65715a89c7db70ee173165d1833357ab95a8ea91ad5f7ef9db66249721",
+    "crates/podoco/src/runtime/coreml/mod.rs": "56d275ee8b96028d5720a15fe13ad83cad78c3400223dfd59a3c3dd8567de138",
+    "crates/podoco/src/runtime/coreml/tensor.rs": "2f59873463392bba13544ed41bede8c65c566313ceeae078855dc177851a9e99",
+    "crates/podoco/src/runtime/mod.rs": "f30c5bd7663878c8f4fc786f0cf737543bf5176455737ffd392fb0a6886575fd",
+    "crates/podoco/src/session.rs": "eebdaef2c46d61041e3c10fc483748a08c85ddc836c892c2591fb65090f22883",
+    "crates/podoco/tests/bundles.rs": "9f18387421aee524f330ea2f6057c66f6b13a581fae5c8cf8b9b8949100fd75f",
+    "crates/podoco/tests/contracts.rs": "201ebee859a51bef0a8ef0894cdabb296f84e540d31290cef7f3a7ed710f2388",
+    "crates/podoco/tests/formula_bundles.rs": "b5096995ecca4fb83ce2fd6d2befc0b01b2dd8606a0b73ec0669aeab239fd60c",
+    "crates/podoco/tests/math_host.rs": "7babc103970ced2f2453a6e6fee6fef08b425196349b75b43ede5b5b7964758c",
+    "crates/podoco-ffi/src/api.rs": "42b4e01fdfa5ba241110c756f05bef169b19ed17cc929ea6d9cda48f90153ad5",
+    "crates/podoco-ffi/src/handles.rs": "86344a10609a0b93ffa322496ebdb4d891a1ed394f03b8e8edc6df968f162e7a",
+    "crates/podoco-ffi/src/jobs.rs": "33902b43effa0722c9df77885e857b75d297e27e5568df897b7a225595c88a1b",
+    "crates/podoco-ffi/src/lib.rs": "67e3c6918f3f4686f1e75cbb951150114fb855a88378844cc788431d399a2940",
+    "crates/podoco-ffi/src/math.rs": "a64af2f58ef213a04c5a49cb7e54b2beae80efb230145be920ac804c8434cc39",
+    "crates/podoco-ffi/src/tests.rs": "e78c978c068dc086c674911518d2cc957ce1ad33ce6748cf8a7640c44d0e36f7",
+    "crates/podoco-ffi/src/transport.rs": "9923bac6e0f3355b20efb7d0fd706d9affadd10452ec1980df53deb5ff3c3d8a",
+    "crates/podoco-ffi/src/types.rs": "01d87011c384a224d59d71327c262bbc1e7a5a3aa7cdc01f675ef3cfdd305d7d",
+    "crates/podoco-ffi/src/wire.rs": "8bc7c7a2382bfbd359607937ccf965ec70e71eadd0aefd481ac2cb4e36768696",
+    "crates/podoco/Cargo.toml": "ea48ccf22bacd72c7604864b88783dda0d975eb3f1309ed23f85965472efb487",
+    "crates/podoco-ffi/Cargo.toml": "8a1cdaf9f54da140241a0f79a30a636f8e42dbe7e313aaf5dd3b26ff09235d6b",
+    "bindings/dart/pubspec.lock": "5c8040644046b0d65d9bfb739cef52bbeba06a7aec18037e14324585ccd26f65",
+    "bindings/dart/pubspec.yaml": "864aabde0991a3c2d51415d83f7bb0d51148f57ab0fd7ab9c86909873c18258c",
+    "bindings/dart/lib/podoco.dart": "021ef2665d0f40ac4a18687ce6987dc4a34b92a68c8c5bc61781073f6b8a70cb",
+    "bindings/dart/lib/src/analysis.dart": "a8952158b1a42e390803664592f3b27c3a1216c544fe20c2ba7231ca8c04bd59",
+    "bindings/dart/lib/src/analysis_jobs.dart": "26d7f9ba24bcd0d8df1135c07610076370734d9bb91792b5ee9596b8a301270c",
+    "bindings/dart/lib/src/analysis_native.dart": "3fcd0d756e1157f0c8d525989a323f50e4f9f56d13d8a20618875b9f80ef976c",
+    "bindings/dart/lib/src/analysis_types.dart": "1f1168a8db96ac97d9e9c6b12c2f70c2d1aa12a62903c2d77a22544dbec76b60",
+    "bindings/dart/lib/src/bindings.g.dart": "8d5bd9857b9c41ce965e00c427dbd2fca5444bb1c36c6f50b2bcc1b1559a4176",
+    "bindings/dart/lib/src/formula_jobs.dart": "063e3c94baf5b69366753e10099cb8613eec31dd6889ae33d4dc5c591653b20f",
+    "bindings/dart/lib/src/math.dart": "dd6ecda32309cff406a079691b592494b4bbf9b71096001f0eea68ba52519247",
+    "bindings/dart/test/explicit_formula_legacy_test.dart": "ec9646489edb38d9175c6971fc2dcc4eab77cd2c72811fc0aedae7a6d2494ed0",
+    "bindings/dart/test/explicit_formula_test.dart": "39e6bdd70726fb8e29d71180cd1ffd2907fdd297afb9c30bd68c3a1ddd906847",
+    "bindings/dart/test/formula_jobs_test.dart": "b8fd181e5c3c4c4a9bb98ddb5a564cf9a7849b6a078d7dd2392db2f8a1eee3cb",
+    "tools/check_formula_crops.py": "5a2546532fb2efd4a8ecb00d6874d318e47815d1572def1869c2cf66cf9221b2"
+  },
+  "evidence_root": "podoco/evaluation-output/explicit-crops-v3",
+  "gate": "queued-explicit-formula-crops-v1",
+  "passed": true,
+  "comparisons": [
+    {
+      "id": "0001074_page02-e000",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          90.0,
+          55.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 0
+          },
+          "space": [
+            113.0,
+            92.0
+          ]
+        },
+        "region_id": 0
+      },
+      "status": "completed",
+      "latex": "A_{m-1}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e000",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          90.0,
+          55.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 0
+          },
+          "space": [
+            113.0,
+            92.0
+          ]
+        },
+        "region_id": 0
+      },
+      "status": "completed",
+      "latex": "A_{m-1}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e001",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          89.0,
+          56.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 1
+          },
+          "space": [
+            112.0,
+            93.0
+          ]
+        },
+        "region_id": 1
+      },
+      "status": "completed",
+      "latex": "A_{m-1}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e001",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          89.0,
+          56.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 1
+          },
+          "space": [
+            112.0,
+            93.0
+          ]
+        },
+        "region_id": 1
+      },
+      "status": "completed",
+      "latex": "A_{m-1}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e002",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          90.0,
+          55.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 2
+          },
+          "space": [
+            113.0,
+            92.0
+          ]
+        },
+        "region_id": 2
+      },
+      "status": "completed",
+      "latex": "A_{m-1}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e002",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          90.0,
+          55.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 2
+          },
+          "space": [
+            113.0,
+            92.0
+          ]
+        },
+        "region_id": 2
+      },
+      "status": "completed",
+      "latex": "A_{m-1}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e003",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          91.0,
+          55.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 3
+          },
+          "space": [
+            114.0,
+            92.0
+          ]
+        },
+        "region_id": 3
+      },
+      "status": "completed",
+      "latex": "A_{m-1}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e003",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          91.0,
+          55.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 3
+          },
+          "space": [
+            114.0,
+            92.0
+          ]
+        },
+        "region_id": 3
+      },
+      "status": "completed",
+      "latex": "A_{m-1}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e004",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          46.0,
+          50.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 4
+          },
+          "space": [
+            69.0,
+            87.0
+          ]
+        },
+        "region_id": 4
+      },
+      "status": "completed",
+      "latex": "\\Delta",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e004",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          46.0,
+          50.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 4
+          },
+          "space": [
+            69.0,
+            87.0
+          ]
+        },
+        "region_id": 4
+      },
+      "status": "completed",
+      "latex": "\\Delta",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e005",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          36.0,
+          42.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 5
+          },
+          "space": [
+            59.0,
+            79.0
+          ]
+        },
+        "region_id": 5
+      },
+      "status": "completed",
+      "latex": "r",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e005",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          36.0,
+          42.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 5
+          },
+          "space": [
+            59.0,
+            79.0
+          ]
+        },
+        "region_id": 5
+      },
+      "status": "completed",
+      "latex": "r",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e006",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          191.0,
+          54.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 6
+          },
+          "space": [
+            214.0,
+            91.0
+          ]
+        },
+        "region_id": 6
+      },
+      "status": "completed",
+      "latex": "q_{i},i=1,...,r",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e006",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          191.0,
+          54.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 6
+          },
+          "space": [
+            214.0,
+            91.0
+          ]
+        },
+        "region_id": 6
+      },
+      "status": "completed",
+      "latex": "q_{i},i=1,...,r",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e007",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          192.0,
+          54.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 7
+          },
+          "space": [
+            215.0,
+            91.0
+          ]
+        },
+        "region_id": 7
+      },
+      "status": "completed",
+      "latex": "p_{i},i=1,...,r",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001074_page02-e007",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          192.0,
+          54.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 7
+          },
+          "space": [
+            215.0,
+            91.0
+          ]
+        },
+        "region_id": 7
+      },
+      "status": "completed",
+      "latex": "p_{i},i=1,...,r",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e000",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          33.0,
+          48.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 8
+          },
+          "space": [
+            56.0,
+            85.0
+          ]
+        },
+        "region_id": 8
+      },
+      "status": "completed",
+      "latex": "i",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e000",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          33.0,
+          48.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 8
+          },
+          "space": [
+            56.0,
+            85.0
+          ]
+        },
+        "region_id": 8
+      },
+      "status": "completed",
+      "latex": "i",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e001",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          57.0,
+          58.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 9
+          },
+          "space": [
+            80.0,
+            95.0
+          ]
+        },
+        "region_id": 9
+      },
+      "status": "completed",
+      "latex": "A_{\\mu}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e001",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          57.0,
+          58.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 9
+          },
+          "space": [
+            80.0,
+            95.0
+          ]
+        },
+        "region_id": 9
+      },
+      "status": "completed",
+      "latex": "A_{\\mu}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e002",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          250.0,
+          63.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 10
+          },
+          "space": [
+            273.0,
+            100.0
+          ]
+        },
+        "region_id": 10
+      },
+      "status": "completed",
+      "latex": "\\left[\\begin{matrix}{\\int_{\\mathcal{M}}\\partial_{a}(\\varepsilon^{a b}A_{\\mu}\\partial_{b}X^{\\mu}).}\\\\ \\end{matrix}\\right.",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e002",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          250.0,
+          63.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 10
+          },
+          "space": [
+            273.0,
+            100.0
+          ]
+        },
+        "region_id": 10
+      },
+      "status": "completed",
+      "latex": "\\left[\\begin{matrix}{\\int_{\\mathcal{M}}\\partial_{a}(\\varepsilon^{a b}A_{\\mu}\\partial_{b}X^{\\mu}).}\\\\ \\end{matrix}\\right.",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e003",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          59.0,
+          58.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 11
+          },
+          "space": [
+            82.0,
+            95.0
+          ]
+        },
+        "region_id": 11
+      },
+      "status": "completed",
+      "latex": "A_{\\mu}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e003",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          59.0,
+          58.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 11
+          },
+          "space": [
+            82.0,
+            95.0
+          ]
+        },
+        "region_id": 11
+      },
+      "status": "completed",
+      "latex": "A_{\\mu}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e004",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          57.0,
+          53.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 12
+          },
+          "space": [
+            80.0,
+            90.0
+          ]
+        },
+        "region_id": 12
+      },
+      "status": "completed",
+      "latex": "\\varepsilon^{a b}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e004",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          57.0,
+          53.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 12
+          },
+          "space": [
+            80.0,
+            90.0
+          ]
+        },
+        "region_id": 12
+      },
+      "status": "completed",
+      "latex": "\\varepsilon^{a b}",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e005",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          117.0,
+          49.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 13
+          },
+          "space": [
+            140.0,
+            86.0
+          ]
+        },
+        "region_id": 13
+      },
+      "status": "completed",
+      "latex": "A\\rightarrow iA",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e005",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          117.0,
+          49.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 13
+          },
+          "space": [
+            140.0,
+            86.0
+          ]
+        },
+        "region_id": 13
+      },
+      "status": "completed",
+      "latex": "A\\rightarrow iA",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e006",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          48.0,
+          53.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 14
+          },
+          "space": [
+            71.0,
+            90.0
+          ]
+        },
+        "region_id": 14
+      },
+      "status": "completed",
+      "latex": "\\bar{X}.",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e006",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          48.0,
+          53.0
+        ],
+        "display_kind": "displayed",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 14
+          },
+          "space": [
+            71.0,
+            90.0
+          ]
+        },
+        "region_id": 14
+      },
+      "status": "completed",
+      "latex": "\\bar{X}.",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e007",
+      "leased": false,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          160.0,
+          58.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 15
+          },
+          "space": [
+            183.0,
+            95.0
+          ]
+        },
+        "region_id": 15
+      },
+      "status": "completed",
+      "latex": "X=\\bar{X}+\\xi.",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    },
+    {
+      "id": "0001125_page03-e007",
+      "leased": true,
+      "crop": {
+        "bounds": [
+          17.0,
+          23.0,
+          160.0,
+          58.0
+        ],
+        "display_kind": "inline",
+        "page": {
+          "key": {
+            "document": {
+              "id": "explicit-crop-reference",
+              "revision": "1"
+            },
+            "page_index": 15
+          },
+          "space": [
+            183.0,
+            95.0
+          ]
+        },
+        "region_id": 15
+      },
+      "status": "completed",
+      "latex": "X=\\bar{X}+\\xi.",
+      "progress": {
+        "cancellation_requested": false,
+        "input_bytes": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 8192,
+        "phase": "finished"
+      }
+    }
+  ],
+  "app_regression": {
+    "gate": "crop-api-app-regression-v1",
+    "passed": true,
+    "production_model_promotion": false,
+    "human_listening_acceptance": false,
+    "sandbox_picker_acceptance": false,
+    "created_at": "2026-10-26T11:59:36.183848+00:00",
+    "git_head": "9d10389ba42bf39cbbc553e0eba1cc96ed91812d",
+    "flutter": {
+      "frameworkVersion": "3.47.5",
+      "channel": "stable",
+      "repositoryUrl": "https://github.com/flutter/flutter.git",
+      "frameworkRevision": "6a19cca56475dbfba1478ee68d7bd0c2ef891da1",
+      "frameworkCommitDate": "2026-09-17 14:13:22 -0400",
+      "engineRevision": "af7e796e161ae0bb1ff0758c71a7105418bd9ded",
+      "engineCommitDate": "2026-09-16 18:35:09.000Z",
+      "engineContentHash": "ab598368592da0064197e2bc15c7f5b0a2c6bb1f",
+      "engineBuildDate": "2026-09-16 15:35:21.428",
+      "dartSdkVersion": "3.13.4",
+      "devToolsVersion": "2.60.0",
+      "flutterVersion": "3.47.5",
+      "flutterRoot": "/Users/yunhocho/fvm/versions/3.47.5"
+    },
+    "layout_manifest_sha256": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef",
+    "formula_manifest_sha256": "f122877f62b7e03e4a80c9e85fdca274f1d49e97ae84c37119119b793c3e1140",
+    "rules_manifest_sha256": "24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e",
+    "native_artifact": {
+      "system": "Darwin",
+      "architecture": "arm64",
+      "coreml": true,
+      "math": true,
+      "sha256": "0e9e4d6ba09d0d7b67a507dca4a19935fa54b33aa4c32f472bc1a5481312d3cc"
+    },
+    "pdf_sha256": "e3bda3bdd501a74c26aad5fbf99595c419f5688843d716df8dd420115be8cab2",
+    "screenshots": {
+      "podoco-equation-selected.png": "9034544283e3c0392407187e4b203e45af1ba65f9806e87fad8149d6575fa5d6",
+      "podoco-equation-controls.png": "5be49bca63053b05391d0f80b9385463d62e9f40b8df93efad15fc5be8ffe975"
+    },
+    "source_sha256": {
+      "podofo_frontend_one/lib/src/analysis/analysis_controller.dart": "b69c175c29cd1a00d1e9f4eb8c6702dbb71cb85c2caf623717bd89a549a095fb",
+      "podofo_frontend_one/lib/src/analysis/analysis_engine.dart": "76911ab20bc39fe17a29d937a74b51296671bf7d2c775e4428e5be2c327b9cdf",
+      "podofo_frontend_one/lib/src/analysis/analysis_painter.dart": "47816c46ca8c0bc61ea081fdeb7e3a30163dd49738075d4bbbe9c5e164646bfa",
+      "podofo_frontend_one/lib/src/analysis/analysis_snapshot.dart": "6438c27ac43aa9575fd3d5ce5ac50a02c3e7e510fe111c657504d362b1243736",
+      "podofo_frontend_one/lib/src/analysis/analysis_store.dart": "5f81524127ef642e9f18cf0529ca68fdd7fbe7d9db56aa631491fedb59553107",
+      "podofo_frontend_one/lib/src/analysis/equation_controller.dart": "a48c40fd36951d9eb3c9cbd269f9c2abcf655d82bec679945c6a26c6051dfaa0",
+      "podofo_frontend_one/lib/src/analysis/math_speech_engine.dart": "d00a312a9b037783a919ed9cf2c3aac64028aadad5792683279a038efc3cb74a",
+      "podofo_frontend_one/lib/src/analysis/pdf_analysis_source.dart": "90b2df3ce4b12654aeb500702994ee19f00ea62829d110b54d9a7d4ed9d8d470",
+      "podofo_frontend_one/lib/src/analysis/pdf_image_input.dart": "67f3e917909a7cf40e1b1f8120c94432723cca0eaba1c4828b12e16e3d2d3fa9",
+      "podofo_frontend_one/lib/src/narration/narration_controller.dart": "1e52bf9c6218308dc451be675551e0e6ea904f6dd2ad849a186babd6fec2f5b9",
+      "podofo_frontend_one/lib/src/providers/analysis_provider.dart": "888a288fee3978c1783d97b15f52299eb99c8a62576cb4a2cacd93c7f483f09c",
+      "podofo_frontend_one/lib/src/widgets/components/custom_pdf_viewer.dart": "fdbfa6ea3abbc071e8c6845b70ca70a95061e986104e2b9dc54c672beccc4474",
+      "podofo_frontend_one/lib/src/widgets/components/equation_controls.dart": "4bbcd3d1fba777ba715eaf7310236bb49f2adf0a64b751fb172ce66a3f80d15e",
+      "podofo_frontend_one/lib/src/widgets/components/layout_analysis_controls.dart": "138e4b62db4d2e8ef12ec521370260caf38f73cab9e9b1e9dea85a1eab5a3f43",
+      "podofo_frontend_one/test/equation_controller_test.dart": "f6004498b6664900fa1f1ee72a483f240305491416ad99e9547c13d2e6427778",
+      "podofo_frontend_one/test/equation_controls_test.dart": "d7e4847366801d69904fb95594cb2df93347dab834ca8d6fb9c046485fb43f4b",
+      "podofo_frontend_one/test/equation_native_test.dart": "b35f929944628fa9a31d34b0e9ad7f6ebcaf058fef893ac76773c50c17c26a34",
+      "podofo_frontend_one/test/equation_widget_test.dart": "0a784a4d72a73b9943a18809928fb66961440b2192d0a3b5ce0727a8c7dc97b4",
+      "podofo_frontend_one/test/fixtures/analysis_fixture.dart": "f9f2f79a340a8a0610efa311ef786a7b9af3472a8454020f0db6c64b20fbc566",
+      "podofo_frontend_one/tool/prepare_podoco.py": "7e1715050b6f2b5caae25cdb4f021d24bed0dca944a46a663bf4067120688bb0",
+      "podofo_frontend_one/tool/qualify_podoco_equations.py": "53c5a4f3816e0d67799ab3bbbcad36bec4758f38054e6dabccb26eaf780426a5"
+    },
+    "native": {
+      "schema_version": 0,
+      "automated_audio_volume": 0,
+      "human_listening": false,
+      "podoco_version": "0.1.0",
+      "mlsr_version": "0.1.0",
+      "pdf_sha256": "e3bda3bdd501a74c26aad5fbf99595c419f5688843d716df8dd420115be8cab2",
+      "marks_us": {
+        "open_start": 74099,
+        "analysis_opened": 23852057,
+        "math_opened": 24046221,
+        "narrator_open_start": 24046228,
+        "narrator_opened": 49589068,
+        "narrator_warmup_finished": 51431277,
+        "analysis_started": 51435211,
+        "first_formula": 52081110,
+        "listen_started": 52082872,
+        "listen_ready": 52106764,
+        "first_audio_progress": 52400473,
+        "analysis_finished": 55361033,
+        "playback_finished": 55361325,
+        "cancel_started": 55362828,
+        "cancel_drained": 55366291
+      },
+      "memory_boundary": "500ms sampled test-process RSS; includes Flutter, PDFium, Core ML, MathCAT and MLSR; not an allocator peak",
+      "timing_boundary": "single active-host correctness run; elapsed marks include asynchronous work and model hashing/loading; no performance comparison",
+      "analysis_running_at_listen_ready": true,
+      "analysis_running_at_audio_progress": true,
+      "selected_region_id": 290,
+      "latex": "A_{m-1}",
+      "spoken_text": "cap a sub m minus 1 end sub",
+      "math_diagnostics": [],
+      "audio_progress_frames": 2442,
+      "analysis_outcome": {
+        "status": "completed",
+        "pages_finished": 1,
+        "pages_total": 1,
+        "formulas_recognized": 8,
+        "formulas_failed": 0,
+        "formulas_truncated": 0,
+        "peak_input_bytes": 16777216,
+        "peak_result_bytes": 2162688,
+        "peak_pending_updates": 2,
+        "error": null
+      },
+      "duration_frames": 105574,
+      "sample_rate": 44100,
+      "speech_cache_bytes": 292,
+      "podoco_handles_before": 0,
+      "podoco_handles_after": 0,
+      "mlsr_handles_before": 0,
+      "mlsr_handles_after": 0,
+      "rss_sample_count": 112,
+      "sampled_peak_rss_bytes": 806649856,
+      "page_provenance": {
+        "pipeline": {
+          "sdk_version": "0.1.0",
+          "backend": "coreml",
+          "compute_policy": "cpu_and_neural_engine",
+          "adapter": "pp-doclayout-v3-formulanet-plus-l-v1",
+          "profile": "pp-doclayout-v3-formulanet-plus-l-greedy2048-v1",
+          "models": [
+            {
+              "model_id": "pp-doclayout-v3-coreml-mixed-v1",
+              "manifest_sha256": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef",
+              "artifacts": {
+                "checkpoint/README.md": "77adba6b875c9019f90d79215e802f88c866ba937fc73100e8f410391e0b4e52",
+                "checkpoint/config.json": "3cf834b91d23a756b1519bce4db42c09e852f3e35c35092dd5a3e253a50c071a",
+                "checkpoint/inference.yml": "506fcfac13b3b546ae40d7886b44126420f392adb694e3f8bb6a6286a1f90fdc",
+                "checkpoint/preprocessor_config.json": "519fe0187a43a1ca429e3ad8317bab8700f0d5e8fb3a6e3a0a413ffac078ba42",
+                "optimized-mixed.mlmodelc/analytics/coremldata.bin": "07976d395240a5519d145ceb9293919c9e5dda9e9830262d3c64994bfdf66dcd",
+                "optimized-mixed.mlmodelc/coremldata.bin": "55e7a3b77735360d813a271b52a727dc3e3ef8c4fb9086da0039b92d18939159",
+                "optimized-mixed.mlmodelc/metadata.json": "0bc6e0fc06f5247757f63d5a788eb7eca27bddad8df2df6ee0c959c0bea304f9",
+                "optimized-mixed.mlmodelc/model.mil": "f25e4e771e10e5afeb6a8e0f01fce2394aa10b1fbe348ed2b7c3bd8d9705300f",
+                "optimized-mixed.mlmodelc/weights/weight.bin": "55b7bbd7ec0b1478cdb92a8c77cd11f2c69ec64ef667ded8dc8cec9774cd255a",
+                "optimized-mixed.mlpackage/Data/com.apple.CoreML/model.mlmodel": "533d82680ab431ba5739fc8001d8c92db490a08df597162246aa950a2405576c",
+                "optimized-mixed.mlpackage/Data/com.apple.CoreML/weights/weight.bin": "55b7bbd7ec0b1478cdb92a8c77cd11f2c69ec64ef667ded8dc8cec9774cd255a",
+                "optimized-mixed.mlpackage/Manifest.json": "26690c6c5b8c2bbc23f9df118c42b2cb44e61a7183ea46c80eaad2bdb3618665"
+              }
+            },
+            {
+              "model_id": "pp-formulanet-plus-l-coreml-v1",
+              "manifest_sha256": "f122877f62b7e03e4a80c9e85fdca274f1d49e97ae84c37119119b793c3e1140",
+              "artifacts": {
+                "checkpoint/README.md": "4bcf87ecfbbb8e07a01b21415a970c8b53a5283bf6872b657040d3f45c9241f7",
+                "checkpoint/config.json": "3d5c513a525ebef73ba4e319e65de793d95aacc1062e5ce2dd851c7f109c060c",
+                "checkpoint/generation_config.json": "e0dc49736b0b06f19cb2074201a072cee23707b7abff4a55a24da19b14abd707",
+                "checkpoint/inference.yml": "afc92a2737268da0499c37b0b6741da268c369fd7424667fcfeb8fa6c7b22d30",
+                "checkpoint/processor_config.json": "f1454999fcb5930c2d93e9dcd03f1adf046245e98e96a7f601dabc6ee01c3b78",
+                "checkpoint/tokenizer.json": "2811d82701ec97c192fa256aa2b4516929373870ae660326cc5b1dc879b95ff2",
+                "checkpoint/tokenizer_config.json": "0bf3cca5ff1a240004932dbab09373b0e8a651f5f85f2ff6f2f9dec3f0e41947",
+                "compiled/decoder-c2048.mlmodelc/analytics/coremldata.bin": "ebd9809c2159bbb1e5f9906a09c05e5bdac3038f8accae5bed18eed0f669ece2",
+                "compiled/decoder-c2048.mlmodelc/coremldata.bin": "ef588c82ccb3e02da98cedd01ffd5d6acdcf570bcdf33376c9cdce7d7108450c",
+                "compiled/decoder-c2048.mlmodelc/metadata.json": "38e2dbb23e609a979233153194aca36bd6dc84a45d65241d8e7f4ea6d25848c4",
+                "compiled/decoder-c2048.mlmodelc/model.mil": "66e1d4e5ff00ddfaac44b11ac2fb38733616649992b0f18f30ead8ec5ee1b012",
+                "compiled/decoder-c2048.mlmodelc/weights/weight.bin": "26bb5345a5f12ee699e05134b29d6373ee75a07fdd22e5791750d6da6bb0665b",
+                "compiled/decoder-c256.mlmodelc/analytics/coremldata.bin": "b6419c747f34e5589af25d2d8a32b758dc2c927d396e63fd1fcfaf4e92702984",
+                "compiled/decoder-c256.mlmodelc/coremldata.bin": "9c6ed93b97070c637c71c6d4fa5bf97c6ad4cf77ca310cbc3f88154ef4c97876",
+                "compiled/decoder-c256.mlmodelc/metadata.json": "83b4b78405ff1727586c9cc9c4ca5264228d9bfb0b8d2a1cf32c48af8fba00e5",
+                "compiled/decoder-c256.mlmodelc/model.mil": "3d66e0e8b2a798537accbf845501e0f7a45371bbc6abd719da700659bfe68cac",
+                "compiled/decoder-c256.mlmodelc/weights/weight.bin": "26bb5345a5f12ee699e05134b29d6373ee75a07fdd22e5791750d6da6bb0665b",
+                "compiled/encoder.mlmodelc/analytics/coremldata.bin": "1e6b641543984c2302b85050a08746f87d08aabb89204f3cd6178a62b40462d6",
+                "compiled/encoder.mlmodelc/coremldata.bin": "772e961e71f07b072e3e758fd826ec7018274ebb477822e154b7c711ebd0d1b7",
+                "compiled/encoder.mlmodelc/metadata.json": "6bcdd0431d4e4eb4a15e825177575ec9e24ded83047d308ecddaa2ea8a791179",
+                "compiled/encoder.mlmodelc/model.mil": "a69fc5d285bdfe804909f093f83bd4a33b63ee11e8fec07cc7c821515e3b0c11",
+                "compiled/encoder.mlmodelc/weights/weight.bin": "d2088dc5c39d9edec07af56fd57955ce2fc96d1853202417b9ef8fe8ddcb94af",
+                "export/decoder-c2048.mlpackage/Data/com.apple.CoreML/model.mlmodel": "a51a59e6a246487c276651a5d3a08bd86ccc4a840cc79661007dd595cf2e21f6",
+                "export/decoder-c2048.mlpackage/Data/com.apple.CoreML/weights/weight.bin": "26bb5345a5f12ee699e05134b29d6373ee75a07fdd22e5791750d6da6bb0665b",
+                "export/decoder-c2048.mlpackage/Manifest.json": "955f73bac96373e30c39db025c16cf0c950922960fbbefdbff3c2009dae37689",
+                "export/decoder-c256.mlpackage/Data/com.apple.CoreML/model.mlmodel": "d94c2b73ec564bf95f148c8413b0edbbb9c6cc1bbcfb27665527c660bbcc8c88",
+                "export/decoder-c256.mlpackage/Data/com.apple.CoreML/weights/weight.bin": "26bb5345a5f12ee699e05134b29d6373ee75a07fdd22e5791750d6da6bb0665b",
+                "export/decoder-c256.mlpackage/Manifest.json": "4af73ee5713be371b79674391f74fc2e5ba8ec8e1f3aacf5aaf13e614b59a92f",
+                "export/encoder.mlpackage/Data/com.apple.CoreML/model.mlmodel": "8066f2abf401bb853db250c94715d06fca08033999e0e7e8595083061752df7e",
+                "export/encoder.mlpackage/Data/com.apple.CoreML/weights/weight.bin": "d2088dc5c39d9edec07af56fd57955ce2fc96d1853202417b9ef8fe8ddcb94af",
+                "export/encoder.mlpackage/Manifest.json": "0c774fe647fff7cdfc15dc0802515874decd6d7cf0f2a1e16999512561d69f9e",
+                "export/position_embeddings.npy": "137ea937b1065c80498afda41b549975a85bee027316dc362cc174cb6dc56188",
+                "export/token_embeddings.npy": "621d81bf7d697cd12a1d85a3516a9fefb9b43b981404d0e6589ef01e5cb7e295"
+              }
+            }
+          ]
+        },
+        "render_profile": "pdfrx-0.6.1-white-no-annotations-144dpi-edge2048-v1",
+        "image": {
+          "width": 1447,
+          "height": 2048,
+          "row_stride": 5788,
+          "format": "bgra8",
+          "alpha": "opaque"
+        },
+        "pixel_to_page": [
+          0.5,
+          0.0,
+          0.0,
+          0.5,
+          0.0,
+          0.0
+        ]
+      },
+      "recognized_formulas": [
+        {
+          "region_id": 290,
+          "latex": "A_{m-1}"
+        },
+        {
+          "region_id": 190,
+          "latex": "A_{m-1}"
+        },
+        {
+          "region_id": 365,
+          "latex": "$A_{m-1}$case)"
+        },
+        {
+          "region_id": 315,
+          "latex": "A_{m-1}"
+        },
+        {
+          "region_id": 265,
+          "latex": "A_{m-1}"
+        },
+        {
+          "region_id": 340,
+          "latex": "\\Delta"
+        },
+        {
+          "region_id": 240,
+          "latex": "q_{i},i=1,...,r"
+        },
+        {
+          "region_id": 165,
+          "latex": "p_{i},i=1,...,r."
+        }
+      ]
+    },
+    "app_bundle_rebuilt": false,
+    "automated_tests": {
+      "native": 1,
+      "ui_and_lifecycle": 33,
+      "skips": 0
+    },
+    "evidence_root": "podofo_frontend_one/build/podoco-qualification/crop-api-regression-v1",
+    "raw_summary_sha256": "ccc2421d79fe4c02656e44a14af0e60a0be22feb8c9322292b8caad839508cfd"
+  }
+}

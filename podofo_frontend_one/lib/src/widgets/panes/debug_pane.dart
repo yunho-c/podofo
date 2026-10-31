@@ -4,6 +4,8 @@ import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 
+import '../components/layout_analysis_controls.dart';
+
 class DebugPane extends ConsumerWidget {
   const DebugPane({super.key});
 
@@ -11,6 +13,7 @@ class DebugPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
     final loadedDocuments = ref.watch(loadedDocumentsProvider);
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(10.0),
       child: Column(
@@ -31,6 +34,10 @@ class DebugPane extends ConsumerWidget {
               ),
             ],
           ),
+          if (userState.developerMode) ...[
+            const SizedBox(height: 16),
+            const LayoutAnalysisControls(),
+          ],
           const SizedBox(height: 16),
           const _PdfRenderingStatus(),
           const SizedBox(height: 16),
@@ -42,8 +49,9 @@ class DebugPane extends ConsumerWidget {
                   child: Column(
                     children: [
                       for (final doc in loadedDocuments.values)
-                        Text('${doc.title}: ${doc.lastOpenedPage ?? 'Not set'}')
-                            .small(),
+                        Text(
+                          '${doc.title}: ${doc.lastOpenedPage ?? 'Not set'}',
+                        ).small(),
                     ],
                   ).withPadding(horizontal: 16, vertical: 8),
                 ).withPadding(top: 8),

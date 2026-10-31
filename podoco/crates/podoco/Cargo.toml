@@ -1,0 +1,46 @@
+[package]
+name = "podoco"
+description = "Rust-owned document analysis with ergonomic language bindings."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish = false
+
+[features]
+default = []
+coreml = ["dep:cidre"]
+math = ["dep:mathcat", "dep:pulldown-latex", "dep:roxmltree"]
+
+[dependencies]
+getrandom = "=0.4.3"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = { version = "=1.0.154", features = ["float_roundtrip"] }
+serde_yaml_ng = "=0.10.0"
+sha2 = "=0.10.9"
+half = { version = "=2.7.1", default-features = false, features = ["std"] }
+fancy-regex = "=0.16.2"
+plsfix = "=0.1.8"
+mathcat = { path = "../../third_party/mathcat", version = "=0.7.7", features = ["podoco-host"], optional = true }
+pulldown-latex = { version = "=0.8.0", optional = true }
+roxmltree = { version = "=0.21.1", optional = true }
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+png = "=0.18.1"
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+cidre = { workspace = true, optional = true }
+
+[[example]]
+name = "coreml_probe"
+crate-type = ["cdylib"]
+required-features = ["coreml"]
+
+[[example]]
+name = "math"
+required-features = ["math"]
+
+[lints]
+workspace = true

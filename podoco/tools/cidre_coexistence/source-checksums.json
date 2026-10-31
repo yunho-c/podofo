@@ -1,0 +1,9 @@
+{
+  "Cargo.toml": "704f6725ac76bcc542049c3e13b085ff317d67edf4fdfdc587452e50310ca5a1",
+  "Cargo.toml.orig": "a06f3388a4fb330b386d5c0f9f9d76821e13f3c450edfd6387e19057f6cf3987",
+  "build.rs": "526d3af503f46660b451fdab3c180a0e7b60fa6d9f5bf908703dcc5005c1ef79",
+  "pomace/ns/ns.h": "995d73777300fba2852a9efecf9f70910fcca1c651a7e588b1e09d7ef0796a0c",
+  "pomace/ns/ns.m": "7b007a25a5aff907c119a3bfcea8b8eaad0fe7841133a3bc85257371231538df",
+  "src/ns.rs": "b4424d7bb3a10616b8b898f2495087042d2697e7062db50c98019545f8c4d948",
+  "src/ns/key_value_observing.rs": "ece423f8ca011fb3fefdf7e22a4c61c120c848b98d79fa8f78b7b744af9409e8"
+}

@@ -1,0 +1,83 @@
+{
+  "gate": "m3-native-jobs-v1",
+  "policy": "cpu_and_neural_engine",
+  "native_test": {
+    "predictions": 9,
+    "model_loads": 1,
+    "pages": 3,
+    "document_repetitions": 2,
+    "exact_page_equality": true,
+    "rotated_mapping": true
+  },
+  "cli": {
+    "predictions": 6,
+    "updates": 7,
+    "exact_page_equality": true,
+    "outcome": {
+      "status": "completed",
+      "summary": {
+        "status": "completed",
+        "counts": {
+          "pages_total": 3,
+          "pages_finished": 3,
+          "pages_failed": 0,
+          "formulas_detected": 5,
+          "formulas_recognized": 0,
+          "formulas_failed": 0,
+          "formulas_truncated": 0,
+          "formulas_pending": 0,
+          "formulas_not_requested": 5
+        },
+        "diagnostics": []
+      },
+      "delivered": {
+        "updates_acknowledged": 7,
+        "last_sequence": 6,
+        "pages_finished": 3,
+        "formulas_finished": 0,
+        "document_finished": true
+      },
+      "error": null,
+      "progress": {
+        "phase": "finished",
+        "cancellation_requested": false,
+        "processed": {
+          "pages_total": 3,
+          "pages_finished": 3,
+          "pages_failed": 0,
+          "formulas_detected": 5,
+          "formulas_recognized": 0,
+          "formulas_failed": 0,
+          "formulas_truncated": 0,
+          "formulas_pending": 0,
+          "formulas_not_requested": 5
+        },
+        "delivered": {
+          "updates_acknowledged": 7,
+          "last_sequence": 6,
+          "pages_finished": 3,
+          "formulas_finished": 0,
+          "document_finished": true
+        },
+        "input_bytes": 0,
+        "pending_result_bytes": 0,
+        "pending_updates": 0,
+        "peak_input_bytes": 4000000,
+        "peak_result_bytes": 266384,
+        "peak_pending_updates": 2
+      }
+    }
+  },
+  "source_sha256": {
+    "crates/podoco/src/jobs/engine.rs": "a6b367a1ceceb9449bd2db729f876e3f92787b5c48112a3779f942e79cf4454c",
+    "crates/podoco/src/jobs/mod.rs": "147112818c7bbb51feb9dee9ed46889ba03313d339ea8b844b2857c936469aae",
+    "crates/podoco/src/jobs/tests.rs": "a4507fce6982156e98d73ffd4018dbcbb6ccfb86a2f0338bcb09f27f47d5d180"
+  },
+  "fixture_sha256": {
+    "columns.png": "96e79687cf0dd73aef06e402f8bb962f0c5f4c780a0172e33691eb16462a6cd6",
+    "equations.png": "b5acdc5fbe5122d428d189a61bd70552d2554b375b387293efe81c251a815c82",
+    "raster.png": "066b33e72f5aa5aca61cc6d76902b34f6fbc6cc83390c2a2430554f09339ed6c"
+  },
+  "manifest_sha256": "3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef",
+  "scope": "Integration parity and bounded job lifecycle; no new quality or performance claim"
+}

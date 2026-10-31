@@ -1,0 +1,283 @@
+# Experimental integration baseline, not a production-qualified model.
+schema_version: 1
+id: pp-doclayout-v3-coreml-mixed-v0
+qualification: experimental
+source:
+  repository: https://huggingface.co/PaddlePaddle/PP-DocLayoutV3_safetensors
+  revision: e4f489dc536556fc1be02b973ba06756e0d4a2ac
+  license: Apache-2.0 (pinned upstream model-card declaration)
+  files:
+    model.safetensors: 5ea422c6cc5fe759a47e1357c35639b58173508e025a3131cbe4b6ac59e2b85e
+    config.json: 3cf834b91d23a756b1519bce4db42c09e852f3e35c35092dd5a3e253a50c071a
+    README.md: 77adba6b875c9019f90d79215e802f88c866ba937fc73100e8f410391e0b4e52
+    inference.yml: 506fcfac13b3b546ae40d7886b44126420f392adb694e3f8bb6a6286a1f90fdc
+    preprocessor_config.json: 519fe0187a43a1ca429e3ad8317bab8700f0d5e8fb3a6e3a0a413ffac078ba42
+conversion:
+  revision: 401bf7e7eefe8a16c796dd421ec30f75ab3fe348
+  sources:
+    conversion/measure_doclayoutv3.py: 47a62fe977be7956e1eda562d90ba0b76e3779f66bf141ec67d9ad2db36734a1
+    conversion/probe_doclayoutv3.py: b0a5697c15973e612f378dbc9e8909f8658a918c74a587f2b5f2b2314b368a79
+    conversion/trace_doclayoutv3.py: bc048af9cc31e8c13198120fad8646dd538e1d55f150adb832a65e7df1b2f7d8
+    conversion/validate_doclayoutv3.py: be99f6c2b33abca374d21171314135c0e1a12a2a33b4baccfd3fe91871b2c441
+  packages:
+    torch: 2.12.0
+    transformers: 5.8.1
+    numpy: 2.3.5
+    scipy: 1.16.1
+    Pillow: 10.4.0
+    huggingface-hub: 1.16.1
+    coremltools: '9.0'
+    torchvision: 0.27.0
+  model_source_sha256: f05343b8fdacf8f25af6d1774dbad88bad3f12c0f5dfc0708670958430b0477a
+  processor_source_sha256: 5b064fa7383dda12b3550448eae77d4f627a102c25e8b4db25d99e85fba4abc6
+  report: results/ppdoclayoutv3-coreml-20261025/REPORT.md
+runtime:
+  kind: coreml
+  macos: '15.0'
+  ios: '18.0'
+  precision: selective FP32 coordinate/order arithmetic; otherwise eligible FP16;
+    Float32 interfaces
+profile:
+  id: pp-doclayout-v3-transformers-5.8.1-score030-v0
+  adapter: pp-doclayout-v3-v0
+  input:
+    name: pixel_values
+    dtype: float32
+    shape:
+    - 1
+    - 3
+    - 800
+    - 800
+  outputs:
+  - name: logits
+    dtype: float32
+    shape:
+    - 1
+    - 300
+    - 25
+  - name: pred_boxes
+    dtype: float32
+    shape:
+    - 1
+    - 300
+    - 4
+  - name: order_logits
+    dtype: float32
+    shape:
+    - 1
+    - 300
+    - 300
+  - name: out_masks
+    dtype: float32
+    shape:
+    - 1
+    - 300
+    - 200
+    - 200
+  preprocessing:
+    color: rgb
+    layout: nchw
+    resize: transformers-5.8.1-torchvision-bicubic-antialias-false-800x800
+    divisor: 255
+    mean:
+    - 0.0
+    - 0.0
+    - 0.0
+    std:
+    - 1.0
+    - 1.0
+    - 1.0
+    background_rgb:
+    - 255
+    - 255
+    - 255
+  postprocessing:
+    activation: sigmoid
+    top_k: 300
+    score_threshold: 0.3
+    boxes: normalized_cxcywh
+    reading_order: transformers-5.8.1-global-pointer-votes
+    additional_nms: false
+  classes:
+  - id: 0
+    label: abstract
+    native_subtype: abstract
+    category: text
+    display_kind: null
+  - id: 1
+    label: algorithm
+    native_subtype: algorithm
+    category: text
+    display_kind: null
+  - id: 2
+    label: aside_text
+    native_subtype: aside_text
+    category: text
+    display_kind: null
+  - id: 3
+    label: chart
+    native_subtype: chart
+    category: figure
+    display_kind: null
+  - id: 4
+    label: content
+    native_subtype: content
+    category: text
+    display_kind: null
+  - id: 5
+    label: formula
+    native_subtype: display_formula
+    category: formula
+    display_kind: displayed
+  - id: 6
+    label: doc_title
+    native_subtype: doc_title
+    category: heading
+    display_kind: null
+  - id: 7
+    label: figure_title
+    native_subtype: figure_title
+    category: caption
+    display_kind: null
+  - id: 8
+    label: footer
+    native_subtype: footer
+    category: footer
+    display_kind: null
+  - id: 9
+    label: footer
+    native_subtype: footer_image
+    category: footer
+    display_kind: null
+  - id: 10
+    label: footnote
+    native_subtype: footnote
+    category: text
+    display_kind: null
+  - id: 11
+    label: formula_number
+    native_subtype: formula_number
+    category: formula_number
+    display_kind: null
+  - id: 12
+    label: header
+    native_subtype: header
+    category: header
+    display_kind: null
+  - id: 13
+    label: header
+    native_subtype: header_image
+    category: header
+    display_kind: null
+  - id: 14
+    label: image
+    native_subtype: image
+    category: figure
+    display_kind: null
+  - id: 15
+    label: formula
+    native_subtype: inline_formula
+    category: formula
+    display_kind: inline
+  - id: 16
+    label: number
+    native_subtype: number
+    category: other
+    display_kind: null
+  - id: 17
+    label: paragraph_title
+    native_subtype: paragraph_title
+    category: heading
+    display_kind: null
+  - id: 18
+    label: reference
+    native_subtype: reference
+    category: text
+    display_kind: null
+  - id: 19
+    label: reference_content
+    native_subtype: reference_content
+    category: text
+    display_kind: null
+  - id: 20
+    label: seal
+    native_subtype: seal
+    category: other
+    display_kind: null
+  - id: 21
+    label: table
+    native_subtype: table
+    category: table
+    display_kind: null
+  - id: 22
+    label: text
+    native_subtype: text
+    category: text
+    display_kind: null
+  - id: 23
+    label: text
+    native_subtype: vertical_text
+    category: text
+    display_kind: null
+  - id: 24
+    label: vision_footnote
+    native_subtype: vision_footnote
+    category: text
+    display_kind: null
+  capabilities:
+    layout: true
+    formula_recognition: false
+    polygons: false
+    reading_order: true
+artifacts:
+  package:
+    kind: coreml_package
+    path: optimized-mixed.mlpackage
+    source: export
+    files:
+    - path: Data/com.apple.CoreML/model.mlmodel
+      size_bytes: 569351
+      sha256: 533d82680ab431ba5739fc8001d8c92db490a08df597162246aa950a2405576c
+    - path: Data/com.apple.CoreML/weights/weight.bin
+      size_bytes: 66323008
+      sha256: 55b7bbd7ec0b1478cdb92a8c77cd11f2c69ec64ef667ded8dc8cec9774cd255a
+    - path: Manifest.json
+      size_bytes: 617
+      sha256: 26690c6c5b8c2bbc23f9df118c42b2cb44e61a7183ea46c80eaad2bdb3618665
+  compiled:
+    kind: coreml_compiled
+    path: optimized-mixed.mlmodelc
+    source: export
+    files:
+    - path: analytics/coremldata.bin
+      size_bytes: 243
+      sha256: 07976d395240a5519d145ceb9293919c9e5dda9e9830262d3c64994bfdf66dcd
+    - path: coremldata.bin
+      size_bytes: 471
+      sha256: 55e7a3b77735360d813a271b52a727dc3e3ef8c4fb9086da0039b92d18939159
+    - path: metadata.json
+      size_bytes: 3579
+      sha256: 0bc6e0fc06f5247757f63d5a788eb7eca27bddad8df2df6ee0c959c0bea304f9
+    - path: model.mil
+      size_bytes: 1088097
+      sha256: f25e4e771e10e5afeb6a8e0f01fce2394aa10b1fbe348ed2b7c3bd8d9705300f
+    - path: weights/weight.bin
+      size_bytes: 66323008
+      sha256: 55b7bbd7ec0b1478cdb92a8c77cd11f2c69ec64ef667ded8dc8cec9774cd255a
+  checkpoint:
+    kind: processor_metadata
+    path: checkpoint
+    source: checkpoint
+    files:
+    - path: config.json
+      size_bytes: 2460
+      sha256: 3cf834b91d23a756b1519bce4db42c09e852f3e35c35092dd5a3e253a50c071a
+    - path: preprocessor_config.json
+      size_bytes: 575
+      sha256: 519fe0187a43a1ca429e3ad8317bab8700f0d5e8fb3a6e3a0a413ffac078ba42
+    - path: inference.yml
+      size_bytes: 1482
+      sha256: 506fcfac13b3b546ae40d7886b44126420f392adb694e3f8bb6a6286a1f90fdc
+    - path: README.md
+      size_bytes: 13166
+      sha256: 77adba6b875c9019f90d79215e802f88c866ba937fc73100e8f410391e0b4e52

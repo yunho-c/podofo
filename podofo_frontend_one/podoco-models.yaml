@@ -1,0 +1,17 @@
+schema_version: 1
+package: podoco_app_models
+output: .podoco/model_assets
+flutter_package: ../podoco/bindings/flutter
+pack:
+  id: podofo-document-analysis-coreml-v1
+  dart_name: documentAnalysis
+  platforms: [macos-arm64]
+  layout:
+    directory: ../podoco/model-assets/pp-doclayout-v3-m2-sandbox
+    manifest_sha256: 3799c3091c7087111111a38847a35e7db882176d3466d3a54159bb517212abef
+  formula:
+    directory: ../podoco/model-assets/pp-formulanet-plus-l-m6
+    manifest_sha256: f122877f62b7e03e4a80c9e85fdca274f1d49e97ae84c37119119b793c3e1140
+  math:
+    directory: ../podoco/model-assets/mathcat-0.7.7-m7
+    manifest_sha256: 24c9305db2b81986b9d79227f871b30967fbb1f5e04ec17f28fecbf677540f7e

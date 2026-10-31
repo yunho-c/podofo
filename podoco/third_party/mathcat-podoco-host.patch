@@ -1,0 +1,57 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -34,6 +34,7 @@
+ repository = "https://github.com/daisy/MathCAT"
+ 
+ [features]
++podoco-host = ["no-unsafe"]
+ enable-logs = ["android_logger"]
+ include-zip = []
+ no-unsafe = [
+--- a/build.rs
++++ b/build.rs
+@@ -9,11 +9,11 @@
+ fn main() {
+     println!("cargo::rerun-if-changed=build.rs");
+     println!("cargo::rerun-if-changed=src/rules_archive.rs");
+-    println!("cargo::rerun-if-changed=Rules");
+ 
+     // This doesn't work because the build claims OUT_DIR is not defined(?)
+     // let archive = PathBuf::from(concat!(env!("OUT_DIR"),"/rules.zip"));
+     if std::env::var("CARGO_FEATURE_INCLUDE_ZIP").is_ok() {
++        println!("cargo::rerun-if-changed=Rules");
+         let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+         let rules_dir = std::env::current_dir().unwrap().join("Rules");
+         let staging = out_dir.join("rules_src");
+--- a/src/interface.rs
++++ b/src/interface.rs
+@@ -60,6 +60,8 @@
+ /// Installed once. Under `#[cfg(test)]` the previous hook (cargo's) is chained so assert failures
+ /// still print normally; production stays silent and relies on [`report_any_panic`].
+ pub fn init_panic_handler() {
++    #[cfg(not(feature = "podoco-host"))]
++    {
+     use std::panic;
+     use std::sync::Once;
+ 
+@@ -93,6 +95,7 @@
+             }
+         }));
+     });
++    }
+ }
+ 
+ pub fn report_any_panic<T>(result: Result<Result<T, Error>, Box<dyn std::any::Any + Send>>) -> Result<T, Error> {
+--- a/src/prefs.rs
++++ b/src/prefs.rs
+@@ -336,7 +336,10 @@
+                         system_prefs_file.to_str().unwrap());
+         };
+ 
++        #[cfg(not(feature = "podoco-host"))]
+         let mut user_prefs_file = dirs::config_dir();
++        #[cfg(feature = "podoco-host")]
++        let mut user_prefs_file: Option<PathBuf> = None;
+         if let Some(mut user_prefs_file_path_buf) = user_prefs_file {
+             user_prefs_file_path_buf.push("MathCAT/prefs.yaml");
+             if is_file_shim(&user_prefs_file_path_buf) {

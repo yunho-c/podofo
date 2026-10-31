@@ -1,0 +1,160 @@
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -140,7 +140,9 @@
+     "spatial",
+ ]
+ foundation = ["swift"]
++ns-observer = ["ns"]
+ full = [
++    "ns-observer",
+     "private",
+     "blocks",
+     "async",
+--- a/Cargo.toml.orig
++++ b/Cargo.toml.orig
+@@ -13,7 +13,9 @@
+ 
+ default = ["full"]
+ 
++ns-observer = ["ns"]
+ full = [
++    "ns-observer",
+   "private",
+ 
+   "blocks",
+--- a/build.rs
++++ b/build.rs
+@@ -62,6 +62,9 @@
+ 
+     let mut build = cc::Build::new();
+     build.file(&src);
++    if name == "ns" && has_feature("ns_observer") {
++        build.define("CIDRE_NS_OBSERVER", None);
++    }
+     build.flag("-fobjc-arc");
+     build.flag("-fobjc-weak");
+     build.flag("-fno-common");
+--- a/pomace/ns/ns.h
++++ b/pomace/ns/ns.h
+@@ -92,6 +92,7 @@
+ Class NS_USER_ACTIVITY;
+ Class NS_USER_DEFAULTS;
+ 
++#ifdef CIDRE_NS_OBSERVER
+ typedef void cidre_change(
+                           void * _Nullable,
+                           NSString * _Nullable,
+@@ -119,6 +120,8 @@
+                       ) {
+     return [[CidreObserver alloc] initWithObject:obj keyPath:keyPath options:options context:context fnPtr:fn_ptr];
+ }
++
++#endif
+ 
+ void cidre_log(NSString * str) {
+     NSLog(@"%@", str);
+--- a/pomace/ns/ns.m
++++ b/pomace/ns/ns.m
+@@ -8,6 +8,7 @@
+ #import "ns.h"
+ 
+ 
++#ifdef CIDRE_NS_OBSERVER
+ @implementation CidreObserver {
+     __weak NSObject * _obj;
+     NSString *_keyPath;
+@@ -40,3 +41,5 @@
+ }
+ 
+ @end
++
++#endif
+--- a/src/ns.rs
++++ b/src/ns.rs
+@@ -242,6 +242,7 @@
+ pub use locale::Locale;
+ 
+ mod key_value_observing;
++#[cfg(feature = "ns-observer")]
+ pub use key_value_observing::CidreObserver;
+ pub use key_value_observing::KvChange;
+ pub use key_value_observing::KvChangeKey;
+@@ -250,6 +251,7 @@
+ pub use key_value_observing::KvObserving;
+ pub use key_value_observing::KvSetMutationKind;
+ pub use key_value_observing::KvoOpts;
++#[cfg(feature = "ns-observer")]
+ pub use key_value_observing::Observer;
+ 
+ mod key_value_coding;
+--- a/src/ns/key_value_observing.rs
++++ b/src/ns/key_value_observing.rs
+@@ -1,6 +1,8 @@
+ use std::ffi::c_void;
+ 
+-use crate::{arc, define_obj_type, define_opts, ns, objc};
++#[cfg(feature = "ns-observer")]
++use crate::arc;
++use crate::{define_obj_type, define_opts, ns, objc};
+ 
+ define_opts!(
+     #[doc(alias = "NSKeyValueObservingOptions")]
+@@ -70,6 +72,7 @@
+     );
+ }
+ 
++#[cfg(feature = "ns-observer")]
+ pub struct Observer<F>
+ where
+     F: FnMut(Option<&ns::String>, Option<&ns::Id>, Option<&ns::Dictionary<KvChangeKey, ns::Id>>),
+@@ -78,6 +81,7 @@
+     cidre_observer: Option<arc::R<CidreObserver>>,
+ }
+ 
++#[cfg(feature = "ns-observer")]
+ impl<F> std::fmt::Debug for Observer<F>
+ where
+     F: FnMut(Option<&ns::String>, Option<&ns::Id>, Option<&ns::Dictionary<KvChangeKey, ns::Id>>),
+@@ -89,6 +93,7 @@
+     }
+ }
+ 
++#[cfg(feature = "ns-observer")]
+ impl<F> Observer<F>
+ where
+     F: FnMut(Option<&ns::String>, Option<&ns::Id>, Option<&ns::Dictionary<KvChangeKey, ns::Id>>),
+@@ -131,6 +136,7 @@
+     }
+ }
+ 
++#[cfg(feature = "ns-observer")]
+ impl<F> Drop for Observer<F>
+ where
+     F: FnMut(Option<&ns::String>, Option<&ns::Id>, Option<&ns::Dictionary<KvChangeKey, ns::Id>>),
+@@ -196,7 +202,9 @@
+     }
+ }
+ 
++#[cfg(feature = "ns-observer")]
+ define_obj_type!(pub CidreObserver(ns::Id));
++#[cfg(feature = "ns-observer")]
+ impl CidreObserver {
+     #[objc::msg_send(invalidate)]
+     pub fn invalide(&self);
+@@ -210,6 +218,7 @@
+     static NSKeyValueChangeNotificationIsPriorKey: &'static KvChangeKey;
+ }
+ 
++#[cfg(feature = "ns-observer")]
+ unsafe extern "C-unwind" {
+     fn cidre_create_observer(
+         obj: &ns::Id,
+@@ -221,7 +230,7 @@
+ 
+ }
+ 
+-#[cfg(test)]
++#[cfg(all(test, feature = "ns-observer"))]
+ mod tests {
+     use crate::ns;
+ 

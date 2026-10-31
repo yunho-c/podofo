@@ -1,0 +1,3 @@
+# Preserve pinned published bytes and upstream formatting across checkouts.
+pdfrx_engine/** linguist-vendored -text -whitespace
+pdfrx_engine-podoco.patch -text -whitespace

@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "manifest_sha256": "fba7f3968515dfb4337f03b67b02e08cee82427a32eebce210d1df4851a2639b",
+  "runner_sha256": "de410b914c154fa426fa642f1ae1c228009330ff97f4126bfb9f183a6ea45807",
+  "decoded_coordinates": "Source pixel-edge coordinates; pages.json supplies pixel_to_page and canonical page_space",
+  "reference": "Unmodified eager FP32 CPU, six Torch threads; no Core ML execution or performance measurement",
+  "packages": {
+    "torch": "2.12.0",
+    "transformers": "5.8.1",
+    "numpy": "2.3.5",
+    "scipy": "1.16.1",
+    "Pillow": "10.4.0",
+    "huggingface-hub": "1.16.1",
+    "coremltools": "9.0",
+    "torchvision": "0.27.0"
+  },
+  "pages": [
+    {
+      "image": "columns.png",
+      "image_sha256": "96e79687cf0dd73aef06e402f8bb962f0c5f4c780a0172e33691eb16462a6cd6",
+      "archive": "columns.npz",
+      "archive_sha256": "4cd859c1a80cb02305c78b1f02c97b821a1ea740a33c8dfe69cf01fd2b8233f3",
+      "decoded": "columns-decoded.json",
+      "decoded_sha256": "01c3302af14b77a48d2195343a81d2ab2503c6f4001c8492b1f633fbc3a8554d",
+      "detection_count": 32,
+      "selected_mask_queries": [
+        27,
+        1,
+        30,
+        31,
+        29,
+        19,
+        23,
+        26
+      ]
+    },
+    {
+      "image": "equations.png",
+      "image_sha256": "b5acdc5fbe5122d428d189a61bd70552d2554b375b387293efe81c251a815c82",
+      "archive": "equations.npz",
+      "archive_sha256": "395f4f7020eb07b2cfcbca30c7c08d2eb1f1561f58c73ce4b99ccb0fa8db65b2",
+      "decoded": "equations-decoded.json",
+      "decoded_sha256": "f7e924562d8e705bd586365a30e8bcf7c4b933c16104b9dd666d9e7c3e769edc",
+      "detection_count": 12,
+      "selected_mask_queries": [
+        10,
+        7,
+        9,
+        0,
+        4,
+        6,
+        3,
+        2
+      ]
+    },
+    {
+      "image": "raster.png",
+      "image_sha256": "066b33e72f5aa5aca61cc6d76902b34f6fbc6cc83390c2a2430554f09339ed6c",
+      "archive": "raster.npz",
+      "archive_sha256": "04879522ea0cb403ca3bee84c3a3885fbba49e232e9298bef9c93654af56258c",
+      "decoded": "raster-decoded.json",
+      "decoded_sha256": "1ddaa926100b9d49011bfc1169c2f1e21530e0b0adf23c88580f1032e0e03aac",
+      "detection_count": 1,
+      "selected_mask_queries": [
+        0
+      ]
+    }
+  ],
+  "mask_note": "Selected mask logits and both thresholds retained; logit-zero diagnostic is distinct from processor sigmoid > 0.30; no polygon qualification",
+  "retained_artifacts": "evaluation-output/m1-reference-v2",
+  "note": "Synthetic eager-reference evidence for M1. Large tensors remain ignored; no Core ML inference or model quality qualification."
+}

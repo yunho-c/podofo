@@ -1,0 +1,109 @@
+name: Verify Podoco
+
+on:
+  push:
+    paths: ['podoco/**', '.github/workflows/podoco.yml']
+  pull_request:
+    paths: ['podoco/**', '.github/workflows/podoco.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    name: Flutter bundled resource contract (no models)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CARGO_INCREMENTAL: '0'
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install pinned Flutter
+        run: |
+          version=$(python3 -c 'import json; print(json.load(open(".fvmrc"))["flutter"])')
+          git clone --depth 1 --branch "$version" https://github.com/flutter/flutter.git "$RUNNER_TEMP/flutter"
+          echo "$RUNNER_TEMP/flutter/bin" >> "$GITHUB_PATH"
+      - name: Resource loader and portable preparation
+        working-directory: podoco/bindings/flutter
+        run: |
+          flutter pub get --enforce-lockfile
+          flutter analyze --no-pub
+          flutter test --no-pub
+          python3 ../../../podofo_frontend_one/tool/test_prepare_podoco.py
+
+  native:
+    name: Rust, C, and Dart (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: podoco
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - name: Check APIs, generated header, and relocated Dart package
+        run: python tools/dev.py check
+      - name: Optional portable math module
+        run: |
+          cargo test --locked --workspace --features math
+          cargo clippy --locked --workspace --all-targets --features math -- -D warnings
+      - name: Core ML observer exclusion and same-process loading
+        if: runner.os == 'macOS'
+        run: |
+          cargo clippy --locked --workspace --all-targets --features coreml,math -- -D warnings
+          python tools/check_coreml.py
+
+  generated:
+    name: Generated C and Dart bindings
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: podoco
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.13'
+      - uses: dart-lang/setup-dart@v1
+        with:
+          sdk: '3.13.5'
+      - run: sudo apt-get update && sudo apt-get install -y libclang-dev
+      - run: python tools/dev.py check-generated
+
+  rust-minimum:
+    name: Minimum supported Rust
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: podoco
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - run: cargo +1.88.0 test --locked -p podoco -p podoco-ffi
+      - run: cargo +1.88.0 test --locked -p podoco -p podoco-ffi --features math
+      - run: cargo +1.88.0 test --locked -p podoco-models

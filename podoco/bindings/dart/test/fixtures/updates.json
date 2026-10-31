@@ -1,0 +1,879 @@
+[
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 0,
+    "payload": {
+      "type": "page_layout_ready",
+      "page": {
+        "page": {
+          "key": {
+            "document": {
+              "id": "fixture-document",
+              "revision": "revision-1"
+            },
+            "page_index": 0
+          },
+          "space": [
+            200.0,
+            400.0
+          ]
+        },
+        "provenance": {
+          "pipeline": {
+            "sdk_version": "0.1.0",
+            "backend": "coreml",
+            "compute_policy": "cpu_and_neural_engine",
+            "adapter": "fixture-layout-v0",
+            "profile": "fixture-profile-v0",
+            "models": [
+              {
+                "model_id": "fixture-model",
+                "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "artifacts": {
+                  "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+              }
+            ]
+          },
+          "render_profile": "opaque-white-no-annotations-v0",
+          "image": {
+            "width": 100,
+            "height": 200,
+            "row_stride": 416,
+            "format": "bgra8",
+            "alpha": "opaque"
+          },
+          "pixel_to_page": [
+            2.0,
+            0.0,
+            0.0,
+            2.0,
+            0.0,
+            0.0
+          ]
+        },
+        "formula_scope": "all",
+        "regions": [
+          {
+            "id": 0,
+            "category": "formula",
+            "model_class_id": 15,
+            "model_label": "formula",
+            "native_subtype": "inline_formula",
+            "display_kind": "inline",
+            "bounds": [
+              10.0,
+              20.0,
+              90.0,
+              40.0
+            ],
+            "polygon": null,
+            "score": null,
+            "diagnostics": []
+          }
+        ],
+        "formulas": [
+          {
+            "region_id": 0,
+            "state": {
+              "state": "pending"
+            }
+          }
+        ],
+        "reading_order": {
+          "region_ids": [
+            0
+          ],
+          "profile": "fixture-order-v0"
+        },
+        "diagnostics": []
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 1,
+    "payload": {
+      "type": "formula_finished",
+      "page_key": {
+        "document": {
+          "id": "fixture-document",
+          "revision": "revision-1"
+        },
+        "page_index": 0
+      },
+      "region_id": 0,
+      "outcome": {
+        "status": "recognized",
+        "formula": {
+          "latex": "\\alpha + \\text{한글} = x^2",
+          "display_kind": "inline",
+          "score": null,
+          "provenance": {
+            "sdk_version": "0.1.0",
+            "backend": "coreml",
+            "compute_policy": "cpu_and_neural_engine",
+            "adapter": "fixture-layout-v0",
+            "profile": "fixture-profile-v0",
+            "models": [
+              {
+                "model_id": "fixture-model",
+                "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "artifacts": {
+                  "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 2,
+    "payload": {
+      "type": "page_finished",
+      "page": {
+        "page": {
+          "key": {
+            "document": {
+              "id": "fixture-document",
+              "revision": "revision-1"
+            },
+            "page_index": 0
+          },
+          "space": [
+            200.0,
+            400.0
+          ]
+        },
+        "provenance": {
+          "pipeline": {
+            "sdk_version": "0.1.0",
+            "backend": "coreml",
+            "compute_policy": "cpu_and_neural_engine",
+            "adapter": "fixture-layout-v0",
+            "profile": "fixture-profile-v0",
+            "models": [
+              {
+                "model_id": "fixture-model",
+                "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "artifacts": {
+                  "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+              }
+            ]
+          },
+          "render_profile": "opaque-white-no-annotations-v0",
+          "image": {
+            "width": 100,
+            "height": 200,
+            "row_stride": 416,
+            "format": "bgra8",
+            "alpha": "opaque"
+          },
+          "pixel_to_page": [
+            2.0,
+            0.0,
+            0.0,
+            2.0,
+            0.0,
+            0.0
+          ]
+        },
+        "formula_scope": "all",
+        "regions": [
+          {
+            "id": 0,
+            "category": "formula",
+            "model_class_id": 15,
+            "model_label": "formula",
+            "native_subtype": "inline_formula",
+            "display_kind": "inline",
+            "bounds": [
+              10.0,
+              20.0,
+              90.0,
+              40.0
+            ],
+            "polygon": null,
+            "score": null,
+            "diagnostics": []
+          }
+        ],
+        "formulas": [
+          {
+            "region_id": 0,
+            "state": {
+              "state": "finished",
+              "outcome": {
+                "status": "recognized",
+                "formula": {
+                  "latex": "\\alpha + \\text{한글} = x^2",
+                  "display_kind": "inline",
+                  "score": null,
+                  "provenance": {
+                    "sdk_version": "0.1.0",
+                    "backend": "coreml",
+                    "compute_policy": "cpu_and_neural_engine",
+                    "adapter": "fixture-layout-v0",
+                    "profile": "fixture-profile-v0",
+                    "models": [
+                      {
+                        "model_id": "fixture-model",
+                        "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                        "artifacts": {
+                          "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        ],
+        "reading_order": {
+          "region_ids": [
+            0
+          ],
+          "profile": "fixture-order-v0"
+        },
+        "diagnostics": []
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 3,
+    "payload": {
+      "type": "formula_finished",
+      "page_key": {
+        "document": {
+          "id": "fixture-document",
+          "revision": "revision-1"
+        },
+        "page_index": 0
+      },
+      "region_id": 0,
+      "outcome": {
+        "status": "failed",
+        "error": {
+          "code": "recognition",
+          "message": "fixture recognition failure"
+        }
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 4,
+    "payload": {
+      "type": "page_finished",
+      "page": {
+        "page": {
+          "key": {
+            "document": {
+              "id": "fixture-document",
+              "revision": "revision-1"
+            },
+            "page_index": 0
+          },
+          "space": [
+            200.0,
+            400.0
+          ]
+        },
+        "provenance": {
+          "pipeline": {
+            "sdk_version": "0.1.0",
+            "backend": "coreml",
+            "compute_policy": "cpu_and_neural_engine",
+            "adapter": "fixture-layout-v0",
+            "profile": "fixture-profile-v0",
+            "models": [
+              {
+                "model_id": "fixture-model",
+                "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "artifacts": {
+                  "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+              }
+            ]
+          },
+          "render_profile": "opaque-white-no-annotations-v0",
+          "image": {
+            "width": 100,
+            "height": 200,
+            "row_stride": 416,
+            "format": "bgra8",
+            "alpha": "opaque"
+          },
+          "pixel_to_page": [
+            2.0,
+            0.0,
+            0.0,
+            2.0,
+            0.0,
+            0.0
+          ]
+        },
+        "formula_scope": "all",
+        "regions": [
+          {
+            "id": 0,
+            "category": "formula",
+            "model_class_id": 15,
+            "model_label": "formula",
+            "native_subtype": "inline_formula",
+            "display_kind": "inline",
+            "bounds": [
+              10.0,
+              20.0,
+              90.0,
+              40.0
+            ],
+            "polygon": null,
+            "score": null,
+            "diagnostics": []
+          }
+        ],
+        "formulas": [
+          {
+            "region_id": 0,
+            "state": {
+              "state": "finished",
+              "outcome": {
+                "status": "failed",
+                "error": {
+                  "code": "recognition",
+                  "message": "fixture recognition failure"
+                }
+              }
+            }
+          }
+        ],
+        "reading_order": {
+          "region_ids": [
+            0
+          ],
+          "profile": "fixture-order-v0"
+        },
+        "diagnostics": []
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 5,
+    "payload": {
+      "type": "formula_finished",
+      "page_key": {
+        "document": {
+          "id": "fixture-document",
+          "revision": "revision-1"
+        },
+        "page_index": 0
+      },
+      "region_id": 0,
+      "outcome": {
+        "status": "truncated",
+        "partial_latex": "\\frac{1}{",
+        "error": {
+          "code": "limit_exceeded",
+          "message": "fixture token limit"
+        },
+        "provenance": {
+          "sdk_version": "0.1.0",
+          "backend": "coreml",
+          "compute_policy": "cpu_and_neural_engine",
+          "adapter": "fixture-layout-v0",
+          "profile": "fixture-profile-v0",
+          "models": [
+            {
+              "model_id": "fixture-model",
+              "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "artifacts": {
+                "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 6,
+    "payload": {
+      "type": "page_finished",
+      "page": {
+        "page": {
+          "key": {
+            "document": {
+              "id": "fixture-document",
+              "revision": "revision-1"
+            },
+            "page_index": 0
+          },
+          "space": [
+            200.0,
+            400.0
+          ]
+        },
+        "provenance": {
+          "pipeline": {
+            "sdk_version": "0.1.0",
+            "backend": "coreml",
+            "compute_policy": "cpu_and_neural_engine",
+            "adapter": "fixture-layout-v0",
+            "profile": "fixture-profile-v0",
+            "models": [
+              {
+                "model_id": "fixture-model",
+                "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "artifacts": {
+                  "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+              }
+            ]
+          },
+          "render_profile": "opaque-white-no-annotations-v0",
+          "image": {
+            "width": 100,
+            "height": 200,
+            "row_stride": 416,
+            "format": "bgra8",
+            "alpha": "opaque"
+          },
+          "pixel_to_page": [
+            2.0,
+            0.0,
+            0.0,
+            2.0,
+            0.0,
+            0.0
+          ]
+        },
+        "formula_scope": "all",
+        "regions": [
+          {
+            "id": 0,
+            "category": "formula",
+            "model_class_id": 15,
+            "model_label": "formula",
+            "native_subtype": "inline_formula",
+            "display_kind": "inline",
+            "bounds": [
+              10.0,
+              20.0,
+              90.0,
+              40.0
+            ],
+            "polygon": null,
+            "score": null,
+            "diagnostics": []
+          }
+        ],
+        "formulas": [
+          {
+            "region_id": 0,
+            "state": {
+              "state": "finished",
+              "outcome": {
+                "status": "truncated",
+                "partial_latex": "\\frac{1}{",
+                "error": {
+                  "code": "limit_exceeded",
+                  "message": "fixture token limit"
+                },
+                "provenance": {
+                  "sdk_version": "0.1.0",
+                  "backend": "coreml",
+                  "compute_policy": "cpu_and_neural_engine",
+                  "adapter": "fixture-layout-v0",
+                  "profile": "fixture-profile-v0",
+                  "models": [
+                    {
+                      "model_id": "fixture-model",
+                      "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                      "artifacts": {
+                        "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ],
+        "reading_order": {
+          "region_ids": [
+            0
+          ],
+          "profile": "fixture-order-v0"
+        },
+        "diagnostics": []
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 7,
+    "payload": {
+      "type": "page_layout_ready",
+      "page": {
+        "page": {
+          "key": {
+            "document": {
+              "id": "fixture-document",
+              "revision": "revision-1"
+            },
+            "page_index": 0
+          },
+          "space": [
+            200.0,
+            400.0
+          ]
+        },
+        "provenance": {
+          "pipeline": {
+            "sdk_version": "0.1.0",
+            "backend": "coreml",
+            "compute_policy": "cpu_and_neural_engine",
+            "adapter": "fixture-layout-v0",
+            "profile": "fixture-profile-v0",
+            "models": [
+              {
+                "model_id": "fixture-model",
+                "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "artifacts": {
+                  "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+              }
+            ]
+          },
+          "render_profile": "opaque-white-no-annotations-v0",
+          "image": {
+            "width": 100,
+            "height": 200,
+            "row_stride": 416,
+            "format": "bgra8",
+            "alpha": "opaque"
+          },
+          "pixel_to_page": [
+            2.0,
+            0.0,
+            0.0,
+            2.0,
+            0.0,
+            0.0
+          ]
+        },
+        "formula_scope": "none",
+        "regions": [
+          {
+            "id": 0,
+            "category": "formula",
+            "model_class_id": 15,
+            "model_label": "formula",
+            "native_subtype": "inline_formula",
+            "display_kind": "inline",
+            "bounds": [
+              10.0,
+              20.0,
+              90.0,
+              40.0
+            ],
+            "polygon": null,
+            "score": null,
+            "diagnostics": []
+          }
+        ],
+        "formulas": [
+          {
+            "region_id": 0,
+            "state": {
+              "state": "not_requested"
+            }
+          }
+        ],
+        "reading_order": {
+          "region_ids": [
+            0
+          ],
+          "profile": "fixture-order-v0"
+        },
+        "diagnostics": []
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 8,
+    "payload": {
+      "type": "page_finished",
+      "page": {
+        "page": {
+          "key": {
+            "document": {
+              "id": "fixture-document",
+              "revision": "revision-1"
+            },
+            "page_index": 0
+          },
+          "space": [
+            200.0,
+            400.0
+          ]
+        },
+        "provenance": {
+          "pipeline": {
+            "sdk_version": "0.1.0",
+            "backend": "coreml",
+            "compute_policy": "cpu_and_neural_engine",
+            "adapter": "fixture-layout-v0",
+            "profile": "fixture-profile-v0",
+            "models": [
+              {
+                "model_id": "fixture-model",
+                "manifest_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+                "artifacts": {
+                  "fixture.bin": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+                }
+              }
+            ]
+          },
+          "render_profile": "opaque-white-no-annotations-v0",
+          "image": {
+            "width": 100,
+            "height": 200,
+            "row_stride": 416,
+            "format": "bgra8",
+            "alpha": "opaque"
+          },
+          "pixel_to_page": [
+            2.0,
+            0.0,
+            0.0,
+            2.0,
+            0.0,
+            0.0
+          ]
+        },
+        "formula_scope": "none",
+        "regions": [
+          {
+            "id": 0,
+            "category": "formula",
+            "model_class_id": 15,
+            "model_label": "formula",
+            "native_subtype": "inline_formula",
+            "display_kind": "inline",
+            "bounds": [
+              10.0,
+              20.0,
+              90.0,
+              40.0
+            ],
+            "polygon": null,
+            "score": null,
+            "diagnostics": []
+          }
+        ],
+        "formulas": [
+          {
+            "region_id": 0,
+            "state": {
+              "state": "not_requested"
+            }
+          }
+        ],
+        "reading_order": {
+          "region_ids": [
+            0
+          ],
+          "profile": "fixture-order-v0"
+        },
+        "diagnostics": []
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 9,
+    "payload": {
+      "type": "page_failed",
+      "page_key": {
+        "document": {
+          "id": "fixture-document",
+          "revision": "revision-1"
+        },
+        "page_index": 0
+      },
+      "error": {
+        "code": "page_source",
+        "message": "fixture render failure"
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 10,
+    "payload": {
+      "type": "document_finished",
+      "summary": {
+        "status": "completed",
+        "counts": {
+          "pages_total": 1,
+          "pages_finished": 1,
+          "pages_failed": 0,
+          "formulas_detected": 1,
+          "formulas_recognized": 1,
+          "formulas_failed": 0,
+          "formulas_truncated": 0,
+          "formulas_pending": 0,
+          "formulas_not_requested": 0
+        },
+        "diagnostics": []
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 11,
+    "payload": {
+      "type": "document_finished",
+      "summary": {
+        "status": "partial",
+        "counts": {
+          "pages_total": 1,
+          "pages_finished": 1,
+          "pages_failed": 0,
+          "formulas_detected": 1,
+          "formulas_recognized": 0,
+          "formulas_failed": 1,
+          "formulas_truncated": 0,
+          "formulas_pending": 0,
+          "formulas_not_requested": 0
+        },
+        "diagnostics": []
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 12,
+    "payload": {
+      "type": "document_finished",
+      "summary": {
+        "status": "cancelled",
+        "counts": {
+          "pages_total": 1,
+          "pages_finished": 0,
+          "pages_failed": 0,
+          "formulas_detected": 1,
+          "formulas_recognized": 0,
+          "formulas_failed": 0,
+          "formulas_truncated": 0,
+          "formulas_pending": 1,
+          "formulas_not_requested": 0
+        },
+        "diagnostics": []
+      }
+    }
+  },
+  {
+    "schema_version": 0,
+    "analysis_id": "fixture-analysis",
+    "document": {
+      "id": "fixture-document",
+      "revision": "revision-1"
+    },
+    "sequence": 13,
+    "payload": {
+      "type": "document_finished",
+      "summary": {
+        "status": "failed",
+        "counts": {
+          "pages_total": 1,
+          "pages_finished": 0,
+          "pages_failed": 0,
+          "formulas_detected": 1,
+          "formulas_recognized": 0,
+          "formulas_failed": 0,
+          "formulas_truncated": 0,
+          "formulas_pending": 1,
+          "formulas_not_requested": 0
+        },
+        "diagnostics": []
+      }
+    }
+  }
+]
