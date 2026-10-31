@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "2512.05117v3.pdf",
-    "split": "held_out",
+    "split": "development",
     "replaces_promoted_document": "2504.17670v2",
     "id": "2512.05117v3",
     "sha256": "6ad33f3bf99be813938bb4c32abf967ef0638525660f178e50bff9f9539f059f",
@@ -799,11 +799,15 @@
         "reviewed": true,
         "notes": "Complete numbered projector bound, including the large parentheses, radical, fraction and equation number. Exclude its condition above and definitions below."
       }
-    ]
+    ],
+    "promoted_from": "held_out_v4",
+    "promotion_reason": "Accepted Equation (1) clips the radical overbar because neighboring prose model bounds suppress the crop margin; promote the whole paper before changing content-boundary handling."
   },
   "review": {
     "date": "2026-10-31",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "8c1afbe4c55aed6e9d6b4aca29736507bc575ccd"
+    "resolver_baseline": "8c1afbe4c55aed6e9d6b4aca29736507bc575ccd",
+    "promoted_from": "held_out_v4",
+    "promotion_reason": "Accepted Equation (1) clips the radical overbar because neighboring prose model bounds suppress the crop margin; promote the whole paper before changing content-boundary handling."
   }
 }

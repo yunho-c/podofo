@@ -99,8 +99,10 @@
     },
     {
       "pdf": "2512.05117v3.pdf",
-      "split": "held_out",
-      "replaces_promoted_document": "2504.17670v2"
+      "split": "development",
+      "replaces_promoted_document": "2504.17670v2",
+      "promoted_from": "held_out_v4",
+      "promotion_reason": "Accepted Equation (1) clips the radical overbar because neighboring prose model bounds suppress the crop margin; promote the whole paper before changing content-boundary handling."
     },
     {
       "pdf": "2603.26571v4.pdf",

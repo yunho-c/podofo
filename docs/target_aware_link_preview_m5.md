@@ -1,8 +1,8 @@
 # Target-aware previews: M5 qualification in progress
 
-M5 is not complete. The third frozen held-out run captured every link but failed
-figure/table coverage and exposed a neighboring-reference regression. Papers
-driving changes move to development before those changes; all three evaluations
+M5 is not complete. The fourth frozen held-out run meets aggregate coverage and
+completeness thresholds but clips one equation radical. Papers
+driving changes move to development before those changes; all four evaluations
 are preserved. Native-window acceptance also remains unqualified.
 
 ## Cache preparation latency
@@ -697,9 +697,31 @@ carryovers that did not drive rule changes. The full sample now contains 171 lin
 over twenty papers, plus eight links in the two earlier development seeds. The
 source annotations and freeze are committed before the next held-out run.
 
+## Fourth held-out evaluation: equation margin regression
+
+The full `held-out-v4` evaluation at `978d74c` captured all 49 links with all 36
+frozen identities intact and native handles returning to zero. It resolves 10/12
+citations, 10/12 figures/tables and 10/11 sections completely. Equations resolve
+10/11, with nine complete. All three controls fall back. Every group meets the
+aggregate coverage/completeness thresholds, but the accepted Equation (1) in
+`2512.05117v3` clips part of its radical overbar: it retains 1,091 of 1,134 required
+ink pixels and no excluded neighboring ink. The native crop and an independent
+source render confirm this blocking defect. A loose preceding-prose model box
+suppresses the crop margin needed for the vector stroke above the formula glyphs.
+
+The whole paper moves to development before changing boundary handling. Its
+eligibility and required/excluded annotations stay unchanged. This also retains
+its composite-figure and cross-page-section fallbacks as development evidence.
+All freeze/sample/results metadata are archived as `m5_history/held_out_v4_*.json`;
+paired captures remain under `build/target-preview-m5/papers-held-out-v4/` and the
+log is `build/target-preview-m5-held-out-v4.log`. All forty accepted previews have
+zero automatic wrong-object flags; this is not a completed visual audit of them.
+The active freeze is removed and one replacement paper is required.
+
 ## Remaining acceptance work
 
-Evaluate every frozen held-out link with paired images,
+Fix the equation-margin regression, replenish and freeze the held-out set, and
+evaluate every frozen held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback
