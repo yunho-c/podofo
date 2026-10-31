@@ -575,13 +575,22 @@ by Computer Use, so that acceptance remains open.
 The same metadata-only replenishment policy selected `2509.22935v2`, recorded in
 `m5_history/replenishment_v4_selection.json`. Its source-only preparation contains
 nine links under `build/target-preview-m5/annotations-v5-loader-replacement/`.
-Independent visual review includes its cross-page reference and section opening;
-the annotation and next freeze still need committing before a held-out run.
+Independent visual review includes its cross-page reference and section opening.
+Its eight eligible targets and one unsupported control are now annotated, with
+source hash, page bounds, nonempty ink and disjoint required/excluded bounds
+verified. The current sample contains 146 links across seventeen papers, plus
+the eight earlier links in two development seeds.
+
+The third freeze uses baseline `57d9503`, resolver version 10 and all 36 annotation
+and pipeline identities, including the native link loader. It still has fifty
+held-out links across six documents: 12 citations, 12 figures/tables, 11 equations,
+11 sections and four controls. Thirty-five links are new to target resolution;
+fifteen are unchanged carryovers. The annotated replacement and freeze are
+committed before the next full held-out run.
 
 ## Remaining acceptance work
 
-Commit the replacement annotations, then freeze and evaluate every held-out link
-with paired images,
+Evaluate every link in the current frozen held-out set with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback
