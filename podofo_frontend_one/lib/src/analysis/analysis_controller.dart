@@ -5,6 +5,7 @@ import 'package:podoco/podoco.dart' as podoco;
 
 import '../services/pdf_session.dart';
 import 'analysis_store.dart';
+import 'preview_layout_repository.dart';
 import 'analysis_engine.dart';
 import 'pdf_analysis_source.dart';
 
@@ -49,6 +50,16 @@ class AnalysisController extends ChangeNotifier {
   String? get _key => _document == null || _engine == null
       ? null
       : analysisCacheKey(
+          _document!,
+          _engine!.manifests,
+          _engine!.profile,
+          _engine!.computePolicy,
+        );
+
+  PreviewAnalysisIdentity? get previewIdentity =>
+      _disposed || _document == null || _engine == null
+      ? null
+      : PreviewAnalysisIdentity(
           _document!,
           _engine!.manifests,
           _engine!.profile,

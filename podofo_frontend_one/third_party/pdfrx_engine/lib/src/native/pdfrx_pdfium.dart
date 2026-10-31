@@ -2176,6 +2176,18 @@ PdfDest? _pdfDestFromDest(pdfium_bindings.FPDF_DEST dest, pdfium_bindings.FPDF_D
   final values = arena<pdfium_bindings.FS_FLOAT>(4);
   final pageIndex = pdfium.FPDFDest_GetDestPageIndex(document, dest);
   final type = pdfium.FPDFDest_GetView(dest, pul, values);
+  if (type == PdfDestCommand.xyz.index) {
+    final hasX = arena<Int>(), hasY = arena<Int>(), hasZoom = arena<Int>();
+    final x = arena<pdfium_bindings.FS_FLOAT>();
+    final y = arena<pdfium_bindings.FS_FLOAT>();
+    final zoom = arena<pdfium_bindings.FS_FLOAT>();
+    final ok = pdfium.FPDFDest_GetLocationInPage(dest, hasX, hasY, hasZoom, x, y, zoom) != 0;
+    return PdfDest(pageIndex + 1, PdfDestCommand.xyz, [
+      ok && hasX.value != 0 ? x.value : null,
+      ok && hasY.value != 0 ? y.value : null,
+      ok && hasZoom.value != 0 ? zoom.value : null,
+    ]);
+  }
   if (type != 0) {
     return PdfDest(pageIndex + 1, PdfDestCommand.values[type], List.generate(pul.value, (index) => values[index]));
   }

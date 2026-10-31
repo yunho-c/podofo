@@ -1,14 +1,15 @@
 import 'dart:async';
-import 'dart:ffi';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
-import 'package:ffi/ffi.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:pdfrx/pdfrx.dart';
-import 'package:pdfium_dart/pdfium_dart.dart';
 
 import '../services/pdf_session.dart';
+import '../previews/preview_geometry.dart';
+import '../previews/link_target.dart';
+import '../previews/pdf_link_context.dart';
+import '../analysis/preview_layout_repository.dart';
 
 /// A preview never changes the viewer matrix or consults its current zoom.
 /// All rectangles here are in the rendered (cropped, rotated) page's space.
@@ -61,8 +62,7 @@ class LinkPreviewRegion {
     double? left, top;
     ui.Rect? region;
     final pageRect = ui.Offset.zero & page.size;
-    ui.Rect toPage(PdfRect rect) =>
-        rect.translate(-bounds.left, -bounds.bottom).toRect(page: page);
+    ui.Rect toPage(PdfRect rect) => previewRectToPage(page, bounds, rect);
 
     switch (destination.command) {
       case PdfDestCommand.xyz:
@@ -79,8 +79,13 @@ class LinkPreviewRegion {
           return null;
         }
         if (params[0]! >= params[2]! || params[1]! >= params[3]!) return null;
-        final rect = PdfRect(params[0]!, params[3]!, params[2]!, params[1]!);
-        region = toPage(rect).inflate(12).intersect(pageRect);
+        final normalized = normalizePreviewDestination(
+          page,
+          destination,
+          bounds,
+        );
+        if (normalized?.area == null) return null;
+        region = normalized!.area!.inflate(12).intersect(pageRect);
         if (region.isEmpty) return null;
       case PdfDestCommand.fit:
       case PdfDestCommand.fitB:
@@ -167,28 +172,7 @@ Future<ui.Image?> renderLinkPreview(
     return null;
   }
   final page = document.pages[destination.pageNumber - 1];
-  final bounds = await document.useNativeDocumentHandle((handle) {
-    final api = getPdfium(modulePath: Pdfrx.pdfiumModulePath);
-    final native = api.FPDF_LoadPage(
-      Pointer<fpdf_document_t__>.fromAddress(handle),
-      destination.pageNumber - 1,
-    );
-    if (native == nullptr) return null;
-    try {
-      return using((arena) {
-        final rect = arena<FS_RECTF>();
-        if (api.FPDF_GetPageBoundingBox(native, rect) == 0) return null;
-        return PdfRect(
-          rect.ref.left,
-          rect.ref.top,
-          rect.ref.right,
-          rect.ref.bottom,
-        );
-      });
-    } finally {
-      api.FPDF_ClosePage(native);
-    }
-  });
+  final bounds = await previewPageBounds(document, destination.pageNumber);
   if (bounds == null || cancellation.isCancelled) return null;
   final region = LinkPreviewRegion.forDestination(
     page,
@@ -266,7 +250,16 @@ class LinkPreviewCache {
 }
 
 class _PreviewJob {
-  _PreviewJob(this.session, this.revision, this.destination, this.pixelRatio);
+  _PreviewJob(
+    this.session,
+    this.revision,
+    this.destination,
+    this.pixelRatio,
+    this.request,
+    this.repository,
+  );
+  final LinkPreviewRequest? request;
+  final PreviewLayoutRepository? repository;
   final PdfSession session;
   final int revision;
   final PdfDest destination;
@@ -275,6 +268,8 @@ class _PreviewJob {
   final result = Completer<ui.Image?>();
   // PdfDest's hashCode in the pinned engine uses list identity. Use a value key.
   Object get key => (
+    request?.identity,
+    linkResolverVersion,
     destination.pageNumber,
     destination.command,
     destination.params?.join(','),
@@ -292,6 +287,11 @@ class LinkPreviewWorker {
   LinkPreviewWorker({this.render = renderLinkPreview});
   final LinkPreviewRenderer render;
   final cache = LinkPreviewCache();
+  final context = PdfLinkContext();
+  PreparedLinkPreview? _prepared;
+  LinkPreviewRequest? _preparedRequest;
+  PreparedLinkPreview? get prepared =>
+      _preparedRequest?.isCurrent == true ? _prepared : null;
   PdfSession? _session;
   int? _revision;
   _PreviewJob? _active, _pending;
@@ -301,22 +301,33 @@ class LinkPreviewWorker {
     PdfSession session,
     PdfDest destination, {
     required double pixelRatio,
+    LinkPreviewRequest? request,
+    PreviewLayoutRepository? repository,
   }) {
-    if (_disposed || session.lease.isClosed) return Future.value(null);
+    if (_disposed ||
+        session.lease.isClosed ||
+        (request != null &&
+            (!request.isCurrent ||
+                !identical(request.session, session) ||
+                request.destination != destination))) {
+      return Future.value(null);
+    }
     if (!identical(_session, session) || _revision != session.revision) {
       reset();
       _session = session;
       _revision = session.revision;
     }
     cancel();
+    _prepared = null;
+    _preparedRequest = null;
     final job = _PreviewJob(
       session,
       session.revision,
       destination.compact(),
       boundedPreviewPixelRatio(pixelRatio),
+      request,
+      repository,
     );
-    final cached = cache.get(job.key);
-    if (cached != null) return Future.value(cached);
     _pending = job;
     unawaited(_drain());
     return job.result.future;
@@ -339,19 +350,34 @@ class LinkPreviewWorker {
         _active = job;
         ui.Image? image;
         try {
-          image = await job.session.readLocked((document) async {
-            if (!_valid(job)) return null;
-            return render(
-              document,
-              job.destination,
-              job.pixelRatio,
-              job.cancellation,
-            );
-          });
+          image =
+              cache.get(job.key) ??
+              await job.session.readLocked((document) async {
+                if (!_valid(job)) return null;
+                return render(
+                  document,
+                  job.destination,
+                  job.pixelRatio,
+                  job.cancellation,
+                );
+              });
           if (_valid(job) && image != null) {
             job.result.complete(image.clone());
             cache.put(job.key, image);
             image = null; // Ownership transferred to the cache.
+          }
+          // Publish context first; preparation uses the same bounded job lane.
+          if (!job.result.isCompleted) job.result.complete(null);
+          if (_valid(job) && job.request != null) {
+            final result = await context.prepare(
+              job.request!,
+              () => _valid(job),
+              job.repository,
+            );
+            if (_valid(job)) {
+              _prepared = result;
+              _preparedRequest = job.request;
+            }
           }
         } catch (_) {
           // A failed preview leaves the text tooltip available.
@@ -367,6 +393,8 @@ class LinkPreviewWorker {
   }
 
   void cancel() {
+    _prepared = null;
+    _preparedRequest = null;
     _active?.cancel();
     _pending?.cancel();
     _pending = null;
@@ -375,6 +403,9 @@ class LinkPreviewWorker {
   void reset() {
     cancel();
     cache.clear();
+    context.clear();
+    _prepared = null;
+    _preparedRequest = null;
     _session = null;
     _revision = null;
   }

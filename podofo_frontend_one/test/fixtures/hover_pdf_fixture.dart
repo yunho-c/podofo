@@ -3,7 +3,7 @@ import 'dart:typed_data';
 
 /// Actual cross-page GoTo links to cropped pages at every quarter rotation.
 /// A red marker at (400, 500)-(460, 540) makes crop correctness measurable.
-Uint8List hoverPdfFixture() {
+Uint8List hoverPdfFixture({String firstLocation = '400 540 null'}) {
   final objects = <String>[
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R] /Count 5 >>',
@@ -41,6 +41,7 @@ Uint8List hoverPdfFixture() {
   }
   for (var i = 0; i < labels.length; i++) {
     final action = switch (i) {
+      0 => '/Dest [6 0 R /XYZ $firstLocation]',
       < 4 => '/Dest [${6 + i * 2} 0 R /XYZ 400 540 null]',
       4 => '/Dest [6 0 R /Fit]',
       5 => '/Dest [8 0 R /FitR 400 500 460 540]',

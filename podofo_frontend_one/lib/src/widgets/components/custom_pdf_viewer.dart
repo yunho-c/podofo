@@ -13,6 +13,8 @@ import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../analysis/analysis_controller.dart';
+import '../../analysis/preview_layout_repository.dart';
+import '../../previews/link_target.dart';
 import '../../analysis/equation_controller.dart';
 import '../../analysis/analysis_painter.dart';
 import '../../providers/analysis_provider.dart';
@@ -783,10 +785,26 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         // Only actual internal PDF destinations can request a visual preview.
         // URLs and unsupported destinations retain the existing text tooltip.
         if (link.url == null && link.dest != null) {
+          final identity = _analysis?.previewIdentity;
+          final ratio = boundedPreviewPixelRatio(
+            MediaQuery.devicePixelRatioOf(context),
+          );
+          final request = LinkPreviewRequest(
+            session: session,
+            sourcePage: hit.page.pageNumber,
+            annotationIndex: links.indexOf(link),
+            sourceRects: link.rects,
+            destination: link.dest!,
+            pixelRatio: ratio,
+          );
           final image = await _previews.load(
             session,
             link.dest!,
-            pixelRatio: MediaQuery.devicePixelRatioOf(context),
+            pixelRatio: ratio,
+            request: request,
+            repository: identity == null
+                ? null
+                : PreviewLayoutRepository(_analysis!.store, identity),
           );
           if (!isCurrent()) {
             image?.dispose();

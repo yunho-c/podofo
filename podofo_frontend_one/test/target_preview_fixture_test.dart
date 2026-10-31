@@ -6,6 +6,8 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
+import 'package:podofo_one/src/previews/link_target.dart';
+import 'package:podofo_one/src/previews/pdf_link_context.dart';
 import 'package:podofo_one/src/workers/link_preview_worker.dart';
 
 const _root = 'test/fixtures/target_preview';
@@ -59,6 +61,7 @@ Future<void> _verifyDocument(
       .writeAsBytes(bytes);
   final session = await PdfSession.open(file.path);
   final worker = LinkPreviewWorker();
+  final context = PdfLinkContext();
   final artifacts = await Directory('build/target-preview-m0/native')
       .create(recursive: true);
   try {
@@ -143,6 +146,32 @@ Future<void> _verifyDocument(
         );
       }
       expect(required.any((r) => excluded.any(r.overlaps)), false, reason: id);
+      final prepared = (await context.prepare(
+        LinkPreviewRequest(
+          session: session,
+          sourcePage: sourcePage.pageNumber,
+          annotationIndex: links.indexOf(link),
+          sourceRects: link.rects,
+          destination: dest,
+          pixelRatio: 1,
+        ),
+        () => true,
+        null,
+      ))!;
+      expect(prepared.resolution.tier, LinkTargetTier.unresolved, reason: id);
+      expect(
+        prepared.destination!.x,
+        closeTo((point[0] as num).toDouble(), .01),
+      );
+      expect(
+        prepared.destination!.y,
+        closeTo((point[1] as num).toDouble(), .01),
+      );
+      expect(
+        _normalize(prepared.source!.spans.map((s) => s.text).join()),
+        contains(_normalize(entry['source_text'] as String)),
+        reason: id,
+      );
       final image = (await worker.load(session, dest, pixelRatio: 1))!;
       try {
         expect(image.width, lessThanOrEqualTo(360), reason: id);
@@ -158,6 +187,7 @@ Future<void> _verifyDocument(
     expect(session.revision, 0);
     expect(session.navigationHistory.previous, isNull);
   } finally {
+    context.clear();
     worker.dispose();
     await session.close();
   }

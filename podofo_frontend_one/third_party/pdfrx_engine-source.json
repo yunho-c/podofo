@@ -60,11 +60,11 @@
     "analysis_options.yaml": "072b703f78203439e73457c0e43e07c488a4650ea92c82c36b6189cc4807dd79"
   },
   "patch": "pdfrx_engine-podoco.patch",
-  "patch_sha256": "401038470f3d971d44566a28c3e1d86df16deb4796a23cff0a409f9115b6c8d8",
+  "patch_sha256": "4a3ccf51b4053793f650afe39ab3bafed784df27935cbdb856d8216a041c7b82",
   "files": {
     "CHANGELOG.md": "47cfc588254e046347c1ce81f5b8a936dee0a82b477f310dc76b74460602b5cb",
     "LICENSE": "050ccfd8256df03e5ccaec222c0f87a4e5e2069c69515f027b534a63fb00fe23",
-    "PODOFO.md": "5345e6ac5a7b029049f19bf85f786cf654e8f477cecb04ca945b7f8a28d2bd9a",
+    "PODOFO.md": "58e8905f70447c48ceef21bbdea0735b82b098e7d2ba3870b6ded88e41d5bae0",
     "README.md": "34454b1fbd77ad6aa449b4d040ffcfa868ab561da7abdb2a18b4dfa52fc0a539",
     "analysis_options.yaml": "072b703f78203439e73457c0e43e07c488a4650ea92c82c36b6189cc4807dd79",
     "lib/pdfrx_engine.dart": "26d58d1514b95d1445d01bedac0a15b00bc8f2db460992977ae93127fe737456",
@@ -77,7 +77,7 @@
     "lib/src/native/pdfium.dart": "f128d0b92c44604a73a2dd20363552af8078e0c598db755f55bbc1057def0401",
     "lib/src/native/pdfium_file_access.dart": "d058d2208056c2a8ecfd429e4dd736a49a67df1141deb5b948d66834220935cd",
     "lib/src/native/pdfium_file_write.dart": "e5465f6c8c18916e49ab3105dc0a8b007b629cbfa506ff23b8ccde9a0b73c894",
-    "lib/src/native/pdfrx_pdfium.dart": "f0e45e88b74c7242b60416a3d76ea443c4a8d8577244cb419474de98e848ea25",
+    "lib/src/native/pdfrx_pdfium.dart": "f65981a2e1c0e321834ac58a0256b8bc0bef47d9c437d5ddb0d19b02556e7ed4",
     "lib/src/native/pthread/file_access.dart": "d36f3938b77491094a3e430a32fc5692f8fae6e16a010a3904d127b1541dd821",
     "lib/src/native/pthread/file_write.dart": "5a5824d9bcbc0f2e10ef4e6492a1d44da713f73447d71a8a4744bf8332e9fc2f",
     "lib/src/native/pthread/pthread.dart": "e55dce7881a66524cf482ef2486838ad13376321b75e1bfe6408098dd778fd46",

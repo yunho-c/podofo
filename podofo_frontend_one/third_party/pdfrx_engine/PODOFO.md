@@ -42,3 +42,10 @@ parity and formula-prefix cancellation. The qualification tool records handoff
 copy counts and timing separately from rendering and inference. Updating the
 engine requires reapplying/reviewing the patch, regenerating the source pin and
 rerunning these native tests plus the viewer regressions.
+
+M1 target-preview foundations also preserve XYZ destination coordinate presence
+using PDFium's existing `FPDFDest_GetLocationInPage` API. Missing axes stay null;
+actual coordinate zero stays zero. PDFium reports zero zoom as no zoom change.
+Failure to read XYZ location leaves all three values unknown. Other destination
+commands retain their upstream parsing. No native ABI or dependency version changes.
+Native null/zero, rotated crop, navigation, and preview regressions cover this patch.

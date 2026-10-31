@@ -155,7 +155,8 @@ void main() {
       await reader.mouse.moveTo(await reader.linkPoint(0));
       await tester.pump(const Duration(milliseconds: 350));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
-      await tester.runAsync(
+      await _native(
+        tester,
         () => reader.documents.removeDocument(reader.session.path),
       );
       await reader.ready();
@@ -178,6 +179,27 @@ Future<void> _wait(WidgetTester tester, bool Function() condition) async {
     if (condition()) return;
   }
   fail('Timed out waiting for reader/native work');
+}
+
+// Preparation now continues after the raster appears. Keep pumping the fake
+// timer zone while native work drains; runAsync alone cannot advance its timers.
+Future<T> _native<T>(WidgetTester tester, Future<T> Function() action) async {
+  var done = false;
+  late T result;
+  Object? error;
+  action().then(
+    (value) {
+      result = value;
+      done = true;
+    },
+    onError: (Object e) {
+      error = e;
+      done = true;
+    },
+  );
+  await _wait(tester, () => done);
+  if (error != null) throw error!;
+  return result;
 }
 
 class _Reader {
@@ -223,7 +245,7 @@ class _Reader {
       await tester.runAsync(narrator.close);
       container.dispose();
       store.close();
-      await tester.runAsync(() async {
+      await _native(tester, () async {
         await PdfrxEntryFunctions.instance.stopBackgroundWorker();
         await temporary.delete(recursive: true);
       });
@@ -260,9 +282,10 @@ class _Reader {
 
   Future<Offset> linkPoint(int index) async {
     final page = session.lease.document.pages.first;
-    final links = (await tester.runAsync(
+    final links = await _native(
+      tester,
       () => session.readLocked((_) => page.loadLinks()),
-    ))!;
+    );
     final rect = links[index].rects.single.toRectInDocument(
       page: page,
       pageRect: viewer.layout.pageLayouts.first,
