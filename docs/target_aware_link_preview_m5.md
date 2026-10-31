@@ -23,17 +23,17 @@ can identify cached results, while missing payloads still prevent both inference
 and custom-directory verification. Corrupt/oversized manifests, changed catalog
 pins, unsupported platforms and symlinked components remain rejected.
 
-The latest performance run is `performance-v5` at resolver version 13, on an Apple M4 Pro with
+The latest performance run is `performance-v6` at resolver version 14, on an Apple M4 Pro with
 48 GiB RAM, macOS 27.0.1 (26A434), Flutter 3.47.5 / Dart 3.13.4, using the bundled
 experimental mixed layout profile and the existing linked-object Figure 4 at 2x.
 These are fixture observations, not a corpus-wide or release-mode benchmark.
 
 | Path | Samples | Semantic p50 | Semantic p95 | Context p95 |
 | --- | ---: | ---: | ---: | ---: |
-| Decoded image and text reuse | 30 | 1.7 ms | 2.4 ms | 0.29 ms |
-| Persisted layout, fresh worker/coordinator | 20 | 8.3 ms | 11.1 ms | 1.8 ms |
-| Warm model, forced layout miss | 20 | 69.6 ms | 76.3 ms | 2.1 ms |
-| Cold app preparation | 20 | 645.7 ms | 904.0 ms | 3.2 ms |
+| Decoded image and text reuse | 30 | 1.5 ms | 1.8 ms | 0.19 ms |
+| Persisted layout, fresh worker/coordinator | 20 | 7.5 ms | 11.1 ms | 1.4 ms |
+| Warm model, forced layout miss | 20 | 66.9 ms | 71.0 ms | 1.4 ms |
+| Cold app preparation | 20 | 624.2 ms | 666.3 ms | 5.7 ms |
 
 Timing begins at `LinkPreviewWorker.load` and ends at the contextual future or
 semantic callback; it excludes the 350 ms hover debounce, captures and assertions.
@@ -44,7 +44,7 @@ not a disk-free path. New inference is counted explicitly, so a purported warm
 analysis sample cannot pass by accidentally reusing persisted layout.
 
 The initial failing run remains under `build/target-preview-m5/performance-v1/`;
-`performance-v2` through `performance-v5` retain subsequent raw samples. Both
+`performance-v2` through `performance-v6` retain subsequent raw samples. Both
 cached paths pass the p95 150 ms gate. Cold preparation continues to deliver the
 contextual image first; no inference deadline has been inferred from this sample.
 
@@ -791,10 +791,45 @@ archived as `m5_history/held_out_v5_*.json`; full paired captures remain under
 `build/target-preview-m5/papers-held-out-v5/`. The active freeze is removed;
 two source-reviewed replacements are required before another held-out run.
 
+## Bibliography indentation and source punctuation
+
+Resolver version 14 requires numbered and author-style entry starts to share the
+reference column's left margin. An indented publication year no longer splits
+its reference, and numeric page backlinks after terminal punctuation remain
+part of the entry. A page-bottom entry still needs evidence from the next page;
+backlinks alone do not establish completeness. Source identity also recognizes
+an immediately bracketed author-year and an abbreviation period included inside
+the annotation, such as `Fig` followed by the selected `.2,`. Missing prefixes,
+multiple selected labels and mismatched years remain unresolved.
+
+All four new synthetic regressions fail before the change and pass afterwards.
+The 60-test focused suite and full Flutter suite (407 passed, 21 opt-in skips)
+pass, as do analysis, formatting and the exact 53-file engine-pin check. The
+development replay `papers-citation-boundary-development-v1` captures 147 links
+across seventeen papers: citations, figures/tables and sections each resolve
+31/34, and equations resolve 33/34. All 126 accepted targets pass required and
+excluded ink checks, all eleven controls fall back, all 47 input hashes match,
+and native handles return to zero. The original fourteen-target and M4 complex
+native corpora also pass. Logs use `build/target-preview-m5-citation-boundary-`.
+
+Visual checks confirm the repaired reference retains all 3,896 required ink
+pixels, including its final year and backlinks, without neighboring entries.
+Both newly resolved bracketed-year citations and the figure diagram were also
+visually checked. Reference [72] remains a conservative fallback because its
+last-entry boundary is ambiguous; the source annotations remain unchanged.
+The macOS Debug build and deep/strict signature verification pass, and the
+eighteen unrelated Podoco files retain their original hashes.
+
+The fresh `performance-v6` native run and bundled-payload guard pass. All 90
+timing samples and 100 cancellation cycles are retained. Cached semantic p95 is
+1.8 ms for decoded reuse and 11.1 ms for persisted layout; warm-analysis p95 is
+71.0 ms and cold-preparation p95 is 666.3 ms, with the boundaries stated above.
+Owned cache limits and native-handle cleanup pass. These observations do not
+attribute timing differences between runs to the resolver changes.
+
 ## Remaining acceptance work
 
-Fix the promoted citation/source regressions, then replenish and freeze before
-evaluating every held-out link with paired images,
+Replenish and freeze before evaluating every held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback

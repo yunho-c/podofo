@@ -47,7 +47,17 @@ String? _listCitation(String selected, String before, String after) {
 }
 
 _Identity? _sourceIdentity(LinkSourceText source) {
-  final selected = _clean(source.spans.map((s) => s.text).join(' '));
+  var selected = _clean(source.spans.map((s) => s.text).join(' '));
+  // Some PDFs put the abbreviation's period inside the link rectangle. Carry
+  // only its immediately preceding abbreviation into the named-label parser;
+  // a leading decimal point without that evidence remains ambiguous.
+  if (selected.startsWith('.')) {
+    final prefix = RegExp(
+      r'\b(Figs?|Eqs?|Secs?|App)$',
+      caseSensitive: false,
+    ).firstMatch(_clean(source.before));
+    if (prefix != null) selected = '${prefix.group(1)}$selected';
+  }
   final direct = RegExp(r'^(?:Citation\s*)?\[(\d+)\]$').firstMatch(selected);
   if (direct != null) {
     return _Identity(LinkTargetKind.citation, direct.group(1)!);
@@ -179,7 +189,7 @@ _Identity? _sourceIdentity(LinkSourceText source) {
   ).firstMatch(selected);
   if (authorOnly != null) {
     final year = RegExp(
-      r'^\s*\(?((?:19|20)\d{2}[a-z]?)\b',
+      r'^\s*[\[(]?((?:19|20)\d{2}[a-z]?)\b',
     ).firstMatch(source.after.substring(0, math.min(24, source.after.length)));
     if (year != null) {
       return _Identity(

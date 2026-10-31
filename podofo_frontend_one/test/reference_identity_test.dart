@@ -14,6 +14,100 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test('an indented publication year stays inside its numbered reference', () {
+    for (final merged in [false, true]) {
+      final fixture = _references(
+        [
+          '[73] Alice Rivera, Ben Sato, and',
+          'Cara Ng. A complete title. In ICLR,',
+          '2021. 1, 2, 18',
+          '[74] Dana Morris. Next. 2022.',
+        ],
+        indents: [0, 10, 10, 0],
+        merged: merged,
+      );
+      final target = fixture.resolve('[73]');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.parts.single.bounds.contains(const Offset(31, 72)), true);
+      expect(target.parts.single.bounds.contains(const Offset(25, 86)), false);
+    }
+    final numbered = _references([
+      '73. Alice Rivera. First. 2021.',
+      '74. Dana Morris. Next. 2022.',
+    ]).resolve('[73]');
+    expect(numbered.tier, LinkTargetTier.matchedIdentity);
+    expect(numbered.parts.single.bounds.contains(const Offset(25, 58)), false);
+  });
+  test(
+    'numeric backlinks preserve a proven page-bottom reference boundary',
+    () {
+      final next = _references(
+        ['[73] Dana Morris. Next. 2022.'],
+        page: 2,
+        top: 20,
+      );
+      for (final ending in ['2015. 1, 2', '2015. 1']) {
+        final fixture = _references(
+          ['[72] Alice Rivera. First.', 'In ICML, $ending'],
+          indents: [0, 10],
+          top: 300,
+        );
+        expect(fixture.resolve('[72]').continuationPage, 2);
+        final target = fixture.resolve('[72]', following: next);
+        expect(
+          target.tier,
+          LinkTargetTier.matchedIdentity,
+          reason: target.reason,
+        );
+        expect(target.parts.single.page, 1);
+        expect(
+          target.parts.single.bounds.contains(const Offset(31, 318)),
+          true,
+        );
+      }
+      for (final ending in ['In ICML,', '2015. See', '2015 1, 2']) {
+        final target = _references(
+          ['[72] Alice Rivera. First.', ending],
+          indents: [0, 10],
+          top: 300,
+        ).resolve('[72]', following: next);
+        expect(target.tier, LinkTargetTier.unresolved);
+      }
+    },
+  );
+  test(
+    'author-only links accept an immediately bracketed publication year',
+    () {
+      final fixture = _references([
+        'Alice Rivera, Ben Sato. First. 2024.',
+        'Ben Sato, Alice Rivera. Next. 2023.',
+      ]);
+      for (final after in [' [2024], Sato [2023].', ' (2024).', ' 2024.']) {
+        final target = fixture.resolve('Rivera et al.', after: after);
+        expect(
+          target.tier,
+          LinkTargetTier.matchedIdentity,
+          reason: target.reason,
+        );
+        expect(target.label, 'Rivera (2024)');
+      }
+      for (final after in [
+        ' [24].',
+        ' later [2024].',
+        ' [2024a].',
+        ' [2023].',
+      ]) {
+        expect(
+          fixture.resolve('Rivera et al.', after: after).tier,
+          LinkTargetTier.unresolved,
+        );
+      }
+    },
+  );
   test(
     'full-name author boundaries exclude the following bibliography entry',
     () {
@@ -202,12 +296,14 @@ _Fixture _references(
   double gap = 14,
   List<double>? indents,
   bool merged = false,
+  int page = 1,
+  double top = 40,
 }) {
   final text = StringBuffer(),
       boxes = <Rect>[],
       regions = <Map<String, Object?>>[];
   for (var i = 0; i < lines.length; i++) {
-    final line = lines[i], y = 40 + i * gap, x = 20 + (indents?[i] ?? 0);
+    final line = lines[i], y = top + i * gap, x = 20 + (indents?[i] ?? 0);
     text.write('$line\n');
     for (var char = 0; char < line.length; char++) {
       boxes.add(Rect.fromLTWH(x + char * 3, y, 3, 8));
@@ -244,15 +340,16 @@ _Fixture _references(
       analysisFixture(podoco.DocumentRef('reference', 'fixture')).toJson(),
     ),
   ) as Map<String, dynamic>;
-  final page = (json['payload'] as Map)['page'] as Map;
-  page['regions'] = regions;
+  final pageJson = (json['payload'] as Map)['page'] as Map;
+  pageJson['regions'] = regions;
+  pageJson['page']['key']['page_index'] = page - 1;
   final snapshot = AnalysisPageSnapshot.fromUpdate(
     podoco.AnalysisUpdate.fromJson(json),
   );
   return _Fixture(
     PreviewTextPage(
       PdfTextSnapshot(
-        page: 1,
+        page: page,
         text: text.toString(),
         boxes: [
           for (final b in boxes)
@@ -273,10 +370,16 @@ class _Fixture {
     String selected, {
     String before = '',
     String after = '',
+    _Fixture? following,
   }) => const LinkTargetResolver().resolve(
-    const PreviewDestination(page: 1, pageSize: Size(260, 360)),
+    PreviewDestination(
+      page: text.snapshot.page,
+      pageSize: const Size(260, 360),
+    ),
     text: text,
     layout: layout,
+    followingText: following?.text,
+    followingLayout: following?.layout,
     source: LinkSourceText(
       [PreviewTextSpan(0, selected.length, selected, [])],
       before,

@@ -14,6 +14,32 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test(
+    'a selected abbreviation period requires its immediate named prefix',
+    () {
+      final regions = [
+        _r('figure', [100, 60, 450, 175], 'Complete diagram'),
+        _r('caption', [90, 190, 470, 215], 'Figure 2. Complete caption.'),
+      ];
+      final target = _resolve(regions, '.2,', before: 'As shown in Fig');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      expect(target.label, 'Figure 2');
+      for (final before in ['', 'Value', 'Fig. 1', 'Fig shows', 'Figure']) {
+        expect(
+          _resolve(regions, '.2,', before: before).tier,
+          LinkTargetTier.unresolved,
+        );
+      }
+      expect(
+        _resolve(regions, '.2, 3', before: 'Fig').tier,
+        LinkTargetTier.unresolved,
+      );
+    },
+  );
   test('loose prose boxes do not remove an equation stroke margin', () {
     final regions = [
       _r(
