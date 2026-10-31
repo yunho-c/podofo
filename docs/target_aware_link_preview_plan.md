@@ -10,8 +10,9 @@ release consumes existing analysis. Later milestones analyze uncached target
 pages and improve difficult boundaries. M0 integration and automated validation
 are implemented; its native-window acceptance check remains pending. See the
 [M0 baseline report](target_aware_link_preview_m0.md). M1 resolution foundations
-are implemented; see the [M1 report](target_aware_link_preview_m1.md). M2 and later
-milestones remain pending.
+are implemented; see the [M1 report](target_aware_link_preview_m1.md). M2 cached
+semantic previews are implemented; see the [M2 report](target_aware_link_preview_m2.md).
+M3 and later milestones remain pending.
 
 ## Scope and behavior
 

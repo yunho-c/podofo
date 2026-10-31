@@ -181,6 +181,49 @@ Future<ui.Image?> renderLinkPreview(
     pixelRatio,
   );
   if (region == null) return null;
+  return _renderRegion(page, region, cancellation);
+}
+
+/// Semantic single-page raster; owned by the caller, with the same image budget.
+Future<ui.Image?> renderResolvedLinkPreview(
+  PdfDocument document,
+  ResolvedLinkTarget target,
+  double pixelRatio,
+  LinkPreviewCancellation cancellation,
+) async {
+  if (target.parts.length != 1 || cancellation.isCancelled) return null;
+  final part = target.parts.single;
+  if (part.page < 1 || part.page > document.pages.length) return null;
+  final page = document.pages[part.page - 1];
+  final rect = part.bounds.intersect(ui.Offset.zero & page.size);
+  if (rect.isEmpty ||
+      ![
+        rect.left,
+        rect.top,
+        rect.right,
+        rect.bottom,
+      ].every((v) => v.isFinite)) {
+    return null;
+  }
+  final region = LinkPreviewRegion(
+    rect,
+    page.size,
+    boundedPreviewPixelRatio(pixelRatio),
+  );
+  if (!region.fullWidth.isFinite ||
+      !region.fullHeight.isFinite ||
+      region.fullWidth > 32768 ||
+      region.fullHeight > 32768) {
+    return null;
+  }
+  return _renderRegion(page, region, cancellation);
+}
+
+Future<ui.Image?> _renderRegion(
+  PdfPage page,
+  LinkPreviewRegion region,
+  LinkPreviewCancellation cancellation,
+) async {
   final token = page.createCancellationToken();
   cancellation.attach(token);
   final raster = await page.render(
@@ -257,9 +300,11 @@ class _PreviewJob {
     this.pixelRatio,
     this.request,
     this.repository,
+    this.onRefinement,
   );
   final LinkPreviewRequest? request;
   final PreviewLayoutRepository? repository;
+  final void Function(ui.Image image, ResolvedLinkTarget target)? onRefinement;
   final PdfSession session;
   final int revision;
   final PdfDest destination;
@@ -303,6 +348,7 @@ class LinkPreviewWorker {
     required double pixelRatio,
     LinkPreviewRequest? request,
     PreviewLayoutRepository? repository,
+    void Function(ui.Image image, ResolvedLinkTarget target)? onRefinement,
   }) {
     if (_disposed ||
         session.lease.isClosed ||
@@ -327,6 +373,7 @@ class LinkPreviewWorker {
       boundedPreviewPixelRatio(pixelRatio),
       request,
       repository,
+      onRefinement,
     );
     _pending = job;
     unawaited(_drain());
@@ -377,6 +424,31 @@ class LinkPreviewWorker {
             if (_valid(job)) {
               _prepared = result;
               _preparedRequest = job.request;
+            }
+            if (_valid(job) &&
+                result?.resolution.tier == LinkTargetTier.matchedIdentity &&
+                job.onRefinement != null) {
+              final target = result!.resolution;
+              final key = target.cacheKey(job.request!);
+              image =
+                  cache.get(key) ??
+                  await job.session.readLocked((pdf) async {
+                    if (!_valid(job)) return null;
+                    return renderResolvedLinkPreview(
+                      pdf,
+                      target,
+                      job.pixelRatio,
+                      job.cancellation,
+                    );
+                  });
+              if (_valid(job) && image != null) {
+                final delivered = image.clone();
+                cache.put(key, image);
+                image = null;
+                // A consumer may cancel/reset from this callback. Transfer
+                // cache ownership first so that reset cannot repopulate it.
+                job.onRefinement!(delivered, target);
+              }
             }
           }
         } catch (_) {

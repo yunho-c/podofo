@@ -4,7 +4,7 @@ import 'package:pdfrx/pdfrx.dart';
 
 import '../services/pdf_session.dart';
 
-const linkResolverVersion = 1;
+const linkResolverVersion = 2;
 
 /// Immutable identity captured before any asynchronous preparation.
 class LinkPreviewRequest {

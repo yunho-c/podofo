@@ -768,7 +768,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             )
             .firstOrNull;
         if (link == null) return;
-        final label = link.url == null
+        var label = link.url == null
             ? 'Page ${link.dest?.pageNumber ?? ''}'
             : linkPreviewLabel(link.url!);
         final overlayBox =
@@ -802,6 +802,17 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             link.dest!,
             pixelRatio: ratio,
             request: request,
+            onRefinement: (image, target) {
+              if (!isCurrent()) {
+                image.dispose();
+                return;
+              }
+              final previous = _previewImage;
+              _previewImage = image;
+              label = '${target.label} · Page ${target.parts.first.page}';
+              previous?.dispose();
+              _overlay?.markNeedsBuild();
+            },
             repository: identity == null
                 ? null
                 : PreviewLayoutRepository(_analysis!.store, identity),
