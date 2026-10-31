@@ -1,0 +1,704 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2003.01966v7.pdf",
+    "split": "development",
+    "id": "2003.01966v7",
+    "sha256": "ee49940158cc2b492e602c87612806f8a1c3f6fa9646d2430ecedc1ca53d21a9",
+    "source_url": "https://arxiv.org/abs/2003.01966v7",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2003.01966v7-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 5,
+        "source_bounds": [
+          89.525,
+          655.389,
+          101.48,
+          664.315
+        ],
+        "source_text": "[10]",
+        "source_context": "become more and more popular. Ac\nForecast [10], video generates 70% to",
+        "destination": {
+          "name": "cite.Cisco",
+          "page": 9,
+          "raw_pdf_point": [
+            50.112,
+            335.327
+          ],
+          "point": [
+            50.112,
+            456.673
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 9,
+            "bounds": [
+              50,
+              460,
+              287,
+              525
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 9,
+            "bounds": [
+              50,
+              405,
+              287,
+              458
+            ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              50,
+              527,
+              287,
+              567
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Cisco visual networking index"
+        ],
+        "reviewed": true,
+        "notes": "Complete entry including the multi-line URL."
+      },
+      {
+        "id": "2003.01966v7-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 6,
+        "source_bounds": [
+          477.971,
+          459.588,
+          489.926,
+          468.514
+        ],
+        "source_text": "[37]",
+        "source_context": "past decades, plenty of video compression\nroposed, such as H.264 [37], H.265 [28],",
+        "destination": {
+          "name": "cite.wiegand2003overview",
+          "page": 10,
+          "raw_pdf_point": [
+            50.112,
+            317.948
+          ],
+          "point": [
+            50.112,
+            474.052
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 10,
+            "bounds": [
+              50,
+              479,
+              287,
+              522
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 10,
+            "bounds": [
+              50,
+              422,
+              287,
+              476
+            ]
+          },
+          {
+            "page": 10,
+            "bounds": [
+              50,
+              524,
+              287,
+              566
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Overview of the H.264/AVC"
+        ],
+        "reviewed": true,
+        "notes": "Complete numbered reference with the next reference excluded."
+      },
+      {
+        "id": "2003.01966v7-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 1,
+        "source_link_index_pymupdf": 13,
+        "source_xref": 18,
+        "source_bounds": [
+          347.136,
+          703.209,
+          354.11,
+          714.153
+        ],
+        "source_text": "1,",
+        "source_context": "Internet, it\n compres-\nlayers and a recurrent enhancement n\nin Figure 1, the frames in layers 1, 2",
+        "destination": {
+          "name": "figure.1",
+          "page": 1,
+          "raw_pdf_point": [
+            346.253,
+            405.801
+          ],
+          "point": [
+            346.253,
+            386.199
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 1,
+            "bounds": [
+              307,
+              237,
+              546,
+              377
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              308,
+              390,
+              546,
+              422
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 1,
+            "bounds": [
+              50,
+              264,
+              286,
+              585
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              308,
+              448,
+              546,
+              493
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 1."
+        ],
+        "reviewed": true,
+        "notes": "The chart and hierarchical frame diagram form one figure; include the complete three-line caption."
+      },
+      {
+        "id": "2003.01966v7-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 3,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 116,
+        "source_bounds": [
+          89.187,
+          347.042,
+          96.161,
+          357.986
+        ],
+        "source_text": "2",
+        "source_context": "Figure 2 shows the framework of o\nthe first Group Of Picture (GOP), and",
+        "destination": {
+          "name": "figure.2",
+          "page": 3,
+          "raw_pdf_point": [
+            84.487,
+            519.499
+          ],
+          "point": [
+            84.487,
+            272.501
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              98,
+              61,
+              497,
+              273
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              50,
+              278,
+              546,
+              296
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              50,
+              308,
+              287,
+              401
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              308,
+              309,
+              546,
+              412
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2."
+        ],
+        "reviewed": true,
+        "notes": "Include all diagram layers, recurrent enhancement cells, arrows, and the full two-line caption."
+      },
+      {
+        "id": "2003.01966v7-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": null,
+        "source_page": 3,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 149,
+        "source_bounds": [
+          210.898,
+          418.029,
+          216.876,
+          430.996
+        ],
+        "source_text": "me\nd1,",
+        "source_context": "The first layer (red frames in Figure 2) is\nage compression method1, and xC\ni denotes\nd frames. Similar to the “I-frames” in tradi-\nam",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 3,
+          "raw_pdf_point": [
+            64.458,
+            99.929
+          ],
+          "point": [
+            64.458,
+            692.071
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Footnote control outside the four target groups."
+      },
+      {
+        "id": "2003.01966v7-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 6,
+        "source_xref": 156,
+        "source_bounds": [
+          262.125,
+          611.742,
+          276.571,
+          622.685
+        ],
+        "source_text": "3.2.",
+        "source_context": "hance the low quality frames in\nk is introduced in Section 3.2.\ng frames belong to layer 3 (yel-\nFigure 3. Here, w\nBDDC, we first u",
+        "destination": {
+          "name": "subsection.3.2",
+          "page": 3,
+          "raw_pdf_point": [
+            308.862,
+            216.716
+          ],
+          "point": [
+            308.862,
+            575.284
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              308,
+              577,
+              527,
+              589
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              308,
+              596,
+              546,
+              714
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              50,
+              238,
+              287,
+              276
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              308,
+              416,
+              546,
+              570
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              50,
+              277,
+              287,
+              406
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.2.",
+          "Bi-Directional"
+        ],
+        "reviewed": true,
+        "notes": "The opening paragraph continues across a page boundary, after the next page full-width figure; include its three concluding lines."
+      },
+      {
+        "id": "2003.01966v7-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 13,
+        "source_xref": 161,
+        "source_bounds": [
+          488.467,
+          404.136,
+          502.913,
+          413.062
+        ],
+        "source_text": "3.3.",
+        "source_context": "x1 to x4, so they are omitted in Figure 2.\nk is introduced in Section 3.3.",
+        "destination": {
+          "name": "subsection.3.3",
+          "page": 4,
+          "raw_pdf_point": [
+            308.862,
+            235.16
+          ],
+          "point": [
+            308.862,
+            556.84
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              308,
+              558,
+              528,
+              571
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              308,
+              577,
+              546,
+              661.5
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              308,
+              477,
+              546,
+              550
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              308,
+              663,
+              546,
+              696
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3.3.",
+          "Single Motion"
+        ],
+        "reviewed": true,
+        "notes": "Heading and the complete first paragraph. The separately indented Figure 4 paragraph is not part of the opening paragraph."
+      },
+      {
+        "id": "2003.01966v7-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 355,
+        "source_bounds": [
+          63.246,
+          417.663,
+          70.22,
+          428.218
+        ],
+        "source_text": "(7)",
+        "source_context": "In (7), f(a, b) describes that th\nnew position of\n�\na + ∆a(a, b),",
+        "destination": {
+          "name": "equation.3.7",
+          "page": 5,
+          "raw_pdf_point": [
+            76.979,
+            396.879
+          ],
+          "point": [
+            76.979,
+            395.121
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              76,
+              397,
+              261,
+              412
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              274,
+              399,
+              287,
+              411
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              50,
+              322,
+              287,
+              390
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              50,
+              418,
+              287,
+              476
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(7)"
+        ],
+        "reviewed": true,
+        "notes": "Include inverse-function subscript, delimiters and separate number; exclude both explanatory paragraphs."
+      },
+      {
+        "id": "2003.01966v7-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 356,
+        "source_bounds": [
+          392.676,
+          213.535,
+          399.65,
+          224.09
+        ],
+        "source_text": "(3)",
+        "source_context": "Then, the same as (3) and (4), the reference \nwarped and fed into the MP subnet together w",
+        "destination": {
+          "name": "equation.3.3",
+          "page": 4,
+          "raw_pdf_point": [
+            274.746,
+            269.636
+          ],
+          "point": [
+            274.746,
+            522.364
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source and a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              55,
+              526,
+              287,
+              543
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              50,
+              449,
+              287,
+              513
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              85,
+              544,
+              287,
+              560
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(3)"
+        ],
+        "reviewed": true,
+        "notes": "Both comma-separated warped-frame expressions share number 3; equation 4 immediately below is unrelated."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "1a31463"
+  }
+}

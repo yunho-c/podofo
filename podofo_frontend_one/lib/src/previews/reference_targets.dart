@@ -10,6 +10,9 @@ bool _authorStart(String text) => RegExp(
   unicode: true,
 ).hasMatch(text);
 
+bool _dittoAuthorStart(String text) =>
+    RegExp(r'^[–—-]\s*\((?:19|20)\d{2}[a-z]?\)').hasMatch(text);
+
 class _ReferenceLine {
   const _ReferenceLine(this.line, this.region);
   final _Line line;
@@ -28,12 +31,24 @@ class _ReferencePart {
 }
 
 class _ReferenceEntry {
-  _ReferenceEntry(this.parts, {required this.hasStart});
+  _ReferenceEntry(this.parts, {required this.hasStart, this.inheritedAuthor});
   final List<_ReferencePart> parts;
   final bool hasStart;
+  final String? inheritedAuthor;
   bool boundary = false, ambiguousTail = false;
   String get text =>
       parts.expand((p) => p.lines).map((l) => l.line.text).join(' ');
+  String? get authorPrefix {
+    if (inheritedAuthor != null) return inheritedAuthor;
+    if (!hasStart || !_authorStart(text)) return null;
+    final year = RegExp(r'\b(?:19|20)\d{2}[a-z]?\b').firstMatch(text);
+    return year == null
+        ? null
+        : text.substring(0, year.start).replaceFirst(RegExp(r'\($'), '').trim();
+  }
+
+  String get identityText =>
+      inheritedAuthor == null ? text : '$inheritedAuthor $text';
   bool get terminal => RegExp(r'[.!?\]\)]$').hasMatch(text.trim());
   bool atEnd(Size pageSize) =>
       parts.last.bounds.bottom >= pageSize.height * .78;
@@ -96,7 +111,9 @@ List<_ReferenceEntry> _referenceEntries(
     for (final line in sorted) {
       final starts =
           _referenceNumber(line.line.text) != null ||
-          (line.bounds.left <= left + 4 && _authorStart(line.line.text));
+          (line.bounds.left <= left + 4 &&
+              (_authorStart(line.line.text) ||
+                  _dittoAuthorStart(line.line.text)));
       final previous = entries.lastOrNull;
       final lastPart = previous?.parts.last;
       final sameColumn = lastPart?.column == column;
@@ -123,7 +140,15 @@ List<_ReferenceEntry> _referenceEntries(
           }
         }
         part = _ReferencePart(page, column, [line]);
-        entries.add(_ReferenceEntry([part], hasStart: true));
+        final ditto = _dittoAuthorStart(line.line.text);
+        final inherited = ditto && close ? previous?.authorPrefix : null;
+        entries.add(
+          _ReferenceEntry(
+            [part],
+            hasStart: !ditto || inherited != null,
+            inheritedAuthor: inherited,
+          ),
+        );
       } else if (previous != null && (close || transition)) {
         if (transition) {
           part = _ReferencePart(page, column, [line]);
@@ -206,7 +231,7 @@ ResolvedLinkTarget _resolveReference(
       .where(
         (e) =>
             e.hasStart &&
-            identity.matchesReference(e.text) &&
+            identity.matchesReference(e.identityText) &&
             (destination.y == null ||
                 e.parts.any(
                   (p) =>
@@ -258,7 +283,7 @@ ResolvedLinkTarget _resolveReference(
     }
     final first = following.first;
     if (first.hasStart) {
-      if (identity.matchesReference(first.text)) {
+      if (identity.matchesReference(first.identityText)) {
         return miss('competingReferences');
       }
       if (!entry.terminal) return miss('uncertainReferenceBoundary');

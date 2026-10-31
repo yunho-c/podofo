@@ -106,8 +106,9 @@ detector. Preparation used PyMuPDF 2.0 and refuses to overwrite a run directory.
 Named destination coordinates
 are converted from raw PDF space to displayed page space, including page transforms.
 The reviewed annotation files live under `test/fixtures/target_preview/m5_annotations/`.
-The first development paper has nine reviewed cases, including one unsupported
-control; no new paper's resolver output has been examined yet.
+The first two development papers have eighteen reviewed cases, including two
+unsupported controls. Each document's annotations were completed before its
+resolver output was examined. Held-out documents have not been evaluated.
 
 The initial sampling baseline is resolver version 3 at `1a31463`. Development
 may still change the resolver. Freeze its final identity and all eligibility
@@ -116,6 +117,77 @@ must move to development and be replaced. Do not classify Roman labels or
 multi-citation source fragments as ineligible merely because current rules fail.
 PDFs stay local because redistribution licenses have not been reviewed; retain
 their hashes and source URLs instead of committing source documents.
+
+## Initial development replay
+
+`test/paper_preview_qualification_test.dart` captures every selected annotated
+link through the actual PDF text, bundled layout, resolver and crop paths. It
+retains context and semantic images, source context, evidence identity, selected
+parts, timings, and required/excluded pixel metrics. Metrics include annotated
+pages absent from the selected result, so omitting a continuation page cannot
+pass completeness. Failures and fallbacks remain in `results.json`; native
+handles must return to zero after each document. Development runs reject wrong
+or incomplete accepted targets but permit conservative fallbacks.
+
+Held-out runs require the complete split and a matching `m5_freeze.json` containing
+the annotation and resolver source hashes before any native evaluation begins.
+That freeze file does not exist yet. A passing development run is not a held-out
+accuracy qualification.
+
+The initial replay identified citation-list punctuation, line breaks in author
+names, ditto-author bibliography entries, and numeric appendix references as
+avoidable fallbacks. Resolver version 4 handles these forms. Ditto entries inherit
+only the author identity from a nearby preceding entry in the same column, keeping
+each entry's year and crop separate. Missing/distant predecessors, multiple linked
+years and mismatched year suffixes still fall back. Regression tests also preserve
+year-only links following an opening parenthesis.
+
+The fresh native run `papers-commit-dev-v3` evaluated the reviewed links in
+`1802.01436v2` and `2003.01966v7`, with the following development-only results:
+
+| Group | Eligible | Resolved | Complete and excludes annotated neighbors |
+| --- | ---: | ---: | ---: |
+| Citations | 4 | 4 | 4 |
+| Figures/tables | 4 | 4 | 4 |
+| Equations | 4 | 4 | 4 |
+| Sections | 4 | 2 | 2 |
+
+Both unsupported footnote controls remain contextual. There were no reported
+wrong-object or completeness failures among the accepted targets, and native
+handles returned to zero. The two section fallbacks remain eligible: one opening
+paragraph continues onto the following page (`noCompleteMatch`), and another
+selection would include neighboring content (`regionsContainNeighbor`). The new
+ditto-author, wrapped author/year and appendix crops were also visually reviewed.
+The focused run passed 34 tests; previous failing development captures remain
+available, including the parenthesized-year regression found and fixed before
+this commit.
+
+Run the reviewed development subset from `podofo_frontend_one` with a fresh suffix:
+
+```sh
+TARGET_PREVIEW_M5_RUN=my-dev-run \
+  TARGET_PREVIEW_M5_DOCUMENTS=1802.01436v2,2003.01966v7 \
+  TARGET_PREVIEW_CORPUS_DIR=/path/to/local/pdfs \
+  python3 tool/test_macos.py --build-mode debug -- --concurrency=1 --timeout=5m \
+  test/reference_identity_test.dart test/complex_target_resolver_test.dart \
+  test/link_target_resolver_test.dart test/paper_preview_qualification_test.dart
+```
+
+Omitting `TARGET_PREVIEW_M5_DOCUMENTS` requires annotations for the entire selected
+split. `TARGET_PREVIEW_M5_SPLIT=held_out` enables the freeze and coverage gates;
+it rejects document filtering. `TARGET_PREVIEW_M5_REPLAY` can point to a prior run
+directory to copy its actual layout-cache JSON into a fresh output directory;
+normal provenance checks still apply. The run above used fresh layout inference.
+
+The commit verification also passed the full Flutter suite (379 passed, 21 opt-in
+skips), static analysis, formatting, and the 53-file pinned-engine check. The
+original fourteen synthetic/real-paper targets passed a separate fresh native
+evaluation (`build/target-preview-evaluation/m5-commit-regression/`). Full-suite
+and focused logs use the `build/target-preview-m5-commit-` prefix. All eighteen
+recorded unrelated Podoco worktree files still match their original hashes.
+The macOS Debug app also built and passed local deep/strict signature verification
+(`build/target-preview-m5-commit-build.log`). Native tests and building/signing ran
+serially. This build does not establish native-window acceptance.
 
 ## Remaining acceptance work
 

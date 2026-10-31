@@ -334,7 +334,7 @@ _Identity? _sourceIdentity(LinkSourceText source) {
     return _Identity(LinkTargetKind.citation, selected);
   }
   final named = RegExp(
-    r'\b(Figure|Fig\.?|Table|Equation|Eq\.?|Section|Sec\.?)\s*\(?\s*(\d+(?:\.\d+)*[a-z]?)\b',
+    r'\b(Figure|Fig\.?|Table|Equation|Eq\.?|Section|Sec\.?|Appendix|App\.?)\s*\(?\s*(\d+(?:\.\d+)*[a-z]?)\b',
     caseSensitive: false,
   );
   final directNames = named.allMatches(selected).toList();
@@ -371,11 +371,18 @@ _Identity? _sourceIdentity(LinkSourceText source) {
     return _Identity(LinkTargetKind.equation, equation.group(1)!);
   }
   // Some PDFs link only the year, leaving the author immediately before it.
-  final authorText = RegExp(r'^\(?(?:19|20)\d{2}[a-z]?\)?$').hasMatch(selected)
-      ? '${source.before.substring(math.max(0, source.before.length - 80))}$selected'
-      : selected;
+  // Bibliography links often include a trailing citation-list separator. It is
+  // punctuation, not another identity; multiple linked years remain ambiguous.
+  if (RegExp(r'\b(?:19|20)\d{2}[a-z]?\b').allMatches(selected).length > 1) {
+    return null;
+  }
+  final authorSelected = selected.replaceFirst(RegExp(r'[;,]$'), '');
+  final authorText =
+      RegExp(r'^\(?(?:19|20)\d{2}[a-z]?\)?$').hasMatch(authorSelected)
+      ? '${_clean(source.before.substring(math.max(0, source.before.length - 80)))} $authorSelected'
+      : authorSelected;
   final author = RegExp(
-    r'(?:^|\s|\()([\p{Lu}][\p{L}\-\x27’]+)(?:\s+(?:et\s+al\.?|and\s+[\p{Lu}][\p{L}\-\x27’]+))?[,\s]*\(?((?:19|20)\d{2}[a-z]?)\)?$',
+    r'(?:^|\s|\()([\p{Lu}][\p{L}\-\x27’]+)(?:\s+(?:et\s+al\.?|and\s+[\p{Lu}][\p{L}\-\x27’]+))?[,\s]*\(?\s*((?:19|20)\d{2}[a-z]?)\)?$',
     unicode: true,
   ).firstMatch(authorText);
   if (author != null) {
