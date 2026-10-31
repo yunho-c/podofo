@@ -47,8 +47,30 @@ class FileAccessLease {
   FileAccessLease._(this.path, this._token);
   final String path;
   String? _token;
+  bool _released = false;
+
+  /// macOS must read inside native file coordination, including symlink
+  /// resolution. A Dart read before that can fail on an undownloaded cloud PDF.
+  Future<({String path, Uint8List bytes})> read() async {
+    if (_released) throw StateError('File access has been released.');
+    if (!Platform.isMacOS) {
+      final resolved = await File(path).resolveSymbolicLinks();
+      return (path: resolved, bytes: await File(resolved).readAsBytes());
+    }
+    try {
+      final result = (await DocumentFileAccess.channel
+          .invokeMapMethod<String, dynamic>('read', {'path': path}))!;
+      return (
+        path: result['path'] as String,
+        bytes: result['bytes'] as Uint8List,
+      );
+    } on PlatformException catch (error) {
+      throw DocumentFileReadException(error);
+    }
+  }
 
   Future<void> release() async {
+    _released = true;
     final token = _token;
     _token = null;
     if (token != null) {
@@ -57,4 +79,15 @@ class FileAccessLease {
       });
     }
   }
+}
+
+/// Keep native diagnostics available without displaying MethodChannel details
+/// in the document's recovery notice.
+class DocumentFileReadException implements Exception {
+  DocumentFileReadException(this.cause);
+  final PlatformException cause;
+
+  @override
+  String toString() =>
+      cause.message ?? 'Could not read this PDF. Please retry.';
 }
