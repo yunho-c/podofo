@@ -774,10 +774,21 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             Overlay.of(context).context.findRenderObject() as RenderBox;
         final position = overlayBox.globalToLocal(event.position);
         _overlay = OverlayEntry(
-          builder: (context) => PdfLinkHoverPreview(
-            anchor: position,
-            label: label,
-            image: _previewImage,
+          builder: (context) => Consumer(
+            // The overlay builds independently of the viewer. Observe settings
+            // here so an open preview updates without rerendering its PDF crop.
+            builder: (context, ref, child) {
+              final dark = ref.watch(brightnessProvider) == Brightness.dark;
+              final shader = ref.watch(shaderProvider);
+              return PdfLinkHoverPreview(
+                anchor: position,
+                label: label,
+                image: _previewImage,
+                imageFilter: dark && shader != null
+                    ? ImageFilter.shader(shader)
+                    : null,
+              );
+            },
           ),
         );
         Overlay.of(context).insert(_overlay!);

@@ -13,10 +13,15 @@ class PdfLinkHoverPreview extends StatelessWidget {
     required this.anchor,
     required this.label,
     this.image,
+    this.imageFilter,
   });
   final Offset anchor;
   final String label;
   final ui.Image? image;
+  // Filter only the PDF raster; the card and label use the normal app theme.
+  final ui.ImageFilter? imageFilter;
+
+  static final _disabledFilter = ui.ImageFilter.blur(sigmaX: 0, sigmaY: 0);
 
   static Size rasterSize(Size viewport) => Size(
     math.max(
@@ -101,13 +106,18 @@ class PdfLinkHoverPreview extends StatelessWidget {
                                   child: SizedBox(
                                     width: size.width,
                                     height: size.height,
-                                    child: RawImage(
-                                      key: const ValueKey(
-                                        'pdf-link-preview-image',
+                                    child: ImageFiltered(
+                                      enabled: imageFilter != null,
+                                      imageFilter:
+                                          imageFilter ?? _disabledFilter,
+                                      child: RawImage(
+                                        key: const ValueKey(
+                                          'pdf-link-preview-image',
+                                        ),
+                                        image: image,
+                                        fit: BoxFit.contain,
+                                        filterQuality: FilterQuality.medium,
                                       ),
-                                      image: image,
-                                      fit: BoxFit.contain,
-                                      filterQuality: FilterQuality.medium,
                                     ),
                                   ),
                                 );

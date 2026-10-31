@@ -84,6 +84,123 @@ void main() {
   });
 
   testWidgets(
+    'inversion changes PDF pixels without filtering the card or label',
+    (tester) async {
+      tester.view.physicalSize = const Size(400, 300);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder).drawColor(const Color(0xffffffff), ui.BlendMode.src);
+      final picture = recorder.endRecording();
+      final image = (await tester.runAsync(() => picture.toImage(100, 100)))!;
+      picture.dispose();
+      final captureKey = GlobalKey();
+      List<int>? originalChrome;
+      Element? originalRaster;
+      try {
+        for (final strength in <double?>[null, 1, .4, null]) {
+          final bias = 255 * (1 + (strength ?? 0)) / 2;
+          // Exercise the filtering boundary on software test renderers too.
+          final filter = strength == null
+              ? null
+              : ColorFilter.matrix([
+                  -strength,
+                  0,
+                  0,
+                  0,
+                  bias,
+                  0,
+                  -strength,
+                  0,
+                  0,
+                  bias,
+                  0,
+                  0,
+                  -strength,
+                  0,
+                  bias,
+                  0,
+                  0,
+                  0,
+                  1,
+                  0,
+                ]);
+          await tester.pumpWidget(
+            RepaintBoundary(
+              key: captureKey,
+              child: shadcn.ShadcnApp(
+                theme: shadcn.ThemeData(
+                  colorScheme: shadcn.ColorSchemes.darkZinc,
+                ),
+                home: Stack(
+                  children: [
+                    PdfLinkHoverPreview(
+                      anchor: const Offset(10, 10),
+                      label: 'Reference [51] · Pages 4–5',
+                      image: image,
+                      imageFilter: filter,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+          await tester.pumpAndSettle();
+          final raster = find.byKey(const ValueKey('pdf-link-preview-image'));
+          originalRaster ??= tester.element(raster);
+          expect(tester.element(raster), same(originalRaster));
+          expect(tester.widget<RawImage>(raster).image, same(image));
+          final bounds = tester.getRect(raster);
+          final boundary = tester.renderObject<RenderRepaintBoundary>(
+            find.byKey(captureKey),
+          );
+          await tester.runAsync(() async {
+            final capture = await boundary.toImage();
+            try {
+              final pixels = (await capture.toByteData(
+                format: ui.ImageByteFormat.rawRgba,
+              ))!.buffer.asUint8List();
+              final center = bounds.center;
+              final index =
+                  (center.dy.floor() * capture.width + center.dx.floor()) * 4;
+              final expected = strength == null
+                  ? 255
+                  : 255 * (1 - strength) / 2;
+              for (var channel = 0; channel < 3; channel++) {
+                expect(pixels[index + channel], closeTo(expected, 1));
+              }
+              final chrome = <int>[];
+              for (var row = 0; row < capture.height; row++) {
+                final start = row * capture.width * 4;
+                final end = start + capture.width * 4;
+                if (row < bounds.top.floor() || row >= bounds.bottom.ceil()) {
+                  chrome.addAll(pixels.sublist(start, end));
+                } else {
+                  chrome.addAll(
+                    pixels.sublist(start, start + bounds.left.floor() * 4),
+                  );
+                  chrome.addAll(
+                    pixels.sublist(start + bounds.right.ceil() * 4, end),
+                  );
+                }
+              }
+              originalChrome ??= chrome;
+              expect(chrome, originalChrome);
+            } finally {
+              capture.dispose();
+            }
+          });
+          expect(tester.takeException(), isNull);
+        }
+      } finally {
+        await tester.pumpWidget(const SizedBox.shrink());
+        image.dispose();
+      }
+    },
+  );
+
+  testWidgets(
     'adaptive cards preserve the whole image at every edge, density and aspect ratio',
     (tester) async {
       addTearDown(tester.view.resetPhysicalSize);

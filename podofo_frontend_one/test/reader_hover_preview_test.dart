@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -21,6 +22,7 @@ import 'package:podofo_one/src/providers/data_provider.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/narration_provider.dart';
 import 'package:podofo_one/src/providers/tab_provider.dart';
+import 'package:podofo_one/src/providers/theme_provider.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
 import 'package:podofo_one/src/widgets/areas/main_area.dart';
 import 'package:podofo_one/src/widgets/components/pdf_link_hover_preview.dart';
@@ -35,8 +37,125 @@ import 'fixtures/analysis_fixture.dart';
 import 'analysis_native_test.dart' show ControlledEngine, ControlledJob;
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
   final platform = TargetPlatformVariant.only(
     Platform.isMacOS ? TargetPlatform.macOS : TargetPlatform.windows,
+  );
+  testWidgets(
+    'open preview follows inversion settings without rerendering or navigating',
+    (tester) async {
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder).drawColor(const Color(0xffffffff), ui.BlendMode.src);
+      final picture = recorder.endRecording();
+      final source = (await tester.runAsync(() => picture.toImage(100, 100)))!;
+      picture.dispose();
+      addTearDown(source.dispose);
+      final captureKey = GlobalKey();
+      var renders = 0;
+      final reader = await _Reader.open(
+        tester,
+        captureKey: captureKey,
+        render: (pdf, dest, ratio, cancellation) async {
+          renders++;
+          return source.clone();
+        },
+      );
+      final preferences = reader.container.read(
+        userPreferenceProvider.notifier,
+      );
+      await tester.runAsync(
+        () => preferences.setThemeMode(shadcn.ThemeMode.light),
+      );
+      await tester.pump();
+      final matrix = reader.viewer.value.clone();
+      await reader.mouse.moveTo(await reader.linkPoint(0));
+      await tester.pump(const Duration(milliseconds: 350));
+      await _wait(tester, () => _preview.evaluate().isNotEmpty);
+      final image = tester.widget<RawImage>(_preview).image;
+      final element = tester.element(_preview);
+      final previewFilter = find.descendant(
+        of: find.byType(PdfLinkHoverPreview),
+        matching: find.byType(ImageFiltered),
+      );
+      ImageFiltered filter() => tester.widget<ImageFiltered>(previewFilter);
+      Future<void> expectStable(int white, {String? captureName}) async {
+        expect(tester.widget<RawImage>(_preview).image, same(image));
+        expect(tester.element(_preview), same(element));
+        expect(renders, 1);
+        expect(reader.viewer.value, matrix);
+        expect(reader.session.navigationHistory.previous, isNull);
+        expect(tester.takeException(), isNull);
+        final center = tester.getCenter(_preview);
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(captureKey),
+        );
+        await tester.runAsync(() async {
+          final capture = await boundary.toImage();
+          try {
+            final pixels = (await capture.toByteData(
+              format: ui.ImageByteFormat.rawRgba,
+            ))!;
+            final index =
+                (center.dy.floor() * capture.width + center.dx.floor()) * 4;
+            for (var channel = 0; channel < 3; channel++) {
+              expect(pixels.getUint8(index + channel), closeTo(white, 1));
+            }
+            if (captureName != null) {
+              final directory = Directory('build/hover-preview-inversion');
+              await directory.create(recursive: true);
+              await File('${directory.path}/$captureName.png').writeAsBytes(
+                (await capture.toByteData(format: ui.ImageByteFormat.png))!
+                    .buffer
+                    .asUint8List(),
+              );
+            }
+          } finally {
+            capture.dispose();
+          }
+        });
+      }
+
+      expect(filter().enabled, false);
+      await expectStable(255, captureName: 'light');
+      await tester.runAsync(() => preferences.setShaderPreference(true));
+      await _wait(tester, () => reader.container.read(shaderProvider) != null);
+      expect(
+        filter().enabled,
+        false,
+      ); // Light mode still shows original colors.
+      await expectStable(255);
+
+      await tester.runAsync(
+        () => preferences.setThemeMode(shadcn.ThemeMode.dark),
+      );
+      await tester.pump();
+      expect(filter().enabled, true);
+      final fullStrength = filter().imageFilter;
+      await expectStable(0, captureName: 'dark');
+
+      await tester.runAsync(() => preferences.setShaderStrength(.4));
+      await tester.pump();
+      expect(filter().enabled, true);
+      expect(filter().imageFilter, isNot(same(fullStrength)));
+      await expectStable(77, captureName: 'partial');
+
+      await tester.runAsync(() => preferences.setShaderPreference(false));
+      await tester.pump();
+      expect(filter().enabled, false);
+      await expectStable(255);
+
+      await tester.runAsync(() => preferences.setShaderPreference(true));
+      await tester.pump();
+      expect(filter().enabled, true);
+      await tester.runAsync(
+        () => preferences.setThemeMode(shadcn.ThemeMode.light),
+      );
+      await tester.pump();
+      expect(filter().enabled, false);
+      await expectStable(255);
+    },
+    variant: platform,
+    skip: !ui.ImageFilter.isShaderFilterSupported,
   );
   testWidgets(
     'settled hover refines its label without selecting the target analysis page',
@@ -338,6 +457,7 @@ class _Reader {
   static Future<_Reader> open(
     WidgetTester tester, {
     LinkPreviewRenderer? render,
+    GlobalKey? captureKey,
     bool semanticFixture = false,
     bool complexFixture = false,
   }) async {
@@ -425,7 +545,10 @@ class _Reader {
     await tester.pumpWidget(
       UncontrolledProviderScope(
         container: container,
-        child: const shadcn.ShadcnApp(home: MainArea()),
+        child: RepaintBoundary(
+          key: captureKey,
+          child: const shadcn.ShadcnApp(home: MainArea()),
+        ),
       ),
     );
     reader.mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
