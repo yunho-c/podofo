@@ -11,6 +11,7 @@ class PhotoDiagnosticsControls extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final enabled = ref.watch(showPhotoDiagnosticsProvider);
+    final includeTranslucent = ref.watch(includeTranslucentPhotoPixelsProvider);
     final session = ref.watch(currentDocumentProvider)?.session;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -31,6 +32,28 @@ class PhotoDiagnosticsControls extends ConsumerWidget {
             ),
           ],
         ),
+        Row(
+          children: [
+            const Expanded(child: Text('Include translucent pixels')),
+            Semantics(
+              label: 'Include translucent pixels',
+              child: Switch(
+                key: const ValueKey('photo-translucent-toggle'),
+                value: includeTranslucent,
+                onChanged: (value) =>
+                    ref
+                            .read(
+                              includeTranslucentPhotoPixelsProvider.notifier,
+                            )
+                            .state =
+                        value,
+              ),
+            ),
+          ],
+        ),
+        const Text(
+          'Temporary preview: preserve nonzero alpha in the same eligible images. Requires dark mode and Preserve photos.',
+        ).small(),
         if (enabled) ...[
           const Text(
             'Green: preserved · Orange: rejected · Gray: skipped or inactive',
@@ -119,6 +142,9 @@ class _EntryDetails extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final stats = entry.candidate.classification;
+    final coverage = entry.candidate.renderingCoverage(
+      includeTranslucent: entry.includeTranslucent,
+    );
     String percent(double value) => '${(value * 100).toStringAsFixed(1)}%';
     return Padding(
       padding: const EdgeInsets.only(left: 8, bottom: 8),
@@ -126,9 +152,11 @@ class _EntryDetails extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(entry.reason).small(),
-          if (entry.candidate.coverage case final coverage?)
+          if (coverage != null)
             Text(
-              'Opaque footprint: ${percent(coverage.fraction)}; holes and translucent pixels stay in dark mode.',
+              entry.includeTranslucent
+                  ? 'Nonzero-alpha footprint: ${percent(coverage.fraction)}; transparent holes stay in dark mode.'
+                  : 'Opaque footprint: ${percent(coverage.fraction)}; holes and translucent pixels stay in dark mode.',
             ).small(),
           if (entry.override != null)
             Text('Manual override; automatic result: ${entry.candidate.reason}')

@@ -150,6 +150,7 @@ void main() {
         });
         final controller = PdfViewerController();
         var enabled = true, selective = true, pdfDowns = 0;
+        var includeTranslucent = false;
         late StateSetter update;
         addTearDown(() async {
           await tester.pumpWidget(const SizedBox());
@@ -179,6 +180,7 @@ void main() {
                       controller: controller,
                       enabled: enabled,
                       selective: selective,
+                      includeTranslucent: includeTranslucent,
                       twoPages: false,
                       strength: 1,
                       defaultShader: original,
@@ -255,6 +257,7 @@ void main() {
           Uint8List expected,
           Rect rect, {
           Uint8List? holes,
+          bool translucent = false,
         }) {
           var samples = 0, holeSamples = 0;
           for (
@@ -272,10 +275,18 @@ void main() {
               if (fixture == 'forms' && holes != null) {
                 final u = ((x + .5) / width - rect.left) / rect.width;
                 final v = ((y + .5) / height - rect.top) / rect.height;
-                if (u > .35 && u < .65 && v > .35 && v < .65) {
+                final holeInset = translucent ? .40 : .35;
+                final edgeInset = translucent ? .34 : .28;
+                if (u > holeInset &&
+                    u < 1 - holeInset &&
+                    v > holeInset &&
+                    v < 1 - holeInset) {
                   reference = holes;
                   holeSamples++;
-                } else if (u > .28 && u < .72 && v > .28 && v < .72) {
+                } else if (u > edgeInset &&
+                    u < 1 - edgeInset &&
+                    v > edgeInset &&
+                    v < 1 - edgeInset) {
                   continue; // Avoid the fractional boundary of the opaque area.
                 }
               }
@@ -302,6 +313,25 @@ void main() {
         final automatic = await capture();
         matchesRegion(automatic, natural, photo.rect, holes: dark);
         matchesRegion(automatic, dark, plot.rect);
+        if (fixture == 'forms') {
+          final targets = entries().map((e) => e.target).toList();
+          update(() => includeTranslucent = true);
+          final preview = await capture(name: 'photo-translucent-automatic');
+          matchesRegion(
+            preview,
+            natural,
+            photo.rect,
+            holes: dark,
+            translucent: true,
+          );
+          matchesRegion(preview, dark, plot.rect);
+          expect(entries().map((e) => e.target), targets);
+          expect(session.photoOverrides.count, 0);
+          update(() => includeTranslucent = false);
+          final restored = await capture();
+          matchesRegion(restored, automatic, photo.rect);
+          matchesRegion(restored, automatic, plot.rect);
+        }
         Future<void> click(PhotoOverrideEntry entry) async {
           await tester.sendKeyDownEvent(LogicalKeyboardKey.altLeft);
           await tester.pump();
@@ -321,6 +351,37 @@ void main() {
         final overridden = await capture(name: 'photo-overrides-applied');
         matchesRegion(overridden, dark, photo.rect);
         matchesRegion(overridden, natural, plot.rect, holes: dark);
+        if (fixture == 'forms') {
+          // Switch repeatedly while mask builds can still be in flight.
+          for (final value in [true, false, true]) {
+            update(() => includeTranslucent = value);
+            await tester.pump();
+          }
+          final preview = await capture(name: 'photo-translucent-manual');
+          matchesRegion(preview, dark, photo.rect);
+          matchesRegion(
+            preview,
+            natural,
+            plot.rect,
+            holes: dark,
+            translucent: true,
+          );
+          expect(session.photoOverrides.decision(photo.target), false);
+          expect(session.photoOverrides.decision(plot.target), true);
+          expect(session.photoOverrides.count, 2);
+          update(() => selective = false);
+          matchesRegion(await capture(), dark, plot.rect);
+          update(() {
+            selective = true;
+            enabled = false;
+          });
+          matchesRegion(await capture(), natural, plot.rect);
+          update(() {
+            enabled = true;
+            includeTranslucent = false;
+          });
+          matchesRegion(await capture(), overridden, plot.rect);
+        }
         expect(
           pdfDowns,
           0,

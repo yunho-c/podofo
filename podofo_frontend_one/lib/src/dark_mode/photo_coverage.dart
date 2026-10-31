@@ -5,7 +5,8 @@ import 'package:crypto/crypto.dart';
 
 /// Detached binary coverage over the candidate's visible rectangle, in
 /// unrotated page orientation with rows running top to bottom. A set cell means
-/// its entire footprint was opaque at PDFium's local image-render resolution.
+/// its entire footprint met the selected alpha criterion at PDFium's local
+/// image-render resolution (opaque by default, nonzero in the developer preview).
 class PhotoCoverage {
   PhotoCoverage._(this.width, this.height, this.bits, this.opaqueCells)
     : fingerprint = sha256.convert([
@@ -40,7 +41,7 @@ class PhotoCoverage {
   }
 
   /// Conservative min-pooling: every cell touched by a destination footprint
-  /// must be opaque. In particular, shrinking never averages away a small hole.
+  /// must be set. In particular, shrinking never averages away a small hole.
   bool covers(double left, double top, double right, double bottom) {
     if (left < -1e-9 ||
         top < -1e-9 ||

@@ -76,14 +76,38 @@ write leaves the previous choice intact.
 
 ## Developer diagnostics
 
+Under **Developer → Dark Mode**, **Include translucent pixels** temporarily
+previews binary preservation of nonzero image alpha. It defaults off, is not
+persisted, and works independently of the diagnostic-outline toggle. Dark mode,
+PDF inversion and photo preservation must still be enabled. The same automatically
+accepted or manually preserved panels participate; this option does not admit
+fully translucent images or bypass Form transparency/overlap checks.
+
+The preview uses a second compact mask captured during the existing decode.
+Classification, strict mask resolution and saved panel identities remain unchanged.
+Switching only rebuilds the preservation texture, without re-decoding images or
+changing shaders. Transparent holes remain excluded. Coverage is still binary
+and conservatively downsampled, so this tests broader preservation rather than
+smooth blending; some jagged edges or bright halos may remain. Fixture page 27
+shows a translucent band around a transparent hole; page 37 also exercises a
+manually preserved panel. Expanded diagnostics report the selected footprint.
+
+Developer-preview validation on 2026-10-30: 39 focused tests, static analysis and
+the macOS Debug build passed. Native checks cover the second mask and combined memory bound. The
+sidebar test covers independent toggles, selected-footprint details and reset on
+a fresh app state. Actual Impeller viewer captures check automatic and manual
+panels on a rotated page, transparent holes, rapid preview switches, disabled
+preservation/inversion, stable override keys and restoration of strict rendering.
+The preview captures were visually inspected.
+
 In the developer sidebar, expand **Dark Mode** and enable **Show
 photo-preservation diagnostics**. This temporary toggle defaults off and also
 works in light mode or with preservation disabled. It shares the viewer's
 visible-page analysis/cache; enabling diagnostics adds no second viewer or page render.
 
 - Green outlines indicate image regions included in the current preservation
-  mask. For masked images this denotes their opaque footprint, not the whole
-  outlined rectangle; expanded details report the opaque percentage and visible
+  mask. For masked images this denotes their selected footprint, not the whole
+  outlined rectangle; expanded details report the coverage percentage and visible
   classifier sample count. Accepted regions waiting for a texture update are gray (`mask-pending`);
   a failed texture build shows `mask-unavailable`. There is no 16-photo ceiling.
 - Orange outlines indicate rejected raster images. Labels include the page,
@@ -282,12 +306,13 @@ retrying forever. Session/revision invalidation discards stale results. Disablin
 analysis or closing the viewer cancels scheduled delays; an active batch retains
 its lease until completion. An evicted page must be inventoried again.
 
-Coverage is bit-packed, at most 256 cells on either axis and 8 KiB per masked
-image. A 512 KiB/page allowance is divided evenly across inventoried images;
+Coverage is bit-packed, at most 256 cells on either axis and 8 KiB per map per masked
+image. A 512 KiB/page allowance per map is divided evenly across inventoried images;
 dense pages use lower-resolution maps rather than exhausting a first-come image
-budget. Thus the 64 cached pages retain at most 32 MiB of coverage bits, plus
-metadata and transient batch/texture-building copies. Fully opaque images retain
-no coverage bitmap. Neither source colors nor native bitmap handles are cached.
+budget. The strict and nonzero-alpha maps together retain at most 1 MiB/page,
+or 64 MiB for 64 cached pages, plus metadata and transient batch/texture-building
+copies. An identical preview map reuses strict coverage. Fully opaque images
+retain no coverage bitmap. Neither source colors nor native bitmap handles are cached.
 
 There is no page-wide image-count or cumulative decode-pixel cutoff. Individual
 source/rendered bitmaps remain limited to 4 million pixels each. Pathological

@@ -29,6 +29,7 @@ class PhotoPreservingFilter extends StatefulWidget {
     required this.program,
     required this.child,
     this.showDiagnostics = false,
+    this.includeTranslucent = false,
     this.diagnostics,
   });
   final PdfSession session;
@@ -40,6 +41,7 @@ class PhotoPreservingFilter extends StatefulWidget {
   final FragmentProgram? program;
   final Widget child;
   final bool showDiagnostics;
+  final bool includeTranslucent;
   final PhotoDiagnosticsController? diagnostics;
 
   @override
@@ -165,7 +167,12 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
             visible,
           );
           PhotoMaskRegion maskRegion(PhotoCandidate candidate) =>
-              photoMaskRegion(candidate, page, layout[number - 1]);
+              photoMaskRegion(
+                candidate,
+                page,
+                layout[number - 1],
+                includeTranslucent: widget.includeTranslucent,
+              );
           final pending = [
             for (final c in analysis?.candidates ?? const <PhotoCandidate>[])
               if (c.reason == 'pending' && !project(c.region).isEmpty) c,
@@ -209,6 +216,7 @@ class _PhotoPreservingFilterState extends State<PhotoPreservingFilter> {
                   PhotoDiagnosticEntry(
                     pageNumber: number,
                     candidate: candidate,
+                    includeTranslucent: widget.includeTranslucent,
                     override: overrides.decision(targets[candidate]),
                     rect: project(candidate.region),
                     preserved:

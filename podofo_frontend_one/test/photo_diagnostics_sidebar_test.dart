@@ -10,6 +10,7 @@ import 'package:pdfrx/pdfrx.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
 import 'package:podofo_one/src/data/document_data.dart';
 import 'package:podofo_one/src/dark_mode/photo_analysis.dart';
+import 'package:podofo_one/src/dark_mode/photo_coverage.dart';
 import 'package:podofo_one/src/dark_mode/photo_diagnostics.dart';
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/photo_diagnostics_provider.dart';
@@ -83,6 +84,25 @@ void main() {
       await expand('Dark Mode');
       await tester.pumpAndSettle();
       expect(container.read(showPhotoDiagnosticsProvider), isFalse);
+      expect(container.read(includeTranslucentPhotoPixelsProvider), isFalse);
+      final translucentToggle = find.byKey(
+        const ValueKey('photo-translucent-toggle'),
+      );
+      await tester.ensureVisible(translucentToggle);
+      await tester.tap(translucentToggle);
+      await tester.pumpAndSettle();
+      expect(container.read(includeTranslucentPhotoPixelsProvider), isTrue);
+      expect(
+        container.read(showPhotoDiagnosticsProvider),
+        isFalse,
+        reason: 'The preview works without enabling diagnostic outlines',
+      );
+      await tester.tap(translucentToggle);
+      await tester.pumpAndSettle();
+      expect(container.read(includeTranslucentPhotoPixelsProvider), isFalse);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('photo-diagnostics-toggle')),
+      );
       await tester.tap(find.byKey(const ValueKey('photo-diagnostics-toggle')));
       await tester.pumpAndSettle();
       expect(container.read(showPhotoDiagnosticsProvider), isTrue);
@@ -126,6 +146,49 @@ void main() {
         );
         image.dispose();
       });
+      final masked = PhotoCandidate(
+        0,
+        'likely-photo',
+        region: const PhotoRegion(0, 0, 100, 100),
+        coverage: PhotoCoverage.fromCells(
+          2,
+          2,
+          Uint8List.fromList([1, 0, 1, 0]),
+        ),
+        translucentCoverage: PhotoCoverage.fromCells(
+          2,
+          2,
+          Uint8List.fromList([1, 1, 1, 0]),
+        ),
+      );
+      final maskedEntry = PhotoDiagnosticEntry(
+        pageNumber: 1,
+        candidate: masked,
+        rect: const Rect.fromLTWH(.1, .1, .5, .5),
+        preserved: true,
+        inactiveReason: 'mask-pending',
+        includeTranslucent: true,
+      );
+      diagnostics.publish(
+        PhotoDiagnosticsSnapshot(
+          revision: session.revision,
+          pages: [
+            PhotoDiagnosticPage(1, PhotoPageAnalysis(candidates: [masked]), [
+              maskedEntry,
+            ]),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+      await expand('${maskedEntry.label} · preserved');
+      expect(
+        find.textContaining('Nonzero-alpha footprint: 75.0%'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('holes and translucent pixels stay'),
+        findsNothing,
+      );
       // Siblings share a top-level Form index but must remain distinct entries.
       final siblings = [
         for (final child in [1, 2])
@@ -169,7 +232,16 @@ void main() {
       expect(find.text('limited-palette'), findsNothing);
       diagnostics.publish(null); // Safe even if auto-disposal has already run.
       await tester.pumpWidget(const SizedBox());
+      container.read(includeTranslucentPhotoPixelsProvider.notifier).state =
+          true;
       container.dispose();
+      final fresh = ProviderContainer();
+      expect(
+        fresh.read(includeTranslucentPhotoPixelsProvider),
+        isFalse,
+        reason: 'Developer preview is not persisted',
+      );
+      fresh.dispose();
       await tester.runAsync(() async {
         await session.close();
         await PdfrxEntryFunctions.instance.stopBackgroundWorker();

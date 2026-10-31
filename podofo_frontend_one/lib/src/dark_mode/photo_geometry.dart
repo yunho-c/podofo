@@ -8,12 +8,19 @@ import 'photo_mask.dart';
 PhotoMaskRegion photoMaskRegion(
   PhotoCandidate candidate,
   PdfPage page,
-  Rect layout,
-) => PhotoMaskRegion(
-  photoDocumentRect(candidate.region, page, layout),
-  coverage: candidate.coverage,
-  quarterTurns: candidate.coverage == null ? 0 : page.rotation.index,
-);
+  Rect layout, {
+  bool includeTranslucent = false,
+}) {
+  var coverage = candidate.renderingCoverage(
+    includeTranslucent: includeTranslucent,
+  );
+  if (coverage?.isFull ?? false) coverage = null;
+  return PhotoMaskRegion(
+    photoDocumentRect(candidate.region, page, layout),
+    coverage: coverage,
+    quarterTurns: coverage == null ? 0 : page.rotation.index,
+  );
+}
 
 /// Layouts supported by PoDoFo are vertical rows of one or two pages. Binary
 /// search the rows, then inspect only intersecting pages, even in a long paper.

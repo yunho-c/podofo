@@ -12,6 +12,7 @@ class PhotoDiagnosticEntry {
     required bool preserved,
     required String inactiveReason,
     this.override,
+    this.includeTranslucent = false,
   }) : reason = override == false
            ? switch (inactiveReason) {
                'inversion-off' ||
@@ -32,6 +33,7 @@ class PhotoDiagnosticEntry {
   final int pageNumber;
   final PhotoCandidate candidate;
   final bool? override;
+  final bool includeTranslucent;
 
   /// Normalized to the viewer viewport, after page rotation and cropping.
   final Rect rect;

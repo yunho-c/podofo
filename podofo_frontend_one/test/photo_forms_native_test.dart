@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:pdfrx/pdfrx.dart';
 import 'package:pdfium_dart/pdfium_dart.dart';
 import 'package:podofo_one/src/dark_mode/photo_analysis.dart';
+import 'package:podofo_one/src/dark_mode/photo_overrides.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -132,6 +133,55 @@ void main() {
     },
   );
 
+  test('nonzero preview includes fractional alpha without changing panel eligibility or anchors', () async {
+    final result = await analyzePhotos(document, 27);
+    final c = result.candidates.single;
+    final key = PhotoOverrides.target(document.pages[26], c);
+    expect(c.reason, 'likely-photo');
+    expect(key, isNotNull);
+    final strict = c.renderingCoverage()!;
+    final inclusive = c.renderingCoverage(includeTranslucent: true)!;
+    expect(strict.covers(.32, .4, .35, .6), isFalse);
+    expect(inclusive.covers(.32, .4, .35, .6), isTrue);
+    expect(
+      inclusive.covers(.4, .4, .6, .6),
+      isFalse,
+      reason: 'Fully transparent holes remain outside the preview mask',
+    );
+    expect(inclusive.fraction, greaterThan(strict.fraction));
+    expect(inclusive.width, strict.width);
+    expect(inclusive.height, strict.height);
+    // Selection of rendering coverage must not replace the strict identity.
+    expect(PhotoOverrides.target(document.pages[26], c), key);
+    final strictOnly = PhotoCandidate(
+      c.objectIndex,
+      c.reason,
+      region: c.region,
+      classification: c.classification,
+      sampleHash: c.sampleHash,
+      coverage: c.coverage,
+    );
+    expect(PhotoOverrides.target(document.pages[26], strictOnly), key);
+    for (final page in [1, 12]) {
+      final c = (await analyzePhotos(document, page)).candidates.single;
+      expect(
+        c.translucentCoverage,
+        isNull,
+        reason:
+            'Opaque rectangles and binary masks need no second retained map',
+      );
+      expect(c.renderingCoverage(includeTranslucent: true), same(c.coverage));
+    }
+    for (final page in [14, 15, 28, 29]) {
+      final c = (await analyzePhotos(document, page)).candidates.single;
+      expect(
+        PhotoOverrides.target(document.pages[page - 1], c),
+        isNull,
+        reason: 'Preview does not admit Form transparency or fully translucent images',
+      );
+    }
+  });
+
   test('nested inspection leaves page pixels and text unchanged', () async {
     for (final number in [1, 4, 5, 11, 14]) {
       final page = document.pages[number - 1];
@@ -175,6 +225,11 @@ void main() {
         (n, c) => n + (c.coverage?.bits.length ?? 0),
       );
       expect(bytes, lessThanOrEqualTo(512 * 1024));
+      final previewBytes = result.candidates.fold<int>(
+        0,
+        (n, c) => n + (c.translucentCoverage?.bits.length ?? 0),
+      );
+      expect(bytes + previewBytes, lessThanOrEqualTo(1024 * 1024));
     } while (!result.isComplete);
     expect(decoded, 100);
     expect(result.regions.length, 100);

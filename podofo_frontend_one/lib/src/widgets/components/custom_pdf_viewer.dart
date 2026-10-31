@@ -521,6 +521,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       // Keep the viewer mounted so theme/inversion changes preserve its viewport.
       child: PhotoPreservingFilter(
         showDiagnostics: ref.watch(showPhotoDiagnosticsProvider),
+        includeTranslucent: ref.watch(includeTranslucentPhotoPixelsProvider),
         diagnostics: ref.watch(photoDiagnosticsProvider(document.session)),
         session: document.session,
         revision: document.session.revision,

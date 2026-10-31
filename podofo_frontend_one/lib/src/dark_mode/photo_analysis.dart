@@ -31,6 +31,7 @@ class PhotoCandidate {
     this.classification,
     this.sampleHash,
     this.coverage,
+    this.translucentCoverage,
     this.objectPath = const [],
   });
   final int objectIndex;
@@ -46,6 +47,13 @@ class PhotoCandidate {
   /// Null for a fully opaque rectangle (or a candidate not yet classified).
   /// Partial coverage contains no colors or native handles.
   final PhotoCoverage? coverage;
+
+  /// Developer preview of alpha > 0, separate from classification and identity.
+  /// Null when the strict coverage can be reused; may be a full rectangle.
+  final PhotoCoverage? translucentCoverage;
+
+  PhotoCoverage? renderingCoverage({bool includeTranslucent = false}) =>
+      includeTranslucent ? translucentCoverage ?? coverage : coverage;
 
   /// Hash of the cropped, oriented sample and, for masked images, its coverage.
   final String? sampleHash;
@@ -223,6 +231,7 @@ PhotoPageAnalysis inspectPhotoPage(
         PhotoClassification? classification;
         String? sampleHash;
         PhotoCoverage? coverage;
+        PhotoCoverage? translucentCoverage;
         if (object == nullptr) {
           reason = 'image-unavailable';
         } else {
@@ -236,14 +245,14 @@ PhotoPageAnalysis inspectPhotoPage(
           if (rendered == nullptr) {
             reason = 'opacity-unavailable';
           } else {
-            PhotoCoverage? inspected;
+            ({PhotoCoverage opaque, PhotoCoverage nonzero})? inspected;
             try {
               inspected = _imageCoverage(
                 api,
                 rendered,
                 image,
-                // Share a 512 KiB/page ceiling across all inventoried
-                // images. Resolution adapts; no late-page image is dropped.
+                // Each map shares a 512 KiB/page ceiling across all images.
+                // Keep strict resolution/identities unchanged for the preview.
                 maxCells: (512 * 1024 ~/ results.length.clamp(1, 2000)) * 8,
               );
             } finally {
@@ -251,10 +260,14 @@ PhotoPageAnalysis inspectPhotoPage(
             }
             if (inspected == null) {
               reason = 'opacity-unavailable';
-            } else if (inspected.isEmpty) {
+            } else if (inspected.opaque.isEmpty) {
               reason = 'no-opaque-pixels';
             } else {
-              coverage = inspected.isFull ? null : inspected;
+              coverage = inspected.opaque.isFull ? null : inspected.opaque;
+              if (coverage != null &&
+                  inspected.nonzero.fingerprint != coverage.fingerprint) {
+                translucentCoverage = inspected.nonzero;
+              }
               final bitmap = api.FPDFImageObj_GetBitmap(object);
               if (bitmap == nullptr) {
                 reason = 'decode-failed';
@@ -292,6 +305,7 @@ PhotoPageAnalysis inspectPhotoPage(
           classification: classification,
           sampleHash: sampleHash,
           coverage: coverage,
+          translucentCoverage: translucentCoverage,
         );
         completed++;
       }
@@ -928,7 +942,7 @@ class _FilledPath {
   }
 }
 
-PhotoCoverage? _imageCoverage(
+({PhotoCoverage opaque, PhotoCoverage nonzero})? _imageCoverage(
   PDFium api,
   FPDF_BITMAP bitmap,
   _Object image, {
@@ -952,22 +966,29 @@ PhotoCoverage? _imageCoverage(
   final bytes = buffer.cast<Uint8>().asTypedList(stride * height);
   final sx = width / (bounds.right - bounds.left);
   final sy = height / (bounds.top - bounds.bottom);
-  bool opaqueRect(PhotoRegion rect) {
+  // 2 = every pixel opaque, 1 = every pixel nonzero, 0 = touches transparency.
+  // The fast strict scan can stop at the first fractional alpha; the cell scan
+  // collects both masks in one pass without another image decode.
+  int alphaClass(PhotoRegion rect, {bool strictOnly = false}) {
     final x0 = ((rect.left - bounds.left) * sx).floor().clamp(0, width - 1);
     final x1 = ((rect.right - bounds.left) * sx).ceil().clamp(x0 + 1, width);
     final y0 = ((bounds.top - rect.top) * sy).floor().clamp(0, height - 1);
     final y1 = ((bounds.top - rect.bottom) * sy).ceil().clamp(y0 + 1, height);
+    var result = 2;
     for (var py = y0; py < y1; py++) {
       for (var px = x0; px < x1; px++) {
-        if (bytes[py * stride + px * 4 + 3] != 255) return false;
+        final alpha = bytes[py * stride + px * 4 + 3];
+        if (alpha == 0 || (strictOnly && alpha != 255)) return 0;
+        if (alpha != 255) result = 1;
       }
     }
-    return true;
+    return result;
   }
 
   // Keep the original scan/rectangle fast path for fully opaque crops.
-  if (opaqueRect(local)) {
-    return PhotoCoverage.fromCells(1, 1, Uint8List.fromList([1]));
+  if (alphaClass(local, strictOnly: true) == 2) {
+    final full = PhotoCoverage.fromCells(1, 1, Uint8List.fromList([1]));
+    return (opaque: full, nonzero: full);
   }
   // Coverage rows follow the unrotated PAGE, including ancestor quarter-turns
   // and reflections. The image's own transform is already in the rendered bitmap.
@@ -985,6 +1006,7 @@ PhotoCoverage? _imageCoverage(
   final cols = (nx * scale).floor().clamp(1, 256);
   final rows = (ny * scale).floor().clamp(1, 256);
   final cells = Uint8List(cols * rows);
+  final nonzeroCells = Uint8List(cols * rows);
   final inverse = image.parentTransform.inverse;
   final visible = image.visible;
   final dx = (visible.right - visible.left) / cols;
@@ -999,8 +1021,13 @@ PhotoCoverage? _imageCoverage(
           visible.top - y * dy,
         ),
       );
-      if (opaqueRect(footprint)) cells[y * cols + x] = 1;
+      final alpha = alphaClass(footprint);
+      if (alpha == 2) cells[y * cols + x] = 1;
+      if (alpha != 0) nonzeroCells[y * cols + x] = 1;
     }
   }
-  return PhotoCoverage.fromCells(cols, rows, cells);
+  return (
+    opaque: PhotoCoverage.fromCells(cols, rows, cells),
+    nonzero: PhotoCoverage.fromCells(cols, rows, nonzeroCells),
+  );
 }
