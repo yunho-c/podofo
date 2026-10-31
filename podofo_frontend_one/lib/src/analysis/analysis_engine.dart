@@ -97,23 +97,28 @@ class NativeAnalysisEngine implements AnalysisEngine {
     AnalysisModelPaths? paths, {
     String? customFormulaManifest,
   }) async {
-    final podoco.ModelBundle layout;
-    String? formula;
     if (paths == null) {
-      final verified = await const FlutterModelLoader().verifyLayout(
-        pack: AppAnalysisPacks.documentAnalysis,
+      final identity = await const FlutterModelLoader().readLayoutIdentity(
+        AppAnalysisPacks.documentAnalysis,
       );
-      layout = verified.layout;
-      formula = verified.pack.manifestHashes['formula'];
-    } else {
-      layout = await podoco.ModelBundle.verify(paths.layout);
-      formula = customFormulaManifest;
+      return PreviewLayoutProfile(
+        layoutManifest: identity.manifestSha256,
+        layoutModelId: identity.modelId,
+        layoutProfile: identity.profile,
+        layoutAdapter: identity.adapter,
+        backend: identity.backend,
+        formulaManifest: identity.pack.manifestHashes['formula'],
+        computePolicy: podoco.ComputePolicy.cpuAndNeuralEngine,
+      );
     }
+    // Custom model directories have no application-pinned catalog. Keep their
+    // full bundle verification rather than trusting arbitrary manifest metadata.
+    final layout = await podoco.ModelBundle.verify(paths.layout);
     return PreviewLayoutProfile(
       layoutManifest: layout.manifestSha256,
       layoutModelId: layout.id,
       layoutProfile: layout.profile,
-      formulaManifest: formula,
+      formulaManifest: customFormulaManifest,
       computePolicy: podoco.ComputePolicy.cpuAndNeuralEngine,
     );
   }

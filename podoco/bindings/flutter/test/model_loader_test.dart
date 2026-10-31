@@ -53,6 +53,106 @@ void main() {
   });
   tearDown(() => directory.delete(recursive: true));
 
+  const identityYaml = '''
+schema_version: 1
+id: fixture-layout
+runtime: {kind: coreml}
+profile: {id: fixture-profile, adapter: fixture-adapter}
+''';
+  Future<BundledAnalysisPack> identityPack([String yaml = identityYaml]) async {
+    await Directory('${directory.path}/layout').create(recursive: true);
+    await File('${directory.path}/layout/podoco-bundle.yaml')
+        .writeAsString(yaml);
+    return pack(
+      catalog()
+        ..['layout'] = {
+          'directory': 'layout',
+          'manifestSha256': sha256.convert(utf8.encode(yaml)).toString(),
+        },
+    );
+  }
+
+  test('cache identity verifies pinned metadata without requiring model or formula payloads', () async {
+    final selection = await identityPack();
+    final identity = await loader.readLayoutIdentity(selection);
+    expect(identity.modelId, 'fixture-layout');
+    expect(identity.profile, 'fixture-profile');
+    expect(identity.adapter, 'fixture-adapter');
+    expect(identity.backend, 'coreml');
+    expect(
+      identity.manifestSha256,
+      sha256.convert(utf8.encode(identityYaml)).toString(),
+    );
+    expect(identity.pack.hasFormula, true);
+    expect(await Directory('${directory.path}/formula').exists(), false);
+    // Returning metadata cannot be mistaken for a ModelBundle accepted by open.
+    expect(identity, isNot(isA<ModelBundle>()));
+    directory = await directory.rename('${directory.path}-relocated');
+    resources.root = directory.path;
+    expect(
+      (await loader.readLayoutIdentity(selection)).manifestSha256,
+      identity.manifestSha256,
+    );
+  });
+  test(
+    'altered or absent layout identity cannot reuse the pinned catalog',
+    () async {
+      final selection = await identityPack();
+      final manifest = File('${directory.path}/layout/podoco-bundle.yaml');
+      await manifest.writeAsString(
+        identityYaml.replaceFirst('fixture-layout', 'different-model'),
+      );
+      await expectLater(
+        loader.readLayoutIdentity(selection),
+        throwsA(code('invalid_asset')),
+      );
+      await manifest.delete();
+      await expectLater(
+        loader.readLayoutIdentity(selection),
+        throwsA(code('invalid_asset')),
+      );
+    },
+  );
+  test('pinned malformed or oversized identity metadata is rejected', () async {
+    for (final yaml in [
+      '[malformed',
+      'schema_version: 2',
+      identityYaml.replaceFirst('id: fixture-layout', 'id: []'),
+      identityYaml.replaceFirst('id: fixture-profile', 'id: null'),
+      identityYaml.replaceFirst('adapter: fixture-adapter', 'adapter: 4'),
+      'x' * (1024 * 1024 + 1),
+    ]) {
+      await expectLater(
+        loader.readLayoutIdentity(await identityPack(yaml)),
+        throwsA(code('invalid_asset')),
+      );
+    }
+  });
+  test('metadata read preserves platform, catalog and link checks', () async {
+    final selection = await identityPack();
+    resources.platform = 'linux-x64';
+    await expectLater(
+      loader.readLayoutIdentity(selection),
+      throwsA(code('unsupported_capability')),
+    );
+    expect(resources.locations, 0);
+    resources.platform = 'macos-arm64';
+    final manifest = File('${directory.path}/layout/podoco-bundle.yaml');
+    final original = await manifest.rename('${directory.path}/original.yaml');
+    await Link(manifest.path).create(original.path);
+    await expectLater(
+      loader.readLayoutIdentity(selection),
+      throwsA(code('invalid_asset')),
+    );
+    await Link(manifest.path).delete();
+    await original.rename(manifest.path);
+    await File('${directory.path}/pack.json').writeAsString('{}');
+    await expectLater(
+      loader.readLayoutIdentity(selection),
+      throwsA(code('invalid_asset')),
+    );
+  }, skip: Platform.isWindows);
+
   test(
     'catalog pins survive relocation and expose immutable metadata',
     () async {

@@ -15,7 +15,8 @@ semantic previews are implemented; see the [M2 report](target_aware_link_preview
 M3 on-demand layout analysis is implemented; see the [M3 report](target_aware_link_preview_m3.md).
 M4 complete-target grouping, bounded multipart rendering and adaptive presentation
 are implemented; see the [M4 report](target_aware_link_preview_m4.md). M5's held-out
-accuracy, performance, stress and native-window qualification remains pending.
+accuracy and native-window qualification remains pending. M5 performance/stress
+qualification is in progress; see the [M5 report](target_aware_link_preview_m5.md).
 
 ## Scope and behavior
 

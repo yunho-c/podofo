@@ -50,9 +50,17 @@ Pass `includeFormula: false` to `openAnalyzer` for a layout-only engine. This
 skips formula component verification and opening even when the catalog includes
 FormulaNet. The default remains `true` for existing callers. Formula options are
 rejected when formula loading is disabled. Math rules always load independently.
-`FlutterModelLoader.verifyLayout` verifies the layout payload and returns its
-profile plus catalog metadata without opening Core ML or reading formula/math
-payloads; callers can use that identity to find compatible persisted layouts.
+`FlutterModelLoader.readLayoutIdentity` checks the pinned catalog and the bounded
+layout manifest (SHA-256, schema and identity fields) without reading model
+payloads. Use this metadata only to compare compatible persisted results. It
+returns `BundledLayoutIdentity`, not a `ModelBundle` that can open an analyzer.
+Catalog/manifest corruption, unsupported platforms and linked component trees
+still fail. Cached results can remain usable when payloads are absent; a new
+inference request still requires full payload verification.
+
+`FlutterModelLoader.verifyLayout` verifies all layout payloads and returns a
+verified `ModelBundle` plus catalog metadata without opening Core ML or reading
+formula/math payloads. `openAnalyzer` always takes this full verification path.
 
 The macOS plugin returns paths under the running application's canonical bundle.
 Only metadata crosses its method channel. No model bytes cross Dart, and models

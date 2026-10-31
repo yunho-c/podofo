@@ -122,3 +122,29 @@ paired crops and metrics go to `build/target-preview-m4/native-<suffix>/`.
 The detector currently omits the separated-panel and rotated-figure visual
 regions. Those two cases stay contextual. See the
 [M4 report](../../../../docs/target_aware_link_preview_m4.md).
+
+## M5 corpus preparation
+
+`m5_sampling.json` preselects twelve new local papers, split by document into
+development and held-out sets. Selection uses the first two distinct named
+destinations per target group in PDF link order, plus one footnote control when
+available. The prepared sample contains 102 links; it has not passed the M5
+accuracy gate. `m5_annotations/` contains source-reviewed annotations only; the
+remaining documents must be annotated before running their resolver evaluation.
+No new paper's resolver output has been examined at this preparation stage.
+
+Recreate full-page images and independent text geometry with PyMuPDF:
+
+```sh
+python tool/prepare_target_preview_corpus.py \
+  --spec test/fixtures/target_preview/m5_sampling.json \
+  --corpus /path/to/local/papers --output build/target-preview-m5/new-annotations
+```
+
+The tool refuses to overwrite evidence. Its draft sets eligibility to null and
+leaves target boundaries empty for the four supported groups. Resolve these by
+visual source review before evaluating results. Preserve fallback counts for
+every sampled link, including controls. Roman labels, author/year styles and
+multi-citation fragments cannot be dropped simply because a resolver misses them.
+The [M5 report](../../../../docs/target_aware_link_preview_m5.md) records the
+sampling boundary and outstanding gates. PDFs remain local pending license review.
