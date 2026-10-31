@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "2312.02753v1.pdf",
-    "split": "held_out",
+    "split": "development",
     "id": "2312.02753v1",
     "sha256": "f7232a889a0c3aded4b80d3adadfd75d84d737a704187dbc36dc5c86c05045c3",
     "source_url": "https://arxiv.org/abs/2312.02753v1",
@@ -804,6 +804,8 @@
   "review": {
     "date": "2026-10-30",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "0f10834"
+    "resolver_baseline": "0f10834",
+    "promoted_from": "held_out_v1",
+    "promotion_reason": "Missing intervening subsection heading drives a blocking complete-target regression."
   }
 }

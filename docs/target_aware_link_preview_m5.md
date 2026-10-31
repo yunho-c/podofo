@@ -1,9 +1,10 @@
 # Target-aware previews: M5 qualification in progress
 
 M5 is not complete. The latency/ownership harness now exercises the real bundled
-layout engine, and the first model-independent paper corpus has been annotated
-and frozen. Held-out target accuracy and native-window acceptance remain
-unqualified.
+layout engine, and the first frozen held-out evaluation is complete. It failed
+section coverage and completeness gates. Three papers have moved to development
+before resolver changes; the held-out set needs replenishment. Native-window
+acceptance also remains unqualified.
 
 ## Cache preparation latency
 
@@ -94,7 +95,7 @@ distinct named targets per group in PDF page/annotation order, plus the first
 footnote as an unsupported control when available. This is a bounded convenience
 sample of the local paper collection, not a random population sample.
 
-The prepared sample has 102 links: 53 development and 49 held-out. Held-out
+The initial prepared sample had 102 links: 53 development and 49 held-out. Held-out
 groups contain twelve citations, twelve figure/table links, eleven equations and
 eleven sections, plus three controls. Source review confirmed all 46 named targets
 as eligible; the three footnotes are unsupported controls. The two existing
@@ -336,16 +337,54 @@ paragraph. Displayed mathematics following a colon-ended opening text block is
 separate; inline mathematics belongs to that block. Bibliography back-references
 and figure/table notes belong to their complete target.
 
-`test/fixtures/target_preview/m5_freeze.json` records 34 hashes: six annotation
+The first freeze records 34 hashes: six annotation
 files and the resolver, extraction/rendering/analysis pipeline, scoring harness,
 sampling manifest, dependency lock, loader and bundled model identity. The
 evaluation checks the whole frozen held-out split before opening native analysis.
 The source baseline is `0f10834`; changes motivated by these held-out documents
 require moving the affected documents into development and replenishing them.
+The original freeze and sampling manifest are retained in
+`test/fixtures/target_preview/m5_history/held_out_v1_{freeze,sampling}.json`.
+
+## First held-out evaluation: failed
+
+The first frozen run used commit `4c18a6b` and fresh native model inference. All
+49 links were captured, including every fallback and unsupported control. The
+results and per-link metrics are retained in
+`test/fixtures/target_preview/m5_history/held_out_v1_results.json`; full context
+and semantic images remain local under `build/target-preview-m5/papers-held-out-v1/`.
+
+| Group | Eligible | Resolved | Complete and excludes annotated neighbors |
+| --- | ---: | ---: | ---: |
+| Citations | 12 | 12 | 12 |
+| Figures/tables | 12 | 10 | 10 |
+| Equations | 11 | 9 | 9 |
+| Sections | 11 | 8 | 6 |
+
+All three unsupported controls stayed contextual, and native handles returned to
+zero. The automatic wrong-object checks reported zero flags; this is not a
+completed visual audit of all accepted crops. Sections fail both the 80 percent
+eligible coverage gate (8/11) and the 90 percent resolved completeness gate (6/8).
+The test intentionally failed (`build/target-preview-m5-held-out-v1.log`).
+
+Visual inspection confirmed that two accepted section previews dropped an
+intervening subsection heading while showing the parent heading and opening
+paragraph. Three compound section labels also fell back. Before any resolver
+changes, the complete `2111.13850v2`, `2212.01330v1` and `2312.02753v1` documents
+were promoted to development. Their eligibility and required/excluded boundaries
+are unchanged. These failures will become blocking regressions. The original
+freeze is archived, and there is no active `m5_freeze.json` until replacement
+documents are source-reviewed and the revised pipeline is frozen.
+
+Remaining conservative fallbacks include a Roman table, a panel-qualified figure,
+a forward equation row among independently numbered rows, and an equation link
+whose source punctuation prevents unique classification. These results are
+reported as failures/fallbacks, not excluded from the coverage denominators.
 
 ## Remaining acceptance work
 
-Evaluate every frozen held-out link with paired images, required/excluded pixel metrics and per-group
+Fix the promoted section regressions, replenish the three held-out papers, and
+freeze and evaluate every held-out link with paired images, required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback
 cases and retain the final full-regression/build evidence.

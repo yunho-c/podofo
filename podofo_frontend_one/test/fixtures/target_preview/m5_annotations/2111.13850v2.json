@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "2111.13850v2.pdf",
-    "split": "held_out",
+    "split": "development",
     "id": "2111.13850v2",
     "sha256": "39deb44255ce67154186ce99fda82a94cc056b7a88c0b9fe8abfd35390bd369a",
     "source_url": "https://arxiv.org/abs/2111.13850v2",
@@ -652,6 +652,8 @@
   "review": {
     "date": "2026-10-30",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "0f10834"
+    "resolver_baseline": "0f10834",
+    "promoted_from": "held_out_v1",
+    "promotion_reason": "Missing intervening subsection heading; compound section identity and table fallback need development review."
   }
 }
