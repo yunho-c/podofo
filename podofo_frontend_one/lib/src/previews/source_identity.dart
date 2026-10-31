@@ -55,6 +55,34 @@ _Identity? _sourceIdentity(LinkSourceText source) {
   final citation = _listCitation(selected, source.before, source.after);
   if (citation != null) return _Identity(LinkTargetKind.citation, citation);
 
+  // Parenthesized figure panels may straddle the annotation boundary: the link
+  // selects "2(" and the immediately following text supplies "a)". Preserve the
+  // panel identity so the resolver still requires proof in the parent figure.
+  final panel = RegExp(
+    r'^(?:(Figures?|Figs?\.?)\s+)?(\d+)\((?:([a-z])\)[,.]?)?$',
+    caseSensitive: false,
+  ).firstMatch(selected);
+  if (panel != null) {
+    if (panel.group(1) == null &&
+        !RegExp(
+          r'\b(?:Figures?|Figs?\.?)\s*$',
+          caseSensitive: false,
+        ).hasMatch(_clean(source.before))) {
+      return null;
+    }
+    final suffix =
+        panel.group(3) ??
+        RegExp(
+          r'^\s*([a-z])\)(?=\s|[,.;:]|$)',
+          caseSensitive: false,
+        ).firstMatch(source.after)?.group(1);
+    if (suffix == null) return null;
+    return _Identity(
+      LinkTargetKind.figure,
+      '${panel.group(2)}${suffix.toLowerCase()}',
+    );
+  }
+
   // IEEE-style subsection links print the parent and child together (II-C),
   // while the target heading may print only C. Keep the full identity for the
   // resolver to check against parent-heading or precise destination evidence.

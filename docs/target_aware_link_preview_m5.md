@@ -23,17 +23,17 @@ can identify cached results, while missing payloads still prevent both inference
 and custom-directory verification. Corrupt/oversized manifests, changed catalog
 pins, unsupported platforms and symlinked components remain rejected.
 
-The final performance run so far is `performance-v3`, on an Apple M4 Pro with
+The latest performance run is `performance-v4` at resolver version 12, on an Apple M4 Pro with
 48 GiB RAM, macOS 27.0.1 (26A434), Flutter 3.47.5 / Dart 3.13.4, using the bundled
 experimental mixed layout profile and the existing linked-object Figure 4 at 2x.
 These are fixture observations, not a corpus-wide or release-mode benchmark.
 
 | Path | Samples | Semantic p50 | Semantic p95 | Context p95 |
 | --- | ---: | ---: | ---: | ---: |
-| Decoded image and text reuse | 30 | 1.4 ms | 1.9 ms | 0.14 ms |
-| Persisted layout, fresh worker/coordinator | 20 | 6.9 ms | 10.1 ms | 1.3 ms |
-| Warm model, forced layout miss | 20 | 69.0 ms | 77.2 ms | 1.4 ms |
-| Cold app preparation | 20 | 605.9 ms | 639.2 ms | 1.8 ms |
+| Decoded image and text reuse | 30 | 1.4 ms | 1.7 ms | 0.28 ms |
+| Persisted layout, fresh worker/coordinator | 20 | 6.4 ms | 9.7 ms | 1.2 ms |
+| Warm model, forced layout miss | 20 | 70.2 ms | 81.5 ms | 1.4 ms |
+| Cold app preparation | 20 | 615.0 ms | 678.3 ms | 3.6 ms |
 
 Timing begins at `LinkPreviewWorker.load` and ends at the contextual future or
 semantic callback; it excludes the 350 ms hover debounce, captures and assertions.
@@ -44,7 +44,7 @@ not a disk-free path. New inference is counted explicitly, so a purported warm
 analysis sample cannot pass by accidentally reusing persisted layout.
 
 The initial failing run remains under `build/target-preview-m5/performance-v1/`;
-`performance-v2` and `performance-v3` retain every subsequent raw sample. Both
+`performance-v2`, `performance-v3` and `performance-v4` retain subsequent raw samples. Both
 cached paths pass the p95 150 ms gate. Cold preparation continues to deliver the
 contextual image first; no inference deadline has been inferred from this sample.
 
@@ -636,9 +636,50 @@ pixels remain. The prior failed held-out captures and annotations are unchanged.
 The cross-page reference with its year on the following page still falls back.
 This development replay does not replace the pending held-out qualification.
 
+## Figure panel syntax and caption-backed headings
+
+Resolver version 12 retains panel identity for a parenthesized figure reference,
+including an annotation that selects `2(` while the immediately following text
+supplies `a)`. It requires an explicit figure prefix and a single complete panel
+suffix. Missing or ambiguous suffixes, multiple selected panels, an equation
+prefix, and a panel absent from the target figure still fall back.
+
+The parent caption can identify a panel with either `(a)` or `a)`. A short panel
+heading classified as text or heading joins the figure only when the main
+caption identifies the same panel and the heading lies immediately above an
+aligned visual. This retains the three panel titles in the promoted information
+theory figure. The existing whole-parent-figure rule and neighboring-region
+guards remain in force. Both new regression tests failed before the changes.
+
+The development replay `papers-panel-syntax-development-v1` resolves 26/28
+citations, 26/28 figures/tables, 27/28 equations and 26/28 sections. All 105
+accepted targets pass required/excluded ink checks, all ten controls fall back,
+all 44 input identities match, and native handles return to zero. Both newly
+resolved figure crops were visually checked against their full original pages;
+all panels, labels and captions remain, without neighboring text. The full
+Flutter suite passes 402 tests with 21 opt-in skips; full analysis, formatting and
+the exact 53-file vendored-engine pin verification pass. The 18 unrelated dirty
+files in the separate Podoco worktree remain byte-identical.
+
+The signed macOS Debug build passes deep/strict signature verification. A final
+explicit native run passes all four tests: the original fourteen-target corpus,
+M4 complex targets, the cache/model timing and 100-cycle cancellation stress run,
+and the bundled-payload identity guard. Cached semantic p95 remains below the
+150 ms gate, and owned caches and native handles drain after disposal. Updated
+timings are in the table above; raw samples are under `performance-v4/` (the
+original doubled run-prefix directory was renamed after completion). Validation
+logs use `build/target-preview-m5-panel-syntax-`.
+
+The second figure in `2206.07867v3` still falls back: the detected image boundary
+overlaps a separate displayed formula from preceding prose. Trimming that
+boundary without evidence of visual ownership could discard real figure content,
+so this remains an explicit unsupported boundary case. The cross-page reference
+whose year appears only on the following page and equation-interleaved section
+openings also remain fallbacks. No eligibility or target annotations changed.
+
 ## Remaining acceptance work
 
-Fix the promoted figure regressions, replenish and freeze the
+Replenish and freeze the
 held-out documents, then evaluate every held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10

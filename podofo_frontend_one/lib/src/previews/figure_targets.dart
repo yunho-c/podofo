@@ -13,11 +13,13 @@ bool _panelCaption(_Region r) =>
 
 /// A panel-qualified link may name the parent figure only when that figure's
 /// own caption or grouped labels explicitly identify the requested panel.
+bool _captionHasPanel(_Region caption, String panel) => RegExp(
+  '(?:^|\\s)\\(?$panel\\)(?=\\s|[,.;:]|\$)',
+  caseSensitive: false,
+).hasMatch(caption.text);
+
 bool _hasFigurePanel(_Region caption, List<_Region> components, String panel) =>
-    RegExp(
-      '(?:^|\\s)\\($panel\\)(?=\\s|[,.;:]|\$)',
-      caseSensitive: false,
-    ).hasMatch(caption.text) ||
+    _captionHasPanel(caption, panel) ||
     components.any(
       (r) =>
           _panelCaption(r) &&
@@ -103,8 +105,36 @@ List<_Region>? _figureComponents(
     if (group.length > 8) return null;
   }
   final envelope = _union([...group.map((r) => r.bounds), caption.bounds]);
+  // A detector can classify a panel's title as body text or a heading. Require
+  // that exact panel marker in the parent caption and a short title immediately
+  // above a grouped visual; nearby prose alone cannot establish ownership.
+  bool panelHeading(_Region r) {
+    if (kind != LinkTargetKind.figure ||
+        _sideways(caption) ||
+        (r.model.category != podoco.RegionCategory.text &&
+            r.model.category != podoco.RegionCategory.heading) ||
+        r.bounds.height > 32) {
+      return false;
+    }
+    final marker = RegExp(
+      r'^\(?([a-z])\)\s+',
+      caseSensitive: false,
+    ).firstMatch(r.text);
+    return marker != null &&
+        _captionHasPanel(caption, marker.group(1)!) &&
+        group.any(
+          (visual) =>
+              r.bounds.bottom <= visual.bounds.top + 2 &&
+              visual.bounds.top - r.bounds.bottom <= 16 &&
+              _horizontalOverlap(r.bounds, visual.bounds) >= .5 &&
+              clear(r, visual),
+        );
+  }
+
   final labels = regions.where(
-    (r) => _panelCaption(r) && _covers(envelope.inflate(2), r.bounds, .95),
+    (r) =>
+        (_panelCaption(r) && _covers(envelope.inflate(2), r.bounds, .95)) ||
+        panelHeading(r),
   );
   return [...group, ...labels, caption]
     ..sort((a, b) => _readingCompare(a.bounds, b.bounds));

@@ -14,6 +14,94 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test(
+    'partially selected parenthesized panels retain a single panel identity',
+    () {
+      final regions = [
+        _r('figure', [100, 60, 450, 175], 'Both panels'),
+        _r('caption', [90, 190, 470, 215], 'Figure 2. (a) First; (b) second.'),
+      ];
+      for (final c in [
+        ('2(', 'Fig. ', 'a), as shown.'),
+        ('2(a)', 'Fig. ', ', as shown.'),
+        ('Figure 2(a)', '', ', as shown.'),
+        ('Fig. 2(', '', 'a).'),
+      ]) {
+        final target = _resolve(regions, c.$1, before: c.$2, after: c.$3);
+        expect(
+          target.tier,
+          LinkTargetTier.matchedIdentity,
+          reason: target.reason,
+        );
+        expect(target.label, 'Figure 2a');
+        expect(
+          target.parts.single.bounds.contains(const Offset(440, 170)),
+          true,
+        );
+      }
+      for (final c in [
+        ('2(', 'Eq. ', 'a).'),
+        ('2(', 'Fig. ', 'a and b).'),
+        ('2(', 'Fig. ', 'a)3'),
+        ('2(', '', 'a).'),
+        ('2(', 'Fig. ', 'c).'),
+        ('Figure 2(', '', 'c).'),
+        ('Figure 2(', '', 'one).'),
+        ('Figure 2(a) and 2(b)', '', ''),
+        ('2(a), 2(b)', 'Figs. ', ''),
+      ]) {
+        expect(
+          _resolve(regions, c.$1, before: c.$2, after: c.$3).tier,
+          LinkTargetTier.unresolved,
+        );
+      }
+    },
+  );
+  test(
+    'caption-backed panel headings belong to their complete parent figure',
+    () {
+      final regions = [
+        _r('text', [100, 45, 270, 57], 'a) Original'),
+        _r('heading', [280, 45, 450, 57], 'b) Decoded'),
+        _r('figure', [100, 60, 270, 175], 'Original image'),
+        _r('figure', [280, 60, 450, 175], 'Decoded image'),
+        _r('caption', [90, 190, 470, 215], 'Figure 2. a) First; b) second.'),
+        _r('text', [90, 240, 470, 265], 'Unrelated paragraph.'),
+      ];
+      final target = _resolve(regions, '2a', before: 'Fig. ');
+      expect(
+        target.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: target.reason,
+      );
+      for (final r in regions.take(5)) {
+        expect(
+          target.parts.any((p) => p.bounds.contains(_rect(r).center)),
+          true,
+        );
+      }
+      expect(
+        target.parts.any((p) => p.bounds.overlaps(_rect(regions.last))),
+        false,
+      );
+      expect(_resolve(regions, 'Figure 2c').tier, LinkTargetTier.unresolved);
+      final unproved = [...regions]
+        ..[4] = _r('caption', [90, 190, 470, 215], 'Figure 2. Comparison.');
+      expect(_resolve(unproved, 'Figure 2a').tier, LinkTargetTier.unresolved);
+      final distant = [...regions]
+        ..[0] = _r('text', [100, 10, 270, 22], 'a) Other text');
+      final spaced = _resolve(distant, 'Figure 2a');
+      expect(
+        spaced.tier,
+        LinkTargetTier.matchedIdentity,
+        reason: spaced.reason,
+      );
+      expect(
+        spaced.parts.any((p) => p.bounds.overlaps(_rect(distant.first))),
+        false,
+      );
+    },
+  );
   test('a panel link retains the whole figure and visual-footnote labels', () {
     final regions = [
       _r('figure', [100, 60, 270, 175], 'Original'),
