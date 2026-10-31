@@ -469,6 +469,35 @@ all versions of previously sampled paper IDs. Its eight source-only cases and pa
 renderings are under `build/target-preview-m5/annotations-v4-panel-replacement/`;
 source annotations are pending. See `m5_history/replenishment_v3_selection.json`.
 
+## Panel-qualified figure identities
+
+Resolver version 10 accepts a numeric panel identity such as `Figure 2a` against
+the caption `Figure 2` only when that grouped figure explicitly identifies panel
+`a` in its own caption or panel labels. It retains the complete parent figure and
+shared caption. An absent panel, a label outside the group, and table suffixes do
+not establish this match. Exact independently numbered captions still work.
+
+Panel labels classified as `vision_footnote` text now join their figure when they
+begin with a letter marker and lie inside its group envelope. Ordinary prose
+remains a grouping boundary. This resolves the promoted `2511.23342v3` case without
+changing its original eligibility or required/excluded bounds. Paired source-page
+and semantic-crop review confirms both panels, both labels and the full caption.
+
+Both new regression tests fail on version 9 and pass on version 10. The focused
+suite passes 51 tests; the full Flutter suite passes 397 with 21 opt-in skips.
+Static analysis and formatting pass. The final native replay
+`papers-panel-development-v2` covers 87 links across ten development papers:
+19/20 citations, 19/20 figures/tables, 19/20 equations and 20/20 sections resolve.
+All 77 accepted targets pass required/excluded ink checks; all seven unsupported
+controls fall back and native handles return to zero. The original fourteen-target
+native evaluation also passes under `m5-panel-final-regression`. Logs use the
+`build/target-preview-m5-panel-` prefix. These remain development results; the
+replacement held-out set has not been evaluated.
+
+The macOS Debug app builds and passes deep, strict verification of its local
+signature (`build/target-preview-m5-panel-build.log`). The pinned-engine verifier
+passes all 53 files. Native-window acceptance remains pending.
+
 ## Remaining acceptance work
 
 Finish remaining promoted cases and replacement source annotations, then freeze

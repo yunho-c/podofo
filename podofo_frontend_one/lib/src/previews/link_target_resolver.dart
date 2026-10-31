@@ -61,6 +61,9 @@ class LinkTargetResolver {
         );
       case LinkTargetKind.figure:
       case LinkTargetKind.table:
+        final panel = identity.kind == LinkTargetKind.figure
+            ? RegExp(r'^(\d+)([a-z])$').firstMatch(identity.value)
+            : null;
         for (final caption in regions.where(
           (r) => r.model.category == podoco.RegionCategory.caption,
         )) {
@@ -70,13 +73,19 @@ class LinkTargetResolver {
           ).firstMatch(caption.text);
           if (match == null ||
               match.start > 32 ||
-              _canonicalLabel(match.group(2)!) != identity.value ||
               (match.group(1)!.toLowerCase() == 'table') !=
                   (identity.kind == LinkTargetKind.table)) {
             continue;
           }
+          final captionLabel = _canonicalLabel(match.group(2)!);
+          final parentFigure = panel != null && captionLabel == panel.group(1);
+          if (captionLabel != identity.value && !parentFigure) continue;
           final components = _figureComponents(caption, regions, identity.kind);
-          if (components == null) continue;
+          if (components == null ||
+              (parentFigure &&
+                  !_hasFigurePanel(caption, components, panel.group(2)!))) {
+            continue;
+          }
           candidates.add(
             _Candidate(
               identity,

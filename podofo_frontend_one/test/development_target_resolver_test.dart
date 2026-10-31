@@ -14,6 +14,70 @@ import 'package:podofo_one/src/previews/preview_text.dart';
 import 'fixtures/analysis_fixture.dart';
 
 void main() {
+  test('a panel link retains the whole figure and visual-footnote labels', () {
+    final regions = [
+      _r('figure', [100, 60, 270, 175], 'Original'),
+      _r('figure', [280, 60, 450, 175], 'Decoded'),
+      _r(
+        'text',
+        [150, 180, 230, 190],
+        '(a) Original',
+        subtype: 'vision_footnote',
+      ),
+      _r('caption', [330, 180, 410, 190], '(b) Decoded'),
+      _r('caption', [90, 205, 470, 230], 'Figure 2. Comparison.'),
+      _r('text', [90, 245, 470, 270], 'Unrelated paragraph.'),
+    ];
+    final target = _resolve(regions, '2a', before: 'Fig. ');
+    expect(target.tier, LinkTargetTier.matchedIdentity, reason: target.reason);
+    expect(target.label, 'Figure 2a');
+    for (final r in regions.take(5)) {
+      expect(target.parts.any((p) => p.bounds.contains(_rect(r).center)), true);
+    }
+    expect(
+      target.parts.any((p) => p.bounds.overlaps(_rect(regions.last))),
+      false,
+    );
+    expect(_resolve(regions, 'Figure 2').tier, LinkTargetTier.matchedIdentity);
+    expect(_resolve(regions, 'Figure 2c').tier, LinkTargetTier.unresolved);
+    final prose = [...regions]
+      ..[2] = _r('text', [150, 180, 230, 190], '(a) Ordinary prose.');
+    expect(_resolve(prose, 'Figure 2a').tier, LinkTargetTier.unresolved);
+  });
+  test('parent figure matching requires its own explicit panel marker', () {
+    final regions = [
+      _r('figure', [100, 60, 450, 175], 'Target'),
+      _r('caption', [90, 190, 470, 215], 'Figure 2. (a) First; (b) second.'),
+    ];
+    expect(_resolve(regions, 'Figure 2a').tier, LinkTargetTier.matchedIdentity);
+    expect(_resolve(regions, 'Figure 2b').tier, LinkTargetTier.matchedIdentity);
+    final noMarker = [...regions]
+      ..[1] = _r('caption', [90, 190, 470, 215], 'Figure 2. Unlabelled image.');
+    expect(_resolve(noMarker, 'Figure 2a').tier, LinkTargetTier.unresolved);
+    expect(
+      _resolve([
+        ...noMarker,
+        _r('caption', [90, 300, 470, 325], '(a) Another figure panel'),
+      ], 'Figure 2a').tier,
+      LinkTargetTier.unresolved,
+    );
+    final exact = [...regions]
+      ..[1] = _r('caption', [
+        90,
+        190,
+        470,
+        215,
+      ], 'Figure 2a. Independent caption.');
+    expect(_resolve(exact, 'Figure 2a').tier, LinkTargetTier.matchedIdentity);
+    expect(_resolve(exact, 'Figure 2b').tier, LinkTargetTier.unresolved);
+    expect(
+      _resolve([
+        _r('table', [100, 60, 450, 175], 'Table cells'),
+        _r('caption', [90, 190, 470, 215], 'Table 2. (a) First; (b) second.'),
+      ], 'Table 2a').tier,
+      LinkTargetTier.unresolved,
+    );
+  });
   test(
     'compound section labels retain parent identity and destination evidence',
     () {
@@ -440,7 +504,14 @@ Map<String, Object?> _r(
   List<double> bounds,
   String text, {
   bool inline = false,
-}) => {'category': category, 'bounds': bounds, 'text': text, 'inline': inline};
+  String? subtype,
+}) => {
+  'category': category,
+  'bounds': bounds,
+  'text': text,
+  'inline': inline,
+  'subtype': subtype,
+};
 
 Rect _rect(Map<String, Object?> region) {
   final b = region['bounds'] as List<double>;
@@ -532,7 +603,7 @@ ResolvedLinkTarget _resolve(
         'model_class_id': 0,
         'model_label': 'hand-annotated-fixture',
         'category': regions[i]['category'],
-        'native_subtype': null,
+        'native_subtype': regions[i]['subtype'],
         'bounds': regions[i]['bounds'],
         'display_kind': regions[i]['category'] == 'formula'
             ? (regions[i]['inline'] == true ? 'inline' : 'displayed')
