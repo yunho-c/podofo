@@ -213,6 +213,19 @@ void main() {
         x.cacheKey(a),
         isNot(resolver.resolve(null, evidenceIdentity: 'second').cacheKey(a)),
       );
+      for (final maxSize in [const Size(163, 360), const Size(480, 211)]) {
+        final resized = LinkPreviewRequest(
+          session: s,
+          sourcePage: a.sourcePage,
+          annotationIndex: a.annotationIndex,
+          sourceRects: a.sourceRects,
+          destination: a.destination,
+          pixelRatio: a.pixelRatio,
+          maxSize: maxSize,
+        );
+        expect(a.identity, resized.identity);
+        expect(x.cacheKey(a), isNot(x.cacheKey(resized)));
+      }
       s.revision++;
       expect(a.isCurrent, false);
     } finally {

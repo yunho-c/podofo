@@ -103,8 +103,8 @@ void main() {
           report['${name}_total_us'] = timer.elapsedMicroseconds;
           expect(target.label, 'Figure 4');
           expect(target.parts.single.page, 2);
-          expect(image.width, lessThanOrEqualTo(360));
-          expect(image.height, lessThanOrEqualTo(240));
+          expect(image.width, lessThanOrEqualTo(480));
+          expect(image.height, lessThanOrEqualTo(360));
         } finally {
           image.dispose();
         }

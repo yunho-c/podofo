@@ -5,6 +5,7 @@ import 'package:pdfrx/pdfrx.dart';
 import '../services/pdf_session.dart';
 
 const linkResolverVersion = 2;
+const semanticPreviewMaxSize = Size(480, 360);
 
 /// Consumer cancellation detaches subscriptions without stealing shared work.
 class PreviewCancellation {
@@ -40,6 +41,7 @@ class LinkPreviewRequest {
     required List<PdfRect> sourceRects,
     required PdfDest destination,
     required this.pixelRatio,
+    this.maxSize = semanticPreviewMaxSize,
   }) : revision = session.revision,
        sourceRects = List.unmodifiable(sourceRects),
        destination = destination.compact();
@@ -48,6 +50,9 @@ class LinkPreviewRequest {
   final List<PdfRect> sourceRects;
   final PdfDest destination;
   final double pixelRatio;
+
+  /// Logical raster envelope; the compositor also applies its hard pixel cap.
+  final Size maxSize;
   bool get isCurrent => !session.lease.isClosed && session.revision == revision;
   Object get identity => (
     session,
@@ -110,5 +115,7 @@ class ResolvedLinkTarget {
         )
         .join(';'),
     request.pixelRatio,
+    request.maxSize.width,
+    request.maxSize.height,
   );
 }

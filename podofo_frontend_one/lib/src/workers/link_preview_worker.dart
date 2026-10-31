@@ -9,6 +9,7 @@ import '../services/pdf_session.dart';
 import '../previews/preview_geometry.dart';
 import '../previews/link_target.dart';
 import '../previews/pdf_link_context.dart';
+import '../previews/preview_compositor.dart';
 import '../analysis/preview_layout_repository.dart';
 
 /// A preview never changes the viewer matrix or consults its current zoom.
@@ -183,40 +184,22 @@ Future<ui.Image?> renderLinkPreview(
   return _renderRegion(page, region, cancellation);
 }
 
-/// Semantic single-page raster; owned by the caller, with the same image budget.
+/// Complete semantic raster, owned by the caller. Composition is all-or-nothing.
 Future<ui.Image?> renderResolvedLinkPreview(
   PdfDocument document,
   ResolvedLinkTarget target,
   double pixelRatio,
-  LinkPreviewCancellation cancellation,
-) async {
-  if (target.parts.length != 1 || cancellation.isCancelled) return null;
-  final part = target.parts.single;
-  if (part.page < 1 || part.page > document.pages.length) return null;
-  final page = document.pages[part.page - 1];
-  final rect = part.bounds.intersect(ui.Offset.zero & page.size);
-  if (rect.isEmpty ||
-      ![
-        rect.left,
-        rect.top,
-        rect.right,
-        rect.bottom,
-      ].every((v) => v.isFinite)) {
-    return null;
-  }
-  final region = LinkPreviewRegion(
-    rect,
-    page.size,
-    boundedPreviewPixelRatio(pixelRatio),
-  );
-  if (!region.fullWidth.isFinite ||
-      !region.fullHeight.isFinite ||
-      region.fullWidth > 32768 ||
-      region.fullHeight > 32768) {
-    return null;
-  }
-  return _renderRegion(page, region, cancellation);
-}
+  LinkPreviewCancellation cancellation, {
+  ui.Size maxSize = semanticPreviewMaxSize,
+  PreviewRasterAccounting? accounting,
+}) => renderPreviewComposition(
+  document,
+  target,
+  pixelRatio,
+  cancellation,
+  maxSize: maxSize,
+  accounting: accounting,
+);
 
 Future<ui.Image?> _renderRegion(
   PdfPage page,
@@ -439,6 +422,7 @@ class LinkPreviewWorker {
                       target,
                       job.pixelRatio,
                       job.cancellation,
+                      maxSize: job.request!.maxSize,
                     );
                   });
               if (_valid(job) && image != null) {

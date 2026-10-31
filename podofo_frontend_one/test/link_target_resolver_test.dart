@@ -102,8 +102,8 @@ void main() {
           ),
         ))!;
         try {
-          expect(image.width, lessThanOrEqualTo(720));
-          expect(image.height, lessThanOrEqualTo(480));
+          expect(image.width, lessThanOrEqualTo(960));
+          expect(image.height, lessThanOrEqualTo(720));
         } finally {
           image.dispose();
         }
@@ -193,6 +193,7 @@ void main() {
       sourceRects: links[2].rects,
       destination: links[2].dest!,
       pixelRatio: 1,
+      maxSize: const Size(163, 211),
     );
     final repository = PreviewLayoutRepository(store, _identity(session));
     final images = <Image>[];
@@ -210,6 +211,8 @@ void main() {
             expect(contextDelivered, true);
             expect(target.label, 'Figure 4');
             expect(target.tier, LinkTargetTier.matchedIdentity);
+            expect(image.width, lessThanOrEqualTo(163));
+            expect(image.height, lessThanOrEqualTo(211));
             images.add(image);
             refined.complete();
           },

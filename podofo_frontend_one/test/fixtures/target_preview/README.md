@@ -86,3 +86,29 @@ must be zero. This measures crop geometry against original PDF pixels; it does
 not score text readability after scaling. The 14 development cases currently
 cover all required ink with zero annotated neighboring ink. They are not M5's
 held-out corpus.
+
+## Complex target raster fixtures (M4 foundation)
+
+`complex_objects.pdf` has six pages and eleven real links. Nine cases annotate
+complete objects with hanging references, column/page continuations, separated
+panels, captions above figures, multiline equations, a section opening, and an
+offset/rotated page. Two cases specify ambiguous or unfinished targets. Its
+schema-2 manifest associates each required/excluded rectangle with its page.
+The `pages[].regions` are hand annotations explicitly marked as such; they are
+not Core ML detections or evidence of automatic resolver coverage.
+
+Regenerate with ReportLab 5.1.0 and pypdf 6.21.4:
+
+```sh
+python tool/create_complex_preview_fixture.py
+python3 tool/test_macos.py --build-mode debug -- --concurrency=1 \
+  test/preview_compositor_test.dart test/preview_compositor_native_test.dart
+```
+
+The native test verifies source/destination geometry and renders the nine manual
+targets at 1x, 2x and a narrow envelope with DPR capped from 4x to 2x. Every
+composed pixel must match an independent native source crop. Paired context and
+composed PNGs plus accounting results are written to
+`build/target-preview-m4/compositor`. Automatic grouping, second-page inference
+and adaptive card validation remain open; see the
+[M4 progress report](../../../../docs/target_aware_link_preview_m4.md).
