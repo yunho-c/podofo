@@ -87,13 +87,34 @@ void main() {
         'lib/src/previews/section_targets.dart',
         'lib/src/previews/pdf_link_context.dart',
         'lib/src/previews/preview_text.dart',
+        'lib/src/previews/preview_geometry.dart',
+        'lib/src/previews/preview_compositor.dart',
+        'lib/src/workers/link_preview_worker.dart',
+        'lib/src/analysis/analysis_engine.dart',
+        'lib/src/analysis/analysis_controller.dart',
+        'lib/src/analysis/analysis_coordinator.dart',
+        'lib/src/analysis/analysis_snapshot.dart',
+        'lib/src/analysis/preview_layout_repository.dart',
+        'lib/src/analysis/preview_layout_store.dart',
+        'lib/src/analysis/pdf_analysis_source.dart',
+        'lib/src/analysis/pdf_image_input.dart',
+        'lib/src/services/pdf_session.dart',
+        '../podoco/bindings/flutter/lib/src/model_loader.dart',
+        '../podoco/bindings/flutter/lib/src/model_resources.dart',
+        'test/support/target_preview_metrics.dart',
+        'test/paper_preview_qualification_test.dart',
+        'test/fixtures/target_preview/m5_sampling.json',
+        'pubspec.lock',
+        '.podoco/model_assets/models/pack.json',
+        '.podoco/model_assets/models/layout/podoco-bundle.yaml',
       ]) {
         identities[path] = sha256
             .convert(await File(path).readAsBytes())
             .toString();
       }
-      // Held-out output must not be examined until annotations and resolver code
-      // have both been frozen. Any change requires a new, explicitly reviewed set.
+      // Freeze the measured pipeline, scoring rules, sample and model identity,
+      // as well as the annotations, before examining any held-out output.
+      // Changes driven by held-out output require replenishing those documents.
       if (split == 'held_out') {
         final freeze = jsonDecode(
           await File('$_fixtures/m5_freeze.json').readAsString(),

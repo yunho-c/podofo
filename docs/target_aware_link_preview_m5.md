@@ -1,8 +1,9 @@
 # Target-aware previews: M5 qualification in progress
 
 M5 is not complete. The latency/ownership harness now exercises the real bundled
-layout engine, and a model-independent paper corpus has been sampled. Held-out
-target accuracy and native-window acceptance remain unqualified.
+layout engine, and the first model-independent paper corpus has been annotated
+and frozen. Held-out target accuracy and native-window acceptance remain
+unqualified.
 
 ## Cache preparation latency
 
@@ -94,10 +95,10 @@ footnote as an unsupported control when available. This is a bounded convenience
 sample of the local paper collection, not a random population sample.
 
 The prepared sample has 102 links: 53 development and 49 held-out. Held-out
-groups currently contain twelve citations, twelve figure/table links, eleven
-equations and eleven sections, plus three controls. Eligibility and full target
-boundaries still require source review; these counts are not eligible coverage
-denominators. The two existing real-paper development seeds add eight links,
+groups contain twelve citations, twelve figure/table links, eleven equations and
+eleven sections, plus three controls. Source review confirmed all 46 named targets
+as eligible; the three footnotes are unsupported controls. The two existing
+real-paper development seeds add eight links,
 bringing the intended total to 110 links over fourteen papers.
 
 `tool/prepare_target_preview_corpus.py` reads links, renders full source/target
@@ -108,7 +109,8 @@ are converted from raw PDF space to displayed page space, including page transfo
 The reviewed annotation files live under `test/fixtures/target_preview/m5_annotations/`.
 All six development papers have 53 reviewed cases: 48 eligible targets and five
 unsupported controls. Each document's annotations were completed before its
-resolver output was examined. Held-out documents have not been evaluated.
+resolver output was examined. All six held-out papers now have independently
+reviewed source annotations, also completed before any resolver/model output.
 
 The initial sampling baseline is resolver version 3 at `1a31463`. Development
 may still change the resolver. Freeze its final identity and all eligibility
@@ -130,9 +132,9 @@ handles must return to zero after each document. Development runs reject wrong
 or incomplete accepted targets but permit conservative fallbacks.
 
 Held-out runs require the complete split and a matching `m5_freeze.json` containing
-the annotation and resolver source hashes before any native evaluation begins.
-That freeze file does not exist yet. A passing development run is not a held-out
-accuracy qualification.
+the annotation and measured pipeline source hashes before any native evaluation
+begins. The first freeze uses resolver version 7 and the annotations described
+below. A passing development run is not a held-out accuracy qualification.
 
 The initial replay identified citation-list punctuation, line breaks in author
 names, ditto-author bibliography entries, and numeric appendix references as
@@ -317,10 +319,33 @@ The macOS Debug build and deep/strict local signature verification passed
 (`build/target-preview-m5-grouping-build.log`). Native tests and building/signing
 ran serially. This does not establish native-window acceptance.
 
+## First held-out source freeze
+
+All 49 held-out links were reviewed from full source/target page renderings and
+independent MuPDF text geometry before examining any resolver or model output.
+Their 160 required/excluded rectangles were checked against the original PDF
+hashes, page bounds and source ink. No required rectangle overlaps an excluded
+rectangle for the same link. All 46 named targets remain eligible, including
+compound section labels, nested headings, a cross-column opening paragraph,
+equation underbraces, table notes and a panel-qualified figure link.
+
+The annotation policy includes the complete figure and shared caption when a
+panel-qualified source points to the PDF destination for that figure. Section
+openings include an immediately intervening subsection heading before the first
+paragraph. Displayed mathematics following a colon-ended opening text block is
+separate; inline mathematics belongs to that block. Bibliography back-references
+and figure/table notes belong to their complete target.
+
+`test/fixtures/target_preview/m5_freeze.json` records 34 hashes: six annotation
+files and the resolver, extraction/rendering/analysis pipeline, scoring harness,
+sampling manifest, dependency lock, loader and bundled model identity. The
+evaluation checks the whole frozen held-out split before opening native analysis.
+The source baseline is `0f10834`; changes motivated by these held-out documents
+require moving the affected documents into development and replenishing them.
+
 ## Remaining acceptance work
 
-Complete annotation and development replay, freeze rules, and evaluate every
-held-out link with paired images, required/excluded pixel metrics and per-group
+Evaluate every frozen held-out link with paired images, required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback
 cases and retain the final full-regression/build evidence.

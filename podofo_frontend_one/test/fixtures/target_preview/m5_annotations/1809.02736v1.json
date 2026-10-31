@@ -1,0 +1,549 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "1809.02736v1.pdf",
+    "split": "held_out",
+    "id": "1809.02736v1",
+    "sha256": "547c44d4c83e2eb506a20fd2ff1743d18269f80c83e61d599eb65efaecb6cad0",
+    "source_url": "https://arxiv.org/abs/1809.02736v1",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 1,
+      "section": 1
+    },
+    "cases": [
+      {
+        "id": "1809.02736v1-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 76,
+        "source_bounds": [
+          185.288,
+          557.523,
+          192.362,
+          568.427
+        ],
+        "source_text": "[1]",
+        "source_context": "Most recent methods for learning-based, loss\ntransform coding [1]. In this approach, ima\ndata into a quantized latent representation and",
+        "destination": {
+          "name": "cite.0@goyal2001",
+          "page": 8,
+          "raw_pdf_point": [
+            108.0,
+            163.457
+          ],
+          "point": [
+            108.0,
+            628.543
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 8,
+            "bounds": [
+              112,
+              631,
+              506,
+              653
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 8,
+            "bounds": [
+              112,
+              655,
+              507,
+              710
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Theoretical foundations of transform coding"
+        ],
+        "reviewed": true,
+        "notes": "Complete two-line entry including DOI; exclude entry 2."
+      },
+      {
+        "id": "1809.02736v1-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 1,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 77,
+        "source_bounds": [
+          317.366,
+          612.068,
+          324.3,
+          622.972
+        ],
+        "source_text": "[2]",
+        "source_context": "han the linear transforms used by traditional image co\nesembles an autoencoder [2], [3], which consists of an\nse, pixels) and a latent, reduced-dimensionality spac",
+        "destination": {
+          "name": "cite.0@rumelhart1986",
+          "page": 8,
+          "raw_pdf_point": [
+            108.0,
+            138.35
+          ],
+          "point": [
+            108.0,
+            653.65
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 8,
+            "bounds": [
+              112,
+              655,
+              507,
+              710
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 8,
+            "bounds": [
+              112,
+              631,
+              506,
+              653
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Parallel distributed processing"
+        ],
+        "reviewed": true,
+        "notes": "Complete five-line book chapter entry including its final URL."
+      },
+      {
+        "id": "1809.02736v1-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 2,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 102,
+        "source_bounds": [
+          434.405,
+          261.015,
+          441.378,
+          271.545
+        ],
+        "source_text": "(1)",
+        "source_context": "f Ballé et al. [13], which uses a noise-based\no the loss function in Eq. (1) and introduces\nmost previous research uses a fixed, though",
+        "destination": {
+          "name": "equation.1.1",
+          "page": 2,
+          "raw_pdf_point": [
+            147.063,
+            699.128
+          ],
+          "point": [
+            147.063,
+            92.872
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 2,
+            "bounds": [
+              158,
+              112,
+              453,
+              141
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              491,
+              113,
+              505,
+              125
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              75,
+              505,
+              106
+            ]
+          },
+          {
+            "page": 2,
+            "bounds": [
+              107,
+              147,
+              505,
+              245
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Include both underbraces and rate/distortion labels as part of the displayed equation, plus its number."
+      },
+      {
+        "id": "1809.02736v1-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 5,
+        "source_xref": 105,
+        "source_bounds": [
+          135.496,
+          536.098,
+          142.47,
+          547.002
+        ],
+        "source_text": "1",
+        "source_context": "Figure 1 provides a high-level ove\nmain sub-networks1. The first is th",
+        "destination": {
+          "name": "figure.caption.2",
+          "page": 3,
+          "raw_pdf_point": [
+            108.0,
+            725.455
+          ],
+          "point": [
+            108.0,
+            66.545
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              71,
+              505,
+              221
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              228,
+              507,
+              294
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              314,
+              505,
+              336
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 1:"
+        ],
+        "reviewed": true,
+        "notes": "The diagram and its right-side component/symbol legend are one figure; include the complete six-line caption."
+      },
+      {
+        "id": "1809.02736v1-unsupported_control-1",
+        "group": "unsupported_control",
+        "kind": "unsupported_control",
+        "source_page": 2,
+        "source_link_index_pymupdf": 6,
+        "source_xref": 106,
+        "source_bounds": [
+          182.052,
+          545.418,
+          188.03,
+          557.911
+        ],
+        "source_text": "a h\ns1.",
+        "source_context": "Figure 1 provides a high-level overview of ou\nmain sub-networks1. The first is the core auto\nof images (Encoder and Decoder blocks). T",
+        "destination": {
+          "name": "Hfootnote.1",
+          "page": 2,
+          "raw_pdf_point": [
+            124.14,
+            91.925
+          ],
+          "point": [
+            124.14,
+            700.075
+          ]
+        },
+        "eligible": false,
+        "eligibility_reason": "Footnotes are outside the four target groups",
+        "required_parts": [],
+        "excluded_neighbors": [],
+        "expected_target_text": [],
+        "reviewed": true,
+        "notes": "Source and destination reviewed; footnote control outside the four target groups."
+      },
+      {
+        "id": "1809.02736v1-figure_table-2",
+        "group": "figure_table",
+        "kind": "table",
+        "source_page": 3,
+        "source_link_index_pymupdf": 5,
+        "source_xref": 137,
+        "source_bounds": [
+          497.35,
+          668.613,
+          504.274,
+          679.517
+        ],
+        "source_text": "1.",
+        "source_context": "dels are outlined in Table 1.\ng., one could exchange the",
+        "destination": {
+          "name": "table.caption.3",
+          "page": 4,
+          "raw_pdf_point": [
+            108.0,
+            725.455
+          ],
+          "point": [
+            108.0,
+            66.545
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              71,
+              505,
+              159
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              166,
+              506,
+              231
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              261,
+              506,
+              359
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Table 1:"
+        ],
+        "reviewed": true,
+        "notes": "All six network columns, dividing rules and the full six-line caption below the table."
+      },
+      {
+        "id": "1809.02736v1-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 3,
+        "source_xref": 162,
+        "source_bounds": [
+          460.959,
+          489.928,
+          467.987,
+          500.832
+        ],
+        "source_text": "3",
+        "source_context": "city, we use 1×1 convolution in the\nalso permissible. Section 3 provides\noring the effects of different context",
+        "destination": {
+          "name": "section.3",
+          "page": 4,
+          "raw_pdf_point": [
+            108.0,
+            260.756
+          ],
+          "point": [
+            108.0,
+            531.244
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              539,
+              237,
+              552
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              564,
+              507,
+              695
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              436,
+              506,
+              522
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              701,
+              505,
+              723
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3",
+          "Experimental Results"
+        ],
+        "reviewed": true,
+        "notes": "Heading and full first paragraph; the numbered footnote below is separate."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "0f10834"
+  }
+}

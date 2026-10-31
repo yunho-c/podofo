@@ -1,0 +1,669 @@
+{
+  "schema_version": 2,
+  "coordinate_space": "displayed_page_points_top_left",
+  "page_numbering": "one_based",
+  "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
+  "document": {
+    "pdf": "2606.29940v2.pdf",
+    "split": "held_out",
+    "id": "2606.29940v2",
+    "sha256": "b1760fa7f611cf71c0b7a02f4cb5d1e00a918b43250c1229901c41bb4f3f9400",
+    "source_url": "https://arxiv.org/abs/2606.29940v2",
+    "redistribution": "local_only_license_not_reviewed",
+    "page_sizes": [
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ],
+      [
+        612.0,
+        792.0
+      ]
+    ],
+    "sample_counts": {
+      "citation": 2,
+      "figure_table": 2,
+      "equation": 2,
+      "section": 2
+    },
+    "cases": [
+      {
+        "id": "2606.29940v2-citation-1",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 2,
+        "source_link_index_pymupdf": 0,
+        "source_xref": 315,
+        "source_bounds": [
+          141.547,
+          261.111,
+          148.521,
+          269.898
+        ],
+        "source_text": "[1,",
+        "source_context": "or selects an undesirable inverse-kin\nmotion [1, 2, 3, 4]. Offline policy l",
+        "destination": {
+          "name": "cite.fu2024mobilealoha",
+          "page": 9,
+          "raw_pdf_point": [
+            0.0,
+            703.38
+          ],
+          "point": [
+            0.0,
+            88.62
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 9,
+            "bounds": [
+              112,
+              93,
+              505,
+              128
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 9,
+            "bounds": [
+              112,
+              137,
+              505,
+              160
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Mobile ALOHA"
+        ],
+        "reviewed": true,
+        "notes": "Single member 1 of a longer citation list; include the final year line."
+      },
+      {
+        "id": "2606.29940v2-citation-2",
+        "group": "citation",
+        "kind": "citation",
+        "source_page": 2,
+        "source_link_index_pymupdf": 1,
+        "source_xref": 316,
+        "source_bounds": [
+          152.012,
+          261.111,
+          158.986,
+          269.898
+        ],
+        "source_text": "2,",
+        "source_context": "or selects an undesirable inverse-kinem\nmotion [1, 2, 3, 4]. Offline policy lea",
+        "destination": {
+          "name": "cite.cheng2024opentelevision",
+          "page": 9,
+          "raw_pdf_point": [
+            0.0,
+            659.694
+          ],
+          "point": [
+            0.0,
+            132.306
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 9,
+            "bounds": [
+              112,
+              137,
+              505,
+              160
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 9,
+            "bounds": [
+              112,
+              93,
+              505,
+              128
+            ]
+          },
+          {
+            "page": 9,
+            "bounds": [
+              112,
+              169,
+              505,
+              203
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Open-television"
+        ],
+        "reviewed": true,
+        "notes": "Single member 2 of a longer citation list; include its URL and wrapped title."
+      },
+      {
+        "id": "2606.29940v2-figure_table-1",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 7,
+        "source_xref": 322,
+        "source_bounds": [
+          286.366,
+          398.027,
+          293.339,
+          409.041
+        ],
+        "source_text": "1)",
+        "source_context": "ssues with WARP (Fig. 1), an offline human-to-ro\nk for whole-body mobile manipulation. The key m",
+        "destination": {
+          "name": "figure.caption.2",
+          "page": 1,
+          "raw_pdf_point": [
+            0.0,
+            331.25
+          ],
+          "point": [
+            0.0,
+            460.75
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 1,
+            "bounds": [
+              107,
+              469,
+              505,
+              647
+            ]
+          },
+          {
+            "page": 1,
+            "bounds": [
+              107,
+              657,
+              505,
+              718
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 1,
+            "bounds": [
+              143,
+              427,
+              468,
+              438
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 1:"
+        ],
+        "reviewed": true,
+        "notes": "Panels a/b/c, all demonstration photos, panel headings and complete six-line caption."
+      },
+      {
+        "id": "2606.29940v2-figure_table-2",
+        "group": "figure_table",
+        "kind": "figure",
+        "source_page": 2,
+        "source_link_index_pymupdf": 9,
+        "source_xref": 324,
+        "source_bounds": [
+          471.279,
+          433.963,
+          478.253,
+          444.907
+        ],
+        "source_text": "2)",
+        "source_context": "izing over redundant joint angles,\nand-frame geometry (Fig. 2). This\nset of closed-form geometric sub-",
+        "destination": {
+          "name": "figure.caption.7",
+          "page": 4,
+          "raw_pdf_point": [
+            0.0,
+            725.455
+          ],
+          "point": [
+            0.0,
+            66.545
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              110,
+              73,
+              505,
+              160
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              169,
+              505,
+              220
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              227,
+              505,
+              250
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "Figure 2:"
+        ],
+        "reviewed": true,
+        "notes": "All four horizontally arranged panels and their labels; complete shared caption including final line."
+      },
+      {
+        "id": "2606.29940v2-section-1",
+        "group": "section",
+        "kind": "section",
+        "source_page": 3,
+        "source_link_index_pymupdf": 27,
+        "source_xref": 360,
+        "source_bounds": [
+          155.576,
+          492.508,
+          171.686,
+          503.477
+        ],
+        "source_text": "B.7)",
+        "source_context": "lazy lower-body controller extend this gu\npolicy (Sec. B.7) learns whole-body mobi",
+        "destination": {
+          "name": "subsection.56",
+          "page": 16,
+          "raw_pdf_point": [
+            0.0,
+            143.57
+          ],
+          "point": [
+            0.0,
+            648.43
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 16,
+            "bounds": [
+              107,
+              655,
+              159,
+              666
+            ]
+          },
+          {
+            "page": 16,
+            "bounds": [
+              107,
+              677,
+              505,
+              724
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 16,
+            "bounds": [
+              107,
+              485,
+              505,
+              639
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "B.7",
+          "Policy"
+        ],
+        "reviewed": true,
+        "notes": "Appendix B.7 heading and complete four-line opening paragraph, which ends on the same page."
+      },
+      {
+        "id": "2606.29940v2-section-2",
+        "group": "section",
+        "kind": "section",
+        "source_page": 4,
+        "source_link_index_pymupdf": 2,
+        "source_xref": 368,
+        "source_bounds": [
+          435.775,
+          657.957,
+          442.749,
+          668.9
+        ],
+        "source_text": "3)",
+        "source_context": "with ∥pWT∥= ℓW T , read from the URDF.\nic frame extraction (Sec. 3). The two-arm",
+        "destination": {
+          "name": "section.5",
+          "page": 3,
+          "raw_pdf_point": [
+            0.0,
+            429.375
+          ],
+          "point": [
+            0.0,
+            362.625
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              371,
+              167,
+              384
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              397,
+              505,
+              504
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              235,
+              505,
+              353
+            ]
+          },
+          {
+            "page": 3,
+            "bounds": [
+              107,
+              509,
+              505,
+              604
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "3",
+          "Method"
+        ],
+        "reviewed": true,
+        "notes": "Heading and complete opening paragraph through the human-demonstrations sentence; following bold run-in paragraph is separate."
+      },
+      {
+        "id": "2606.29940v2-equation-1",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 5,
+        "source_link_index_pymupdf": 5,
+        "source_xref": 407,
+        "source_bounds": [
+          198.272,
+          347.636,
+          205.246,
+          358.65
+        ],
+        "source_text": "(1)",
+        "source_context": "the combination of Stereo-sew, SP3, ik-geo; (ii) \nby construction (Eq. (1)); (iii) whole-body orien\nconstraint via optimal robot placement of Adapt",
+        "destination": {
+          "name": "equation.6",
+          "page": 4,
+          "raw_pdf_point": [
+            0.0,
+            300.187
+          ],
+          "point": [
+            0.0,
+            491.813
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 4,
+            "bounds": [
+              197,
+              496,
+              415,
+              514
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              491,
+              499,
+              505,
+              510
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              470,
+              505,
+              493
+            ]
+          },
+          {
+            "page": 4,
+            "bounds": [
+              107,
+              515,
+              505,
+              604
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(1)"
+        ],
+        "reviewed": true,
+        "notes": "Complete numbered WARP mapping with superscripts and left/right subscript; the following satisfying constraint is explanatory prose outside equation 1."
+      },
+      {
+        "id": "2606.29940v2-equation-2",
+        "group": "equation",
+        "kind": "equation",
+        "source_page": 6,
+        "source_link_index_pymupdf": 4,
+        "source_xref": 426,
+        "source_bounds": [
+          271.545,
+          462.077,
+          278.519,
+          473.091
+        ],
+        "source_text": ".3)",
+        "source_context": "ly) MINK-EF, body constrained MINK MINK-TE \nel angle introduced in Eq.3), and SEW-M [8] (SEW-",
+        "destination": {
+          "name": "equation.9",
+          "page": 5,
+          "raw_pdf_point": [
+            0.0,
+            545.772
+          ],
+          "point": [
+            0.0,
+            246.228
+          ]
+        },
+        "eligible": true,
+        "eligibility_reason": "Selectable source names a single identifiable complete target within two adjacent pages",
+        "required_parts": [
+          {
+            "page": 5,
+            "bounds": [
+              229,
+              246,
+              384,
+              263
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              491,
+              250,
+              505,
+              262
+            ]
+          }
+        ],
+        "excluded_neighbors": [
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              182,
+              505,
+              240
+            ]
+          },
+          {
+            "page": 5,
+            "bounds": [
+              107,
+              270,
+              505,
+              317
+            ]
+          }
+        ],
+        "expected_target_text": [
+          "(3)"
+        ],
+        "reviewed": true,
+        "notes": "Full rotated-elbow expression including hats and subscripts, plus detached equation number."
+      }
+    ]
+  },
+  "review": {
+    "date": "2026-10-30",
+    "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
+    "resolver_baseline": "0f10834"
+  }
+}
