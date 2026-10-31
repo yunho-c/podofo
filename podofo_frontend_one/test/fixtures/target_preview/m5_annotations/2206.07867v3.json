@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "2206.07867v3.pdf",
-    "split": "held_out",
+    "split": "development",
     "replaces_promoted_document": "2212.01330v1",
     "id": "2206.07867v3",
     "sha256": "980c89b4b6461948f9b02d87de0f77043815ea71e0eaa8035b907422ebc2a807",
@@ -767,6 +767,8 @@
   "review": {
     "date": "2026-10-31",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "412a2c4"
+    "resolver_baseline": "412a2c4",
+    "promoted_from": "held_out_v3",
+    "promotion_reason": "Both figures fall back: explicit panel 1a uses a) markers, and Figure 2 is rejected for neighboring regions. Figure identity/group ownership drives further development."
   }
 }

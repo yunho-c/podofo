@@ -68,8 +68,10 @@
     },
     {
       "pdf": "2206.07867v3.pdf",
-      "split": "held_out",
-      "replaces_promoted_document": "2212.01330v1"
+      "split": "development",
+      "replaces_promoted_document": "2212.01330v1",
+      "promoted_from": "held_out_v3",
+      "promotion_reason": "Both figures fall back: explicit panel 1a uses a) markers, and Figure 2 is rejected for neighboring regions. Figure identity/group ownership drives further development."
     },
     {
       "pdf": "2410.06940v4.pdf",
@@ -78,13 +80,17 @@
     },
     {
       "pdf": "2504.17670v2.pdf",
-      "split": "held_out",
-      "replaces_promoted_document": "2511.23342v3"
+      "split": "development",
+      "replaces_promoted_document": "2511.23342v3",
+      "promoted_from": "held_out_v3",
+      "promotion_reason": "Figure 2(a) annotation selects 2( with a) immediately after it; source-boundary parsing falls back and drives figure identity development."
     },
     {
       "pdf": "2509.22935v2.pdf",
-      "split": "held_out",
-      "replaces_promoted_document": "1810.01497v2"
+      "split": "development",
+      "replaces_promoted_document": "1810.01497v2",
+      "promoted_from": "held_out_v3",
+      "promotion_reason": "Accepted Xu (2024) reference contains the entire next Zhang entry; bibliography boundary and cross-page entry regressions drive further development."
     }
   ],
   "replenishment_policy": "Previously unused arXiv documents in filename order, at most 60 pages, with at least two unique named destinations in each target group; exclude all versions of sampled paper IDs. Selection batches are preserved in m5_history/replenishment_v*_selection.json. No resolver/model output was inspected for replacement selection."

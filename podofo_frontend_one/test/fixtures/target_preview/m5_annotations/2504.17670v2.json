@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "2504.17670v2.pdf",
-    "split": "held_out",
+    "split": "development",
     "replaces_promoted_document": "2511.23342v3",
     "id": "2504.17670v2",
     "sha256": "c39235f49a638734e83a0034653187068dcc4cf6ebeea9b89eea668b68a4dd15",
@@ -626,6 +626,8 @@
   "review": {
     "date": "2026-10-31",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "412a2c4"
+    "resolver_baseline": "412a2c4",
+    "promoted_from": "held_out_v3",
+    "promotion_reason": "Figure 2(a) annotation selects 2( with a) immediately after it; source-boundary parsing falls back and drives figure identity development."
   }
 }

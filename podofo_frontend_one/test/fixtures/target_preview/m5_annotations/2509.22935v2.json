@@ -5,7 +5,7 @@
   "annotation_status": "source_pages_visually_reviewed_before_resolver_output",
   "document": {
     "pdf": "2509.22935v2.pdf",
-    "split": "held_out",
+    "split": "development",
     "replaces_promoted_document": "1810.01497v2",
     "id": "2509.22935v2",
     "sha256": "06430a2b15746f1469761b6fbc2b82eab6e1020b18da17099f2b4645cea11062",
@@ -787,6 +787,8 @@
   "review": {
     "date": "2026-10-31",
     "method": "Assistant full-page visual review with independent MuPDF text geometry before resolver/model output",
-    "resolver_baseline": "412a2c4"
+    "resolver_baseline": "412a2c4",
+    "promoted_from": "held_out_v3",
+    "promotion_reason": "Accepted Xu (2024) reference contains the entire next Zhang entry; bibliography boundary and cross-page entry regressions drive further development."
   }
 }

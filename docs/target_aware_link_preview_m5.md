@@ -1,10 +1,9 @@
 # Target-aware previews: M5 qualification in progress
 
-M5 is not complete. The first frozen held-out evaluation failed section coverage
-and completeness gates. The replenished second run stopped during PDF link loading
-before reaching any replacement target. Papers driving changes move to development
-before those changes; the interrupted run is preserved. Native-window acceptance
-also remains unqualified.
+M5 is not complete. The third frozen held-out run captured every link but failed
+figure/table coverage and exposed a neighboring-reference regression. Papers
+driving changes move to development before those changes; all three evaluations
+are preserved. Native-window acceptance also remains unqualified.
 
 ## Cache preparation latency
 
@@ -588,9 +587,39 @@ held-out links across six documents: 12 citations, 12 figures/tables, 11 equatio
 fifteen are unchanged carryovers. The annotated replacement and freeze are
 committed before the next full held-out run.
 
+## Third held-out evaluation: figure coverage and reference boundary failure
+
+The full `held-out-v3` run at `75b1d04` captured all fifty links with all 36 frozen
+identities intact and native handles returning to zero. It resolves 11/12 citations
+(10/11 complete), 9/12 figures/tables (all nine complete), 10/11 equations (all ten
+complete) and 9/11 sections (all nine complete). All four controls fall back.
+Figure/table coverage is 75%, below the 80% gate. Although citation completeness
+is just above 90%, its known neighboring-entry regression is blocking.
+
+The accepted Xu (2024) reference in `2509.22935v2` contains the entire following
+Zhang bibliography entry. Source-page and semantic-crop review confirm the failure;
+the annotated target is complete, but all 8,256 excluded neighboring ink pixels
+are also included. This requires a bibliography-boundary regression test. The
+same document's cross-page Frantar reference and equation-interleaved section
+opening fall back. Other fallbacks include both figures in `2206.07867v3`, the
+partially selected `2(` in the `Figure 2(a)` link of `2504.17670v2`, its
+equation-interleaved section opening, and the unchanged `.3)` equation source in
+`2606.29940v2`.
+
+The first two figure failures and partial panel source drive further figure
+development; `2206.07867v3`, `2504.17670v2` and `2509.22935v2` move as whole
+documents to development before changes. Their eligibility and required/excluded
+bounds are unchanged. Archive files `m5_history/held_out_v3_*.json` preserve the
+freeze, sample, per-link results and separate new/carryover summaries. Paired
+captures remain under `build/target-preview-m5/papers-held-out-v3/`, with the log at
+`build/target-preview-m5-held-out-v3.log`. The automatic wrong-object flags are zero;
+this is not a completed manual audit of all 39 accepted crops. The active freeze
+is removed and the three promoted documents must be replenished.
+
 ## Remaining acceptance work
 
-Evaluate every link in the current frozen held-out set with paired images,
+Fix the promoted bibliography and figure regressions, replenish and freeze the
+held-out documents, then evaluate every held-out link with paired images,
 required/excluded pixel metrics and per-group
 coverage. Inspect all failures against the original zero-wrong-object, 8-of-10
 coverage and 90% completeness gates. Exercise the additional synthetic fallback
