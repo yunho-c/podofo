@@ -22,6 +22,10 @@ shifted inside the visible page at its edges. This preserves surrounding context
 at every rotation. This is a location preview, not semantic figure extraction;
 a figure can extend beyond that region.
 
+The proposed [target aware preview plan](target_aware_link_preview_plan.md)
+describes using Podoco layout and PDF text to identify complete targets. That
+behavior is not part of the current implementation.
+
 pdfrx 2.6.5 / pdfrx_engine 0.6.1 return raw PDF destination coordinates, whereas
 text and annotation rectangles use the page bounding-box origin. The renderer
 reads PDFium's unrotated bounding box through `useNativeDocumentHandle`, subtracts
