@@ -1,7 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart' show Clipboard, ClipboardData;
+
 import 'package:podofo_one/src/providers/document_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:shadcn_flutter/shadcn_flutter.dart';
+
+import '../../services/context_menu_trace.dart';
 
 class DebugPane extends ConsumerWidget {
   const DebugPane({super.key});
@@ -10,7 +14,7 @@ class DebugPane extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final userState = ref.watch(userStateNotifierProvider);
     final loadedDocuments = ref.watch(loadedDocumentsProvider);
-    return Container(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(10.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.start,
@@ -30,6 +34,8 @@ class DebugPane extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 16),
+          const _ContextMenuDiagnostics(),
           const SizedBox(height: 16),
           Collapsible(
             children: [
@@ -95,6 +101,64 @@ class DebugPane extends ConsumerWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ContextMenuDiagnostics extends ConsumerWidget {
+  const _ContextMenuDiagnostics();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final trace = ref.read(contextMenuTraceProvider);
+    return ListenableBuilder(
+      listenable: trace,
+      builder: (context, _) => OutlinedContainer(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Expanded(child: Text('Trace right-clicks')),
+                Semantics(
+                  label: 'Trace right-clicks',
+                  child: Switch(
+                    value: trace.enabled,
+                    onChanged: (value) => trace.enabled = value,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            const Text('Enable, reproduce a missed click, then copy the trace.')
+                .small(),
+            Text(
+              '${trace.length} events · ${trace.dropped} older events dropped',
+            ).small().muted(),
+            const SizedBox(height: 8),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Button(
+                  style: ButtonStyle.outline(),
+                  onPressed: trace.length == 0
+                      ? null
+                      : () => Clipboard.setData(
+                          ClipboardData(text: trace.export()),
+                        ),
+                  child: const Text('Copy trace'),
+                ),
+                Button(
+                  style: ButtonStyle.outline(),
+                  onPressed: trace.length == 0 ? null : trace.clear,
+                  child: const Text('Clear trace'),
+                ),
+              ],
+            ),
+          ],
+        ).withPadding(horizontal: 12, vertical: 10),
       ),
     );
   }

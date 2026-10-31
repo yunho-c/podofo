@@ -18,6 +18,7 @@ import '../../providers/narration_provider.dart';
 import '../../narration/narration_controller.dart';
 import '../../narration/narration_painter.dart';
 import '../../services/document_actions.dart';
+import '../../services/context_menu_trace.dart';
 import '../../services/pdf_navigation_history.dart';
 import '../../services/pdf_session.dart';
 import '../../workers/open_graph_worker.dart';
@@ -42,6 +43,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   final _selectionPointers = <int>{};
   bool _selectionChanged = false;
   AnnotationMenuRequest? _annotationMenuRequest;
+  ContextMenuTraceClick? _contextMenuTraceClick;
+  PdfSession? _traceSession;
   late final NarrationController _narration;
   Object? _paintedRange;
   int _followRequest = 0;
@@ -346,6 +349,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
 
   @override
   void dispose() {
+    _contextMenuTraceClick?.record('reader.disposed');
     _linkAnimation.dispose();
     _narration.removeListener(_onNarrationChanged);
     _narration.scrubPreview.removeListener(_onScrubPreviewChanged);
@@ -356,6 +360,12 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   @override
   Widget build(BuildContext context) {
     final document = ref.watch(currentDocumentProvider);
+    final trace = ref.read(contextMenuTraceProvider);
+    if (!identical(_traceSession, document?.session)) {
+      _contextMenuTraceClick?.record('reader.document-changed');
+      _contextMenuTraceClick = null;
+      _traceSession = document?.session;
+    }
     if (_annotationMenuRequest?.document.session != document?.session) {
       _annotationMenuRequest = null;
     }
@@ -373,6 +383,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       controller: controller,
       initialPageNumber: document.lastOpenedPage ?? 1,
       params: PdfViewerParams(
+        onContextMenuDiagnostic: (event, details) =>
+            _contextMenuTraceClick?.record(event, details),
         layoutPages: document.twoPageView ? layoutTwoPages : null,
         sizeDelegateProvider: document.twoPageView
             ? const PdfViewerSizeDelegateProviderLegacy(
@@ -444,6 +456,12 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         // pdfrx only positions non-positional menus when text is selected.
         // Return Flutter's Positioned so it recognizes our layout in both cases.
         buildContextMenu: (context, params) {
+          _contextMenuTraceClick?.record('reader.menu-builder', {
+            'part': params.contextMenuFor.name,
+            'revision': document.session.revision,
+            'annotationsReady': document.session.annotationsReady,
+            'hasRequest': _annotationMenuRequest != null,
+          });
           final request =
               _annotationMenuRequest?.document.session == document.session
               ? _annotationMenuRequest
@@ -455,6 +473,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
               child: PdfSelectionMenu(
                 params: params,
                 annotationRequest: request,
+                traceClick: _contextMenuTraceClick,
                 onDismiss: () {
                   if (identical(_annotationMenuRequest, request)) {
                     _annotationMenuRequest = null;
@@ -551,6 +570,15 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             _checkUserScroll();
           },
           onPointerDown: (event) {
+            if (event.buttons & kSecondaryMouseButton != 0) {
+              _contextMenuTraceClick = trace.begin(event);
+              _contextMenuTraceClick?.record('reader.pointer-down', {
+                'buttons': event.buttons,
+                'viewerReady': controller.isReady,
+                'annotationsReady': document.session.annotationsReady,
+                'revision': document.session.revision,
+              });
+            }
             _annotationMenuRequest = null;
             if (event.buttons == kSecondaryMouseButton && controller.isReady) {
               _clearHover();
@@ -561,6 +589,11 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
                       point,
                       useDocumentLayoutCoordinates: true,
                     );
+              _contextMenuTraceClick?.record('reader.page-hit', {
+                'page': hit?.page.pageNumber,
+                'x': hit?.offset.x,
+                'y': hit?.offset.y,
+              });
               if (hit != null) {
                 _annotationMenuRequest = AnnotationMenuRequest(
                   document,
@@ -586,6 +619,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
           child: GestureDetector(
             behavior: HitTestBehavior.opaque,
             onSecondaryTapUp: (details) {
+              _contextMenuTraceClick?.record('reader.padding-menu-requested');
               _clearHover();
               showDropdown(
                 context: context,

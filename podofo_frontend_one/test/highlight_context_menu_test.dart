@@ -20,6 +20,7 @@ import 'package:podofo_one/src/providers/narration_provider.dart';
 import 'package:podofo_one/src/providers/user_state_provider.dart';
 import 'package:podofo_one/src/services/pdf_highlights.dart';
 import 'package:podofo_one/src/services/pdf_session.dart';
+import 'package:podofo_one/src/services/context_menu_trace.dart';
 import 'package:podofo_one/src/widgets/components/highlight_palette.dart';
 import 'package:podofo_one/src/widgets/components/pdf_selection_menu.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -74,6 +75,9 @@ void main() {
           narrationControllerProvider.overrideWithValue(narration),
         ],
       );
+      if (rotation == 0) {
+        container.read(contextMenuTraceProvider).enabled = true;
+      }
       try {
         await tester.pumpWidget(
           RepaintBoundary(
@@ -151,6 +155,26 @@ void main() {
         }
 
         await menu(60, 120);
+        if (rotation == 0) {
+          final trace = container.read(contextMenuTraceProvider).export();
+          for (final stage in [
+            'pointer.down',
+            'reader.pointer-down',
+            'gesture.secondary-recognized',
+            'viewer.menu-requested',
+            'reader.menu-builder',
+            'menu.target',
+            'menu.build',
+            'menu.frame',
+          ]) {
+            expect(trace, contains(stage));
+          }
+          final artifact = File(
+            'build/test-artifacts/context-menu-trace.jsonl',
+          );
+          artifact.parent.createSync(recursive: true);
+          artifact.writeAsStringSync(trace);
+        }
         expect(find.text('Copy'), findsOneWidget);
         expect(find.byType(HighlightPalette), findsOneWidget);
         expect(

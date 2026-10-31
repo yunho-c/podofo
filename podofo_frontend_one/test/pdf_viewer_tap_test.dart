@@ -119,6 +119,116 @@ void main() {
     await tester.pumpWidget(const SizedBox());
   });
 
+  testWidgets(
+    'menu diagnostics distinguish recognized, consumed and cancelled taps',
+    (tester) async {
+      for (final consumed in [false, true]) {
+        final events = <String>[];
+        final view = await _setup(
+          tester,
+          onGeneralTap: consumed ? (_, _, _) => true : null,
+          onContextMenuDiagnostic: (event, _) => events.add(event),
+        );
+        final mouse = await tester.createGesture(
+          kind: PointerDeviceKind.mouse,
+          buttons: kSecondaryMouseButton,
+        );
+        await mouse.down(view.point(const PdfPoint(350, 150)));
+        await mouse.up();
+        await tester.pump();
+        expect(events, contains('gesture.secondary-recognized'));
+        expect(
+          events,
+          contains(
+            consumed ? 'gesture.callback-consumed' : 'viewer.menu-requested',
+          ),
+        );
+        if (!consumed) {
+          expect(events, contains('viewer.menu-builder'));
+          await view.selection.clearTextSelection();
+          await tester.pump();
+          expect(events, contains('viewer.anchor-cleared'));
+        }
+        events.clear();
+        await mouse.down(view.point(const PdfPoint(350, 150)));
+        // Tap cancellation callbacks begin after the recognizer's down deadline.
+        await tester.pump(const Duration(milliseconds: 150));
+        await mouse.moveBy(const Offset(-90, 60));
+        await mouse.up();
+        await tester.pump();
+        expect(events, contains('gesture.secondary-cancelled'));
+        expect(events, isNot(contains('viewer.menu-requested')));
+        await tester.pumpWidget(const SizedBox());
+      }
+    },
+  );
+
+  for (final zoom in [false, true]) {
+    for (final holdMs in [90, 124]) {
+      testWidgets(
+        'right-click during trackpad ${zoom ? 'zoom' : 'pan'} ($holdMs ms)',
+        (tester) async {
+          final events = <String>[];
+          final view = await _setup(
+            tester,
+            onContextMenuDiagnostic: (event, _) => events.add(event),
+          );
+          await view.selection.clearTextSelection();
+          // Leave room to pan: the tiny fixture otherwise fits the viewport.
+          await view.controller.setZoom(
+            view.controller.centerPosition,
+            view.controller.currentZoom * 2,
+            duration: Duration.zero,
+          );
+          await tester.pump();
+          final point = tester.getCenter(find.byType(PdfViewer));
+          final trackpad = await tester.createGesture(
+            kind: PointerDeviceKind.trackpad,
+          );
+          await trackpad.panZoomStart(point);
+          await trackpad.panZoomUpdate(
+            point,
+            pan: zoom ? Offset.zero : const Offset(0, -50),
+            scale: zoom ? 1.2 : 1,
+          );
+          await tester.pump();
+          final beforeClick = view.controller.value.clone();
+          events.clear();
+          final mouse = await tester.createGesture(
+            kind: PointerDeviceKind.mouse,
+            buttons: kSecondaryMouseButton,
+          );
+          await mouse.down(point);
+          await tester.pump(Duration(milliseconds: holdMs));
+          await mouse.up();
+          await tester.pump();
+          expect(events, contains('gesture.secondary-recognized'));
+          expect(events, contains('viewer.menu-builder'));
+          expect(events, isNot(contains('gesture.secondary-cancelled')));
+          expect(view.controller.value, beforeClick);
+
+          // The right-click must neither join nor terminate the trackpad gesture.
+          await trackpad.panZoomUpdate(
+            point,
+            pan: zoom ? Offset.zero : const Offset(0, -100),
+            scale: zoom ? 1.4 : 1,
+          );
+          await tester.pump();
+          expect(view.controller.value, isNot(beforeClick));
+          await trackpad.panZoomEnd();
+          await view.selection.clearTextSelection();
+          await tester.pump();
+          events.clear();
+          await mouse.down(point);
+          await mouse.up();
+          await tester.pump();
+          expect(events, contains('viewer.menu-builder'));
+          await tester.pumpWidget(const SizedBox());
+        },
+      );
+    }
+  }
+
   testWidgets('overlay long press and secondary click retain their dispatch', (
     tester,
   ) async {
@@ -455,6 +565,7 @@ Future<_TestViewer> _setup(
   Widget? overlay,
   void Function(PdfLink)? onLinkTap,
   bool enableAnnotationInteraction = false,
+  void Function(String, Map<String, Object?>)? onContextMenuDiagnostic,
 }) async {
   final document = (await tester.runAsync(
     () => PdfDocument.openData(_pdf(), useProgressiveLoading: false),
@@ -473,6 +584,7 @@ Future<_TestViewer> _setup(
         params: PdfViewerParams(
           onViewerReady: (_, _) => ready = true,
           onGeneralTap: onGeneralTap,
+          onContextMenuDiagnostic: onContextMenuDiagnostic,
           linkHandlerParams: onLinkTap == null
               ? null
               : PdfLinkHandlerParams(

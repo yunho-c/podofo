@@ -793,8 +793,9 @@ class _PdfViewerState extends State<PdfViewer>
                                     ..gestureSettings = MediaQuery.maybeGestureSettingsOf(context)
                                     ..onTapUp = ((d) =>
                                         _handleGeneralTap(d.globalPosition, PdfViewerGeneralTapType.tap))
-                                    ..onSecondaryTapUp = (d) =>
-                                        _handleGeneralTap(d.globalPosition, PdfViewerGeneralTapType.secondaryTap),
+                                    ..onSecondaryTapUp = ((d) =>
+                                        _handleGeneralTap(d.globalPosition, PdfViewerGeneralTapType.secondaryTap))
+                                    ..onSecondaryTapCancel = () => _contextMenuDiagnostic('gesture.secondary-cancelled'),
                                 ),
                                 _PdfDoubleTapGestureRecognizer:
                                     GestureRecognizerFactoryWithHandlers<_PdfDoubleTapGestureRecognizer>(
@@ -2790,7 +2791,11 @@ class _PdfViewerState extends State<PdfViewer>
       _overlayHitTester.hitTestAll(globalPosition).any((hit) => hit.callbacks.onDoubleTap != null);
 
   void _handleGeneralTap(Offset globalPosition, PdfViewerGeneralTapType type) {
+    if (type == PdfViewerGeneralTapType.secondaryTap) {
+      _contextMenuDiagnostic('gesture.secondary-recognized', {'x': globalPosition.dx, 'y': globalPosition.dy});
+    }
     if (_handleOverlayInteraction(globalPosition, type)) {
+      if (type == PdfViewerGeneralTapType.secondaryTap) _contextMenuDiagnostic('gesture.overlay-consumed');
       return;
     }
     final docPosition = _globalToDocument(globalPosition);
@@ -2809,6 +2814,7 @@ class _PdfViewerState extends State<PdfViewer>
           tapOn: what,
         ),
       )) {
+        if (type == PdfViewerGeneralTapType.secondaryTap) _contextMenuDiagnostic('gesture.callback-consumed');
         return; // the tap was handled
       }
     }
@@ -2843,9 +2849,36 @@ class _PdfViewerState extends State<PdfViewer>
     return false;
   }
 
+  void _contextMenuDiagnostic(String event, [Map<String, Object?> details = const {}]) {
+    final observer = widget.params.onContextMenuDiagnostic;
+    if (observer == null) return;
+    try {
+      observer(event, {
+        'selection': hasSelectedText,
+        'selectionMoving': _selPartMoving.name,
+        'copyAllowed': _document?.permissions?.allowsCopying != false,
+        'anchor': _contextMenuDocumentPosition != null,
+        ...details,
+      });
+    } catch (_) {
+      // Observers must never change gesture or menu behavior.
+    }
+  }
+
+  void _clearContextMenuForDiagnostic(String reason) {
+    final hadAnchor = _contextMenuDocumentPosition != null;
+    _contextMenuDocumentPosition = null;
+    if (hadAnchor) _contextMenuDiagnostic('viewer.anchor-cleared', {'reason': reason});
+  }
+
   void showContextMenu(Offset docPosition, {PdfViewerPart? forPart}) {
     _contextMenuDocumentPosition = docPosition;
     _contextMenuFor = forPart ?? _onWhat(docPosition);
+    _contextMenuDiagnostic('viewer.menu-requested', {
+      'part': _contextMenuFor.name,
+      'documentX': docPosition.dx,
+      'documentY': docPosition.dy,
+    });
     _invalidate();
   }
 
@@ -2853,7 +2886,7 @@ class _PdfViewerState extends State<PdfViewer>
     if (_isInteractionGoingOn) return;
     _selPartMoving = _TextSelectionPart.free;
     _isSelectingAllText = false;
-    _contextMenuDocumentPosition = null;
+    _clearContextMenuForDiagnostic('selection.drag-start');
     _selA = _findTextAndIndexForPoint(_globalToDocument(details.globalPosition));
     _selB = null;
     _updateTextSelection();
@@ -2935,7 +2968,7 @@ class _PdfViewerState extends State<PdfViewer>
       _stopSelectionHandleDrag();
       _selA = _selB = null;
       _textSelA = _textSelB = null;
-      _contextMenuDocumentPosition = null;
+      _clearContextMenuForDiagnostic('selection.disabled');
       _isSelectingAllText = false;
     }
 
@@ -2994,6 +3027,7 @@ class _PdfViewerState extends State<PdfViewer>
   List<Widget> _placeTextSelectionWidgets(BuildContext context, Size viewSize, bool isCopyTextEnabled) {
     Widget? createContextMenu(Offset? a, Offset? b, PdfViewerPart contextMenuFor) {
       if (a == null) return null;
+      _contextMenuDiagnostic('viewer.menu-builder', {'part': contextMenuFor.name, 'x': a.dx, 'y': a.dy});
       final ctxMenuBuilder = widget.params.buildContextMenu ?? _buildContextMenu;
       return ctxMenuBuilder(
         context,
@@ -3006,7 +3040,7 @@ class _PdfViewerState extends State<PdfViewer>
           contextMenuFor: contextMenuFor,
           textSelectionDelegate: this,
           dismissContextMenu: () {
-            _contextMenuDocumentPosition = null;
+            _clearContextMenuForDiagnostic('menu.dismiss-callback');
             _invalidate();
           },
         ),
@@ -3286,6 +3320,11 @@ class _PdfViewerState extends State<PdfViewer>
     }
 
     Widget? contextMenu;
+    if (showContextMenu && (_selPartMoving != _TextSelectionPart.none || !isCopyTextEnabled)) {
+      _contextMenuDiagnostic('viewer.menu-suppressed', {
+        'reason': _selPartMoving != _TextSelectionPart.none ? 'selection-moving' : 'copy-disabled',
+      });
+    }
     if (showContextMenu &&
         _selPartMoving == _TextSelectionPart.none &&
         (_contextMenuDocumentPosition != null ||
@@ -3812,7 +3851,7 @@ class _PdfViewerState extends State<PdfViewer>
     _stopSelectionHandleDrag();
     _selPartMoving = handle;
     _isSelectingAllText = false;
-    _contextMenuDocumentPosition = null;
+    _clearContextMenuForDiagnostic('selection.handle-start');
     if (handle == _TextSelectionPart.a) {
       _textSelectAnchor = anchor.rect.topLeft - position;
       _selA = point;
@@ -3858,7 +3897,7 @@ class _PdfViewerState extends State<PdfViewer>
     if (_isInteractionGoingOn) return;
     if (_selectionHandleGlobalPosition == null) return;
     _selectionHandleGlobalPosition = details.globalPosition;
-    _contextMenuDocumentPosition = null;
+    _clearContextMenuForDiagnostic('selection.handle-update');
     _updateSelectionHandleAtPointer();
     // Notify drag update callback
     final anchor = handle == _TextSelectionPart.a ? _textSelA : _textSelB;
@@ -3901,7 +3940,7 @@ class _PdfViewerState extends State<PdfViewer>
     _stopSelectionHandleDrag();
     _selA = _selB = null;
     _textSelA = _textSelB = null;
-    _contextMenuDocumentPosition = null;
+    _clearContextMenuForDiagnostic('selection.clear');
     _isSelectingAllText = false;
     _updateTextSelection(invalidate: invalidate);
   }
@@ -3932,7 +3971,7 @@ class _PdfViewerState extends State<PdfViewer>
       _selB = temp;
     }
     _textSelA = _textSelB = null;
-    _contextMenuDocumentPosition = null;
+    _clearContextMenuForDiagnostic('selection.set-range');
     _isSelectingAllText = false;
     _updateTextSelection();
   }
@@ -4040,7 +4079,7 @@ class _PdfViewerState extends State<PdfViewer>
       _selA = _selB = null;
     }
     _textSelA = _textSelB = null;
-    _contextMenuDocumentPosition = null;
+    _clearContextMenuForDiagnostic('selection.select-all');
     _selPartLastMoved = _TextSelectionPart.none;
     _isSelectingAllText = true;
     _updateTextSelection();
@@ -4086,7 +4125,7 @@ class _PdfViewerState extends State<PdfViewer>
     _selPartLastMoved = _TextSelectionPart.b;
     _isSelectingAllText = false;
     _selectionPointerDeviceKind = deviceKind;
-    _contextMenuDocumentPosition = null;
+    _clearContextMenuForDiagnostic('selection.word');
     _isSelectingAWord = true;
     _notifyTextSelectionChange();
   }
