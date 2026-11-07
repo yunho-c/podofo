@@ -53,6 +53,8 @@ Future<void> _openMenu(
         ? find.text('Two pages').evaluate().isNotEmpty
         : find.byType(PdfSelectionMenu).evaluate().isNotEmpty,
   );
+  // Annotation readiness starts the entrance after the content's first frame.
+  await tester.pump();
   await tester.pump(const Duration(milliseconds: 300));
   for (final label in ['View', 'Single page', 'Two pages']) {
     expect(find.text(label), expectView ? findsOneWidget : findsNothing);
@@ -91,7 +93,21 @@ Future<void> _dismissSelectionMenu(WidgetTester tester) async {
       .widget<PdfSelectionMenu>(find.byType(PdfSelectionMenu))
       .params
       .dismissContextMenu();
+  await tester.pump();
+  await tester.pump();
+  await tester.pump(const Duration(milliseconds: 50));
+  expect(find.byType(PdfSelectionMenu), findsOneWidget);
+  final fade = tester.widget<FadeTransition>(
+    find
+        .ancestor(
+          of: find.byType(shadcn.MenuPopup),
+          matching: find.byType(FadeTransition),
+        )
+        .first,
+  );
+  expect(fade.opacity.value, closeTo(0.5, 0.001));
   await tester.pumpAndSettle();
+  expect(find.byType(PdfSelectionMenu), findsNothing);
 }
 
 Future<void> _capture(WidgetTester tester, String name) async {
@@ -220,6 +236,7 @@ void main() {
         return rects[0].center.dy == rects[1].center.dy &&
             _fullyVisible(controller, rects[0].expandToInclude(rects[1]));
       });
+      await tester.pumpAndSettle();
       expect(find.byType(PdfSelectionMenu), findsNothing);
       expect(container.read(pdfViewerControllerProvider), same(controller));
       expect(container.read(currentDocumentProvider)!.session, same(session));

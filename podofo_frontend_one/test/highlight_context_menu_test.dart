@@ -229,6 +229,7 @@ void main() {
         await menu(60, 120);
         await tester.tapAt(const Offset(15, 850));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 150));
         expect(find.byType(PdfSelectionMenu), findsNothing);
         await menu(60, 120);
         // Reopening elsewhere while a menu is still open updates its target
@@ -236,7 +237,7 @@ void main() {
         await menu(190, 120);
         await tester.sendKeyEvent(LogicalKeyboardKey.escape);
         await tester.pump();
-        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 150));
         expect(find.byType(PdfSelectionMenu), findsNothing);
         // The gap between quads is not part of the highlight.
         await tester.tapAt(

@@ -116,6 +116,7 @@ class PdfViewerParams {
     this.onGeneralTap,
     this.onContextMenuDiagnostic,
     this.buildContextMenu,
+    this.buildContextMenuOverlay,
     this.customizeContextMenuItems,
     this.onKey,
     this.keyHandlerParams = const PdfViewerKeyHandlerParams(),
@@ -661,6 +662,14 @@ class PdfViewerParams {
   /// or not according to your use case.
   final PdfViewerContextMenuBuilder? buildContextMenu;
 
+  /// Builds a persistent context-menu presentation, including its exit animation.
+  ///
+  /// Takes precedence over [buildContextMenu]. Receives null when the menu is
+  /// hidden so a keyed overlay can retain its outgoing content. The returned
+  /// widget must position itself in the viewer's Stack. Dismissal and selection
+  /// updates still take effect immediately; retained content must not interact.
+  final Widget? Function(BuildContext context, PdfViewerContextMenuBuilderParams? params)? buildContextMenuOverlay;
+
   /// Function to customize the context menu items.
   ///
   /// This function is called when the context menu is built and can be used to customize the context menu items.
@@ -873,6 +882,7 @@ class PdfViewerParams {
         other.onGeneralTap == onGeneralTap &&
         other.onContextMenuDiagnostic == onContextMenuDiagnostic &&
         other.buildContextMenu == buildContextMenu &&
+        other.buildContextMenuOverlay == buildContextMenuOverlay &&
         other.customizeContextMenuItems == customizeContextMenuItems &&
         other.onKey == onKey &&
         other.keyHandlerParams == keyHandlerParams &&
@@ -947,6 +957,7 @@ class PdfViewerParams {
         onGeneralTap.hashCode ^
         onContextMenuDiagnostic.hashCode ^
         buildContextMenu.hashCode ^
+        buildContextMenuOverlay.hashCode ^
         customizeContextMenuItems.hashCode ^
         onKey.hashCode ^
         keyHandlerParams.hashCode ^

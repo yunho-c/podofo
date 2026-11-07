@@ -90,6 +90,13 @@ connects it to the opt-in, bounded Debug-pane right-click trace.
 `test/pdf_viewer_tap_test.dart` covers recognition, consumption and cancellation;
 the app's context-menu tests cover tracing through rendering and delayed scans.
 
+`PdfViewerParams.buildContextMenuOverlay` optionally keeps a keyed menu
+presentation mounted, receiving null when pdfrx dismisses or suppresses the menu.
+PoDoFo uses it to finish the standard dropdown fade/scale transition outside the
+PDF inversion filter. Selection and dismissal still update immediately; outgoing
+content cannot receive pointer or keyboard input. The existing `buildContextMenu`
+path is unchanged for callers that do not opt in.
+
 Ported from `pdfrx_og` staging at `fe80962214a3df7615c5f1a1917f6f26326fa661`:
 
 - `9199451`: merge fragmented selection highlights (the geometry backport above).

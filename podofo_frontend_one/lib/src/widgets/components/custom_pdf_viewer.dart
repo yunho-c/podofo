@@ -692,15 +692,17 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             _applyHighlightMode();
           },
         ),
-        // pdfrx only positions non-positional menus when text is selected.
-        // Return Flutter's Positioned so it recognizes our layout in both cases.
-        buildContextMenu: (context, params) {
-          _contextMenuTraceClick?.record('reader.menu-builder', {
-            'part': params.contextMenuFor.name,
-            'revision': document.session.revision,
-            'annotationsReady': document.session.annotationsReady,
-            'hasRequest': _annotationMenuRequest != null,
-          });
+        // Keep the presentation mounted while pdfrx clears its menu anchor so
+        // dismissal can finish outside the PDF's inversion filter.
+        buildContextMenuOverlay: (context, params) {
+          if (params != null) {
+            _contextMenuTraceClick?.record('reader.menu-builder', {
+              'part': params.contextMenuFor.name,
+              'revision': document.session.revision,
+              'annotationsReady': document.session.annotationsReady,
+              'hasRequest': _annotationMenuRequest != null,
+            });
+          }
           final request =
               _annotationMenuRequest?.document.session == document.session
               ? _annotationMenuRequest
@@ -708,22 +710,26 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
           return flutter.Positioned.fill(
             key: const ValueKey('pdf-context-menu'),
             child: PdfContextMenuOverlay(
-              anchor: params.anchorA,
-              child: PdfSelectionMenu(
-                params: params,
-                annotationRequest: request,
-                traceClick: _contextMenuTraceClick,
-                onDismiss: () {
-                  if (identical(_annotationMenuRequest, request)) {
-                    _annotationMenuRequest = null;
-                  }
-                },
-                onHighlight: (color) =>
-                    DocumentActions.highlight(ref, color: color),
-                onUnderline: () => DocumentActions.underline(ref),
-                twoPageView: document.twoPageView,
-                onTwoPageViewChanged: _setTwoPageView,
-              ),
+              key: ObjectKey(document.session),
+              anchor: params?.anchorA,
+              deferEntrance: true,
+              child: params == null
+                  ? null
+                  : PdfSelectionMenu(
+                      params: params,
+                      annotationRequest: request,
+                      traceClick: _contextMenuTraceClick,
+                      onDismiss: () {
+                        if (identical(_annotationMenuRequest, request)) {
+                          _annotationMenuRequest = null;
+                        }
+                      },
+                      onHighlight: (color) =>
+                          DocumentActions.highlight(ref, color: color),
+                      onUnderline: () => DocumentActions.underline(ref),
+                      twoPageView: document.twoPageView,
+                      onTwoPageViewChanged: _setTwoPageView,
+                    ),
             ),
           );
         },

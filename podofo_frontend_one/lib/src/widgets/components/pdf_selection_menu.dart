@@ -14,6 +14,7 @@ import '../../services/context_menu_trace.dart';
 import '../../services/narration_actions.dart';
 import '../../providers/narration_provider.dart';
 import 'highlight_palette.dart';
+import 'pdf_context_menu_overlay.dart';
 
 List<MenuItem> pdfPageLayoutMenuItems({
   required bool twoPageView,
@@ -80,6 +81,7 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
   AnnotationRecord? _target;
   bool _pending = false, _failed = false, _dismissed = false;
   bool _tracedFrame = false;
+  Widget? _visibleMenu;
   final _menuFocus = FocusNode(debugLabel: 'PDF context menu');
 
   @override
@@ -159,7 +161,11 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
 
   void _focusMenu() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted && !_dismissed) _menuFocus.requestFocus();
+      if (mounted &&
+          !_dismissed &&
+          PdfContextMenuOverlay.isInteractive(context)) {
+        _menuFocus.requestFocus();
+      }
     });
   }
 
@@ -183,6 +189,7 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
   }
 
   void _dismiss(String reason) {
+    if (_dismissed || !PdfContextMenuOverlay.isInteractive(context)) return;
     widget.traceClick?.record('menu.dismissed', {'reason': reason});
     _dismissed = true;
     widget.onDismiss?.call();
@@ -191,10 +198,19 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
 
   @override
   Widget build(BuildContext context) {
+    if (!PdfContextMenuOverlay.isInteractive(context)) {
+      // Keep the outgoing contents stable even when the action has already
+      // cleared selection or edited the annotation underneath the menu.
+      return TapRegion(
+        enabled: false,
+        child: _visibleMenu ?? const SizedBox.shrink(),
+      );
+    }
     // While the first scan finishes, keep dismissal active but paint no popup.
     // Once loaded, both hit and no-hit menus render in their final form first.
     if (_pending) {
       return TapRegion(
+        enabled: PdfContextMenuOverlay.isInteractive(context),
         onTapOutside: (_) => _dismiss('outside-pointer'),
         child: Focus(
           focusNode: _menuFocus,
@@ -210,10 +226,14 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
         ),
       );
     }
-    return _menu(context);
+    return TapRegion(
+      onTapOutside: (_) => _dismiss('outside-pointer'),
+      child: _visibleMenu = _menu(context),
+    );
   }
 
   Widget _menu(BuildContext context) {
+    PdfContextMenuOverlay.markContentReady(context);
     final params = widget.params;
     final request = widget.annotationRequest;
     final document = ref.watch(currentDocumentProvider);
@@ -322,115 +342,109 @@ class _PdfSelectionMenuState extends ConsumerState<PdfSelectionMenu> {
       }
     });
 
-    return TapRegion(
-      onTapOutside: (_) => _dismiss('outside-pointer'),
-      child: SizedBox(
-        width: 192,
-        child: MenuGroup(
-          focusNode: _menuFocus,
-          onDismissed: () => _dismiss('menu-group'),
-          direction: Axis.vertical,
-          builder: (context, children) => MenuPopup(children: children),
-          children: [
-            if (copy)
-              MenuButton(
-                onPressed: (_) => run(() async {
-                  await selection.copyTextSelection();
-                }),
-                trailing: MenuShortcut(
-                  activator: shortcut(LogicalKeyboardKey.keyC),
-                ),
-                child: const Text('Copy'),
+    return SizedBox(
+      width: 192,
+      child: MenuGroup(
+        focusNode: _menuFocus,
+        onDismissed: () => _dismiss('menu-group'),
+        direction: Axis.vertical,
+        builder: (context, children) => MenuPopup(children: children),
+        children: [
+          if (copy)
+            MenuButton(
+              onPressed: (_) => run(() async {
+                await selection.copyTextSelection();
+              }),
+              trailing: MenuShortcut(
+                activator: shortcut(LogicalKeyboardKey.keyC),
               ),
-            if (selectAll)
-              MenuButton(
-                onPressed: (_) => run(selection.selectAllText),
-                trailing: MenuShortcut(
-                  activator: shortcut(LogicalKeyboardKey.keyA),
-                ),
-                child: const Text('Select all'),
+              child: const Text('Copy'),
+            ),
+          if (selectAll)
+            MenuButton(
+              onPressed: (_) => run(selection.selectAllText),
+              trailing: MenuShortcut(
+                activator: shortcut(LogicalKeyboardKey.keyA),
               ),
-            if (copy && ref.watch(narrationControllerProvider).available)
-              MenuButton(
-                onPressed: (_) =>
-                    run(() => NarrationActions.readSelection(ref)),
-                child: const Text('Read selection'),
+              child: const Text('Select all'),
+            ),
+          if (copy && ref.watch(narrationControllerProvider).available)
+            MenuButton(
+              onPressed: (_) => run(() => NarrationActions.readSelection(ref)),
+              child: const Text('Read selection'),
+            ),
+          if (selection.isCopyAllowed &&
+              ref.watch(narrationControllerProvider).available)
+            MenuButton(
+              onPressed: (_) => run(() => NarrationActions.readFromHere(ref)),
+              child: const Text('Read from here'),
+            ),
+          if (highlight) ...[
+            if (copy || selectAll) const MenuDivider(),
+            const MenuLabel(
+              child: Text(
+                'Highlight',
+                style: TextStyle(fontWeight: FontWeight.normal),
               ),
-            if (selection.isCopyAllowed &&
-                ref.watch(narrationControllerProvider).available)
-              MenuButton(
-                onPressed: (_) => run(() => NarrationActions.readFromHere(ref)),
-                child: const Text('Read from here'),
+            ),
+            MenuLabel(
+              child: HighlightPalette(
+                onSelected: (color) {
+                  _dismiss('action');
+                  widget.onHighlight(color);
+                },
               ),
-            if (highlight) ...[
-              if (copy || selectAll) const MenuDivider(),
-              const MenuLabel(
-                child: Text(
-                  'Highlight',
-                  style: TextStyle(fontWeight: FontWeight.normal),
-                ),
+            ),
+          ],
+          if (request != null && (_failed || stale))
+            const MenuLabel(
+              child: Text('Annotation unavailable. Reopen menu.'),
+            ),
+          if (existing != null && !stale && !_failed) ...[
+            const MenuDivider(),
+            MenuLabel(
+              child: Text(
+                'Highlight',
+                style: const TextStyle(fontWeight: FontWeight.normal),
               ),
+            ),
+            if (canEdit)
               MenuLabel(
                 child: HighlightPalette(
-                  onSelected: (color) {
-                    _dismiss('action');
-                    widget.onHighlight(color);
-                  },
+                  selectedColor: existing.canRecolor
+                      ? colorToHex(Color(existing.argb!))
+                      : null,
+                  updateDefault: false,
+                  onSelected: (color) => edit(color: color),
                 ),
               ),
-            ],
-            if (request != null && (_failed || stale))
-              const MenuLabel(
-                child: Text('Annotation unavailable. Reopen menu.'),
-              ),
-            if (existing != null && !stale && !_failed) ...[
-              const MenuDivider(),
-              MenuLabel(
-                child: Text(
-                  'Highlight',
-                  style: const TextStyle(fontWeight: FontWeight.normal),
-                ),
-              ),
-              if (canEdit)
-                MenuLabel(
-                  child: HighlightPalette(
-                    selectedColor: existing.canRecolor
-                        ? colorToHex(Color(existing.argb!))
-                        : null,
-                    updateDefault: false,
-                    onSelected: (color) => edit(color: color),
-                  ),
-                ),
-              if (!canEdit)
-                MenuLabel(
-                  child: Text('This ${existing.kind.name} is read-only'),
-                ),
-              if (canEdit)
-                MenuButton(
-                  onPressed: (_) => edit(),
-                  child: Text('Remove ${existing.kind.name}'),
-                ),
-            ],
-            if (underline)
+            if (!canEdit)
+              MenuLabel(child: Text('This ${existing.kind.name} is read-only')),
+            if (canEdit)
               MenuButton(
-                onPressed: (_) {
-                  _dismiss('action');
-                  widget.onUnderline();
-                },
-                child: const Text('Underline'),
+                onPressed: (_) => edit(),
+                child: Text('Remove ${existing.kind.name}'),
               ),
-            if (showView) ...[
-              if (copy || highlight || selectAll) const MenuDivider(),
-              ...pdfPageLayoutMenuItems(
-                twoPageView: widget.twoPageView,
-                onChanged: (enabled) {
-                  _dismiss('action');
-                  widget.onTwoPageViewChanged(enabled);
-                },
-              ),
-            ],
           ],
-        ),
+          if (underline)
+            MenuButton(
+              onPressed: (_) {
+                _dismiss('action');
+                widget.onUnderline();
+              },
+              child: const Text('Underline'),
+            ),
+          if (showView) ...[
+            if (copy || highlight || selectAll) const MenuDivider(),
+            ...pdfPageLayoutMenuItems(
+              twoPageView: widget.twoPageView,
+              onChanged: (enabled) {
+                _dismiss('action');
+                widget.onTwoPageViewChanged(enabled);
+              },
+            ),
+          ],
+        ],
       ),
     );
   }

@@ -3135,9 +3135,10 @@ class _PdfViewerState extends State<PdfViewer>
 
   List<Widget> _placeTextSelectionWidgets(BuildContext context, Size viewSize, bool isCopyTextEnabled) {
     Widget? createContextMenu(Offset? a, Offset? b, PdfViewerPart contextMenuFor) {
-      if (a == null) return null;
+      if (a == null) return widget.params.buildContextMenuOverlay?.call(context, null);
       _contextMenuDiagnostic('viewer.menu-builder', {'part': contextMenuFor.name, 'x': a.dx, 'y': a.dy});
-      final ctxMenuBuilder = widget.params.buildContextMenu ?? _buildContextMenu;
+      final ctxMenuBuilder =
+          widget.params.buildContextMenuOverlay ?? widget.params.buildContextMenu ?? _buildContextMenu;
       return ctxMenuBuilder(
         context,
         PdfViewerContextMenuBuilderParams(
@@ -3501,7 +3502,7 @@ class _PdfViewerState extends State<PdfViewer>
       }
 
       contextMenu = createContextMenu(a, b, _contextMenuFor);
-      if (contextMenu != null && !isPositionalWidget(contextMenu)) {
+      if (contextMenu != null && widget.params.buildContextMenuOverlay == null && !isPositionalWidget(contextMenu)) {
         final textAnchor = _selPartLastMoved == _TextSelectionPart.a
             ? _textSelA
             : _selPartLastMoved == _TextSelectionPart.b
@@ -3538,6 +3539,8 @@ class _PdfViewerState extends State<PdfViewer>
     if (textAnchorMoving == _TextSelectionPart.a || textAnchorMoving == _TextSelectionPart.b) {
       _selPartLastMoved = textAnchorMoving;
     }
+
+    contextMenu ??= widget.params.buildContextMenuOverlay?.call(context, null);
 
     return [
       if (anchorA != null)
