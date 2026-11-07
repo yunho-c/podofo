@@ -414,16 +414,28 @@ class AtomicPdfFile {
     // A unique same-filesystem directory makes staging collision-free.
     final staging = await DocumentFileAccess.stagingDirectory(target);
     final temporary = File(p.join(staging.path, 'document.pdf'));
+    var retainStaging = false;
     try {
       await temporary.writeAsBytes(bytes, flush: true);
       await check();
-      await temporary.rename(target);
-    } finally {
-      // Only our uniquely-created staging directory is removed.
       try {
-        await staging.delete(recursive: true);
-      } on FileSystemException {
-        /* Cleanup cannot turn a committed save into a failed save. */
+        await DocumentFileAccess.commitStagedFile(
+          temporary,
+          target,
+          replaceExisting: expectedFingerprint != null,
+        );
+      } on DocumentFileReplaceException {
+        retainStaging = true;
+        rethrow;
+      }
+    } finally {
+      // A native replacement failure can leave the original in staging.
+      if (!retainStaging) {
+        try {
+          await staging.delete(recursive: true);
+        } on FileSystemException {
+          /* Cleanup cannot turn a committed save into a failed save. */
+        }
       }
     }
   }

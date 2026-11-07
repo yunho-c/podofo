@@ -53,6 +53,28 @@ final class FileAccessPlugin: NSObject, FlutterPlugin {
         guard let path = args["path"] as? String else { throw invalidArguments() }
         try store.remember(path)
         result(nil)
+      case "commitStagedFile":
+        guard let staged = args["stagedPath"] as? String,
+              let target = args["targetPath"] as? String,
+              let replaceExisting = args["replaceExisting"] as? Bool else {
+          throw invalidArguments()
+        }
+        DispatchQueue.global(qos: .userInitiated).async {
+          do {
+            try DocumentFileReplacement.commit(
+              stagedPath: staged, targetPath: target, replaceExisting: replaceExisting)
+            DispatchQueue.main.async { result(nil) }
+          } catch {
+            let native = error as NSError
+            var details: [String: Any] = ["domain": native.domain, "nativeCode": native.code]
+            if let original = native.userInfo["NSFileOriginalItemLocationKey"] as? URL {
+              details["originalItemPath"] = original.path
+            }
+            let failure = FlutterError(
+              code: "file_replace", message: native.localizedDescription, details: details)
+            DispatchQueue.main.async { result(failure) }
+          }
+        }
       case "stagingDirectory":
         guard let path = args["path"] as? String else { throw invalidArguments() }
         result(try store.stagingDirectory(for: path))

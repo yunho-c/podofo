@@ -34,9 +34,9 @@ their native description; the bridge preserves error domain/code details for
 diagnostics. Missing native plugin support fails explicitly, without falling back
 to an uncoordinated read. Other platforms keep the existing Dart file I/O path.
 
-This change coordinates opening only. Save conflict checks and atomic replacement
-retain their existing implementation. File coordination and sandbox authorization
-are separate: coordination does not grant access or bypass an offline provider.
+File coordination currently covers opening. Saves use the metadata-preserving
+publication described below. File coordination and sandbox authorization are
+separate: coordination does not grant access or bypass an offline provider.
 
 Apple documents [asynchronous file coordination](https://developer.apple.com/documentation/foundation/improving-performance-and-stability-when-accessing-the-file-system)
 and [dataless file handling](https://developer.apple.com/documentation/technotes/tn3150-getting-ready-for-data-less-files).
@@ -64,13 +64,85 @@ Normal saves reacquire access. Save As uses the explicitly selected destination
 rather than following an older bookmark for that pathname. Foundation supplies
 an item-replacement staging directory on the target volume; permission for one
 PDF does not authorize arbitrary temporary siblings. Conflict checks, PDF
-validation, and atomic rename continue protecting the destination.
+validation, and same-volume staging protect the destination.
+
+After flushing and validating the staged PDF and checking the target fingerprint
+again, macOS publishes it through `DocumentFileReplacement` on a background queue.
+For an existing target, `FileManager.replaceItemAt(..., options: [])` preserves
+the target's **Created** date, permissions, and Finder metadata. The contents and
+**Modified** date come from the staged file. This applies to Save, auto-save, and
+Save As when overwriting an existing destination. Save As to a new path moves the
+staged file into place with its own fresh creation date; it refuses to overwrite
+a destination that appeared after the final conflict check. Other platforms keep
+their existing rename behavior.
+
+If native publication fails, edits remain dirty and the staging directory is
+retained: Foundation can move the original during a failed replacement, so
+unconditional temporary-directory cleanup could delete recovery data. The error
+includes the staging path and any original-file recovery location reported by
+Foundation. Pre-publication conflicts and successful saves still clean up their
+staging directories. There is no fallback to a metadata-losing rename if the
+native method is missing.
 
 After replacement or Save As, the bookmark is refreshed. If refreshing fails,
 the committed PDF remains saved and clean; the UI reports that permission may
 need granting again next launch.
 
 ## Validation
+
+### Isolated metadata branch verification — 2026-11-07
+
+The metadata-only changes were reproduced on `fix/macos-file-metadata` from
+`main` at `758a612`, in the sibling `podofo-macos-file-metadata` worktree.
+
+- The original Dart `temporary.rename(target)` publication operation was run
+  against a disposable file with a January 1, 2020 creation date. Its creation
+  date changed, reproducing the metadata loss independently of the Flutter UI.
+- The production Swift replacement regression passed for repeated saves,
+  creation/modification dates, permissions, Finder labels, new/existing Save As,
+  missing staged files, and destination collisions. The bookmark-alias and
+  coordinated-read native regressions also passed.
+- All 43 focused Flutter tests passed in `persistent_file_access_test.dart`,
+  `native_regression_test.dart`, `highlight_persistence_test.dart`, and
+  `annotation_editing_test.dart`, including auto-save and recovery paths.
+- Static analysis, changed-Dart formatting, and diff checks passed.
+- The macOS Debug app built successfully, including the native Flutter bridge;
+  local signing and deep/strict signature verification passed.
+
+Logs and the before-fix reproduction are in
+`podofo_frontend_one/build/macos-file-metadata/` in that worktree. Flutter tests
+used the existing main-worktree Release bundle's ObjectBox and PDFium libraries;
+their paths and SHA-256 hashes are recorded in `native-dependencies.json`.
+Prepared MLSR/Podoco dependencies are linked from the main worktree, with
+separate build and test caches. LFS assets were hydrated from hash-verified
+local copies before the successful test run.
+
+The built app was not launched. The historical sandbox grant/restore probe below
+was not repeated in this verification; native file-picker and Flutter UI save
+behavior were not exercised.
+
+### Save metadata preservation — 2026-10-29
+
+- 43 focused Flutter regressions passed across persistent access, native
+  open/save/restore behavior, highlight persistence, and annotation editing.
+  New cases cover new/existing Save As routing, access held during publication,
+  retained edits/recovery files on replacement failure, and a missing native
+  replacement method. A test-double failure deliberately moves the original
+  into staging to verify that cleanup cannot delete it.
+- The native metadata regression passed: repeated saves retain creation date,
+  POSIX permissions, and Finder label while contents and modification date
+  update; a new copy gets a fresh date; an overwritten destination retains its
+  own date. Missing staged files and destination collisions preserve old data.
+- A signed sandboxed probe saved an external disposable fixture while retaining
+  its January 1, 2020 creation date. A fresh process was denied direct access,
+  restored the bookmark, and read the updated contents with the same creation
+  date. Results are under `ignore/macos-save-metadata-4zhhfg6p/`. The picker was
+  not automated; the probe's successful grant/save result was verified before
+  running the fresh-process restore. This is native-probe evidence, not a Flutter
+  UI save test.
+- Static analysis, changed-Dart formatting, and diff checks passed. The macOS
+  Debug build and deep/strict signature verification passed. Logs are in
+  `podofo_frontend_one/build/save-metadata-{tests,analyze,build}.log`.
 
 ### Coordinated reads — 2026-10-29
 
@@ -138,6 +210,16 @@ xcrun swiftc macos/Runner/FileAccessStore.swift tool/macos_file_access_store_tes
 /tmp/podofo-file-access-store-test
 ```
 
+The metadata regression checks repeated saves, creation versus modification
+dates, permissions, Finder labels, new and existing Save As destinations, and
+failed replacement/collision behavior using the production native publisher:
+
+```sh
+xcrun swiftc macos/Runner/FileAccessStore.swift tool/macos_file_replacement_test.swift \
+  -o /tmp/podofo-file-replacement-test
+/tmp/podofo-file-replacement-test
+```
+
 The coordinated-read regression uses the production reader to check background
 I/O, concurrent requests, symlink resolution, detached bytes, missing-file errors,
 and classification of wrapped cloud errors versus permission errors:
@@ -170,14 +252,17 @@ open -n /path/to/FileAccessProbe.app --args --grant /absolute/path/to/fixture.pd
 
 Create the disposable fixture outside the probe container, containing exactly
 `persistent-access-before-save` followed by a newline. Select it in the picker.
-The probe refuses to modify another path or contents. It reads, stages, atomically
-replaces, refreshes the bookmark, and exits. Results are in `probe-result.json`
+The probe refuses to modify another path or contents. It reads, stages, performs
+the production native replacement, checks the creation date, refreshes the
+bookmark, and exits. Results are in `probe-result.json`
 under `~/Library/Containers/<bundle-id>/Data/`.
 
 Copy the result, then launch the same signed probe without arguments. Require
 `success: true`, `deniedBeforeRestore: true`, `scopeStarted: true`, and
 `restoredRead: "persistent-access-after-save\n"`. This distinguishes restored
-permission from a path that was already readable. Move only the fixture while
+permission from a path that was already readable. Also require matching
+`creationDateBefore`, `creationDateAfter`, and `restoredCreationDate` across the
+grant/restore results. Move only the fixture while
 the probe is stopped, relaunch, and check the resolved path and unchanged contents.
 Relaunch once more to check persistence of the refreshed bookmark.
 

@@ -190,9 +190,13 @@ void main() {
       expect(calls.map((c) => c.method), [
         'acquire',
         'stagingDirectory',
+        'commitStagedFile',
         'remember',
         'release',
       ]);
+      final commit = calls.singleWhere((c) => c.method == 'commitStagedFile');
+      expect((commit.arguments as Map)['replaceExisting'], true);
+      expect((commit.arguments as Map)['targetPath'], session.path);
       expect(session.dirty, false);
       expect(session.fileAccessWarning, isNull);
       await session.close();
@@ -230,9 +234,130 @@ void main() {
     expect(session.path, copy.path);
     expect(session.dirty, false);
     expect(session.fileAccessWarning, contains('PDF saved'));
-    expect(calls.map((c) => c.method), ['stagingDirectory', 'remember']);
+    expect(calls.map((c) => c.method), [
+      'stagingDirectory',
+      'commitStagedFile',
+      'remember',
+    ]);
+    final commit = calls.singleWhere((c) => c.method == 'commitStagedFile');
+    expect((commit.arguments as Map)['replaceExisting'], false);
     await session.close();
   }, skip: !Platform.isMacOS);
+
+  test('Save As replaces an existing destination with its metadata', () async {
+    final session = await PdfSession.open(pdf.path);
+    final target = File('${temporary.path}/existing-copy.pdf');
+    await target.writeAsBytes([...pdfFixture(), 10]);
+    final expected = await AtomicPdfFile.fingerprint(target.path);
+    calls.clear();
+    await session.save(destination: target.path, expectedTarget: expected);
+    expect(calls.map((c) => c.method), [
+      'stagingDirectory',
+      'commitStagedFile',
+      'remember',
+    ]);
+    final commit = calls.singleWhere((c) => c.method == 'commitStagedFile');
+    expect((commit.arguments as Map)['replaceExisting'], true);
+    expect(
+      (commit.arguments as Map)['targetPath'],
+      await target.resolveSymbolicLinks(),
+    );
+    expect(await target.readAsBytes(), pdfFixture());
+    expect(session.dirty, false);
+    await session.close();
+  }, skip: !Platform.isMacOS);
+
+  test('replacement failure retains recovery files, edits, and the grant until completion', () async {
+    final session = await PdfSession.open(pdf.path);
+    final original = await pdf.readAsBytes();
+    await session.highlight([
+      const HighlightRegion(1, [PdfRect(30, 280, 90, 260)]),
+    ], 0x88ffff00);
+    final replacing = Completer<void>();
+    final finish = Completer<Object?>();
+    late File staged;
+    late File recovery;
+    calls.clear();
+    installFileAccessMock((call) async {
+      calls.add(call);
+      if (call.method == 'acquire') {
+        return {'path': pdf.path, 'token': 'saving'};
+      }
+      if (call.method == 'commitStagedFile') {
+        staged = File((call.arguments as Map)['stagedPath'] as String);
+        recovery = File('${staged.parent.path}/original-recovery.pdf');
+        // Model Foundation's documented failure case: the original is moved
+        // into the staging area, so unconditional cleanup would destroy it.
+        await pdf.rename(recovery.path);
+        replacing.complete();
+        return finish.future;
+      }
+      return ordinaryFileAccess(call);
+    });
+    final saving = session.save();
+    await replacing.future;
+    expect(calls.map((c) => c.method), [
+      'acquire',
+      'stagingDirectory',
+      'commitStagedFile',
+    ]);
+    expect(session.dirty, true);
+    final failure = expectLater(
+      saving,
+      throwsA(
+        isA<DocumentFileReplaceException>()
+            .having((e) => e.stagingPath, 'staging path', staged.parent.path)
+            .having(
+              (e) => e.toString(),
+              'recovery location',
+              contains(recovery.path),
+            ),
+      ),
+    );
+    finish.completeError(
+      PlatformException(
+        code: 'file_replace',
+        message: 'Replacement failed.',
+        details: {'originalItemPath': recovery.path},
+      ),
+    );
+    await failure;
+    expect(calls.map((c) => c.method), [
+      'acquire',
+      'stagingDirectory',
+      'commitStagedFile',
+      'release',
+    ]);
+    expect(await recovery.readAsBytes(), original);
+    expect(await staged.exists(), true);
+    expect(session.dirty, true);
+    await session.close(discard: true);
+  }, skip: !Platform.isMacOS);
+
+  test(
+    'missing replacement bridge cannot fall back to metadata-losing rename',
+    () async {
+      final session = await PdfSession.open(pdf.path);
+      final original = await pdf.readAsBytes();
+      await session.highlight([
+        const HighlightRegion(1, [PdfRect(30, 280, 90, 260)]),
+      ], 0x88ffff00);
+      late File staged;
+      installFileAccessMock((call) async {
+        if (call.method == 'commitStagedFile') {
+          staged = File((call.arguments as Map)['stagedPath'] as String);
+          throw MissingPluginException('commitStagedFile');
+        }
+        return ordinaryFileAccess(call);
+      });
+      await expectLater(session.save(), throwsA(isA<MissingPluginException>()));
+      expect(await pdf.readAsBytes(), original);
+      expect(session.dirty, true);
+      expect(await staged.parent.exists(), false);
+      await session.close(discard: true);
+    },
+    skip: !Platform.isMacOS,
+  );
 
   test(
     'legacy denied entry recovers its last page, including symlink selection',

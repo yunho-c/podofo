@@ -42,16 +42,27 @@ final class FileAccessProbe: NSObject, NSApplicationDelegate {
         let access = try store.acquire(url.path, selected: true)
         defer { if let token = access.token { store.release(token) } }
         report["selectedRead"] = try String(contentsOfFile: access.path, encoding: .utf8)
-        // Mirror AtomicPdfFile: same-volume staging, rename, then bookmark refresh.
+        let before = try FileManager.default.attributesOfItem(atPath: access.path)
+        let originalCreation = before[.creationDate] as! Date
+        report["creationDateBefore"] = originalCreation.timeIntervalSince1970
+        // Production publication: same-volume staging, replacement, bookmark refresh.
         let staging = try store.stagingDirectory(for: access.path)
-        defer { try? FileManager.default.removeItem(atPath: staging) }
+        var replacementFinished = false
+        defer { if replacementFinished { try? FileManager.default.removeItem(atPath: staging) } }
         let staged = URL(fileURLWithPath: staging).appendingPathComponent("document.pdf")
         try Data("persistent-access-after-save\n".utf8).write(to: staged)
-        guard rename(staged.path, access.path) == 0 else {
-          throw NSError(domain: NSPOSIXErrorDomain, code: Int(errno))
-        }
+        try DocumentFileReplacement.commit(
+          stagedPath: staged.path, targetPath: access.path, replaceExisting: true)
+        replacementFinished = true
         try store.remember(access.path)
         report["savedRead"] = try String(contentsOfFile: access.path, encoding: .utf8)
+        let after = try FileManager.default.attributesOfItem(atPath: access.path)
+        let savedCreation = after[.creationDate] as! Date
+        report["creationDateAfter"] = savedCreation.timeIntervalSince1970
+        guard savedCreation == originalCreation else {
+          throw NSError(domain: "Probe", code: 4,
+                        userInfo: [NSLocalizedDescriptionKey: "Save changed the creation date."])
+        }
       } else {
         guard let path = defaults.string(forKey: "probe.path") else {
           throw NSError(domain: "Probe", code: 2, userInfo: [NSLocalizedDescriptionKey: "Run --grant first"])
@@ -62,6 +73,8 @@ final class FileAccessProbe: NSObject, NSApplicationDelegate {
         report["resolvedPath"] = access.path
         report["restoredRead"] = try String(contentsOfFile: access.path, encoding: .utf8)
         report["scopeStarted"] = access.token != nil
+        report["restoredCreationDate"] = (try FileManager.default.attributesOfItem(
+          atPath: access.path)[.creationDate] as! Date).timeIntervalSince1970
       }
       report["success"] = true
     } catch {
