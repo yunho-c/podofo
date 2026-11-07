@@ -14,12 +14,14 @@ class PdfLinkHoverPreview extends StatelessWidget {
     required this.label,
     this.image,
     this.imageFilter,
+    this.opacity,
   });
   final Offset anchor;
   final String label;
   final ui.Image? image;
   // Filter only the PDF raster; the card and label use the normal app theme.
   final ui.ImageFilter? imageFilter;
+  final Animation<double>? opacity;
 
   static final _disabledFilter = ui.ImageFilter.blur(sigmaX: 0, sigmaY: 0);
 
@@ -57,7 +59,8 @@ class PdfLinkHoverPreview extends StatelessWidget {
                       math.max(0, constraints.maxHeight - 56),
                     ),
                   ).destination;
-            return SizedBox(
+            final card = SizedBox(
+              key: const ValueKey('pdf-link-hover-card'),
               width: fitted == null
                   ? null
                   : math.max(
@@ -130,6 +133,9 @@ class PdfLinkHoverPreview extends StatelessWidget {
                 ),
               ),
             );
+            return opacity == null
+                ? card
+                : FadeTransition(opacity: opacity!, child: card);
           },
         ),
       ),

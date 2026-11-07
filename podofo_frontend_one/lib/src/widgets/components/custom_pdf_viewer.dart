@@ -47,7 +47,7 @@ class CustomPdfViewer extends ConsumerStatefulWidget {
 }
 
 class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
-    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+    with TickerProviderStateMixin, WidgetsBindingObserver {
   static final _disabledFilter = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
   static const _colorKeys = [
     LogicalKeyboardKey.digit1,
@@ -93,6 +93,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   }
 
   OverlayEntry? _overlay;
+  late final AnimationController _hoverAnimation;
   Timer? _hoverTimer;
   Timer? _previewRevealTimer;
   int _generation = 0;
@@ -298,6 +299,16 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         if (!listEquals(previous, next)) _highlightColors.cancel();
       },
     );
+    _hoverAnimation =
+        AnimationController(
+          vsync: this,
+          duration: const Duration(milliseconds: 100),
+        )..addStatusListener((status) {
+          // Resetting for a new reveal must preserve its not-yet-visible image.
+          if (status == AnimationStatus.dismissed && _overlay != null) {
+            _removeHoverOverlay();
+          }
+        });
     _previews = LinkPreviewWorker(
       render: ref.read(linkPreviewRendererProvider),
     );
@@ -450,13 +461,27 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     unawaited(DocumentActions.highlight(ref));
   }
 
-  void _clearHover() {
+  void _clearHover({bool immediately = true}) {
     _generation++;
     _hoverTimer?.cancel();
     _hoverTimer = null;
     _previewRevealTimer?.cancel();
     _previewRevealTimer = null;
     _previews.cancel();
+    if (immediately ||
+        _overlay == null ||
+        MediaQuery.disableAnimationsOf(context) ||
+        _hoverAnimation.isDismissed) {
+      _hoverAnimation.stop();
+      _removeHoverOverlay();
+    } else if (_hoverAnimation.status != AnimationStatus.reverse) {
+      // Cancel work immediately, retaining only the detached image for the fade.
+      // Repeated pointer moves must not restart dismissal.
+      _hoverAnimation.reverse();
+    }
+  }
+
+  void _removeHoverOverlay() {
     _overlay?.remove();
     _overlay?.dispose();
     _overlay = null;
@@ -510,6 +535,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     _clearHover();
     _hoverViewer.removeListener(_clearHover);
     _previews.dispose();
+    _hoverAnimation.dispose();
     super.dispose();
   }
 
@@ -798,7 +824,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     final invert = brightness == Brightness.dark && shader != null;
     final content = MouseRegion(
       onHover: _onHover,
-      onExit: (_) => _clearHover(),
+      onExit: (_) => _clearHover(immediately: false),
       // Keep the viewer mounted so theme/inversion changes preserve its viewport.
       child: ImageFiltered(
         enabled: invert,
@@ -913,7 +939,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   }
 
   void _onHover(PointerHoverEvent event) {
-    _clearHover();
+    _clearHover(immediately: false);
     final generation = _generation;
     final document = ref.read(currentDocumentProvider);
     final controller = ref.read(pdfViewerControllerProvider);
@@ -936,7 +962,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       useDocumentLayoutCoordinates: false,
     );
     if (hit == null) return;
-    _hoverTimer = Timer(const Duration(milliseconds: 350), () async {
+    _hoverTimer = Timer(const Duration(milliseconds: 300), () async {
       try {
         if (!isCurrent()) return;
         final links = await session.readLocked((pdf) async {
@@ -965,6 +991,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             _overlay!.markNeedsBuild();
             return;
           }
+          final disableAnimations = MediaQuery.disableAnimationsOf(context);
+          _hoverAnimation.stop();
+          _hoverAnimation.value = disableAnimations ? 1 : 0;
           _overlay = OverlayEntry(
             builder: (context) => Consumer(
               // The overlay builds independently of the viewer. Observe settings
@@ -975,6 +1004,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
                 return PdfLinkHoverPreview(
                   anchor: position,
                   label: label,
+                  opacity: _hoverAnimation,
                   image: _previewImage,
                   imageFilter: dark && shader != null
                       ? ImageFilter.shader(shader)
@@ -984,6 +1014,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             ),
           );
           Overlay.of(context).insert(_overlay!);
+          if (!disableAnimations) _hoverAnimation.forward();
         }
 
         // Only actual internal PDF destinations can request a visual preview.

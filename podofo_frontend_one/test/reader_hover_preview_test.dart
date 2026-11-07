@@ -43,10 +43,16 @@ void main() {
   final platform = TargetPlatformVariant.only(
     Platform.isMacOS ? TargetPlatform.macOS : TargetPlatform.windows,
   );
-  for (final outcome in ['fast', 'slow', 'cancelled']) {
+  for (final outcome in ['fast', 'slow', 'cancelled', 'reduced motion']) {
     testWidgets(
       '$outcome smart preview controls the first visible card and releases pending images',
       (tester) async {
+        final reducedMotion = outcome == 'reduced motion';
+        tester.platformDispatcher.accessibilityFeaturesTestValue =
+            FakeAccessibilityFeatures(disableAnimations: reducedMotion);
+        addTearDown(
+          tester.platformDispatcher.clearAccessibilityFeaturesTestValue,
+        );
         final recorder = ui.PictureRecorder();
         ui.Canvas(recorder)
             .drawColor(const Color(0xffff0000), ui.BlendMode.src);
@@ -71,7 +77,7 @@ void main() {
         });
         final point = await reader.linkPoint(2);
         await reader.mouse.moveTo(point);
-        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 300));
         await _wait(
           tester,
           () => reader.semanticEngine!.pages.isNotEmpty,
@@ -121,7 +127,7 @@ void main() {
               _preview.evaluate().isNotEmpty &&
               !tester.widget<RawImage>(_preview).image!.isCloneOf(contextImage),
           step: Duration.zero,
-          afterFrame: outcome == 'fast' ? expectSmartFirstFrame : null,
+          afterFrame: outcome != 'slow' ? expectSmartFirstFrame : null,
         );
         if (visibleContext != null) expect(visibleContext.debugDisposed, true);
         expect(
@@ -131,11 +137,28 @@ void main() {
           endsWith('Page 2'),
         );
         expect(reader.session.navigationHistory.previous, isNull);
+        double opacity() => tester
+            .widget<FadeTransition>(
+              find.descendant(
+                of: find.byType(PdfLinkHoverPreview),
+                matching: find.byType(FadeTransition),
+              ),
+            )
+            .opacity
+            .value;
+        // Start the fade only once the selected raster is ready. It should not
+        // already be halfway through its animation when the smart crop arrives.
+        await tester.pump();
+        expect(opacity(), reducedMotion ? 1 : 0);
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(opacity(), reducedMotion ? 1 : closeTo(.5, .01));
+        await tester.pump(const Duration(milliseconds: 50));
+        expect(opacity(), 1);
         // The cached hover must also reveal the semantic crop on its very first
         // frame, even though the contextual image is immediately available.
         await reader.mouse.moveTo(point + const Offset(1, 0));
         await tester.pump();
-        await tester.pump(const Duration(milliseconds: 350));
+        await tester.pump(const Duration(milliseconds: 300));
         await _wait(
           tester,
           () => _preview.evaluate().isNotEmpty,
@@ -143,6 +166,28 @@ void main() {
           afterFrame: expectSmartFirstFrame,
         );
         expect(reader.semanticEngine!.pages, [1]);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final visibleImage = tester.widget<RawImage>(_preview).image!;
+        final blank =
+            tester.getTopLeft(find.byType(PdfViewer)) + const Offset(2, 2);
+        await reader.mouse.moveTo(blank);
+        await tester.pump();
+        if (!reducedMotion) {
+          expect(opacity(), 1);
+          expect(visibleImage.debugDisposed, false);
+          await tester.pump(const Duration(milliseconds: 40));
+          expect(opacity(), closeTo(.6, .01));
+          await reader.mouse.moveTo(blank + const Offset(1, 0));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 60));
+          expect(opacity(), closeTo(0, .01));
+          // The animation reports dismissal on the first tick past its endpoint.
+          await tester.pump(const Duration(milliseconds: 1));
+          await tester.pump();
+        }
+        expect(find.byType(PdfLinkHoverPreview), findsNothing);
+        expect(visibleImage.debugDisposed, true);
         expect(tester.takeException(), isNull);
       },
       variant: platform,
@@ -157,7 +202,7 @@ void main() {
             throw StateError('render failed'),
       );
       await reader.mouse.moveTo(await reader.linkPoint(0));
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(
         tester,
         () => find.text('Page 2').evaluate().isNotEmpty,
@@ -196,8 +241,9 @@ void main() {
       await tester.pump();
       final matrix = reader.viewer.value.clone();
       await reader.mouse.moveTo(await reader.linkPoint(0));
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
+      await tester.pump(const Duration(milliseconds: 100));
       final image = tester.widget<RawImage>(_preview).image;
       final element = tester.element(_preview);
       final previewFilter = find.descendant(
@@ -291,7 +337,7 @@ void main() {
       final matrix = reader.viewer.value.clone();
       final point = await reader.linkPoint(2);
       await reader.mouse.moveTo(point);
-      await tester.pump(const Duration(milliseconds: 349));
+      await tester.pump(const Duration(milliseconds: 299));
       expect(reader.semanticEngine!.pages, isEmpty);
       await tester.pump(const Duration(milliseconds: 1));
       await _wait(
@@ -309,7 +355,7 @@ void main() {
       expect(reader.session.revision, 0);
       await reader.mouse.moveTo(point + const Offset(1, 0));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(
         tester,
         () =>
@@ -346,7 +392,7 @@ void main() {
             viewSize: reader.viewer.viewSize,
           );
       await reader.mouse.moveTo(point);
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => find.text('Pages 4–5').evaluate().isNotEmpty);
       expect(reader.semanticEngine!.pages, [3, 4]);
       expect(reader.viewer.value, matrix);
@@ -358,7 +404,7 @@ void main() {
       expect(card.height, lessThanOrEqualTo(360));
       await reader.mouse.moveTo(point + const Offset(1, 0));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => find.text('Pages 4–5').evaluate().isNotEmpty);
       expect(reader.semanticEngine!.pages, [3, 4]);
       await reader.mouse.down(point);
@@ -401,7 +447,7 @@ void main() {
       final page = reader.viewer.pageNumber;
       final point = await reader.linkPoint(0);
       await reader.mouse.moveTo(point);
-      await tester.pump(const Duration(milliseconds: 349));
+      await tester.pump(const Duration(milliseconds: 299));
       expect(find.byType(PdfLinkHoverPreview), findsNothing);
       await tester.pump(const Duration(milliseconds: 1));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
@@ -410,17 +456,20 @@ void main() {
       expect(reader.session.navigationHistory.previous, isNull);
       expect(reader.session.revision, 0);
 
-      // Repeated hovering reuses a detached image without changing reading state.
+      // Repeated hovering cancels work immediately, retains the detached image
+      // for its fade, then reuses the cache without changing reading state.
       await reader.mouse.moveTo(point + const Offset(1, 0));
       await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pump(const Duration(milliseconds: 1));
       expect(_preview, findsNothing);
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 199));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
       expect(reader.viewer.value, matrix);
 
       // An external link retains its label and never displays a page raster.
       await reader.mouse.moveTo(await reader.linkPoint(6));
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(
         tester,
         () => find.text('https://example.com/reference').evaluate().isNotEmpty,
@@ -428,7 +477,7 @@ void main() {
       expect(_preview, findsNothing);
 
       await reader.mouse.moveTo(point);
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
       await reader.mouse.down(point);
       await tester.pump(const Duration(milliseconds: 20));
@@ -466,7 +515,7 @@ void main() {
       final matrix = reader.viewer.value.clone();
       final point = await reader.linkPoint(0);
       await reader.mouse.moveTo(point);
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
 
       final secondary = await tester.createGesture(
@@ -517,7 +566,7 @@ void main() {
       );
       final initialSession = reader.session;
       await reader.mouse.moveTo(await reader.linkPoint(0));
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => calls == 1);
       await reader.mouse.moveTo(const Offset(1, 1));
       await tester.pump();
@@ -537,7 +586,7 @@ void main() {
       expect(find.byType(PdfLinkHoverPreview), findsNothing);
 
       await reader.mouse.moveTo(await reader.linkPoint(0));
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
       expect(calls, 2); // Same bytes in another session cannot reuse its image.
       reader.container.read(currentTabIndexProvider.notifier).state = 0;
@@ -547,7 +596,7 @@ void main() {
       expect(find.byType(PdfLinkHoverPreview), findsNothing);
       await reader.ready();
       await reader.mouse.moveTo(await reader.linkPoint(0));
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
       await reader.viewer.goToPage(pageNumber: 2, duration: Duration.zero);
       await tester.pump();
@@ -556,7 +605,7 @@ void main() {
       await reader.viewer.goToPage(pageNumber: 1, duration: Duration.zero);
       await tester.pump();
       await reader.mouse.moveTo(await reader.linkPoint(0));
-      await tester.pump(const Duration(milliseconds: 350));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
       await _native(
         tester,

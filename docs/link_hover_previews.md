@@ -1,6 +1,6 @@
 # Internal PDF link hover previews
 
-After the existing 350 ms hover delay, supported internal PDF links prepare a
+After a 300 ms hover delay, supported internal PDF links prepare a
 destination preview. On macOS Apple Silicon, PDF text and the bundled Podoco
 layout model can identify a complete target: a bibliography entry, figure/table
 with its caption, numbered equation, or section heading and first paragraph.
@@ -14,6 +14,11 @@ fallback appears immediately. If preparation is still running at the deadline,
 the contextual preview appears and can be replaced once by the smart result.
 This bounds the extra presentation delay, but slow cold analysis can still
 produce a visible replacement. Leaving the link cancels the pending reveal.
+
+The selected card fades in over 100 ms and fades out when the pointer moves away.
+Dismissal cancels preparation immediately and retains the displayed image only
+until the fade completes. Clicks, scrolling, document changes and disposal remove
+the card immediately. Reduced-motion settings disable both fades.
 
 Ambiguous identity, incomplete boundaries or unavailable analysis retain the
 contextual preview. Unlinked citation text and figure references are outside
@@ -123,10 +128,11 @@ not open inference and cannot substitute for full model-payload verification.
   colored target in each native crop; no user PDFs or network links are opened.
 - `pdf_link_hover_preview_test.dart`: small-overlay edge placement, text fallback
   and pointer pass-through.
-- `reader_hover_preview_test.dart`: the real keyed reader area, 350 ms debounce,
+- `reader_hover_preview_test.dart`: the real keyed reader area, 300 ms debounce,
   first-frame smart-preview selection, bounded slow-analysis fallback, cancelled
   reveals, unchanged matrix/page/history, external labels, click/Back, rapid
-  movement, stale completions, tab switching, scrolling and closing.
+  movement, stale completions, tab switching, scrolling and closing; fade timing,
+  image ownership during dismissal, and reduced-motion behavior.
 
 ## Validation on 2026-10-28
 
