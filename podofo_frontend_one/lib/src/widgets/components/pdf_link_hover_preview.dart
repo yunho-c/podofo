@@ -104,6 +104,13 @@ class PdfLinkHoverPreview extends StatelessWidget {
                   ),
             child: Card(
               borderWidth: borderWidth,
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x14000000),
+                  blurRadius: 12,
+                  offset: Offset(0, 2),
+                ),
+              ],
               padding: const EdgeInsets.all(12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
