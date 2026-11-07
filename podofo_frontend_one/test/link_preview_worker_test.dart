@@ -267,6 +267,7 @@ void main() {
 
   test('reset, revision changes, failures and disposal never deliver late previews', () async {
     for (final action in ['reset', 'revision', 'dispose', 'throw']) {
+      var settlements = 0;
       final session = _Session();
       final started = Completer<void>();
       final unblock = Completer<ui.Image?>();
@@ -276,7 +277,12 @@ void main() {
           return unblock.future;
         },
       );
-      final pending = worker.load(session, destination, pixelRatio: 1);
+      final pending = worker.load(
+        session,
+        destination,
+        pixelRatio: 1,
+        onSettled: () => settlements++,
+      );
       await started.future;
       switch (action) {
         case 'reset':
@@ -295,6 +301,7 @@ void main() {
       expect(await pending, isNull);
       // reset/dispose resolve the consumer early; allow native cleanup to finish.
       await Future<void>.delayed(Duration.zero);
+      expect(settlements, action == 'throw' ? 1 : 0);
       expect(image?.debugDisposed ?? true, true);
       expect(worker.cache.bytes, 0);
       worker.dispose();

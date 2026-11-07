@@ -1,11 +1,19 @@
 # Internal PDF link hover previews
 
-After the existing 350 ms hover delay, supported internal PDF links display a
-contextual destination image beneath their page label. On macOS Apple Silicon,
-PDF text and the bundled Podoco layout model can replace that image once with
-a complete, identified target: a bibliography entry, figure/table with its
-caption, numbered equation, or section heading and first paragraph. Existing
-layout evidence is reused; uncached target pages are analyzed on demand.
+After the existing 350 ms hover delay, supported internal PDF links prepare a
+destination preview. On macOS Apple Silicon, PDF text and the bundled Podoco
+layout model can identify a complete target: a bibliography entry, figure/table
+with its caption, numbered equation, or section heading and first paragraph.
+Existing layout evidence is reused; uncached target pages are analyzed on demand.
+
+Once the contextual raster is ready, the reader allows up to 150 ms for the
+smart preview before revealing the card. A smart result arriving in that window
+appears directly at its final size, without flashing the page-label placeholder
+or larger contextual image. If preparation finishes without a smart result, the
+fallback appears immediately. If preparation is still running at the deadline,
+the contextual preview appears and can be replaced once by the smart result.
+This bounds the extra presentation delay, but slow cold analysis can still
+produce a visible replacement. Leaving the link cancels the pending reveal.
 
 Ambiguous identity, incomplete boundaries or unavailable analysis retain the
 contextual preview. Unlinked citation text and figure references are outside
@@ -31,7 +39,8 @@ open because Computer Use denies PoDoFo access; M5 is not complete.
 Position previews cover up to 480 × 320 PDF points, centered on the target and
 shifted inside the visible page at its edges. This preserves surrounding context
 at every rotation. This first image is a location preview and can show only part
-of a large target; it remains visible while semantic preparation runs.
+of a large target; after the reveal grace period, it remains visible while
+semantic preparation runs.
 
 ## Target resolution
 
@@ -115,8 +124,9 @@ not open inference and cannot substitute for full model-payload verification.
 - `pdf_link_hover_preview_test.dart`: small-overlay edge placement, text fallback
   and pointer pass-through.
 - `reader_hover_preview_test.dart`: the real keyed reader area, 350 ms debounce,
-  unchanged matrix/page/history, external labels, click/Back, rapid movement,
-  stale completions, tab switching, scrolling and closing.
+  first-frame smart-preview selection, bounded slow-analysis fallback, cancelled
+  reveals, unchanged matrix/page/history, external labels, click/Back, rapid
+  movement, stale completions, tab switching, scrolling and closing.
 
 ## Validation on 2026-10-28
 

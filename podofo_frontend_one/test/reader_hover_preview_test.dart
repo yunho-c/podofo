@@ -43,6 +43,131 @@ void main() {
   final platform = TargetPlatformVariant.only(
     Platform.isMacOS ? TargetPlatform.macOS : TargetPlatform.windows,
   );
+  for (final outcome in ['fast', 'slow', 'cancelled']) {
+    testWidgets(
+      '$outcome smart preview controls the first visible card and releases pending images',
+      (tester) async {
+        final recorder = ui.PictureRecorder();
+        ui.Canvas(recorder)
+            .drawColor(const Color(0xffff0000), ui.BlendMode.src);
+        final picture = recorder.endRecording();
+        final contextImage = (await tester.runAsync(
+          () => picture.toImage(360, 240),
+        ))!;
+        picture.dispose();
+        addTearDown(contextImage.dispose);
+        final layoutReady = Completer<void>();
+        final reader = await _Reader.open(
+          tester,
+          semanticFixture: true,
+          layoutReady: layoutReady.future,
+          render: (pdf, dest, ratio, cancellation) async =>
+              contextImage.clone(),
+        );
+        // Registered after the reader so a failed assertion cannot leave its
+        // teardown waiting for the deliberately stalled analysis job.
+        addTearDown(() {
+          if (!layoutReady.isCompleted) layoutReady.complete();
+        });
+        final point = await reader.linkPoint(2);
+        await reader.mouse.moveTo(point);
+        await tester.pump(const Duration(milliseconds: 350));
+        await _wait(
+          tester,
+          () => reader.semanticEngine!.pages.isNotEmpty,
+          step: Duration.zero,
+          afterFrame: () =>
+              expect(find.byType(PdfLinkHoverPreview), findsNothing),
+        );
+        // The contextual raster is already ready, but no placeholder geometry
+        // is painted while a fast semantic result still has a chance to win.
+        await tester.pump(const Duration(milliseconds: 149));
+        expect(find.byType(PdfLinkHoverPreview), findsNothing);
+        if (outcome == 'cancelled') {
+          await reader.mouse.moveTo(const Offset(1, 1));
+          await tester.pump(const Duration(milliseconds: 200));
+          layoutReady.complete();
+          await _wait(
+            tester,
+            () => reader.semanticEngine!.completedPages.isNotEmpty,
+          );
+          await tester.pump(const Duration(milliseconds: 200));
+          expect(find.byType(PdfLinkHoverPreview), findsNothing);
+          // Only the worker's cache and this test's original handle remain.
+          expect(contextImage.debugGetOpenHandleStackTraces(), hasLength(2));
+          return;
+        }
+        ui.Image? visibleContext;
+        if (outcome == 'slow') {
+          await tester.pump(const Duration(milliseconds: 1));
+          visibleContext = tester.widget<RawImage>(_preview).image!;
+          expect(visibleContext.isCloneOf(contextImage), true);
+        }
+        layoutReady.complete();
+        void expectSmartFirstFrame() {
+          if (_preview.evaluate().isEmpty) {
+            expect(find.byType(PdfLinkHoverPreview), findsNothing);
+          } else {
+            expect(
+              tester.widget<RawImage>(_preview).image!.isCloneOf(contextImage),
+              false,
+            );
+          }
+        }
+
+        await _wait(
+          tester,
+          () =>
+              _preview.evaluate().isNotEmpty &&
+              !tester.widget<RawImage>(_preview).image!.isCloneOf(contextImage),
+          step: Duration.zero,
+          afterFrame: outcome == 'fast' ? expectSmartFirstFrame : null,
+        );
+        if (visibleContext != null) expect(visibleContext.debugDisposed, true);
+        expect(
+          tester
+              .widget<PdfLinkHoverPreview>(find.byType(PdfLinkHoverPreview))
+              .label,
+          endsWith('Page 2'),
+        );
+        expect(reader.session.navigationHistory.previous, isNull);
+        // The cached hover must also reveal the semantic crop on its very first
+        // frame, even though the contextual image is immediately available.
+        await reader.mouse.moveTo(point + const Offset(1, 0));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+        await _wait(
+          tester,
+          () => _preview.evaluate().isNotEmpty,
+          step: Duration.zero,
+          afterFrame: expectSmartFirstFrame,
+        );
+        expect(reader.semanticEngine!.pages, [1]);
+        expect(tester.takeException(), isNull);
+      },
+      variant: platform,
+    );
+  }
+  testWidgets(
+    'unavailable rendering settles to the page label without waiting out the grace period',
+    (tester) async {
+      final reader = await _Reader.open(
+        tester,
+        render: (pdf, dest, ratio, cancellation) async =>
+            throw StateError('render failed'),
+      );
+      await reader.mouse.moveTo(await reader.linkPoint(0));
+      await tester.pump(const Duration(milliseconds: 350));
+      await _wait(
+        tester,
+        () => find.text('Page 2').evaluate().isNotEmpty,
+        step: Duration.zero,
+      );
+      expect(_preview, findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+    variant: platform,
+  );
   testWidgets(
     'open preview follows inversion settings without rerendering or navigating',
     (tester) async {
@@ -449,12 +574,18 @@ void main() {
 
 final _preview = find.byKey(const ValueKey('pdf-link-preview-image'));
 
-Future<void> _wait(WidgetTester tester, bool Function() condition) async {
+Future<void> _wait(
+  WidgetTester tester,
+  bool Function() condition, {
+  Duration step = const Duration(milliseconds: 20),
+  void Function()? afterFrame,
+}) async {
   for (var i = 0; i < 150; i++) {
     await tester.runAsync(
       () => Future<void>.delayed(const Duration(milliseconds: 20)),
     );
-    await tester.pump(const Duration(milliseconds: 20));
+    await tester.pump(step);
+    afterFrame?.call();
     if (condition()) return;
   }
   fail('Timed out waiting for reader/native work');
@@ -500,6 +631,7 @@ class _Reader {
     GlobalKey? captureKey,
     bool semanticFixture = false,
     bool complexFixture = false,
+    Future<void>? layoutReady,
   }) async {
     SharedPreferences.setMockInitialValues({});
     tester.view.physicalSize = const Size(1000, 900);
@@ -525,7 +657,7 @@ class _Reader {
       open: (_) async => FakeNarratorSession(),
     );
     final engine = semanticFixture || complexFixture
-        ? _LayoutEngine(complex: complexFixture)
+        ? _LayoutEngine(complex: complexFixture, ready: layoutReady)
         : null;
     final analysis = engine == null
         ? null
@@ -629,9 +761,11 @@ class _Reader {
 }
 
 class _LayoutEngine extends ControlledEngine {
-  _LayoutEngine({this.complex = false});
+  _LayoutEngine({this.complex = false, this.ready});
   final bool complex;
+  final Future<void>? ready;
   final pages = <int>[];
+  final completedPages = <int>[];
   final snapshot =
       jsonDecode(
             File(
@@ -674,6 +808,7 @@ class _LayoutEngine extends ControlledEngine {
     unawaited(
       Future<void>(() async {
         try {
+          await ready;
           await sink(
             complex
                 ? ComplexPreviewFixture().updateForDocument(
@@ -690,6 +825,7 @@ class _LayoutEngine extends ControlledEngine {
                   }),
           );
         } finally {
+          completedPages.add(pageIndex);
           job.finish();
         }
       }),

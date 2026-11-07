@@ -94,6 +94,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
 
   OverlayEntry? _overlay;
   Timer? _hoverTimer;
+  Timer? _previewRevealTimer;
   int _generation = 0;
   late final LinkPreviewWorker _previews;
   late PdfViewerController _hoverViewer;
@@ -453,6 +454,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     _generation++;
     _hoverTimer?.cancel();
     _hoverTimer = null;
+    _previewRevealTimer?.cancel();
+    _previewRevealTimer = null;
     _previews.cancel();
     _overlay?.remove();
     _overlay?.dispose();
@@ -954,28 +957,39 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         final overlayBox =
             Overlay.of(context).context.findRenderObject() as RenderBox;
         final position = overlayBox.globalToLocal(event.position);
-        _overlay = OverlayEntry(
-          builder: (context) => Consumer(
-            // The overlay builds independently of the viewer. Observe settings
-            // here so an open preview updates without rerendering its PDF crop.
-            builder: (context, ref, child) {
-              final dark = ref.watch(brightnessProvider) == Brightness.dark;
-              final shader = ref.watch(shaderProvider);
-              return PdfLinkHoverPreview(
-                anchor: position,
-                label: label,
-                image: _previewImage,
-                imageFilter: dark && shader != null
-                    ? ImageFilter.shader(shader)
-                    : null,
-              );
-            },
-          ),
-        );
-        Overlay.of(context).insert(_overlay!);
+        void showPreview() {
+          if (!isCurrent()) return;
+          _previewRevealTimer?.cancel();
+          _previewRevealTimer = null;
+          if (_overlay != null) {
+            _overlay!.markNeedsBuild();
+            return;
+          }
+          _overlay = OverlayEntry(
+            builder: (context) => Consumer(
+              // The overlay builds independently of the viewer. Observe settings
+              // here so an open preview updates without rerendering its PDF crop.
+              builder: (context, ref, child) {
+                final dark = ref.watch(brightnessProvider) == Brightness.dark;
+                final shader = ref.watch(shaderProvider);
+                return PdfLinkHoverPreview(
+                  anchor: position,
+                  label: label,
+                  image: _previewImage,
+                  imageFilter: dark && shader != null
+                      ? ImageFilter.shader(shader)
+                      : null,
+                );
+              },
+            ),
+          );
+          Overlay.of(context).insert(_overlay!);
+        }
+
         // Only actual internal PDF destinations can request a visual preview.
         // URLs and unsupported destinations retain the existing text tooltip.
         if (link.url == null && link.dest != null) {
+          var initialReady = false, refined = false, settled = false;
           final ratio = boundedPreviewPixelRatio(
             MediaQuery.devicePixelRatioOf(context),
           );
@@ -999,13 +1013,18 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
                 return;
               }
               final previous = _previewImage;
+              refined = true;
               _previewImage = image;
               final first = target.parts.first.page,
                   last = target.parts.last.page;
               label =
                   '${target.label} · ${first == last ? 'Page $first' : 'Pages $first–$last'}';
               previous?.dispose();
-              _overlay?.markNeedsBuild();
+              showPreview();
+            },
+            onSettled: () {
+              settled = true;
+              if (initialReady) showPreview();
             },
             repository: _analysis?.previewRepository,
           );
@@ -1013,8 +1032,25 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             image?.dispose();
             return;
           }
-          _previewImage = image;
-          _overlay?.markNeedsBuild();
+          initialReady = true;
+          if (refined) {
+            image?.dispose();
+          } else {
+            _previewImage = image;
+          }
+          if (settled || refined) {
+            showPreview();
+          } else {
+            // Let a warm semantic result determine the card's first geometry.
+            // Slow analysis still gets a bounded contextual fallback; neither
+            // the label-only card nor the context raster flashes beforehand.
+            _previewRevealTimer = Timer(
+              const Duration(milliseconds: 150),
+              showPreview,
+            );
+          }
+        } else {
+          showPreview();
         }
       } catch (_) {
         // A hover can race tab close or page reload; it is never an app error.

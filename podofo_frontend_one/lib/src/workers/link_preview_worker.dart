@@ -283,10 +283,12 @@ class _PreviewJob {
     this.request,
     this.repository,
     this.onRefinement,
+    this.onSettled,
   );
   final LinkPreviewRequest? request;
   final PreviewLayoutRepository? repository;
   final void Function(ui.Image image, ResolvedLinkTarget target)? onRefinement;
+  final void Function()? onSettled;
   final PdfSession session;
   final int revision;
   final PdfDest destination;
@@ -331,6 +333,9 @@ class LinkPreviewWorker {
     LinkPreviewRequest? request,
     PreviewLayoutRepository? repository,
     void Function(ui.Image image, ResolvedLinkTarget target)? onRefinement,
+    // Called when no further refinement can arrive, including failures. A
+    // cancelled request never settles its former consumer's presentation.
+    void Function()? onSettled,
   }) {
     if (_disposed ||
         session.lease.isClosed ||
@@ -356,6 +361,7 @@ class LinkPreviewWorker {
       request,
       repository,
       onRefinement,
+      onSettled,
     );
     _pending = job;
     unawaited(_drain());
@@ -441,6 +447,7 @@ class LinkPreviewWorker {
           image?.dispose();
           if (!job.result.isCompleted) job.result.complete(null);
           _active = null;
+          if (_valid(job)) job.onSettled?.call();
         }
       }
     } finally {
