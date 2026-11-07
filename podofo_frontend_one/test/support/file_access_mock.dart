@@ -13,6 +13,11 @@ Future<Object?> ordinaryFileAccess(MethodCall call) async {
     case 'read':
       final path = await File(args['path'] as String).resolveSymbolicLinks();
       return {'path': path, 'bytes': await File(path).readAsBytes()};
+    case 'commitStagedFile':
+      // Native metadata semantics are covered by the Swift regression/probe.
+      await File(args['stagedPath'] as String)
+          .rename(args['targetPath'] as String);
+      return null;
     case 'remember':
     case 'release':
       return null;

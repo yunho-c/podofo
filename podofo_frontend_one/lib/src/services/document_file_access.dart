@@ -41,6 +41,28 @@ class DocumentFileAccess {
     });
     return Directory(staging!);
   }
+
+  /// Publish after validation and the final conflict check, while access is held.
+  /// Existing macOS files retain their creation date and native metadata.
+  static Future<void> commitStagedFile(
+    File staged,
+    String target, {
+    required bool replaceExisting,
+  }) async {
+    if (!Platform.isMacOS) {
+      await staged.rename(target);
+      return;
+    }
+    try {
+      await channel.invokeMethod<void>('commitStagedFile', {
+        'stagedPath': staged.path,
+        'targetPath': target,
+        'replaceExisting': replaceExisting,
+      });
+    } on PlatformException catch (error) {
+      throw DocumentFileReplaceException(error, staged.parent.path);
+    }
+  }
 }
 
 class FileAccessLease {
@@ -90,4 +112,22 @@ class DocumentFileReadException implements Exception {
   @override
   String toString() =>
       cause.message ?? 'Could not read this PDF. Please retry.';
+}
+
+/// Foundation may move the original during a failed replacement. The caller
+/// must retain staging and any reported recovery location, rather than deleting
+/// what could now be the only remaining copy of the original document.
+class DocumentFileReplaceException implements Exception {
+  DocumentFileReplaceException(this.cause, this.stagingPath);
+  final PlatformException cause;
+  final String stagingPath;
+
+  @override
+  String toString() {
+    final details = cause.details;
+    final original = details is Map ? details['originalItemPath'] : null;
+    return '${cause.message ?? 'Could not finish saving this PDF.'} '
+        'Recovery files were kept in $stagingPath.'
+        '${original is String ? ' Original file location: $original.' : ''}';
+  }
 }

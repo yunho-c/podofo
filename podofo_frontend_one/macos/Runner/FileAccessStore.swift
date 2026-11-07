@@ -1,5 +1,25 @@
 import Foundation
 
+/// Publishes a validated, flushed file from the same-volume staging directory.
+/// The caller holds the target's sandbox grant and owns staging cleanup. If
+/// replacement throws, keep staging: Foundation can leave recovery items there.
+enum DocumentFileReplacement {
+  static func commit(stagedPath: String, targetPath: String, replaceExisting: Bool) throws {
+    let staged = URL(fileURLWithPath: stagedPath)
+    let target = URL(fileURLWithPath: targetPath)
+    if replaceExisting {
+      // Empty options preserve the destination's creation date, permissions,
+      // and Finder metadata, while keeping the updated contents/modification date.
+      _ = try FileManager.default.replaceItemAt(
+        target, withItemAt: staged, backupItemName: nil, options: [])
+    } else {
+      // A new Save As keeps its own creation date. moveItem also refuses to
+      // overwrite a file that appeared after Dart's final conflict check.
+      try FileManager.default.moveItem(at: staged, to: target)
+    }
+  }
+}
+
 /// Reads cloud-backed documents while File Provider coordinates materialization.
 /// The caller must hold its security-scoped lease until completion. The callback
 /// runs on a worker queue, and the returned bytes no longer depend on the file.
