@@ -102,6 +102,7 @@ class PdfViewerParams {
     this.scrollHorizontallyByMouseWheel = false,
     this.enableKeyboardNavigation = true,
     this.scrollByArrowKey = 25.0,
+    this.arrowKeyScrollDuration = Duration.zero,
     this.maxImageBytesCachedOnMemory = 100 * 1024 * 1024,
     this.horizontalCacheExtent = 1.0,
     this.verticalCacheExtent = 1.0,
@@ -483,6 +484,12 @@ class PdfViewerParams {
 
   /// Amount of pixels to scroll by arrow keys. The default is 25.0.
   final double scrollByArrowKey;
+
+  /// Duration of arrow-key scrolling. Zero preserves instantaneous movement.
+  ///
+  /// Repeated keys accumulate their destination during the animation. Direction
+  /// changes start from the current position. Reduced motion skips the animation.
+  final Duration arrowKeyScrollDuration;
 
   /// Restrict the total amount of image bytes to be cached on memory. The default is 100 MB.
   ///
@@ -869,6 +876,7 @@ class PdfViewerParams {
         other.scrollHorizontallyByMouseWheel == scrollHorizontallyByMouseWheel &&
         other.enableKeyboardNavigation == enableKeyboardNavigation &&
         other.scrollByArrowKey == scrollByArrowKey &&
+        other.arrowKeyScrollDuration == arrowKeyScrollDuration &&
         other.horizontalCacheExtent == horizontalCacheExtent &&
         other.verticalCacheExtent == verticalCacheExtent &&
         other.linkHandlerParams == linkHandlerParams &&
@@ -944,6 +952,7 @@ class PdfViewerParams {
         scrollHorizontallyByMouseWheel.hashCode ^
         enableKeyboardNavigation.hashCode ^
         scrollByArrowKey.hashCode ^
+        arrowKeyScrollDuration.hashCode ^
         horizontalCacheExtent.hashCode ^
         verticalCacheExtent.hashCode ^
         linkHandlerParams.hashCode ^

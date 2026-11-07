@@ -247,8 +247,10 @@ class _PdfViewerState extends State<PdfViewer>
   PdfViewerController? _controller;
   late final _txController = _PdfViewerTransformationController(this);
   late final AnimationController _animController;
-  Animation<Matrix4>? _animGoTo;
   int _animationResettingGuard = 0;
+  bool _applyingAnimatedTransform = false;
+  Matrix4? _arrowScrollTarget;
+  Offset? _arrowScrollDirection;
 
   PdfDocument? _document;
   PdfPageLayout? _layout;
@@ -357,8 +359,18 @@ class _PdfViewerState extends State<PdfViewer>
   static int _viewerInstanceCounter = 0;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) _stopArrowScroll();
+  }
+
+  @override
   void didUpdateWidget(covariant PdfViewer oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (widget.params.arrowKeyScrollDuration != oldWidget.params.arrowKeyScrollDuration ||
+        widget.params.keyHandlerParams != oldWidget.params.keyHandlerParams) {
+      _stopArrowScroll();
+    }
     _widgetUpdated(oldWidget);
     if (widget.params.interactionDelegateProvider != oldWidget.params.interactionDelegateProvider) {
       _updateInteractionDelegate();
@@ -451,6 +463,7 @@ class _PdfViewerState extends State<PdfViewer>
         'error=${listenable.error}  -- resetting _initialized/_pageNumber',
       );
     }
+    _stopArrowScroll();
     _layout = null;
     _documentSubscription?.cancel();
     _documentSubscription = null;
@@ -585,6 +598,7 @@ class _PdfViewerState extends State<PdfViewer>
 
   @override
   void dispose() {
+    _stopArrowScroll();
     _selectionHandleTicker?.dispose();
     SemanticsBinding.instance.removeSemanticsEnabledListener(_onSemanticsEnabledChanged);
     _interactionDelegate?.dispose();
@@ -612,6 +626,9 @@ class _PdfViewerState extends State<PdfViewer>
   void _onSemanticsEnabledChanged() => _invalidate();
 
   void _onMatrixChanged() {
+    // Direct controller writes, scrollbar drags, and gestures take ownership
+    // of the viewport immediately; a pending keyboard target must not win back.
+    if (!_applyingAnimatedTransform) _stopArrowScroll();
     _updateSelectionHandleAtPointer();
     _invalidate();
   }
@@ -734,7 +751,10 @@ class _PdfViewerState extends State<PdfViewer>
       child: PdfViewerKeyHandler(
         onKeyRepeat: _onKey,
         // NOTE: When the PdfViewer gets focus, we report it to prevent the default context menu on Web browser.
-        onFocusChange: (hasFocus) => focusReportForPreventingContextMenuWeb(this, hasFocus),
+        onFocusChange: (hasFocus) {
+          if (!hasFocus) _stopArrowScroll();
+          focusReportForPreventingContextMenuWeb(this, hasFocus);
+        },
         params: widget.params.keyHandlerParams,
         child: StreamBuilder(
           stream: _updateStream,
@@ -938,6 +958,7 @@ class _PdfViewerState extends State<PdfViewer>
     final isViewSizeChanged = oldSize != viewSize;
     _viewSize = viewSize;
     final isLayoutChanged = _relayoutPages();
+    if (isViewSizeChanged || isLayoutChanged) _stopArrowScroll();
 
     _recalculateMetrics();
     _calcZoomStopTable();
@@ -1142,6 +1163,7 @@ class _PdfViewerState extends State<PdfViewer>
   }
 
   void _onInteractionStart(ScaleStartDetails details) {
+    _stopArrowScroll();
     _interactionDelegate?.stop(); // Stop physics when user touches
     _startInteraction();
     _requestFocus();
@@ -1187,16 +1209,16 @@ class _PdfViewerState extends State<PdfViewer>
           return true;
         }
       case LogicalKeyboardKey.arrowDown:
-        _goToManipulated((m) => m.translateByDouble(0.0, -widget.params.scrollByArrowKey, 0, 1));
+        _scrollByArrowKey(const Offset(0, -1));
         return true;
       case LogicalKeyboardKey.arrowUp:
-        _goToManipulated((m) => m.translateByDouble(0.0, widget.params.scrollByArrowKey, 0, 1));
+        _scrollByArrowKey(const Offset(0, 1));
         return true;
       case LogicalKeyboardKey.arrowLeft:
-        _goToManipulated((m) => m.translateByDouble(widget.params.scrollByArrowKey, 0.0, 0, 1));
+        _scrollByArrowKey(const Offset(1, 0));
         return true;
       case LogicalKeyboardKey.arrowRight:
-        _goToManipulated((m) => m.translateByDouble(-widget.params.scrollByArrowKey, 0.0, 0, 1));
+        _scrollByArrowKey(const Offset(-1, 0));
         return true;
       case LogicalKeyboardKey.keyA:
         if (isCommandKeyPressed) {
@@ -1210,6 +1232,55 @@ class _PdfViewerState extends State<PdfViewer>
         }
     }
     return false;
+  }
+
+  void _stopArrowScroll() {
+    if (_arrowScrollTarget == null) return;
+    _arrowScrollTarget = null;
+    _arrowScrollDirection = null;
+    _animController.stop();
+  }
+
+  void _scrollByArrowKey(Offset direction) {
+    if (_controller?.isReady != true) return;
+    _gotoTargetPageNumber = null;
+    _interactionDelegate?.stop();
+    _stopInteractiveViewerAnimation();
+    final current = _txController.value;
+    final pending = _arrowScrollDirection == direction ? _arrowScrollTarget : null;
+    final destination = (pending ?? current).clone()
+      ..translateByDouble(
+        direction.dx * widget.params.scrollByArrowKey,
+        direction.dy * widget.params.scrollByArrowKey,
+        0,
+        1,
+      );
+    final target = _makeMatrixInSafeRange(destination, forceClamp: true);
+    // Repeats at an edge must neither schedule idle frames nor prolong the
+    // animation already approaching that edge. Clamping can introduce tiny
+    // floating-point differences even when the destination hasn't moved.
+    bool samePosition(Matrix4? other) =>
+        other != null && (target.getTranslation() - other.getTranslation()).length < 1e-6;
+    if (samePosition(pending)) return;
+    if (samePosition(current)) {
+      _stopArrowScroll();
+      _animController.stop();
+      return;
+    }
+    final duration = MediaQuery.disableAnimationsOf(context) ? Duration.zero : widget.params.arrowKeyScrollDuration;
+    final scrolling = _goTo(target, duration: duration, curve: Curves.easeOutCubic);
+    if (duration > Duration.zero) {
+      _arrowScrollTarget = target;
+      _arrowScrollDirection = direction;
+      unawaited(
+        scrolling.whenComplete(() {
+          if (identical(_arrowScrollTarget, target)) {
+            _arrowScrollTarget = null;
+            _arrowScrollDirection = null;
+          }
+        }),
+      );
+    }
   }
 
   void _goToManipulated(void Function(Matrix4 m) manipulate) {
@@ -2366,6 +2437,7 @@ class _PdfViewerState extends State<PdfViewer>
   }
 
   void _onWheelDelta(PointerScrollEvent event) {
+    _stopArrowScroll();
     if (HardwareKeyboard.instance.isControlPressed && !widget.params.scaleEnabled) {
       return;
     }
@@ -2422,6 +2494,7 @@ class _PdfViewerState extends State<PdfViewer>
   }
 
   void _onPointerScale(PointerScaleEvent event) {
+    _stopArrowScroll();
     if (!widget.params.scaleEnabled) {
       return;
     }
@@ -2611,32 +2684,44 @@ class _PdfViewerState extends State<PdfViewer>
     return null;
   }
 
-  Future<void> _goTo(
+  Future<bool> _goTo(
     Matrix4? destination, {
     Duration duration = const Duration(milliseconds: 200),
     PdfPageAnchor? anchor,
+    Curve curve = Curves.easeInOut,
   }) async {
+    if (destination == null) return false;
+    _stopArrowScroll();
+    _stopInteractiveViewerAnimation();
+    _animationResettingGuard++;
+    _animController.reset();
+    _animationResettingGuard--;
+    final destinationInSafeRange = _makeMatrixInSafeRange(destination, forceClamp: true, anchor: anchor);
+    if (duration <= Duration.zero) {
+      _txController.setValueWithoutNormalization(destinationInSafeRange);
+      return true;
+    }
+    // Each request owns its listener, including when a newer request cancels it.
+    final animation = Matrix4Tween(begin: _txController.value, end: destinationInSafeRange).animate(_animController);
     void update() {
       if (_animationResettingGuard != 0) return;
-      _txController.setValueWithoutNormalization(_animGoTo!.value);
+      _applyingAnimatedTransform = true;
+      try {
+        _txController.setValueWithoutNormalization(animation.value);
+      } finally {
+        _applyingAnimatedTransform = false;
+      }
     }
 
+    animation.addListener(update);
     try {
-      if (destination == null) return; // do nothing
-      _stopInteractiveViewerAnimation();
-      _animationResettingGuard++;
-      _animController.reset();
-      _animationResettingGuard--;
-      final destinationInSafeRange = _makeMatrixInSafeRange(destination, forceClamp: true, anchor: anchor);
-      if (duration == Duration.zero) {
-        _txController.setValueWithoutNormalization(destinationInSafeRange);
-        return;
-      }
-      _animGoTo = Matrix4Tween(begin: _txController.value, end: destinationInSafeRange).animate(_animController);
-      _animGoTo!.addListener(update);
-      await _animController.animateTo(1.0, duration: duration, curve: Curves.easeInOut);
+      await _animController.animateTo(1.0, duration: duration, curve: curve).orCancel;
+      return true;
+    } on TickerCanceled {
+      // Another navigation, user interaction, or disposal superseded this one.
+      return false;
     } finally {
-      _animGoTo?.removeListener(update);
+      animation.removeListener(update);
     }
   }
 
@@ -2696,7 +2781,7 @@ class _PdfViewerState extends State<PdfViewer>
     }
     _gotoTargetPageNumber = pageNumber;
 
-    await _goTo(
+    final arrived = await _goTo(
       _calcMatrixForClampedToNearestBoundary(
         _calcMatrixForPage(pageNumber: targetPageNumber, anchor: anchor),
         viewSize: _viewSize!,
@@ -2705,7 +2790,7 @@ class _PdfViewerState extends State<PdfViewer>
       duration: duration,
       anchor: anchor,
     );
-    _setCurrentPageNumber(targetPageNumber);
+    if (arrived) _setCurrentPageNumber(targetPageNumber);
   }
 
   /// Scrolls/zooms so that the specified PDF document coordinate appears at
@@ -2877,6 +2962,7 @@ class _PdfViewerState extends State<PdfViewer>
   }
 
   void _handlePointerEvent(PointerEvent event, Offset localPosition, PointerDeviceKind? deviceKind) {
+    if (event is PointerDownEvent) _stopArrowScroll();
     _pointerOffset = localPosition;
     if (_pointerDeviceKind != deviceKind) {
       _pointerDeviceKind = deviceKind;

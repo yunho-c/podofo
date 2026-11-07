@@ -160,8 +160,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     if (identical(session, _narration.source?.documentId)) {
       _narration.setFollowText(false);
     }
-    // Own this short animation: pdfrx's goTo future can remain pending when
-    // another goTo or disposal cancels it. History must never stay locked.
+    // Own this short animation so history commits only after arrival.
+    // Cancel the viewer's animation before taking over its transform.
     unawaited(viewer.goTo(viewer.value.clone(), duration: Duration.zero));
     final target = viewer.calcMatrixForClampedToNearestBoundary(
       destination,
@@ -548,6 +548,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
       controller: controller,
       initialPageNumber: document.lastOpenedPage ?? 1,
       params: PdfViewerParams(
+        arrowKeyScrollDuration: const Duration(milliseconds: 120),
         onContextMenuDiagnostic: (event, details) =>
             _contextMenuTraceClick?.record(event, details),
         renderAtDisplayScale: displayScaleRenderingEnabled,

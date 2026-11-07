@@ -81,6 +81,23 @@ checks edits below 200 DPI with both options enabled.
 
 ## Staging fixes
 
+`PdfViewerParams.arrowKeyScrollDuration` opts into eased arrow-key navigation;
+the package default remains zero. PoDoFo sets 120 ms with an ease-out curve.
+Repeated keys add to a clamped destination, direction changes start at the
+current position, and edge repeats do not restart the animation. Pointer input,
+focus loss, direct controller writes, other navigation, layout/document changes,
+and disposal cancel pending keyboard movement. Reduce Motion skips easing.
+The existing animation controller is reused, with cancellation-safe listeners
+and completion of superseded navigation futures; canceled page navigation does
+not publish its old target page. Pointer scrolling keeps its existing delegate.
+
+`test/pdf_keyboard_scroll_test.dart` checks intermediate positions, repeated
+keys, reversal, bounds, interruptions, reduced motion, and teardown against a
+real PDF. It also checks that a scroll within a cached page causes no viewport
+PDF renders while moving, one refinement after the existing 150 ms settling
+delay, and no continuing animation updates at rest. These are rendering-work
+checks, not measurements of battery consumption or native-window frame timing.
+
 `PdfViewerParams.onContextMenuDiagnostic` is an optional diagnostic observer for
 secondary gesture recognition/cancellation/consumption, menu requests/builds,
 selection-related suppression, and menu-anchor clearing. Observer errors are
