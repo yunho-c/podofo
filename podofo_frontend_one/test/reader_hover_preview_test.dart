@@ -43,6 +43,89 @@ void main() {
   final platform = TargetPlatformVariant.only(
     Platform.isMacOS ? TargetPlatform.macOS : TargetPlatform.windows,
   );
+  testWidgets(
+    'semantic previews follow zoom inside the PDF pane and reuse analysis',
+    (tester) async {
+      final captureKey = GlobalKey();
+      final reader = await _Reader.open(
+        tester,
+        semanticFixture: true,
+        captureKey: captureKey,
+        panePadding: const EdgeInsets.fromLTRB(180, 70, 20, 30),
+      );
+      final links = await _native(
+        tester,
+        () => reader.session.readLocked((pdf) => pdf.pages.first.loadLinks()),
+      );
+      final page = reader.session.lease.document.pages.first;
+      final center = links[2].rects.single
+          .toRectInDocument(
+            page: page,
+            pageRect: reader.viewer.layout.pageLayouts.first,
+          )
+          .center;
+      final sizes = <Size>[];
+      for (final zoom in [1.0, 1.4, 4.0, 1.0]) {
+        await _native(
+          tester,
+          () => reader.viewer.setZoom(center, zoom, duration: Duration.zero),
+        );
+        expect(find.byType(PdfLinkHoverPreview), findsNothing);
+        final matrix = reader.viewer.value.clone();
+        await reader.mouse.moveTo(await reader.linkPoint(2));
+        await tester.pump(const Duration(milliseconds: 350));
+        await _wait(
+          tester,
+          () => find
+              .byType(PdfLinkHoverPreview)
+              .evaluate()
+              .any((e) => (e.widget as PdfLinkHoverPreview).imageSize != null),
+        );
+        await tester.pump(const Duration(milliseconds: 300));
+        final preview = tester.widget<PdfLinkHoverPreview>(
+          find.byType(PdfLinkHoverPreview),
+        );
+        final pane = tester.getRect(find.byType(PdfViewer));
+        expect(preview.paneBounds, pane);
+        final card = tester.getRect(
+          find.byKey(const ValueKey('pdf-link-hover-card')),
+        );
+        expect(card.width, lessThanOrEqualTo(pane.width * .6));
+        expect(card.height, lessThanOrEqualTo(pane.height * .6));
+        expect(pane.contains(card.topLeft), true);
+        expect(pane.contains(card.bottomRight), true);
+        sizes.add(tester.getSize(_preview));
+        expect(reader.viewer.value, matrix);
+        expect(reader.session.navigationHistory.previous, isNull);
+        expect(reader.semanticEngine!.pages, [1]);
+        expect(preview.label, 'Page 2');
+        final boundary = tester.renderObject<RenderRepaintBoundary>(
+          find.byKey(captureKey),
+        );
+        await tester.runAsync(() async {
+          final capture = await boundary.toImage();
+          try {
+            await Directory('build/hover-preview-zoom').create(recursive: true);
+            await File('build/hover-preview-zoom/$zoom.png').writeAsBytes(
+              (await capture.toByteData(format: ui.ImageByteFormat.png))!.buffer
+                  .asUint8List(),
+            );
+          } finally {
+            capture.dispose();
+          }
+        });
+        expect(tester.takeException(), isNull);
+      }
+      expect(sizes[1].width / sizes[0].width, closeTo(1.4, .02));
+      expect(sizes[1].height / sizes[0].height, closeTo(1.4, .02));
+      expect(sizes[2].width, greaterThan(sizes[1].width));
+      expect(
+        sizes.last,
+        sizes.first,
+      ); // Returning to a zoom gets the correct cached size.
+    },
+    variant: platform,
+  );
   for (final outcome in ['fast', 'slow', 'cancelled', 'reduced motion']) {
     testWidgets(
       '$outcome smart preview controls the first visible card and releases pending images',
@@ -400,8 +483,9 @@ void main() {
       expect(reader.session.navigationHistory.previous, isNull);
       expect(reader.session.revision, 0);
       final card = tester.getRect(find.byType(shadcn.Card).last);
-      expect(card.width, lessThanOrEqualTo(480));
-      expect(card.height, lessThanOrEqualTo(360));
+      final pane = tester.getRect(find.byType(PdfViewer));
+      expect(card.width, lessThanOrEqualTo(pane.width * .6));
+      expect(card.height, lessThanOrEqualTo(pane.height * .6));
       await reader.mouse.moveTo(point + const Offset(1, 0));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
@@ -677,6 +761,7 @@ class _Reader {
     WidgetTester tester, {
     LinkPreviewRenderer? render,
     GlobalKey? captureKey,
+    EdgeInsets panePadding = EdgeInsets.zero,
     bool semanticFixture = false,
     bool complexFixture = false,
     Future<void>? layoutReady,
@@ -767,7 +852,9 @@ class _Reader {
         container: container,
         child: RepaintBoundary(
           key: captureKey,
-          child: const shadcn.ShadcnApp(home: MainArea()),
+          child: shadcn.ShadcnApp(
+            home: Padding(padding: panePadding, child: const MainArea()),
+          ),
         ),
       ),
     );

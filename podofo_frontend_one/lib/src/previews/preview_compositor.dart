@@ -31,10 +31,12 @@ class PreviewCrop {
   int get bytes => width * height * 4;
 }
 
-/// Ordered, uniformly scaled original-pixel slices. Never stretch or reflow text.
+/// Ordered original-pixel slices. A shared fit factor preserves the captured
+/// page scales without stretching or reflowing text.
 class PreviewComposition {
   PreviewComposition._(this.width, this.height, this.crops);
-  static const maxBytes = 960 * 720 * 4;
+  static const maxBytes = 1920 * 1440 * 4;
+  static const minimumDisplayScale = 1.0;
   final int width, height;
   final List<PreviewCrop> crops;
   int get bytes => width * height * 4;
@@ -44,6 +46,7 @@ class PreviewComposition {
     ResolvedLinkTarget target,
     double pixelRatio, {
     ui.Size maxSize = semanticPreviewMaxSize,
+    Map<int, double> pageScales = const {},
   }) {
     final parts = target.parts;
     if (parts.isEmpty ||
@@ -76,20 +79,34 @@ class PreviewComposition {
       }
     }
     final ratio = pixelRatio.isFinite ? pixelRatio.clamp(1.0, 2.0) : 1.0;
-    final maxWidth = (math.min(480, maxSize.width) * ratio).floor();
-    final maxHeight = (math.min(360, maxSize.height) * ratio).floor();
+    final followsZoom = pageScales.isNotEmpty;
+    if (pageScales.values.any((v) => !v.isFinite || v <= 0)) return null;
+    final limit = followsZoom ? zoomPreviewMaxSize : semanticPreviewMaxSize;
+    final maxWidth = (math.min(limit.width, maxSize.width) * ratio).floor();
+    final maxHeight = (math.min(limit.height, maxSize.height) * ratio).floor();
     final gap = (8 * ratio).ceil();
-    final naturalWidth = parts.map((p) => p.bounds.width).reduce(math.max);
-    final naturalHeight = parts.fold(0.0, (sum, p) => sum + p.bounds.height);
+    final scales = [
+      for (final part in parts)
+        followsZoom
+            ? math.max(minimumDisplayScale, pageScales[part.page] ?? 1.0)
+            : 1.0,
+    ];
+    var naturalWidth = 0.0, naturalHeight = 0.0;
+    for (var i = 0; i < parts.length; i++) {
+      naturalWidth = math.max(naturalWidth, parts[i].bounds.width * scales[i]);
+      naturalHeight += parts[i].bounds.height * scales[i];
+    }
     // Up to two edge pixels per crop retain fractional source coordinates.
-    final scale = math.min(
+    final fit = math.min(
       (maxWidth - 2) / naturalWidth,
       (maxHeight - gap * (parts.length - 1) - 2 * parts.length) / naturalHeight,
     );
-    if (!scale.isFinite || scale <= 0) return null;
+    final factor = followsZoom ? math.min(ratio, fit) : fit;
+    if (!factor.isFinite || factor <= 0) return null;
     final preliminary = <PreviewCrop>[];
     var width = 0, height = 0;
-    for (final part in parts) {
+    for (var i = 0; i < parts.length; i++) {
+      final part = parts[i], scale = scales[i] * factor;
       final page = document.pages[part.page - 1];
       final x = (part.bounds.left * scale).floor(),
           y = (part.bounds.top * scale).floor();
@@ -155,6 +172,7 @@ Future<ui.Image?> renderPreviewComposition(
   double pixelRatio,
   PreviewCancellation cancellation, {
   ui.Size maxSize = semanticPreviewMaxSize,
+  Map<int, double> pageScales = const {},
   PreviewRasterAccounting? accounting,
 }) async {
   if (cancellation.isCancelled) return null;
@@ -163,6 +181,7 @@ Future<ui.Image?> renderPreviewComposition(
     target,
     pixelRatio,
     maxSize: maxSize,
+    pageScales: pageScales,
   );
   if (plan == null) return null;
   final pixels = Uint8List(plan.bytes)..fillRange(0, plan.bytes, 255);

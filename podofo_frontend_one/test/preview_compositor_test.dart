@@ -11,6 +11,76 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
+    'preview scale follows zoom, has a readability floor and respects density',
+    () {
+      final document = _Document();
+      final target = _target([
+        (page: 1, bounds: const ui.Rect.fromLTWH(10, 20, 200, 50)),
+      ]);
+      for (final zoom in [.2, 1.0, 2.0]) {
+        for (final ratio in [1.0, 2.0]) {
+          final plan = PreviewComposition.plan(
+            document,
+            target,
+            ratio,
+            maxSize: zoomPreviewMaxSize,
+            pageScales: {1: zoom},
+          )!;
+          final scale = zoom < 1 ? 1.0 : zoom;
+          expect(plan.width / ratio, closeTo(200 * scale, 1));
+          expect(plan.height / ratio, closeTo(50 * scale, 1));
+        }
+      }
+      final bounded = PreviewComposition.plan(
+        document,
+        target,
+        2,
+        maxSize: const ui.Size(300, 200),
+        pageScales: const {1: 8},
+      )!;
+      expect(bounded.width, lessThanOrEqualTo(600));
+      expect(bounded.height, lessThanOrEqualTo(400));
+      expect(bounded.width / bounded.height, closeTo(4, .08));
+      expect(bounded.bytes, lessThanOrEqualTo(PreviewComposition.maxBytes));
+      for (final scale in [0.0, -1.0, double.nan, double.infinity]) {
+        expect(
+          PreviewComposition.plan(document, target, 2, pageScales: {1: scale}),
+          isNull,
+        );
+      }
+    },
+  );
+
+  test('stitched previews preserve page scales and shrink together within the budget', () {
+    final document = _Document();
+    final target = _target([
+      (page: 1, bounds: const ui.Rect.fromLTWH(10, 20, 100, 50)),
+      (page: 2, bounds: const ui.Rect.fromLTWH(10, 20, 100, 50)),
+    ]);
+    final plan = PreviewComposition.plan(
+      document,
+      target,
+      2,
+      maxSize: zoomPreviewMaxSize,
+      pageScales: const {1: 2, 2: 1.5},
+    )!;
+    expect(plan.crops.map((c) => c.width), [400, 300]);
+    expect(plan.crops.map((c) => c.height), [200, 150]);
+    expect(plan.height, 200 + 16 + 150);
+    final huge = PreviewComposition.plan(
+      document,
+      target,
+      4,
+      maxSize: const ui.Size(100000, 100000),
+      pageScales: const {1: 20, 2: 15},
+    )!;
+    expect(huge.width, lessThanOrEqualTo(1920));
+    expect(huge.height, lessThanOrEqualTo(1440));
+    expect(huge.bytes, lessThanOrEqualTo(PreviewComposition.maxBytes));
+    expect(huge.crops.first.width / huge.crops.last.width, closeTo(4 / 3, .01));
+  });
+
+  test(
     'four ordered crops fit the density and viewport budgets without clipping',
     () {
       final document = _Document();
@@ -241,7 +311,7 @@ void main() {
   );
 
   test(
-    'large semantic images retain the six MiB decoded cache bound',
+    'large zoom-sized images retain the 24 MiB decoded cache bound',
     () async {
       final cache = LinkPreviewCache();
       final document = _Document();
@@ -256,10 +326,12 @@ void main() {
             target,
             2,
             PreviewCancellation(),
+            maxSize: zoomPreviewMaxSize,
+            pageScales: const {1: 4},
           ))!;
           images.add(image);
           cache.put(i, image);
-          expect(cache.bytes, lessThanOrEqualTo(6 * 1024 * 1024));
+          expect(cache.bytes, lessThanOrEqualTo(24 * 1024 * 1024));
         }
         expect(cache.length, 2);
         expect(images.take(2).every((image) => image.debugDisposed), true);

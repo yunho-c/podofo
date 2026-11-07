@@ -226,6 +226,23 @@ void main() {
         expect(a.identity, resized.identity);
         expect(x.cacheKey(a), isNot(x.cacheKey(resized)));
       }
+      final scales = {2: 1.0, 3: 1.0};
+      LinkPreviewRequest scaled(Map<int, double> value) => LinkPreviewRequest(
+        session: s,
+        sourcePage: a.sourcePage,
+        annotationIndex: a.annotationIndex,
+        sourceRects: a.sourceRects,
+        destination: a.destination,
+        pixelRatio: a.pixelRatio,
+        pageScales: value,
+      );
+      final originalScale = scaled(scales);
+      scales[2] = 2;
+      final zoomed = scaled(scales);
+      expect(originalScale.pageScales[2], 1);
+      expect(originalScale.identity, zoomed.identity);
+      expect(x.cacheKey(originalScale), isNot(x.cacheKey(zoomed)));
+      expect(x.cacheKey(zoomed), x.cacheKey(scaled({3: 1, 2: 2})));
       s.revision++;
       expect(a.isCurrent, false);
     } finally {

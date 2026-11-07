@@ -983,6 +983,16 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         final overlayBox =
             Overlay.of(context).context.findRenderObject() as RenderBox;
         final position = overlayBox.globalToLocal(event.position);
+        final paneTopLeft = controller.localToGlobal(Offset.zero);
+        final paneBottomRight = controller.localToGlobal(
+          Offset(controller.viewSize.width, controller.viewSize.height),
+        );
+        if (paneTopLeft == null || paneBottomRight == null) return;
+        final paneBounds = Rect.fromPoints(
+          overlayBox.globalToLocal(paneTopLeft),
+          overlayBox.globalToLocal(paneBottomRight),
+        ).intersect(Offset.zero & overlayBox.size);
+        Size? previewSize;
         void showPreview() {
           if (!isCurrent()) return;
           _previewRevealTimer?.cancel();
@@ -1006,6 +1016,8 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
                   label: label,
                   opacity: _hoverAnimation,
                   image: _previewImage,
+                  imageSize: previewSize,
+                  paneBounds: paneBounds,
                   imageFilter: dark && shader != null
                       ? ImageFilter.shader(shader)
                       : null,
@@ -1031,7 +1043,21 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             sourceRects: link.rects,
             destination: link.dest!,
             pixelRatio: ratio,
-            maxSize: PdfLinkHoverPreview.rasterSize(overlayBox.size),
+            maxSize: PdfLinkHoverPreview.rasterSize(paneBounds.size),
+            pageScales: {
+              // Continuations can use an adjacent page. Snapshot the effective
+              // page scales before asynchronous analysis or rendering begins.
+              for (
+                var page = link.dest!.pageNumber - 1;
+                page <= link.dest!.pageNumber + 1;
+                page++
+              )
+                if (page >= 1 && page <= document.pdfDocument.pages.length)
+                  page:
+                      controller.currentZoom *
+                      controller.layout.pageLayouts[page - 1].height /
+                      document.pdfDocument.pages[page - 1].height,
+            },
           );
           final image = await _previews.load(
             session,
@@ -1046,6 +1072,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
               final previous = _previewImage;
               refined = true;
               _previewImage = image;
+              previewSize = Size(image.width / ratio, image.height / ratio);
               final first = target.parts.first.page,
                   last = target.parts.last.page;
               label = first == last ? 'Page $first' : 'Pages $first–$last';

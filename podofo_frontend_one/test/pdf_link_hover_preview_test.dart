@@ -63,6 +63,90 @@ void main() {
     image!.dispose();
   });
 
+  testWidgets(
+    'zoom-sized previews retain their scale and stay inside an offset PDF pane',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      for (final rasterSize in [const Size(800, 200), const Size(200, 800)]) {
+        final recorder = ui.PictureRecorder();
+        ui.Canvas(recorder)
+            .drawColor(const Color(0xffeeeeee), ui.BlendMode.src);
+        final picture = recorder.endRecording();
+        final image = (await tester.runAsync(
+          () => picture.toImage(
+            rasterSize.width.toInt(),
+            rasterSize.height.toInt(),
+          ),
+        ))!;
+        picture.dispose();
+        try {
+          for (final pane in [
+            const Rect.fromLTWH(190, 80, 800, 600),
+            const Rect.fromLTWH(190, 80, 180, 150),
+          ]) {
+            for (final scale in [.25, .5, 4.0]) {
+              final desired = rasterSize * scale;
+              for (final anchor in [
+                pane.topLeft,
+                pane.topRight,
+                pane.bottomLeft,
+                pane.bottomRight,
+              ]) {
+                await tester.pumpWidget(
+                  shadcn.ShadcnApp(
+                    home: Stack(
+                      children: [
+                        PdfLinkHoverPreview(
+                          anchor: anchor,
+                          label: 'Pages 4–5',
+                          image: image,
+                          imageSize: desired,
+                          paneBounds: pane,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+                await tester.pumpAndSettle();
+                final card = tester.getRect(
+                  find.byKey(const ValueKey('pdf-link-hover-card')),
+                );
+                final raster = tester.getRect(
+                  find.byKey(const ValueKey('pdf-link-preview-image')),
+                );
+                expect(card.width, lessThanOrEqualTo(pane.width * .6));
+                expect(card.height, lessThanOrEqualTo(pane.height * .6));
+                expect(card.left, greaterThanOrEqualTo(pane.left + 8));
+                expect(card.top, greaterThanOrEqualTo(pane.top + 8));
+                expect(card.right, lessThanOrEqualTo(pane.right - 8));
+                expect(card.bottom, lessThanOrEqualTo(pane.bottom - 8));
+                expect(raster.width, lessThanOrEqualTo(desired.width));
+                expect(raster.height, lessThanOrEqualTo(desired.height));
+                expect(
+                  raster.width / raster.height,
+                  closeTo(desired.width / desired.height, 1e-6),
+                );
+                if (pane.width == 800 && scale == .25) {
+                  expect(
+                    raster.size,
+                    desired,
+                  ); // No expansion to fill the card.
+                }
+                expect(tester.takeException(), isNull);
+              }
+            }
+          }
+        } finally {
+          await tester.pumpWidget(const SizedBox.shrink());
+          image.dispose();
+        }
+      }
+    },
+  );
+
   testWidgets('text fallback displays external or unsupported destinations', (
     tester,
   ) async {

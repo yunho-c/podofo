@@ -15,6 +15,8 @@ class PdfLinkHoverPreview extends StatelessWidget {
     this.image,
     this.imageFilter,
     this.opacity,
+    this.paneBounds,
+    this.imageSize,
   });
   final Offset anchor;
   final String label;
@@ -23,39 +25,63 @@ class PdfLinkHoverPreview extends StatelessWidget {
   final ui.ImageFilter? imageFilter;
   final Animation<double>? opacity;
 
+  /// PDF-pane bounds in overlay coordinates; excludes surrounding sidebars.
+  final Rect? paneBounds;
+
+  /// Desired logical size of a resolved raster, independent of display density.
+  final Size? imageSize;
+
   static final _disabledFilter = ui.ImageFilter.blur(sigmaX: 0, sigmaY: 0);
 
-  static Size rasterSize(Size viewport) => Size(
+  static Size cardSize(Size pane) => Size(
     math.max(
       0,
-      math.min(semanticPreviewMaxSize.width, viewport.width - 16) - 24,
+      math.min(
+        zoomPreviewMaxSize.width,
+        math.min(pane.width * .6, pane.width - 16),
+      ),
     ),
     math.max(
       0,
-      math.min(semanticPreviewMaxSize.height, viewport.height - 16) - 56,
+      math.min(
+        zoomPreviewMaxSize.height,
+        math.min(pane.height * .6, pane.height - 16),
+      ),
     ),
+  );
+
+  static Size rasterSize(Size pane) => Size(
+    math.max(0, cardSize(pane).width - 24),
+    math.max(0, cardSize(pane).height - 56),
   );
 
   @override
   Widget build(BuildContext context) => flutter.Positioned.fill(
     child: IgnorePointer(
       child: CustomSingleChildLayout(
-        delegate: _HoverLayout(anchor),
+        delegate: _HoverLayout(anchor, paneBounds, imageSize != null),
         child: LayoutBuilder(
           builder: (context, constraints) {
             if (constraints.maxWidth < 48 || constraints.maxHeight < 48) {
               return const SizedBox.shrink();
             }
+            final borderWidth =
+                ComponentTheme.maybeOf<CardTheme>(context)?.borderWidth ??
+                ComponentTheme.maybeOf<OutlinedContainerTheme>(context)
+                    ?.borderWidth ??
+                Theme.of(context).scaling;
+            final horizontalInsets = 24 + 2 * borderWidth;
             final natural = image == null
                 ? null
-                : Size(image!.width.toDouble(), image!.height.toDouble());
+                : imageSize ??
+                      Size(image!.width.toDouble(), image!.height.toDouble());
             final fitted = natural == null
                 ? null
                 : applyBoxFit(
-                    BoxFit.contain,
+                    imageSize == null ? BoxFit.contain : BoxFit.scaleDown,
                     natural,
                     Size(
-                      math.max(0, constraints.maxWidth - 24),
+                      math.max(0, constraints.maxWidth - horizontalInsets),
                       math.max(0, constraints.maxHeight - 56),
                     ),
                   ).destination;
@@ -64,10 +90,14 @@ class PdfLinkHoverPreview extends StatelessWidget {
               width: fitted == null
                   ? null
                   : math.max(
-                      math.min(184, constraints.maxWidth),
-                      fitted.width + 24,
+                      math.min(
+                        imageSize == null ? 184 : 96,
+                        constraints.maxWidth,
+                      ),
+                      fitted.width + horizontalInsets,
                     ),
               child: Card(
+                borderWidth: borderWidth,
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -97,11 +127,8 @@ class PdfLinkHoverPreview extends StatelessWidget {
                             child: LayoutBuilder(
                               builder: (context, constraints) {
                                 final size = applyBoxFit(
-                                  BoxFit.contain,
-                                  Size(
-                                    image!.width.toDouble(),
-                                    image!.height.toDouble(),
-                                  ),
+                                  BoxFit.scaleDown,
+                                  fitted!,
                                   constraints.biggest,
                                 ).destination;
                                 return Align(
@@ -144,36 +171,51 @@ class PdfLinkHoverPreview extends StatelessWidget {
 }
 
 class _HoverLayout extends SingleChildLayoutDelegate {
-  const _HoverLayout(this.anchor);
+  const _HoverLayout(this.anchor, this.paneBounds, this.followsZoom);
   final Offset anchor;
+  final Rect? paneBounds;
+  final bool followsZoom;
+
+  Rect _bounds(Size size) =>
+      (paneBounds ?? (Offset.zero & size)).intersect(Offset.zero & size);
 
   @override
-  BoxConstraints getConstraintsForChild(BoxConstraints constraints) =>
-      BoxConstraints(
-        maxWidth: math.min(
-          semanticPreviewMaxSize.width,
-          math.max(0, constraints.maxWidth - 16),
-        ),
-        maxHeight: math.min(
-          semanticPreviewMaxSize.height,
-          math.max(0, constraints.maxHeight - 16),
-        ),
-      );
-
-  @override
-  Offset getPositionForChild(Size size, Size childSize) {
-    final top = anchor.dy + 15 + childSize.height <= size.height - 8
-        ? anchor.dy + 15
-        : anchor.dy - 15 - childSize.height;
-    return Offset(
-      (anchor.dx + 15).clamp(
-        8.0,
-        math.max(8, size.width - childSize.width - 8),
-      ),
-      top.clamp(8.0, math.max(8, size.height - childSize.height - 8)),
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    final pane = _bounds(constraints.biggest);
+    final available = paneBounds == null
+        ? Size(math.max(0, pane.width - 16), math.max(0, pane.height - 16))
+        : PdfLinkHoverPreview.cardSize(pane.size);
+    final limit = followsZoom ? zoomPreviewMaxSize : semanticPreviewMaxSize;
+    return BoxConstraints(
+      maxWidth: math.min(limit.width, available.width),
+      maxHeight: math.min(limit.height, available.height),
     );
   }
 
   @override
-  bool shouldRelayout(_HoverLayout oldDelegate) => anchor != oldDelegate.anchor;
+  Offset getPositionForChild(Size size, Size childSize) {
+    final pane = _bounds(size);
+    final top = anchor.dy + 15 + childSize.height <= pane.bottom - 8
+        ? anchor.dy + 15
+        : anchor.dy - 15 - childSize.height;
+    final left = anchor.dx + 15 + childSize.width <= pane.right - 8
+        ? anchor.dx + 15
+        : anchor.dx - 15 - childSize.width;
+    return Offset(
+      left.clamp(
+        pane.left + 8,
+        math.max(pane.left + 8, pane.right - childSize.width - 8),
+      ),
+      top.clamp(
+        pane.top + 8,
+        math.max(pane.top + 8, pane.bottom - childSize.height - 8),
+      ),
+    );
+  }
+
+  @override
+  bool shouldRelayout(_HoverLayout oldDelegate) =>
+      anchor != oldDelegate.anchor ||
+      paneBounds != oldDelegate.paneBounds ||
+      followsZoom != oldDelegate.followsZoom;
 }

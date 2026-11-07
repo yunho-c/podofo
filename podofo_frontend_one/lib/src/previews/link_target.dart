@@ -6,6 +6,7 @@ import '../services/pdf_session.dart';
 
 const linkResolverVersion = 15;
 const semanticPreviewMaxSize = Size(480, 360);
+const zoomPreviewMaxSize = Size(960, 720);
 
 /// Consumer cancellation detaches subscriptions without stealing shared work.
 class PreviewCancellation {
@@ -42,7 +43,9 @@ class LinkPreviewRequest {
     required PdfDest destination,
     required this.pixelRatio,
     this.maxSize = semanticPreviewMaxSize,
+    Map<int, double> pageScales = const {},
   }) : revision = session.revision,
+       pageScales = Map.unmodifiable(pageScales),
        sourceRects = List.unmodifiable(sourceRects),
        destination = destination.compact();
   final PdfSession session;
@@ -53,6 +56,11 @@ class LinkPreviewRequest {
 
   /// Logical raster envelope; the compositor also applies its hard pixel cap.
   final Size maxSize;
+
+  /// Logical pixels per PDF point, captured from the viewer's page layout and
+  /// zoom. Kept out of evidence identity so text/layout preparation is reusable.
+  /// An empty map retains the fixed-envelope rendering used by offline callers.
+  final Map<int, double> pageScales;
   bool get isCurrent => !session.lease.isClosed && session.revision == revision;
   Object get identity => (
     session,
@@ -121,5 +129,8 @@ class ResolvedLinkTarget {
     request.pixelRatio,
     request.maxSize.width,
     request.maxSize.height,
+    (request.pageScales.keys.toList()..sort())
+        .map((page) => '$page:${request.pageScales[page]}')
+        .join(';'),
   );
 }

@@ -20,6 +20,15 @@ Dismissal cancels preparation immediately and retains the displayed image only
 until the fade completes. Clicks, scrolling, document changes and disposal remove
 the card immediately. Reduced-motion settings disable both fades.
 
+Smart previews use the target's size at the current reader zoom, including the
+page-layout scale. A floor of one logical pixel per PDF point helps text at low
+zoom; the complete target shrinks uniformly when it reaches the pane limits.
+The whole card is capped at 60% of the PDF pane's width and height and at
+960 × 720 logical pixels, with an 8-pixel edge margin. Placement uses the PDF
+pane rather than the surrounding window or sidebars. Zoom changes dismiss the
+current card; the next hover captures the new scale. Raster cache keys include
+those captured page scales while text and layout evidence remain reusable.
+
 Ambiguous identity, incomplete boundaries or unavailable analysis retain the
 contextual preview. Unlinked citation text and figure references are outside
 this feature's scope. External links keep their text tooltip. Hover does not
@@ -83,14 +92,15 @@ The pdfrx/PDFium dependency versions remain locked.
 
 ## Ownership and limits
 
-- Contextual images fit within 360 × 240 logical pixels; semantic images fit an
-  adaptive envelope up to 480 × 360. Device pixel ratio is capped at 2, limiting
-  a semantic output to 960 × 720 pixels (2,764,800 BGRA bytes). Multipart rendering
-  is sequential with at most 5,529,600 accounted temporary BGRA bytes. Virtual
+- Contextual raster outputs fit within 360 × 240 logical pixels. Smart cards
+  use the pane-relative envelope above, including label and padding. Device
+  pixel ratio is capped at 2, with a hard semantic raster limit of 1920 × 1440
+  pixels (11,059,200 BGRA bytes). Multipart rendering is sequential with at most
+  22,118,400 accounted temporary BGRA bytes. Virtual
   full-page dimensions are capped at 32,768 per axis.
-- A viewer owns a decoded-image LRU limited to eight entries and 6 MiB. Keys
+- A viewer owns a decoded-image LRU limited to eight entries and 24 MiB. Keys
   include source annotation, destination, session/revision, evidence/resolver
-  identity, density and render envelope. No decoded preview images are placed in
+  identity, density, render envelope and captured page scales. No decoded preview images are placed in
   Flutter's global `ImageCache` or on disk. Text is bounded to eight pages/4 MiB
   and 200,000 UTF-16 units per page. The separate persisted-layout cache is
   bounded to 16 MiB, with 4 MiB per page and strict provenance checks.

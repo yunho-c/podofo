@@ -12,7 +12,7 @@ import '../previews/pdf_link_context.dart';
 import '../previews/preview_compositor.dart';
 import '../analysis/preview_layout_repository.dart';
 
-/// A preview never changes the viewer matrix or consults its current zoom.
+/// Contextual fallbacks are independent of the viewer zoom.
 /// All rectangles here are in the rendered (cropped, rotated) page's space.
 class LinkPreviewRegion {
   const LinkPreviewRegion(this.rect, this.pageSize, this.pixelRatio);
@@ -191,6 +191,7 @@ Future<ui.Image?> renderResolvedLinkPreview(
   double pixelRatio,
   LinkPreviewCancellation cancellation, {
   ui.Size maxSize = semanticPreviewMaxSize,
+  Map<int, double> pageScales = const {},
   PreviewRasterAccounting? accounting,
 }) => renderPreviewComposition(
   document,
@@ -198,6 +199,7 @@ Future<ui.Image?> renderResolvedLinkPreview(
   pixelRatio,
   cancellation,
   maxSize: maxSize,
+  pageScales: pageScales,
   accounting: accounting,
 );
 
@@ -230,7 +232,7 @@ Future<ui.Image?> _renderRegion(
 /// Owns decoded images, avoiding Flutter's global ImageCache. A caller receives
 /// a clone and must dispose it; cache eviction cannot invalidate the overlay.
 class LinkPreviewCache {
-  LinkPreviewCache({this.maxBytes = 6 * 1024 * 1024, this.maxEntries = 8});
+  LinkPreviewCache({this.maxBytes = 24 * 1024 * 1024, this.maxEntries = 8});
   final int maxBytes, maxEntries;
   final _images = <Object, ui.Image>{};
   int bytes = 0;
@@ -429,6 +431,7 @@ class LinkPreviewWorker {
                       job.pixelRatio,
                       job.cancellation,
                       maxSize: job.request!.maxSize,
+                      pageScales: job.request!.pageScales,
                     );
                   });
               if (_valid(job) && image != null) {
