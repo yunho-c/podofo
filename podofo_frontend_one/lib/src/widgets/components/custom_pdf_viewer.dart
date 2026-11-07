@@ -1017,8 +1017,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
               _previewImage = image;
               final first = target.parts.first.page,
                   last = target.parts.last.page;
-              label =
-                  '${target.label} · ${first == last ? 'Page $first' : 'Pages $first–$last'}';
+              label = first == last ? 'Page $first' : 'Pages $first–$last';
               previous?.dispose();
               showPreview();
             },

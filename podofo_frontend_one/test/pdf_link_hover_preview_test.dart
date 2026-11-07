@@ -137,7 +137,7 @@ void main() {
                   children: [
                     PdfLinkHoverPreview(
                       anchor: const Offset(10, 10),
-                      label: 'Reference [51] · Pages 4–5',
+                      label: 'Pages 4–5',
                       image: image,
                       imageFilter: filter,
                     ),
@@ -268,7 +268,7 @@ void main() {
                           ),
                           PdfLinkHoverPreview(
                             anchor: anchor,
-                            label: 'Reference [51] · Pages 4–5',
+                            label: 'Pages 4–5',
                             image: image,
                           ),
                         ],

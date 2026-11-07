@@ -285,7 +285,7 @@ void main() {
     skip: !ui.ImageFilter.isShaderFilterSupported,
   );
   testWidgets(
-    'settled hover refines its label without selecting the target analysis page',
+    'settled hover keeps a page-only label without selecting the target analysis page',
     (tester) async {
       final reader = await _Reader.open(tester, semanticFixture: true);
       final matrix = reader.viewer.value.clone();
@@ -296,7 +296,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 1));
       await _wait(
         tester,
-        () => find.text('Figure 4 · Page 2').evaluate().isNotEmpty,
+        () =>
+            reader.semanticEngine!.pages.isNotEmpty &&
+            _preview.evaluate().isNotEmpty &&
+            find.text('Page 2').evaluate().isNotEmpty,
       );
       expect(reader.semanticEngine!.pages, [1]);
       expect(reader.viewer.value, matrix);
@@ -309,7 +312,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 350));
       await _wait(
         tester,
-        () => find.text('Figure 4 · Page 2').evaluate().isNotEmpty,
+        () =>
+            _preview.evaluate().isNotEmpty &&
+            find.text('Page 2').evaluate().isNotEmpty,
       );
       expect(reader.semanticEngine!.pages, [1]);
       await reader.mouse.down(point);
@@ -342,10 +347,7 @@ void main() {
           );
       await reader.mouse.moveTo(point);
       await tester.pump(const Duration(milliseconds: 350));
-      await _wait(
-        tester,
-        () => find.text('Reference [51] · Pages 4–5').evaluate().isNotEmpty,
-      );
+      await _wait(tester, () => find.text('Pages 4–5').evaluate().isNotEmpty);
       expect(reader.semanticEngine!.pages, [3, 4]);
       expect(reader.viewer.value, matrix);
       expect(reader.analysis!.visibleSnapshot, isNull);
@@ -357,10 +359,7 @@ void main() {
       await reader.mouse.moveTo(point + const Offset(1, 0));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
-      await _wait(
-        tester,
-        () => find.text('Reference [51] · Pages 4–5').evaluate().isNotEmpty,
-      );
+      await _wait(tester, () => find.text('Pages 4–5').evaluate().isNotEmpty);
       expect(reader.semanticEngine!.pages, [3, 4]);
       await reader.mouse.down(point);
       await tester.pump();
