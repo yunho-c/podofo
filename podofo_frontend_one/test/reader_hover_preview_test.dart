@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -168,6 +169,9 @@ void main() {
           afterFrame: () =>
               expect(find.byType(PdfLinkHoverPreview), findsNothing),
         );
+        // Movement inside the source link must retain in-flight preparation too.
+        await reader.mouse.moveTo(point + const Offset(1, 0));
+        await tester.pump();
         // The contextual raster is already ready, but no placeholder geometry
         // is painted while a fast semantic result still has a chance to win.
         await tester.pump(const Duration(milliseconds: 149));
@@ -237,10 +241,67 @@ void main() {
         expect(opacity(), reducedMotion ? 1 : closeTo(.5, .01));
         await tester.pump(const Duration(milliseconds: 50));
         expect(opacity(), 1);
-        // The cached hover must also reveal the semantic crop on its very first
-        // frame, even though the contextual image is immediately available.
-        await reader.mouse.moveTo(point + const Offset(1, 0));
+        final firstImage = tester.widget<RawImage>(_preview).image!;
+        final firstBounds = tester.getRect(
+          find.byKey(const ValueKey('pdf-link-hover-card')),
+        );
+        final matrix = reader.viewer.value.clone();
+        // Stay within the same link without moving the card or restarting it.
+        await reader.mouse.moveTo(point + const Offset(2, 0));
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.widget<RawImage>(_preview).image, same(firstImage));
+        expect(
+          tester.getRect(find.byKey(const ValueKey('pdf-link-hover-card'))),
+          firstBounds,
+        );
+        reader.viewer.requestFocus();
+        await tester.pump();
+        expect(reader.viewer.focusNode!.hasPrimaryFocus, true);
+        for (final key in [
+          LogicalKeyboardKey.shiftLeft,
+          LogicalKeyboardKey.shiftRight,
+          LogicalKeyboardKey.controlLeft,
+          LogicalKeyboardKey.controlRight,
+          LogicalKeyboardKey.altLeft,
+          LogicalKeyboardKey.altRight,
+          LogicalKeyboardKey.metaLeft,
+          LogicalKeyboardKey.metaRight,
+        ]) {
+          await tester.sendKeyDownEvent(key);
+          await tester.pump();
+          expect(tester.widget<RawImage>(_preview).image, same(firstImage));
+          await tester.sendKeyUpEvent(key);
+          await tester.pump();
+          expect(tester.widget<RawImage>(_preview).image, same(firstImage));
+        }
+        final edge = Offset(
+          point.dx.clamp(firstBounds.left, firstBounds.right),
+          point.dy.clamp(firstBounds.top, firstBounds.bottom),
+        );
+        await reader.mouse.moveTo(Offset.lerp(point, edge, .75)!);
+        await tester.pump(const Duration(milliseconds: 100));
+        expect(tester.widget<RawImage>(_preview).image, same(firstImage));
+        await reader.mouse.moveTo(firstBounds.center);
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(tester.widget<RawImage>(_preview).image, same(firstImage));
+        // The future popup can claim this click; today it must not hit the PDF.
+        await reader.mouse.down(firstBounds.center);
+        await reader.mouse.up();
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.widget<RawImage>(_preview).image, same(firstImage));
+        expect(reader.viewer.value, matrix);
+        expect(reader.session.navigationHistory.previous, isNull);
+        await reader.mouse.moveTo(point);
+        await tester.pump(const Duration(milliseconds: 300));
+        expect(tester.widget<RawImage>(_preview).image, same(firstImage));
+        // Escape remains an immediate dismissal, even after entering the card.
+        await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+        await tester.pump();
+        expect(find.byType(PdfLinkHoverPreview), findsNothing);
+        expect(firstImage.debugDisposed, true);
+        // A genuinely new hover still uses the cached smart crop on frame one.
+        await reader.mouse.moveTo(point + const Offset(1, 0));
         await tester.pump(const Duration(milliseconds: 300));
         await _wait(
           tester,
@@ -256,6 +317,10 @@ void main() {
             tester.getTopLeft(find.byType(PdfViewer)) + const Offset(2, 2);
         await reader.mouse.moveTo(blank);
         await tester.pump();
+        await tester.pump(const Duration(milliseconds: 249));
+        expect(tester.widget<RawImage>(_preview).image, same(visibleImage));
+        expect(opacity(), 1);
+        await tester.pump(const Duration(milliseconds: 1));
         if (!reducedMotion) {
           expect(opacity(), 1);
           expect(visibleImage.debugDisposed, false);
@@ -276,6 +341,103 @@ void main() {
       variant: platform,
     );
   }
+  testWidgets(
+    'retained previews replace on a different link and clear on scroll, tab change and close',
+    (tester) async {
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder).drawColor(const Color(0xffff0000), ui.BlendMode.src);
+      final picture = recorder.endRecording();
+      final contextImage = (await tester.runAsync(
+        () => picture.toImage(360, 240),
+      ))!;
+      picture.dispose();
+      addTearDown(contextImage.dispose);
+      final reader = await _Reader.open(
+        tester,
+        semanticFixture: true,
+        render: (pdf, dest, ratio, cancellation) async => contextImage.clone(),
+      );
+      Future<ui.Image> reveal(int link) async {
+        await reader.mouse.moveTo(await reader.linkPoint(link));
+        await tester.pump(const Duration(milliseconds: 300));
+        await _wait(
+          tester,
+          () => _preview.evaluate().isNotEmpty,
+          step: Duration.zero,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 100));
+        final image = tester.widget<RawImage>(_preview).image!;
+        expect(image.isCloneOf(contextImage), false);
+        return image;
+      }
+
+      Future<void> enterCard() async {
+        await reader.mouse.moveTo(
+          tester.getCenter(find.byKey(const ValueKey('pdf-link-hover-card'))),
+        );
+        await tester.pump(const Duration(milliseconds: 500));
+        expect(_preview, findsOneWidget);
+      }
+
+      final first = await reveal(2);
+      final card = tester.getRect(
+        find.byKey(const ValueKey('pdf-link-hover-card')),
+      );
+      int? otherLink;
+      for (final index in [0, 1, 4, 5]) {
+        if (!card.contains(await reader.linkPoint(index))) {
+          otherLink = index;
+          break;
+        }
+      }
+      // A large card can cover another link. Select one actually exposed in
+      // the reader; card clicks deliberately cannot reach covered links.
+      expect(otherLink, isNotNull);
+      final second = await reveal(otherLink!);
+      expect(first.debugDisposed, true);
+      expect(second.isCloneOf(first), false);
+      expect(reader.session.navigationHistory.previous, isNull);
+      await enterCard();
+      await reader.viewer.goToPage(pageNumber: 2, duration: Duration.zero);
+      await tester.pump();
+      expect(find.byType(PdfLinkHoverPreview), findsNothing);
+      expect(second.debugDisposed, true);
+      await reader.viewer.goToPage(pageNumber: 1, duration: Duration.zero);
+      await tester.pump();
+      final beforeTab = await reveal(2);
+      await enterCard();
+      final other = File('${reader.temporary.path}/second.pdf')
+        ..writeAsBytesSync(
+          File('test/fixtures/target_preview/linked_objects.pdf')
+              .readAsBytesSync(),
+        );
+      await tester.runAsync(() => reader.documents.addDocument(other.path));
+      await reader.loadSourceLinks();
+      await reader.ready();
+      expect(find.byType(PdfLinkHoverPreview), findsNothing);
+      expect(beforeTab.debugDisposed, true);
+      reader.container.read(currentTabIndexProvider.notifier).state = 0;
+      await tester.pump();
+      await reader.ready();
+      final beforeClose = await reveal(2);
+      await enterCard();
+      final closing = reader.session;
+      await _native(
+        tester,
+        () => reader.documents.removeDocument(closing.path),
+      );
+      // Closing selects the other tab; let its new viewer finish attaching
+      // before teardown stops the shared PDFium worker.
+      await reader.ready();
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(closing.lease.isClosed, true);
+      expect(find.byType(PdfLinkHoverPreview), findsNothing);
+      expect(beforeClose.debugDisposed, true);
+      expect(tester.takeException(), isNull);
+    },
+    variant: platform,
+  );
   testWidgets(
     'unavailable rendering settles to the page label without waiting out the grace period',
     (tester) async {
@@ -540,14 +702,19 @@ void main() {
       expect(reader.session.navigationHistory.previous, isNull);
       expect(reader.session.revision, 0);
 
-      // Repeated hovering cancels work immediately, retains the detached image
-      // for its fade, then reuses the cache without changing reading state.
+      // Re-enter after dismissal to exercise cached reuse independently of
+      // movement within the original link, which now retains the live preview.
+      await reader.mouse.moveTo(
+        tester.getTopLeft(find.byType(PdfViewer)) + const Offset(2, 2),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 250));
+      await tester.pump(const Duration(milliseconds: 101));
+      await tester.pump();
+      expect(_preview, findsNothing);
       await reader.mouse.moveTo(point + const Offset(1, 0));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 100));
-      await tester.pump(const Duration(milliseconds: 1));
-      expect(_preview, findsNothing);
-      await tester.pump(const Duration(milliseconds: 199));
+      await tester.pump(const Duration(milliseconds: 300));
       await _wait(tester, () => _preview.evaluate().isNotEmpty);
       expect(reader.viewer.value, matrix);
 

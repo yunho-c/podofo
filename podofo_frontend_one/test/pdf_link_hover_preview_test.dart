@@ -1,6 +1,7 @@
 import 'dart:ui' as ui;
 import 'dart:io';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
@@ -164,6 +165,62 @@ void main() {
     );
     expect(find.text('https://example.com/reference'), findsOneWidget);
     expect(find.byType(RawImage), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('interactive preview receives input only inside the card', (
+    tester,
+  ) async {
+    var enters = 0, exits = 0, clicksBehind = 0, scrolls = 0;
+    await tester.pumpWidget(
+      shadcn.ShadcnApp(
+        home: Stack(
+          children: [
+            Positioned.fill(
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: () => clicksBehind++,
+                child: const SizedBox.expand(),
+              ),
+            ),
+            PdfLinkHoverPreview(
+              anchor: const Offset(20, 20),
+              label: 'Page 2',
+              onPointerEnter: () => enters++,
+              onPointerExit: () => exits++,
+              onPointerSignal: (_) => scrolls++,
+            ),
+          ],
+        ),
+      ),
+    );
+    final card = tester.getRect(
+      find.byKey(const ValueKey('pdf-link-hover-card')),
+    );
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    addTearDown(mouse.removePointer);
+    await mouse.moveTo(card.center);
+    await tester.pump();
+    expect(enters, 1);
+    await mouse.down(card.center);
+    await mouse.up();
+    await tester.pump();
+    expect(clicksBehind, 0);
+    await tester.sendEventToBinding(
+      PointerScrollEvent(
+        position: card.center,
+        scrollDelta: const Offset(0, 20),
+      ),
+    );
+    expect(scrolls, 1);
+    await mouse.moveTo(const Offset(5, 5));
+    await tester.pump();
+    expect(exits, 1);
+    await mouse.down(const Offset(5, 5));
+    await mouse.up();
+    await tester.pump();
+    expect(clicksBehind, 1);
     expect(tester.takeException(), isNull);
   });
 

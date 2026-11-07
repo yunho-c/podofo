@@ -49,6 +49,16 @@ class CustomPdfViewer extends ConsumerStatefulWidget {
 class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     with TickerProviderStateMixin, WidgetsBindingObserver {
   static final _disabledFilter = ImageFilter.blur(sigmaX: 0, sigmaY: 0);
+  static const _hoverModifierKeys = [
+    LogicalKeyboardKey.shiftLeft,
+    LogicalKeyboardKey.shiftRight,
+    LogicalKeyboardKey.controlLeft,
+    LogicalKeyboardKey.controlRight,
+    LogicalKeyboardKey.altLeft,
+    LogicalKeyboardKey.altRight,
+    LogicalKeyboardKey.metaLeft,
+    LogicalKeyboardKey.metaRight,
+  ];
   static const _colorKeys = [
     LogicalKeyboardKey.digit1,
     LogicalKeyboardKey.digit2,
@@ -96,6 +106,10 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   late final AnimationController _hoverAnimation;
   Timer? _hoverTimer;
   Timer? _previewRevealTimer;
+  Timer? _hoverDismissTimer;
+  PointerHoverEvent? _hoverAfterDismiss;
+  ({int page, PdfLink link, List<PdfLink> links})? _activeHover;
+  bool _pointerInPreview = false;
   int _generation = 0;
   late final LinkPreviewWorker _previews;
   late PdfViewerController _hoverViewer;
@@ -461,8 +475,45 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     unawaited(DocumentActions.highlight(ref));
   }
 
+  void _cancelHoverDismiss() {
+    _hoverDismissTimer?.cancel();
+    _hoverDismissTimer = null;
+    _hoverAfterDismiss = null;
+  }
+
+  void _leaveHover([PointerHoverEvent? next]) {
+    if (_pointerInPreview) return;
+    if (_overlay == null || _activeHover == null) {
+      _clearHover(immediately: false);
+      return;
+    }
+    _hoverAfterDismiss = next;
+    // Bridge the gap between the link and card. Continued movement outside
+    // both must not keep restarting this deadline.
+    _hoverDismissTimer ??= Timer(const Duration(milliseconds: 250), () {
+      final next = _hoverAfterDismiss;
+      _clearHover(immediately: false);
+      if (next != null) _onHover(next);
+    });
+  }
+
+  void _enterPreview() {
+    // A card already fading after cancellation must not revive an old request.
+    if (_activeHover == null) return;
+    _pointerInPreview = true;
+    _cancelHoverDismiss();
+  }
+
+  void _exitPreview() {
+    _pointerInPreview = false;
+    _leaveHover();
+  }
+
   void _clearHover({bool immediately = true}) {
     _generation++;
+    _cancelHoverDismiss();
+    _activeHover = null;
+    _pointerInPreview = false;
     _hoverTimer?.cancel();
     _hoverTimer = null;
     _previewRevealTimer?.cancel();
@@ -603,7 +654,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
             _checkUserScroll(zooming: (details.scale - 1).abs() > .001),
         onKey: (params, key, isRealKeyPress) {
           if (isRealKeyPress) {
-            _clearHover();
+            if (!_hoverModifierKeys.contains(key)) _clearHover();
             _cancelLinkNavigation();
           }
           final keyboard = HardwareKeyboard.instance;
@@ -824,7 +875,7 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
     final invert = brightness == Brightness.dark && shader != null;
     final content = MouseRegion(
       onHover: _onHover,
-      onExit: (_) => _clearHover(immediately: false),
+      onExit: (_) => _leaveHover(),
       // Keep the viewer mounted so theme/inversion changes preserve its viewport.
       child: ImageFiltered(
         enabled: invert,
@@ -939,15 +990,39 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
   }
 
   void _onHover(PointerHoverEvent event) {
-    _clearHover(immediately: false);
-    final generation = _generation;
     final document = ref.read(currentDocumentProvider);
     final controller = ref.read(pdfViewerControllerProvider);
     if (document == null ||
         document.session.lease.isClosed ||
         !controller.isReady) {
+      _clearHover();
       return;
     }
+    final hit = controller.getPdfPageHitTestResult(
+      event.localPosition,
+      useDocumentLayoutCoordinates: false,
+    );
+    final active = _activeHover;
+    if (active != null) {
+      final samePage = hit?.page.pageNumber == active.page;
+      bool contains(PdfLink link) =>
+          samePage && link.rects.any((rect) => rect.containsPoint(hit!.offset));
+      if (contains(active.link)) {
+        _cancelHoverDismiss();
+        return;
+      }
+      if (_overlay != null) {
+        if (active.links.any((link) => link.isNavigable && contains(link))) {
+          // Switching directly to another known link starts a fresh preview.
+          _clearHover();
+        } else {
+          _leaveHover(event);
+          return;
+        }
+      }
+    }
+    _clearHover(immediately: false);
+    final generation = _generation;
     final session = document.session;
     final revision = session.revision;
     bool isCurrent() =>
@@ -957,12 +1032,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         session.revision == revision &&
         identical(ref.read(currentDocumentProvider)?.session, session) &&
         identical(ref.read(pdfViewerControllerProvider), controller);
-    final hit = controller.getPdfPageHitTestResult(
-      event.localPosition,
-      useDocumentLayoutCoordinates: false,
-    );
     if (hit == null) return;
     _hoverTimer = Timer(const Duration(milliseconds: 300), () async {
+      _hoverTimer = null;
       try {
         if (!isCurrent()) return;
         final links = await session.readLocked((pdf) async {
@@ -973,10 +1045,13 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
         final link = links
             .where(
               (link) =>
+                  link.isNavigable &&
                   link.rects.any((rect) => rect.containsPoint(hit.offset)),
             )
             .firstOrNull;
         if (link == null) return;
+        _activeHover = (page: hit.page.pageNumber, link: link, links: links);
+        final internal = link.url == null && link.dest != null;
         var label = link.url == null
             ? 'Page ${link.dest?.pageNumber ?? ''}'
             : linkPreviewLabel(link.url!);
@@ -1015,6 +1090,9 @@ class _CustomPdfViewerState extends ConsumerState<CustomPdfViewer>
                   anchor: position,
                   label: label,
                   opacity: _hoverAnimation,
+                  onPointerEnter: internal ? _enterPreview : null,
+                  onPointerExit: internal ? _exitPreview : null,
+                  onPointerSignal: internal ? (_) => _clearHover() : null,
                   image: _previewImage,
                   imageSize: previewSize,
                   paneBounds: paneBounds,

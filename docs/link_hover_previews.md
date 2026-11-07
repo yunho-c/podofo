@@ -13,12 +13,23 @@ or larger contextual image. If preparation finishes without a smart result, the
 fallback appears immediately. If preparation is still running at the deadline,
 the contextual preview appears and can be replaced once by the smart result.
 This bounds the extra presentation delay, but slow cold analysis can still
-produce a visible replacement. Leaving the link cancels the pending reveal.
+produce a visible replacement. Leaving the link before a card appears cancels
+the pending reveal.
 
-The selected card fades in over 100 ms and fades out when the pointer moves away.
-Dismissal cancels preparation immediately and retains the displayed image only
-until the fade completes. Clicks, scrolling, document changes and disposal remove
-the card immediately. Reduced-motion settings disable both fades.
+The selected card fades in over 100 ms. Movement within the source link keeps
+the same card and anchor, including while smart preparation is running. Once the
+card is visible, a 250 ms exit delay lets the pointer cross the gap onto it;
+hovering either the link or the card keeps the preview open. Leaving both starts
+the exit delay and then a 100 ms fade. Dismissal cancels preparation and retains
+the displayed image only until that fade completes. Modifier keys alone do not
+dismiss the card. Escape and other commands, clicks in the reader, scrolling,
+document changes and disposal still remove it immediately. Reduced-motion
+settings disable both fades.
+
+Internal preview cards receive pointer input within their own bounds. Clicking
+a card does not navigate or select the PDF underneath; a separate popup action
+is not implemented yet. Clicking the source link retains normal navigation.
+External-link text tooltips remain inert.
 
 Smart previews use the target's size at the current reader zoom, including the
 page-layout scale. A floor of one logical pixel per PDF point helps text at low
@@ -114,9 +125,10 @@ The pdfrx/PDFium dependency versions remain locked.
   Every temporary `PdfImage` is disposed in `finally`. The cache owns its
   `ui.Image` handles; the overlay owns a clone. Eviction, cancellation and widget
   disposal release their respective handles.
-- Pointer movement/exit/down, keyboard input, scrolling, viewport changes, tab
-  changes and document revision changes invalidate the hover. The overlay is
-  clamped to its actual overlay bounds and ignores pointer input.
+- Movement within the active source link and hovering its card preserve the
+  request. Leaving both expires after the exit delay; real commands, scrolling,
+  viewport changes, tab changes and document revision changes invalidate it.
+  Only the card captures pointer input, leaving the rest of the reader available.
 
 These limits bound preview rasters, decoded cache storage and outstanding work.
 They do not impose a process-wide memory limit on PDFium's interpretation of
@@ -136,13 +148,14 @@ not open inference and cannot substitute for full model-payload verification.
   nonzero MediaBox/CropBox offsets, rotations of 0/90/180/270 degrees, Fit and FitR,
   cross-page targets and invalid page numbers. Pixel assertions locate a known
   colored target in each native crop; no user PDFs or network links are opened.
-- `pdf_link_hover_preview_test.dart`: small-overlay edge placement, text fallback
-  and pointer pass-through.
+- `pdf_link_hover_preview_test.dart`: small-overlay edge placement, text fallback,
+  inert-tooltip pass-through and input confined to interactive cards.
 - `reader_hover_preview_test.dart`: the real keyed reader area, 300 ms debounce,
   first-frame smart-preview selection, bounded slow-analysis fallback, cancelled
   reveals, unchanged matrix/page/history, external labels, click/Back, rapid
   movement, stale completions, tab switching, scrolling and closing; fade timing,
-  image ownership during dismissal, and reduced-motion behavior.
+  image ownership during dismissal, reduced motion, same-link movement, modifier
+  keys, link-to-card travel, and clicks isolated from the underlying PDF.
 
 ## Validation on 2026-10-28
 
